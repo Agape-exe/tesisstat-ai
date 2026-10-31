@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0.0",
+  "id": "research-association",
+  "title": "Estudio completamente sintético sobre hábitos de estudio",
+  "methodology_status": "reviewed",
+  "design": "observational",
+  "observations": "independent",
+  "sampling_notes": "30 observaciones ficticias; sin población real ni inferencia generalizable.",
+  "variables": [
+    {
+      "schema_version": "1.0.0",
+      "id": "study_hours",
+      "name": "Horas semanales de estudio",
+      "role": "independent",
+      "measurement_scale": "ratio",
+      "columns": [
+        "study_hours"
+      ],
+      "dimensions": [],
+      "questions": [
+        "¿Cuántas horas estudia por semana?"
+      ]
+    },
+    {
+      "schema_version": "1.0.0",
+      "id": "score",
+      "name": "Puntaje académico simulado",
+      "role": "dependent",
+      "measurement_scale": "interval",
+      "columns": [
+        "score"
+      ],
+      "dimensions": [],
+      "questions": [
+        "Puntaje de evaluación ficticia"
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "schema_version": "1.0.0",
+      "id": "h1",
+      "statement": "Existe asociación entre las horas de estudio y el puntaje académico.",
+      "objective": "Evaluar la asociación entre horas de estudio y puntaje.",
+      "kind": "association",
+      "variable_ids": [
+        "study_hours",
+        "score"
+      ],
+      "null_statement": "No existe asociación.",
+      "alternative": "two-sided"
+    }
+  ],
+  "dataset": {
+    "schema_version": "1.0.0",
+    "id": "dataset-association",
+    "location": "fixtures/datasets/association.csv",
+    "format": "csv",
+    "row_count": 30,
+    "columns": [
+      "participant_id",
+      "study_hours",
+      "score"
+    ],
+    "synthetic": true
+  },
+  "pending_questions": []
+}

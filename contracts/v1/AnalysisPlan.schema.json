@@ -1,0 +1,90 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "research_package_id": {
+      "minLength": 1,
+      "title": "Research Package Id",
+      "type": "string"
+    },
+    "hypothesis_id": {
+      "minLength": 1,
+      "title": "Hypothesis Id",
+      "type": "string"
+    },
+    "dataset_id": {
+      "minLength": 1,
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "needs_clarification",
+        "proposed",
+        "approved"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "technique": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Technique"
+    },
+    "rationale": {
+      "minLength": 1,
+      "title": "Rationale",
+      "type": "string"
+    },
+    "alpha": {
+      "default": 0.05,
+      "exclusiveMaximum": 1,
+      "exclusiveMinimum": 0,
+      "title": "Alpha",
+      "type": "number"
+    },
+    "assumptions_to_check": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions To Check",
+      "type": "array"
+    },
+    "pending_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Pending Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "research_package_id",
+    "hypothesis_id",
+    "dataset_id",
+    "status",
+    "rationale"
+  ],
+  "title": "AnalysisPlan",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v1/AnalysisPlan.schema.json"
+}

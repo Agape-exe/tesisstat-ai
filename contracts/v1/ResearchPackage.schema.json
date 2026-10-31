@@ -1,0 +1,304 @@
+{
+  "$defs": {
+    "DatasetReference": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "location": {
+          "description": "Opaque storage key or fixture path; no secrets",
+          "minLength": 1,
+          "title": "Location",
+          "type": "string"
+        },
+        "format": {
+          "enum": [
+            "csv",
+            "xlsx"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "row_count": {
+          "minimum": 0,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "synthetic": {
+          "title": "Synthetic",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "location",
+        "format",
+        "row_count",
+        "columns",
+        "synthetic"
+      ],
+      "title": "DatasetReference",
+      "type": "object"
+    },
+    "ResearchHypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "statement": {
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "objective": {
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "association",
+            "comparison",
+            "prediction",
+            "descriptive",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "variable_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Variable Ids",
+          "type": "array"
+        },
+        "null_statement": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Null Statement"
+        },
+        "alternative": {
+          "default": "unspecified",
+          "enum": [
+            "two-sided",
+            "greater",
+            "less",
+            "unspecified"
+          ],
+          "title": "Alternative",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "statement",
+        "objective",
+        "kind",
+        "variable_ids"
+      ],
+      "title": "ResearchHypothesis",
+      "type": "object"
+    },
+    "ResearchVariable": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "independent",
+            "dependent",
+            "covariate",
+            "descriptive",
+            "unknown"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "measurement_scale": {
+          "enum": [
+            "nominal",
+            "ordinal",
+            "interval",
+            "ratio",
+            "unknown"
+          ],
+          "title": "Measurement Scale",
+          "type": "string"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "dimensions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "questions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Questions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "name",
+        "role",
+        "measurement_scale",
+        "columns"
+      ],
+      "title": "ResearchVariable",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "methodology_status": {
+      "enum": [
+        "draft",
+        "reviewed"
+      ],
+      "title": "Methodology Status",
+      "type": "string"
+    },
+    "design": {
+      "enum": [
+        "experimental",
+        "quasi_experimental",
+        "observational",
+        "unknown"
+      ],
+      "title": "Design",
+      "type": "string"
+    },
+    "observations": {
+      "enum": [
+        "independent",
+        "paired",
+        "repeated",
+        "unknown"
+      ],
+      "title": "Observations",
+      "type": "string"
+    },
+    "sampling_notes": {
+      "title": "Sampling Notes",
+      "type": "string"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/ResearchVariable"
+      },
+      "minItems": 1,
+      "title": "Variables",
+      "type": "array"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/ResearchHypothesis"
+      },
+      "minItems": 1,
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "dataset": {
+      "$ref": "#/$defs/DatasetReference"
+    },
+    "pending_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Pending Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "methodology_status",
+    "design",
+    "observations",
+    "sampling_notes",
+    "variables",
+    "hypotheses",
+    "dataset"
+  ],
+  "title": "ResearchPackage",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v1/ResearchPackage.schema.json"
+}

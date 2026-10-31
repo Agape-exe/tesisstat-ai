@@ -1,0 +1,5 @@
+participant_id,group,pre,post,likert_item
+SYN-001,A,10,14,4
+SYN-002,B,,13,3
+SYN-002,B,,13,3
+SYN-004,C,12,invalid,9

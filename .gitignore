@@ -1,0 +1,17 @@
+node_modules/
+.cache/
+dist/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+coverage/
+.coverage
+.env
+.env.*
+!.env.example
+!.env.*.example
+.DS_Store
+*.egg-info/
+*.tsbuildinfo
