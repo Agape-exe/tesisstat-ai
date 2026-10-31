@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "id": "result-h1",
+  "analysis_plan_id": "plan-h1",
+  "dataset_id": "dataset-association",
+  "status": "not_executed",
+  "metrics": [],
+  "assumptions": [],
+  "warnings": [
+    "Fixture de integración: no se han ejecutado cálculos."
+  ],
+  "engine_version": "fixture-only",
+  "interpretation": null
+}

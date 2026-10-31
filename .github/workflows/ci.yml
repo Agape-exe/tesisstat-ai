@@ -1,0 +1,34 @@
+name: Foundation checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --locked
+        working-directory: backend
+      - run: uv run ruff check .
+        working-directory: backend
+      - run: uv run ruff format --check .
+        working-directory: backend
+      - run: uv run pytest
+        working-directory: backend
+      - run: uv run python -m scripts.export_contracts --check
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run contracts:generate
+        working-directory: frontend
+      - run: git diff --exit-code -- contracts frontend/src/shared/contracts/generated
+      - run: npm run lint && npm run format:check && npm test && npm run build
+        working-directory: frontend

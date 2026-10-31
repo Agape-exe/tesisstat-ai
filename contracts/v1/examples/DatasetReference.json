@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "id": "dataset-association",
+  "location": "fixtures/datasets/association.csv",
+  "format": "csv",
+  "row_count": 30,
+  "columns": [
+    "participant_id",
+    "study_hours",
+    "score"
+  ],
+  "synthetic": true
+}

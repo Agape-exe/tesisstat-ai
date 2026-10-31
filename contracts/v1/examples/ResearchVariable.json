@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "id": "study_hours",
+  "name": "Horas semanales de estudio",
+  "role": "independent",
+  "measurement_scale": "ratio",
+  "columns": [
+    "study_hours"
+  ],
+  "dimensions": [],
+  "questions": [
+    "¿Cuántas horas estudia por semana?"
+  ]
+}

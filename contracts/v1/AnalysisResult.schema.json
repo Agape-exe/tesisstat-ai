@@ -1,0 +1,136 @@
+{
+  "$defs": {
+    "AssumptionCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "passed",
+            "failed",
+            "not_checked"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "details": {
+          "title": "Details",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "status",
+        "details"
+      ],
+      "title": "AssumptionCheck",
+      "type": "object"
+    },
+    "Metric": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "Metric",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "analysis_plan_id": {
+      "minLength": 1,
+      "title": "Analysis Plan Id",
+      "type": "string"
+    },
+    "dataset_id": {
+      "minLength": 1,
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "failed",
+        "not_executed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "metrics": {
+      "items": {
+        "$ref": "#/$defs/Metric"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "assumptions": {
+      "items": {
+        "$ref": "#/$defs/AssumptionCheck"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "engine_version": {
+      "minLength": 1,
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "interpretation": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Interpretation"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "analysis_plan_id",
+    "dataset_id",
+    "status",
+    "engine_version"
+  ],
+  "title": "AnalysisResult",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v1/AnalysisResult.schema.json"
+}

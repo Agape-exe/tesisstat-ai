@@ -1,0 +1,59 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "location": {
+      "description": "Opaque storage key or fixture path; no secrets",
+      "minLength": 1,
+      "title": "Location",
+      "type": "string"
+    },
+    "format": {
+      "enum": [
+        "csv",
+        "xlsx"
+      ],
+      "title": "Format",
+      "type": "string"
+    },
+    "row_count": {
+      "minimum": 0,
+      "title": "Row Count",
+      "type": "integer"
+    },
+    "columns": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Columns",
+      "type": "array"
+    },
+    "synthetic": {
+      "title": "Synthetic",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "location",
+    "format",
+    "row_count",
+    "columns",
+    "synthetic"
+  ],
+  "title": "DatasetReference",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v1/DatasetReference.schema.json"
+}

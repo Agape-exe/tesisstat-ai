@@ -1,0 +1,76 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "role": {
+      "enum": [
+        "independent",
+        "dependent",
+        "covariate",
+        "descriptive",
+        "unknown"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "measurement_scale": {
+      "enum": [
+        "nominal",
+        "ordinal",
+        "interval",
+        "ratio",
+        "unknown"
+      ],
+      "title": "Measurement Scale",
+      "type": "string"
+    },
+    "columns": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Columns",
+      "type": "array"
+    },
+    "dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "role",
+    "measurement_scale",
+    "columns"
+  ],
+  "title": "ResearchVariable",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v1/ResearchVariable.schema.json"
+}

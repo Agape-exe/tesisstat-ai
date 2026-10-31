@@ -1,0 +1,79 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "statement": {
+      "minLength": 1,
+      "title": "Statement",
+      "type": "string"
+    },
+    "objective": {
+      "minLength": 1,
+      "title": "Objective",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "association",
+        "comparison",
+        "prediction",
+        "descriptive",
+        "unknown"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "variable_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Variable Ids",
+      "type": "array"
+    },
+    "null_statement": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Null Statement"
+    },
+    "alternative": {
+      "default": "unspecified",
+      "enum": [
+        "two-sided",
+        "greater",
+        "less",
+        "unspecified"
+      ],
+      "title": "Alternative",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "statement",
+    "objective",
+    "kind",
+    "variable_ids"
+  ],
+  "title": "ResearchHypothesis",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v1/ResearchHypothesis.schema.json"
+}
