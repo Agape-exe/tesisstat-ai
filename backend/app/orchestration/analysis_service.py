@@ -19,6 +19,7 @@ from app.orchestration.analysis_inputs import (
     CONNECTED,
     analysis_input,
     categorical_association_questions,
+    independent_questions,
     paired_questions,
     pearson_questions,
     spearman_questions,
@@ -126,6 +127,8 @@ class ResearchAnalysisService:
             "fisher_exact",
             "t_paired",
             "wilcoxon",
+            "t_independent",
+            "mann_whitney",
         }:
             questions = {
                 "pearson": pearson_questions,
@@ -134,6 +137,8 @@ class ResearchAnalysisService:
                 "fisher_exact": categorical_association_questions,
                 "t_paired": paired_questions,
                 "wilcoxon": paired_questions,
+                "t_independent": independent_questions,
+                "mann_whitney": independent_questions,
             }[plan.technique](package, plan.hypothesis_id)
             if questions:
                 plan.status = "needs_clarification"
@@ -201,6 +206,8 @@ class ResearchAnalysisService:
                     "fisher_exact",
                     "t_paired",
                     "wilcoxon",
+                    "t_independent",
+                    "mann_whitney",
                 }:
                     table = reader.read(package.dataset)
                     inputs[plan_id] = analysis_input(package, record.plan, table)
