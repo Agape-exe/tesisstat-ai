@@ -217,9 +217,13 @@ Los seis contratos v1.0.0 y `backend/app/main.py` permanecen sin cambios.
 
 ## Git y CI
 
-Rama de trabajo: `feat/application-integration`, base `28816d0`. La rama se publicará y
-el PR se abrirá hacia `develop`, sin fusionarlo. La verificación remota y el resultado
-del PR se consignan en el informe final. La consulta inicial por el conector devolvió
+Rama publicada: `feat/application-integration`, base `28816d0`. Commits de implementación:
+`385dc50` (API/informes) y `6abad5a` (aplicación). Árbol limpio tras esos commits.
+El intento de crear un PR borrador hacia `develop` mediante el conector GitHub devolvió
+`403 Resource not accessible by integration`. No se intentó eludir la restricción.
+Título y descripción quedan en [PR_APPLICATION_INTEGRATION.md](PR_APPLICATION_INTEGRATION.md).
+No se fusionó ninguna rama. La verificación remota final se consigna en el informe
+entregado. La consulta inicial por el conector devolvió
 cero ejecuciones de PR para el commit de cierre de la sesión anterior; eso no se
 interpreta como CI aprobada.
 
@@ -256,4 +260,5 @@ frontend/src/features/statistics/ResearchStatisticsPanel.tsx
 frontend/src/features/statistics/ResearchStatisticsPanel.test.tsx
 frontend/vite.config.ts
 docs/APPLICATION_INTEGRATION.md
+docs/PR_APPLICATION_INTEGRATION.md
 ```
