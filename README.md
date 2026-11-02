@@ -101,3 +101,8 @@ caracteres fuera de esa codificación se sustituyen con aviso, y DOCX conserva U
 Los resultados históricos se pueden consultar, pero no exportar ni volver a ejecutar con
 fuentes desactualizadas. Las sesiones anteriores están documentadas en `docs/` como
 antecedentes; los comandos vigentes de demostración están en esta guía y en la sesión 14.
+
+El detalle de investigación incluye **4. Asistente IA**, con conversaciones e historial SQLite.
+El envío requiere Cloudflare configurado y consentimiento explícito. Consulta configuración,
+pruebas y limitaciones en [CHAT_CONVERSACIONAL.md](docs/CHAT_CONVERSACIONAL.md).
+La conectividad real con Qwen3 queda pendiente de validación autorizada.
