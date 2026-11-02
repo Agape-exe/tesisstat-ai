@@ -333,7 +333,7 @@ export function ResearchProjects({
       )}
       <footer className="rp-footer">
         Research Module · Persistencia SQLite local. Revisión metodológica y
-        análisis descriptivo/Pearson con aprobación explícita, solo para datos
+        análisis descriptivo/Pearson/Spearman con aprobación explícita, solo para datos
         sintéticos en esta demo.
       </footer>
     </main>

@@ -66,7 +66,7 @@ export function ProjectAnalysis({
         Solo se admiten datos sintéticos en esta demo local.
       </p>
       <p>
-        Integración disponible: resumen descriptivo y Pearson. Las demás
+        Integración disponible: resumen descriptivo, Pearson y Spearman. Las demás
         técnicas requieren un adaptador de integración.
       </p>
       {error && (

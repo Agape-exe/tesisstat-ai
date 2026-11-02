@@ -1,4 +1,4 @@
-"""Adapt only the two verified techniques, without statistical formulas."""
+"""Adapt verified two-column association techniques, without formulas."""
 
 from fastapi import HTTPException
 
@@ -6,7 +6,7 @@ from app.modules.statistics.datasets import DatasetTable
 from app.modules.statistics.execution import AnalysisInput
 from app.shared.contracts import AnalysisPlan, ResearchPackage
 
-CONNECTED = {"descriptive_summary", "pearson"}
+CONNECTED = {"descriptive_summary", "pearson", "spearman"}
 
 
 def pearson_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
@@ -27,16 +27,49 @@ def pearson_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]
     return questions
 
 
+def spearman_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Return methodological questions required before a Spearman analysis."""
+    questions = pearson_questions(package, hypothesis_id)
+    if package.observations != "independent":
+        return questions
+    variables = {item.id: item for item in package.variables}
+    selected = [
+        variables[item]
+        for item in next(
+            item for item in package.hypotheses if item.id == hypothesis_id
+        ).variable_ids
+    ]
+    if any(item.measurement_scale not in {"ordinal", "interval", "ratio"} for item in selected):
+        questions.append("Spearman requiere escalas ordinales, intervalares o de razón.")
+    return questions
+
+
 def analysis_input(
     package: ResearchPackage, plan: AnalysisPlan, table: DatasetTable
 ) -> AnalysisInput:
-    if plan.technique != "pearson" or pearson_questions(package, plan.hypothesis_id):
-        raise HTTPException(409, "Las vinculaciones no permiten construir la entrada Pearson.")
+    questions = (
+        pearson_questions(package, plan.hypothesis_id)
+        if plan.technique == "pearson"
+        else spearman_questions(package, plan.hypothesis_id)
+        if plan.technique == "spearman"
+        else ["La técnica no admite esta entrada de dos columnas."]
+    )
+    if questions:
+        raise HTTPException(409, "Las vinculaciones no permiten construir la entrada solicitada.")
     hypothesis = next(item for item in package.hypotheses if item.id == plan.hypothesis_id)
     variables = {item.id: item for item in package.variables}
     selected = [variables[item] for item in hypothesis.variable_ids]
-    if any(item.measurement_scale not in {"interval", "ratio"} for item in selected):
-        raise HTTPException(409, "Pearson requiere escalas cuantitativas confirmadas.")
+    allowed = (
+        {"interval", "ratio"}
+        if plan.technique == "pearson"
+        else {
+            "ordinal",
+            "interval",
+            "ratio",
+        }
+    )
+    if any(item.measurement_scale not in allowed for item in selected):
+        raise HTTPException(409, "La técnica requiere escalas de medición confirmadas.")
     try:
         left, right = [table.columns.index(item.columns[0]) for item in selected]
     except ValueError as exc:

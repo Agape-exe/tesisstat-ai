@@ -45,4 +45,4 @@ Ejecutar `pytest`, `ruff check .`, `ruff format --check .` y `python -m scripts.
 
 ## Limitaciones
 
-La app de desarrollo no tiene autenticación. La sesión 13 conecta el puerto de lectura y la resolución autorizada del dataset con planificación, aprobación explícita y ejecución real de resumen descriptivo/Pearson; ver [RESEARCH_STATISTICS_E2E.md](RESEARCH_STATISTICS_E2E.md). Las descripciones metodológicas en lenguaje natural requieren selección humana de diseño y observaciones. `unknown` puede llegar a Statistics con preguntas pendientes; el paquete válido no autoriza por sí solo un plan estadístico.
+La app de desarrollo no tiene autenticación. La sesión 13 conecta el puerto de lectura y la resolución autorizada del dataset con planificación, aprobación explícita y ejecución real de resumen descriptivo/Pearson/Spearman; ver [RESEARCH_STATISTICS_E2E.md](RESEARCH_STATISTICS_E2E.md). Las descripciones metodológicas en lenguaje natural requieren selección humana de diseño y observaciones. `unknown` puede llegar a Statistics con preguntas pendientes; el paquete válido no autoriza por sí solo un plan estadístico.

@@ -156,7 +156,9 @@ it('shows reviewed links, validates and builds an explicitly configured package'
     ),
   ).toBeTruthy();
   expect(
-    screen.getByText(/Integración disponible: resumen descriptivo y Pearson/),
+    screen.getByText(
+      /Integración disponible: resumen descriptivo, Pearson y Spearman/,
+    ),
   ).toBeTruthy();
   expect(
     screen.getAllByRole('region', { name: 'Análisis estadístico Research' }),

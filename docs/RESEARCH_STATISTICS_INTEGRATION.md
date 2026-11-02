@@ -2,7 +2,7 @@
 
 Los PR #12, #13 y #14 ya están fusionados en develop. La sesión 13 conserva el
 helper `build_engine_from_research_bridge` del Integrante 2 y completa el flujo
-para **resumen descriptivo y Pearson** con aprobación independiente, resultados
+para **resumen descriptivo, Pearson y Spearman** con aprobación independiente, resultados
 persistidos y vigencia. Ver [RESEARCH_STATISTICS_E2E.md](RESEARCH_STATISTICS_E2E.md).
 
 `ResearchStatisticsBridge` valida proyecto, paquete, referencia opaca, dataset
