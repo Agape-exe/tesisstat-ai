@@ -51,7 +51,10 @@ from app.modules.research.projects.repository import ProjectRepository
 from app.modules.research.projects.routes import create_router
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
 from app.modules.research.projects.use_cases import ProjectNotFound, ProjectService
-from app.orchestration.research_statistics import ResearchStatisticsBridge
+from app.orchestration.analysis_repository import SQLiteAnalysisRepository
+from app.orchestration.analysis_routes import create_router as create_analysis_router
+from app.orchestration.analysis_service import ResearchAnalysisService
+from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
 from app.orchestration.statistics_routes import create_statistics_router
 from app.shared.adapters.cloudflare import CloudflareLanguageModel, CloudflareSettings
 
@@ -96,6 +99,13 @@ def create_app(
     @app.exception_handler(ProjectNotFound)
     async def not_found(request: Request, exc: ProjectNotFound) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": "No se encontró el proyecto."})
+
+    @app.exception_handler(ResearchInputError)
+    async def research_input_error(request: Request, exc: ResearchInputError) -> JSONResponse:
+        return JSONResponse(
+            status_code=404 if exc.code == "project_missing" else 409,
+            content={"detail": str(exc), "code": exc.code},
+        )
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -274,7 +284,13 @@ def create_app(
     )
     app.include_router(create_package_router(packages))
     app.state.research_statistics_bridge = ResearchStatisticsBridge(projects, packages, datasets)
-    app.include_router(create_statistics_router(app.state.research_statistics_bridge))
+    app.state.research_analysis = ResearchAnalysisService(
+        app.state.research_statistics_bridge,
+        SQLiteAnalysisRepository(settings.research_db_path),
+        document_repository,
+    )
+    app.include_router(create_analysis_router(app.state.research_analysis))
+    app.include_router(create_statistics_router(app.state.research_analysis))
 
     @app.get("/health")
     def health() -> dict[str, str]:

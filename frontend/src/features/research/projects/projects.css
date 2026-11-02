@@ -500,6 +500,28 @@ body:has(.rp-shell) {
   max-width: 100%;
   margin: 0.25rem 0 0.5rem;
 }
+.rp-analysis article {
+  overflow-wrap: anywhere;
+}
+
+.rp-analysis table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.rp-analysis caption {
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.rp-analysis th,
+.rp-analysis td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid #d9e0dc;
+}
+
 .rp-package {
   margin-top: 2rem;
   padding-top: 1.5rem;

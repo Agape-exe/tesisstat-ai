@@ -1,16 +1,16 @@
-"""HTTP orchestration for the authorized Research → Statistics flow."""
+"""Compatibility routes: reuse the persisted Research approval workflow."""
 
 from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.modules.statistics.composition import build_engine_from_research_bridge
-from app.modules.statistics.planner import DeterministicStatisticalPlanner, UnknownHypothesis
-from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
-from app.shared.contracts import AnalysisPlan, AnalysisResult, ResearchPackage
+from app.orchestration.analysis_models import PlanRequest
+from app.orchestration.analysis_routes import local_only
+from app.orchestration.analysis_service import ResearchAnalysisService
+from app.shared.contracts import AnalysisPlan, AnalysisResult
 
 
 class StatisticsPlanRequest(BaseModel):
@@ -19,41 +19,42 @@ class StatisticsPlanRequest(BaseModel):
 
 
 class StatisticsAnalysisRequest(StatisticsPlanRequest):
+    # Accepted for old clients, but never grants approval or changes plan status.
     approve: bool = False
+    plan_id: str | None = None
 
 
-def create_statistics_router(bridge: ResearchStatisticsBridge) -> APIRouter:
-    router = APIRouter(prefix="/api/research/projects/{project_id}/statistics")
-    planner = DeterministicStatisticalPlanner()
-
-    def package_and_plan(
-        project_id: UUID, package_id: str, hypothesis_id: str
-    ) -> tuple[ResearchPackage, AnalysisPlan]:
-        try:
-            package = bridge.get_package(project_id, package_id)
-            plan = planner.propose(package, hypothesis_id)
-        except ResearchInputError as error:
-            status = 404 if error.code in {"project_missing", "package_missing"} else 409
-            raise HTTPException(status_code=status, detail=str(error)) from error
-        except UnknownHypothesis as error:
-            raise HTTPException(status_code=422, detail=str(error)) from error
-        return package, plan
+def create_statistics_router(service: ResearchAnalysisService) -> APIRouter:
+    router = APIRouter(
+        prefix="/api/research/projects/{project_id}/statistics",
+        dependencies=[Depends(local_only)],
+    )
 
     @router.post("/plan", response_model=AnalysisPlan)
     def propose(project_id: UUID, request: StatisticsPlanRequest) -> AnalysisPlan:
-        _, plan = package_and_plan(project_id, request.package_id, request.hypothesis_id)
-        return plan
+        return service.propose(project_id, PlanRequest(**request.model_dump())).plan
 
     @router.post("/analysis", response_model=AnalysisResult)
     def execute(project_id: UUID, request: StatisticsAnalysisRequest) -> AnalysisResult:
-        package, plan = package_and_plan(project_id, request.package_id, request.hypothesis_id)
-        if not request.approve:
+        service.bridge.projects.get(project_id)
+        if not request.plan_id:
             raise HTTPException(
                 status_code=409,
-                detail="El plan debe aprobarse explícitamente antes de ejecutar el análisis.",
+                detail=(
+                    "Usa un plan persistido y apruébalo con la acción independiente en "
+                    "/analysis/plans/{plan_id}/approve. approve=true no concede aprobación."
+                ),
             )
-        approved = plan.model_copy(update={"status": "approved"})
-        engine = build_engine_from_research_bridge(bridge, project_id, package)
-        return engine.execute(approved)
+        record = next(
+            (item for item in service.list(project_id) if item.plan.id == request.plan_id), None
+        )
+        if record is None:
+            raise HTTPException(404, "No se encontró el plan en este proyecto.")
+        if (
+            record.plan.research_package_id != request.package_id
+            or record.plan.hypothesis_id != request.hypothesis_id
+        ):
+            raise HTTPException(409, "El paquete o hipótesis no corresponde al plan persistido.")
+        return service.execute(project_id, record.plan.id)
 
     return router

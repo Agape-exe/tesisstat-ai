@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from fastapi.testclient import TestClient
+
 from app.shared.contracts import AnalysisPlan, ResearchPackage
 from tests.research.test_packages import prepared
 from tests.research.test_statistics_bridge import built
@@ -30,13 +32,39 @@ def test_statistics_runtime_proposes_and_executes_approved_descriptive_plan(tmp_
     )
     assert blocked.status_code == 409
 
-    executed = client.post(
+    bypass = client.post(
         f"{endpoint}/analysis",
         json={
             "package_id": package.id,
             "hypothesis_id": package.hypotheses[0].id,
             "approve": True,
         },
+    )
+    assert bypass.status_code == 409
+    record = client.get(f"{endpoint.replace('/statistics', '/analysis')}/plans").json()[0]
+    assert record["plan"]["id"] == plan.id
+    assert (
+        client.post(
+            f"{endpoint}/analysis",
+            json={
+                "package_id": package.id,
+                "hypothesis_id": plan.hypothesis_id,
+                "plan_id": plan.id,
+                "approve": True,
+            },
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            f"{endpoint.replace('/statistics', '/analysis')}/plans/{plan.id}/approve",
+            json={"confirm": True, "proposal_token": record["proposal_token"]},
+        ).status_code
+        == 200
+    )
+    executed = client.post(
+        f"{endpoint}/analysis",
+        json={"package_id": package.id, "hypothesis_id": plan.hypothesis_id, "plan_id": plan.id},
     )
     assert executed.status_code == 200, executed.text
     result = executed.json()
@@ -52,12 +80,45 @@ def test_statistics_runtime_rejects_unknown_package_and_hypothesis(tmp_path):
             f"{endpoint}/plan",
             json={"package_id": "wrong", "hypothesis_id": package.hypotheses[0].id},
         ).status_code
-        == 404
+        == 409
     )
     assert (
         client.post(
             f"{endpoint}/plan",
             json={"package_id": package.id, "hypothesis_id": "wrong"},
         ).status_code
-        == 422
+        == 404
     )
+
+
+def test_statistics_compatibility_cannot_bypass_clarification_or_project_scope(tmp_path):
+    client, _, _, _, _, project_id, package = built(tmp_path)
+    endpoint = f"/api/research/projects/{project_id}/statistics"
+    body = {"package_id": package.id, "hypothesis_id": package.hypotheses[0].id}
+    plan = client.post(endpoint + "/plan", json=body).json()
+    assert plan["status"] == "needs_clarification"
+    assert (
+        client.post(
+            endpoint + "/analysis",
+            json=body
+            | {
+                "plan_id": plan["id"],
+                "approve": True,
+            },
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            endpoint + "/analysis",
+            json=body
+            | {
+                "package_id": "wrong",
+                "plan_id": plan["id"],
+                "approve": True,
+            },
+        ).status_code
+        == 409
+    )
+    remote = TestClient(client.app, client=("203.0.113.8", 12345))
+    assert remote.post(endpoint + "/plan", json=body).status_code == 403
