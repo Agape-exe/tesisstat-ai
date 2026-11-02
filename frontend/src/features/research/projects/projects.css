@@ -464,3 +464,39 @@ body:has(.rp-shell) {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.rp-dataset-preparation {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+.rp-dataset-preparation > div {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #d8dce5;
+  border-radius: 0.5rem;
+  background: #f8faf7;
+}
+.rp-dataset-preparation ol > li {
+  display: block;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid #d8dce5;
+  border-radius: 0.4rem;
+  background: white;
+}
+.rp-dataset-preparation fieldset {
+  margin: 0.5rem 0;
+  border: 1px solid #d8dce5;
+}
+.rp-dataset-preparation fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.25rem 0.75rem 0.25rem 0;
+}
+.rp-dataset-preparation input:not([type='checkbox']),
+.rp-dataset-preparation select {
+  display: block;
+  max-width: 100%;
+  margin: 0.25rem 0 0.5rem;
+}

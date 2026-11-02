@@ -13,6 +13,10 @@ class DatasetStorageError(Exception):
     pass
 
 
+class DatasetHasDerivatives(Exception):
+    pass
+
+
 class SQLiteDatasetRepository:
     def __init__(self, db_path: Path, storage_path: Path) -> None:
         self.db_path = db_path
@@ -114,6 +118,16 @@ class SQLiteDatasetRepository:
     def delete(self, project_id: UUID, dataset_id: UUID) -> bool:
         if self.get(project_id, dataset_id) is None:
             return False
+        with closing(self._connect()) as connection:
+            descendants = connection.execute(
+                "SELECT payload FROM research_datasets WHERE project_id = ?",
+                (str(project_id),),
+            ).fetchall()
+        if any(
+            Dataset.model_validate_json(row[0]).source_dataset_id == dataset_id
+            for row in descendants
+        ):
+            raise DatasetHasDerivatives
         path = self._path(dataset_id)
         staged = self.storage_path / f"{uuid4().hex}.deleting"
         try:
@@ -127,6 +141,19 @@ class SQLiteDatasetRepository:
                     "DELETE FROM research_datasets WHERE project_id = ? AND id = ?",
                     (str(project_id), str(dataset_id)),
                 )
+                if connection.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+                    "AND name = 'research_preparations'"
+                ).fetchone():
+                    connection.execute(
+                        "DELETE FROM research_preparations WHERE project_id = ? AND result_id = ?",
+                        (str(project_id), str(dataset_id)),
+                    )
+                    connection.execute(
+                        "DELETE FROM research_preparation_previews "
+                        "WHERE project_id = ? AND source_id = ?",
+                        (str(project_id), str(dataset_id)),
+                    )
             staged.unlink()
         except (OSError, sqlite3.Error) as exc:
             if staged.exists():

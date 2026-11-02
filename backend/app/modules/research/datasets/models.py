@@ -18,6 +18,7 @@ class Dataset(BaseModel):
     uploaded_at: datetime
     active: bool = False
     warnings: list[str] = []
+    source_dataset_id: UUID | None = None
 
 
 class DatasetPreview(BaseModel):

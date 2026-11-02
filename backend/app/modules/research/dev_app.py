@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from app.modules.research.datasets.readers import DatasetLimits, InvalidDataset
 from app.modules.research.datasets.routes import create_router as create_dataset_router
 from app.modules.research.datasets.sqlite_repository import (
+    DatasetHasDerivatives,
     DatasetStorageError,
     SQLiteDatasetRepository,
 )
@@ -39,6 +40,10 @@ from app.modules.research.methodology.service import (
     MethodologyService,
 )
 from app.modules.research.methodology.sqlite_repository import SQLiteMethodologyRepository
+from app.modules.research.preparation.engine import InvalidPlan
+from app.modules.research.preparation.routes import create_router as create_preparation_router
+from app.modules.research.preparation.sqlite_repository import SQLitePreparationRepository
+from app.modules.research.preparation.use_cases import PreparationService, PreviewConflict
 from app.modules.research.projects.repository import ProjectRepository
 from app.modules.research.projects.routes import create_router
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
@@ -168,6 +173,20 @@ def create_app(
             },
         )
 
+    @app.exception_handler(DatasetHasDerivatives)
+    async def dataset_has_derivatives(request: Request, exc: DatasetHasDerivatives) -> JSONResponse:
+        return JSONResponse(
+            status_code=409, content={"detail": "El dataset tiene derivados; elimínalos primero."}
+        )
+
+    @app.exception_handler(InvalidPlan)
+    async def invalid_plan(request: Request, exc: InvalidPlan) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(PreviewConflict)
+    async def preview_conflict(request: Request, exc: PreviewConflict) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
+
     @app.exception_handler(EDANotFound)
     async def eda_not_found(request: Request, exc: EDANotFound) -> JSONResponse:
         return JSONResponse(
@@ -214,6 +233,11 @@ def create_app(
     app.include_router(create_router(projects, documents, datasets))
     app.include_router(create_document_router(documents, extraction))
     app.include_router(create_dataset_router(datasets))
+    app.include_router(
+        create_preparation_router(
+            PreparationService(datasets, SQLitePreparationRepository(dataset_repository))
+        )
+    )
     app.include_router(
         create_eda_router(
             EDAService(
