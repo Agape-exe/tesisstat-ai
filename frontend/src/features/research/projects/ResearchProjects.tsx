@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ProjectDocuments } from '../documents/ProjectDocuments';
 import { createProjectApi, ProjectApiError } from './api';
 import { DeleteProjectDialog } from './DeleteProjectDialog';
 import { ProjectForm } from './ProjectForm';
@@ -293,6 +294,7 @@ export function ResearchProjects({
               <dd>{dateLabel(view.project.updated_at)}</dd>
             </div>
           </dl>
+          <ProjectDocuments projectId={view.project.id} />
           <div className="rp-actions">
             <button
               onClick={() => {
