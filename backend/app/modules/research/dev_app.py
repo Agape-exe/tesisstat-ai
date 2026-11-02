@@ -10,6 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import Field
 
+from app.modules.conversation.models import ConversationError
+from app.modules.conversation.ports import ResponseGenerator
+from app.modules.conversation.routes import create_router as create_conversation_router
+from app.modules.conversation.service import ConversationService, ConversationSettings
+from app.modules.conversation.sqlite_repository import SQLiteConversationRepository
 from app.modules.research.datasets.readers import DatasetLimits, InvalidDataset
 from app.modules.research.datasets.routes import create_router as create_dataset_router
 from app.modules.research.datasets.sqlite_repository import (
@@ -58,12 +63,12 @@ from app.orchestration.analysis_routes import local_only
 from app.orchestration.analysis_service import ResearchAnalysisService
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
 from app.orchestration.statistics_routes import create_statistics_router
-from app.shared.adapters.cloudflare import CloudflareLanguageModel, CloudflareSettings
+from app.shared.adapters.cloudflare import CloudflareLanguageModel
 
 logger = logging.getLogger(__name__)
 
 
-class ResearchDevSettings(CloudflareSettings):
+class ResearchDevSettings(ConversationSettings):
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
@@ -93,6 +98,7 @@ def create_app(
     repository: ProjectRepository | None = None,
     settings: ResearchDevSettings | None = None,
     methodology_provider: MethodologyProvider | None = None,
+    conversation_provider: ResponseGenerator | None = None,
 ) -> FastAPI:
     settings = settings or ResearchDevSettings()
     if settings.app_env != "development":
@@ -116,7 +122,23 @@ def create_app(
             local_only(request)
         except HTTPException as exc:
             return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        if "/conversations" in request.url.path:
+            body = bytearray()
+            async for chunk in request.stream():
+                body.extend(chunk)
+                if len(body) > settings.conversation_max_request_bytes:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"detail": "La solicitud del chat es demasiado grande."},
+                    )
+            request._body = bytes(body)
         return await call_next(request)
+
+    @app.exception_handler(ConversationError)
+    async def conversation_error(request: Request, exc: ConversationError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status, content={"detail": exc.detail, "code": exc.code}
+        )
 
     @app.exception_handler(ProjectNotFound)
     async def not_found(request: Request, exc: ProjectNotFound) -> JSONResponse:
@@ -161,6 +183,8 @@ def create_app(
             content={
                 "detail": "Revisa los campos de metodología."
                 if is_review
+                else "Revisa los datos del mensaje."
+                if "/conversations" in request.url.path
                 else "Revisa los datos del proyecto.",
                 "errors": errors,
             },
@@ -238,6 +262,18 @@ def create_app(
         )
 
     projects = ProjectService(repository)
+    app.include_router(
+        create_conversation_router(
+            ConversationService(
+                projects,
+                SQLiteConversationRepository(settings.research_db_path),
+                conversation_provider
+                if conversation_provider is not None
+                else CloudflareLanguageModel(settings),
+                settings,
+            )
+        )
+    )
     document_repository = SQLiteDocumentRepository(
         settings.research_db_path, settings.research_documents_path
     )
