@@ -226,7 +226,10 @@ def test_real_pearson_columns(tmp_path, fmt):
     record, result = executed(case)
     assert record["plan"]["technique"] == "pearson"
     assert record["plan"]["assumptions_to_check"]
-    assert {item.name: item.value for item in result.metrics} == {"n": 4, "r": 1}
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 4
+    assert metrics["r"] == 1
+    assert metrics["p_value"] == 0
     assert any("p-valor" in warning for warning in result.warnings)
     assert result.assumptions  # Report actual engine diagnostic, not implied significance.
 
@@ -244,6 +247,7 @@ def test_real_spearman_columns_with_ordinal_variable(tmp_path):
     assert metrics["n"] == 4
     assert metrics["rho"] == pytest.approx(1)
     assert any("coeficiente de asociación" in warning for warning in result.warnings)
+    assert metrics["p_value"] == 0
 
 
 def test_real_chi_square_columns_with_categorical_variables(tmp_path):

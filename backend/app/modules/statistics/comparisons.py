@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from .distributions import student_t_two_sided
 from .inferential import (
     StatisticalCalculationError,
     TechniqueResult,
@@ -33,6 +34,12 @@ def _t_statistic(mean_difference: float, standard_error: float) -> float:
     return mean_difference / standard_error
 
 
+def _cohens_d(mean_difference: float, pooled_variance: float) -> float:
+    if pooled_variance == 0:
+        return 0.0
+    return mean_difference / math.sqrt(pooled_variance)
+
+
 def t_independent(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
     """Student's independent two-sample t test with pooled variance."""
 
@@ -52,6 +59,10 @@ def t_independent(left: Sequence[object], right: Sequence[object]) -> TechniqueR
             "mean_difference": mean_difference,
             "t_statistic": _t_statistic(mean_difference, standard_error),
             "degrees_of_freedom": float(degrees_of_freedom),
+            "p_value": student_t_two_sided(
+                _t_statistic(mean_difference, standard_error), float(degrees_of_freedom)
+            ),
+            "cohens_d": _cohens_d(mean_difference, pooled),
         },
     )
 
@@ -80,6 +91,9 @@ def t_welch(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
             "mean_difference": mean_difference,
             "t_statistic": _t_statistic(mean_difference, standard_error),
             "degrees_of_freedom": degrees_of_freedom,
+            "p_value": student_t_two_sided(
+                _t_statistic(mean_difference, standard_error), degrees_of_freedom
+            ),
         },
     )
 
@@ -100,5 +114,8 @@ def t_paired(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
             "mean_difference": mean_difference,
             "t_statistic": _t_statistic(mean_difference, standard_error),
             "degrees_of_freedom": float(len(differences) - 1),
+            "p_value": student_t_two_sided(
+                _t_statistic(mean_difference, standard_error), float(len(differences) - 1)
+            ),
         },
     )
