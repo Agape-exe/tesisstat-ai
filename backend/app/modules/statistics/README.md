@@ -49,3 +49,11 @@ resumen descriptivo. `planner.py` implementa `DeterministicStatisticalPlanner`: 
 `ResearchPackage` revisado, evalúa el tipo de hipótesis, roles, escalas y relación entre
 observaciones, y devuelve un `AnalysisPlan`. Cuando la información es insuficiente devuelve
 `needs_clarification` con preguntas explícitas; nunca inventa una técnica ni ejecuta cálculos.
+
+## Motor determinista (ST-03)
+
+`engine.py` implementa `DeterministicStatisticalEngine`. Exige planes `approved`, resuelve el
+dataset mediante un mapa de referencias autorizado y, por ahora, ejecuta únicamente
+`descriptive_summary`, devolviendo métricas, advertencias, comprobaciones y `AnalysisResult`.
+Las técnicas catalogadas pero aún no implementadas terminan explícitamente en estado `failed`;
+no se ejecuta código basado en nombres recibidos.
