@@ -102,6 +102,9 @@ la selección del test global previo queda como responsabilidad metodológica de
 `regression.py` implementa regresión lineal simple y múltiple mediante ecuaciones normales con
 eliminación gaussiana y pivoteo; también ofrece una ANCOVA inicial con indicadores de grupo y
 una covariable. Se detectan matrices singulares, muestras insuficientes y respuestas constantes.
+Los coeficientes incluyen error estándar e IC bilateral del 95 % calculado con la t de Student;
+Pearson incluye IC 95 % de *r* por transformación de Fisher cuando hay más de tres pares y la
+correlación no es perfecta.
 El adaptador Research→Statistics construye entradas explícitas para ambos tipos de regresión y
 para ANCOVA; exige columnas distintas, escalas compatibles y metadatos metodológicos completos.
 

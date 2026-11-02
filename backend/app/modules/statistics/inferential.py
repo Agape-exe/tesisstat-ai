@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from .descriptive import is_missing
-from .distributions import chi_square_survival, student_t_two_sided
+from .distributions import chi_square_survival, normal_critical_two_sided, student_t_two_sided
 
 
 class StatisticalCalculationError(ValueError):
@@ -82,18 +82,26 @@ def pearson(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
         if abs(correlation) == 1
         else correlation * math.sqrt(degrees_of_freedom / (1 - correlation**2))
     )
-    return TechniqueResult(
-        "pearson",
-        {
-            "n": float(len(x)),
-            "r": correlation,
-            "t_statistic": statistic,
-            "degrees_of_freedom": float(degrees_of_freedom),
-            "p_value": 0.0
-            if abs(correlation) == 1
-            else student_t_two_sided(statistic, float(degrees_of_freedom)),
-        },
-    )
+    metrics = {
+        "n": float(len(x)),
+        "r": correlation,
+        "t_statistic": statistic,
+        "degrees_of_freedom": float(degrees_of_freedom),
+        "p_value": 0.0
+        if abs(correlation) == 1
+        else student_t_two_sided(statistic, float(degrees_of_freedom)),
+    }
+    warnings = ()
+    if len(x) > 3 and abs(correlation) < 1:
+        transformed = math.atanh(correlation)
+        margin = normal_critical_two_sided(0.05) / math.sqrt(len(x) - 3)
+        metrics["r_ci_95_low"] = math.tanh(transformed - margin)
+        metrics["r_ci_95_high"] = math.tanh(transformed + margin)
+    else:
+        warnings = (
+            "El IC 95 % de Pearson requiere más de tres pares y una correlación no perfecta.",
+        )
+    return TechniqueResult("pearson", metrics, warnings)
 
 
 def _ranks(values: Sequence[float]) -> list[float]:

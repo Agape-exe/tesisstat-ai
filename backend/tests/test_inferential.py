@@ -19,6 +19,15 @@ def test_pearson_returns_perfect_linear_association():
     assert result.metrics["n"] == 4
     assert isclose(result.metrics["r"], 1.0)
     assert result.metrics["p_value"] == 0
+    assert result.warnings
+
+
+def test_pearson_reports_fisher_transformation_confidence_interval():
+    result = pearson([1, 2, 3, 4, 5], [1, 2, 4, 3, 5])
+
+    assert isclose(result.metrics["r"], 0.9)
+    assert isclose(result.metrics["r_ci_95_low"], 0.08610194023847766)
+    assert isclose(result.metrics["r_ci_95_high"], 0.9934375159687521)
 
 
 def test_spearman_uses_ranks_and_ignores_missing_pairs():

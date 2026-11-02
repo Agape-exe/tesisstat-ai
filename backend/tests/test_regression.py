@@ -19,6 +19,14 @@ def test_simple_regression_returns_reference_coefficients():
     assert result.metrics["model_p_value"] == 0
 
 
+def test_simple_regression_reports_coefficient_confidence_intervals():
+    result = linear_regression_simple([1, 2, 3, 4, 5], [2, 3, 5, 4, 6])
+
+    assert isclose(result.metrics["slope_standard_error"], 0.25166114784235843)
+    assert isclose(result.metrics["slope_ci_95_low"], 0.0991019098656295)
+    assert isclose(result.metrics["slope_ci_95_high"], 1.700898090134371)
+
+
 def test_multiple_regression_returns_reference_coefficients():
     result = linear_regression_multiple(
         [[1, 2], [2, 1], [3, 4], [4, 3], [5, 6], [6, 5]],
@@ -30,6 +38,8 @@ def test_multiple_regression_returns_reference_coefficients():
     assert isclose(result.metrics["beta_2"], 3)
     assert isclose(result.metrics["r_squared"], 1)
     assert result.metrics["model_p_value"] == 0
+    assert result.metrics["beta_1_ci_95_low"] < result.metrics["beta_1"]
+    assert result.metrics["beta_1_ci_95_high"] > result.metrics["beta_1"]
 
 
 def test_ancova_returns_group_effect_and_covariate_coefficient():
@@ -43,6 +53,8 @@ def test_ancova_returns_group_effect_and_covariate_coefficient():
     assert isclose(result.metrics["group_B_effect"], 2)
     assert isclose(result.metrics["covariate_beta"], 2)
     assert result.metrics["model_p_value"] == 0
+    assert result.metrics["group_B_effect_ci_95_low"] == 2
+    assert result.metrics["covariate_beta_ci_95_high"] == 2
 
 
 def test_regression_rejects_singular_design_and_small_samples():
