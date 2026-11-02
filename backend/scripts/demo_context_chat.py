@@ -53,7 +53,7 @@ class LocalContextProvider:
         return "\n\n".join(lines)
 
 
-def seed(app):
+def seed(app, *, include_analysis=True):
     """Use normal HTTP workflows, including explicit approval outside the chat."""
     client = TestClient(app)
     if client.get("/api/research/projects").json():
@@ -163,6 +163,8 @@ def seed(app):
         )
         request("PUT", root + "/package/configuration", json=config)
         package = request("POST", root + "/package/build")
+        if not include_analysis:
+            continue
         record = request(
             "POST",
             root + "/analysis/plan",

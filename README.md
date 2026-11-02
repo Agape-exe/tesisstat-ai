@@ -50,6 +50,12 @@ secretos en variables `VITE_*`. La revisión manual no necesita Cloudflare ni cr
 
 ## Datos ficticios y demostración
 
+La Sesión 17A integra el chat con un grafo LangGraph local de investigación, planificación
+y conversación, con una llamada al proveedor como máximo por turno. Consulta
+[la arquitectura y demostración multiagente](docs/ORQUESTACION_MULTIAGENTE.md).
+Desde `backend/`, `uv run python -m scripts.demo_multiagent` recorre cuatro escenarios
+con fuentes sintéticas y un proveedor simulado, sin consumir Qwen3 ni ejecutar estadísticas.
+
 Desde `backend/`, genera entradas reproducibles:
 
 ```powershell

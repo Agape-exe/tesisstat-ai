@@ -1,8 +1,12 @@
 # Research Understanding Agent
 
-La implementación de sesión 6 vive en `app.modules.research.methodology.service.MethodologyService`.
-Es el caso de uso Research Understanding: reutiliza la extracción textual, un puerto de IA y
-un repositorio. La composición de desarrollo está en `research.dev_app`; no se duplica la
-lógica ni se incorpora todavía un grafo LangGraph. Produce `MethodologyDraft` local, incompleto
-y no revisado; nunca un ResearchPackage automático. La revisión manual corresponde a sesión 7.
-Los documentos son datos no confiables. Ver `docs/RESEARCH_METHODOLOGY_AI.md`.
+El nodo `research` de la Sesión 17A vive en `agent.py`. Consulta `ResearchContextBuilder`
+para recuperar objetivos, hipótesis, variables, dimensiones, escalas, metodología revisada,
+metadatos del dataset/EDA/preparación, paquete, planes y resultados con estado de vigencia.
+Informa advertencias y referencias verificadas. No llama al modelo ni repite extracción.
+
+La extracción de documentos de la sesión 6 conserva su caso de uso independiente en
+`app.modules.research.methodology.service.MethodologyService`; produce borradores que
+requieren revisión humana. El chat no invoca ese proceso ni confirma borradores.
+
+Ver [arquitectura y demo](../../../../../docs/ORQUESTACION_MULTIAGENTE.md).

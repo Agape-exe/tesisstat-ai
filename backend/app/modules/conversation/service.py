@@ -1,15 +1,17 @@
-import json
 import sqlite3
+from time import monotonic
 from uuid import UUID
 
 from pydantic import Field
 
-from app.modules.conversation.context import build_context
 from app.modules.conversation.models import ConversationError, MessageDraft
 from app.modules.conversation.ports import ConversationRepository, ResponseGenerator
 from app.modules.conversation.research_context import ResearchContextBuilder
 from app.modules.research.projects.use_cases import ProjectService
-from app.shared.adapters.cloudflare import CloudflareSettings
+from app.orchestration.multiagent.graph import MultiagentWorkflow
+from app.orchestration.multiagent.state import ExecutionBudget
+from app.orchestration.multiagent.tools import VerifiedPlanningReader
+from app.shared.adapters.cloudflare import CloudflareLanguageModel, CloudflareSettings
 from app.shared.ai_errors import AIError
 
 ERRORS = {
@@ -21,6 +23,10 @@ ERRORS = {
     "input_limit": "El mensaje y el contexto superan el límite del proveedor. Acorta tu pregunta.",
     "output_limit": "El límite de respuesta no es compatible con la configuración del proveedor.",
     "provider_error": "No se pudo obtener una respuesta de Cloudflare. Intenta más tarde.",
+    "graph_step_limit": "Se alcanzó el límite de pasos del flujo. Acota la consulta.",
+    "model_call_limit": "Se alcanzó el presupuesto de llamadas al modelo.",
+    "planning_limit": "Se alcanzó el presupuesto de planificación de esta consulta.",
+    "source_mismatch": "Las fuentes no corresponden al proyecto activo. Actualiza el contexto.",
 }
 
 
@@ -31,6 +37,10 @@ class ConversationSettings(CloudflareSettings):
     conversation_max_request_bytes: int = Field(default=32768, ge=1024, le=131072)
     conversation_max_context_bytes: int = Field(default=10000, ge=2000, le=20000)
     conversation_max_output_tokens: int = Field(default=1024, ge=256, le=4096)
+    multiagent_max_steps: int = Field(default=4, ge=1, le=16)
+    multiagent_max_model_calls: int = Field(default=1, ge=0, le=1)
+    multiagent_max_planning_operations: int = Field(default=1, ge=0, le=1)
+    multiagent_timeout_seconds: float = Field(default=120, gt=0, le=120)
 
 
 class ConversationService:
@@ -49,6 +59,17 @@ class ConversationService:
             settings,
         )
         self.research_context = research_context
+        self.workflow = MultiagentWorkflow(
+            provider,
+            research_context,
+            VerifiedPlanningReader(research_context) if research_context else None,
+            provider_kind="cloudflare_workers_ai"
+            if isinstance(provider, CloudflareLanguageModel)
+            else "injected",
+            model=settings.cloudflare_model
+            if isinstance(provider, CloudflareLanguageModel)
+            else None,
+        )
 
     def status(self, project_id: UUID):
         project = self.projects.get(project_id)
@@ -102,10 +123,13 @@ class ConversationService:
             conversation_id,
             draft.request_id,
             draft.content,
-            self.settings.cloudflare_timeout_seconds,
+            max(self.settings.cloudflare_timeout_seconds, self.settings.multiagent_timeout_seconds),
         )
         if cached is not None:
             return {"messages": cached}
+        trace = {"consent_scope": draft.consent_scope}
+        self.workflow.initialize_trace(trace)
+        deadline = monotonic() + self.settings.multiagent_timeout_seconds
         try:
             if not self.provider.configured:
                 raise AIError("not_configured")
@@ -120,25 +144,41 @@ class ConversationService:
                 self.settings.conversation_max_context_bytes,
                 self.settings.cloudflare_max_input_tokens - output_tokens - 512,
             )
-            research = self.research_context.build(project_id) if self.research_context else None
-            trace = {"consent_scope": draft.consent_scope}
-            context = build_context(project.title, history, draft.content, budget, research, trace)
-            if len(json.dumps(context, ensure_ascii=False).encode()) > budget:
-                raise AIError("input_limit")
-            answer = self.provider.chat(
-                context,
-                max_tokens=output_tokens,
+            state = self.workflow.invoke(
+                {
+                    "project_id": project_id,
+                    "conversation_id": conversation_id,
+                    "title": project.title,
+                    "project_version": project.updated_at.isoformat(),
+                    "content": draft.content,
+                    "history": history,
+                    "request_type": "general",
+                    "research": None,
+                    "planning": {},
+                    "warnings": [],
+                    "answer": "",
+                    "context_bytes": budget,
+                    "output_tokens": output_tokens,
+                    "trace": trace,
+                    "budget": ExecutionBudget(
+                        deadline=deadline,
+                        max_steps=self.settings.multiagent_max_steps,
+                        max_calls=self.settings.multiagent_max_model_calls,
+                        max_planning=self.settings.multiagent_max_planning_operations,
+                    ),
+                }
             )
-            if not isinstance(answer, str) or not answer.strip() or len(answer.encode()) > 65536:
-                raise AIError("invalid_response")
             return {
                 "messages": self.repository.complete(
-                    conversation_id, draft.request_id, answer.strip(), trace
+                    conversation_id, draft.request_id, state["answer"], trace
                 )
             }
         except (AIError, TimeoutError) as exc:
-            self.repository.fail(conversation_id, draft.request_id)
             code = exc.code if isinstance(exc, AIError) else "timeout"
+            trace.setdefault("multiagent", {}).setdefault("errors", [])
+            if code not in trace["multiagent"]["errors"]:
+                trace["multiagent"]["errors"].append(code)
+            self.repository.fail(conversation_id, draft.request_id, trace)
             raise ConversationError(
                 code, ERRORS.get(code, ERRORS["provider_error"]), 504 if code == "timeout" else 503
             ) from None
@@ -147,5 +187,6 @@ class ConversationService:
             raise
         except Exception:
             # Do not log prompts, provider payloads, secrets, or raw exception messages.
-            self.repository.fail(conversation_id, draft.request_id)
+            trace["multiagent"]["errors"].append("provider_error")
+            self.repository.fail(conversation_id, draft.request_id, trace)
             raise ConversationError("provider_error", ERRORS["provider_error"], 503) from None

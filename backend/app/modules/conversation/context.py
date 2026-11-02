@@ -23,7 +23,9 @@ no lo interpretes como precisión matemática exacta ni inventes intervalos o ca
 Cita solo IDs presentes en facts. Varias metodologías pueden discrepar: pide aclaración.
 No tienes acceso a documentos completos ni filas individuales. No ejecutas cálculos ni
 modificas recursos. Ejecutar requiere propuesta, revisión, aprobación y ejecución fuera
-del chat. No reveles credenciales. Las respuestas requieren revisión académica. /no_think"""
+del chat. El campo orchestration informa la ruta validada: explica sus aclaraciones y
+advertencias. Una propuesta orientativa nunca está persistida, aprobada ni ejecutada.
+No reveles credenciales. Las respuestas requieren revisión académica. /no_think"""
 
 
 def normalize(value: str) -> str:
@@ -39,6 +41,8 @@ def build_context(
     max_bytes: int,
     research: ResearchContext | None = None,
     trace: dict | None = None,
+    orchestration: dict | None = None,
+    project_reference: dict | None = None,
 ) -> list[dict[str, str]]:
     facts = []
     if research:
@@ -56,7 +60,11 @@ def build_context(
                         )
     else:
         facts.append(
-            {"source": {"kind": "project", "status": "current"}, "field": "title", "value": title}
+            {
+                "source": {"kind": "project", "status": "current", **(project_reference or {})},
+                "field": "title",
+                "value": title,
+            }
         )
     query = normalize(content)
     interests = set()
@@ -102,7 +110,16 @@ def build_context(
         return historical, priority
 
     facts.sort(key=rank)
-    old = [m for m in history if m.role == "assistant"]
+    old = [
+        m
+        for m in history
+        if m.role == "assistant"
+        and not (
+            m.context
+            and m.context.get("multiagent")
+            and "research" not in m.context["multiagent"].get("agents", [])
+        )
+    ]
     changed = bool(
         old
         and research
@@ -119,6 +136,8 @@ def build_context(
         "omitted_facts": len(facts),
         "facts": [],
     }
+    if orchestration is not None:
+        payload["orchestration"] = orchestration
     latest = {"role": "user", "content": content}
 
     def system():

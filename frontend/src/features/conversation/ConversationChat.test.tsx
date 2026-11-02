@@ -119,6 +119,80 @@ function authorize() {
 function write(value = user.content) {
   fireEvent.change(screen.getByLabelText('Tu mensaje'), { target: { value } });
 }
+
+it.each([
+  [['conversation'], 'Conversación'],
+  [['research', 'conversation'], 'Investigación → Conversación'],
+  [
+    ['research', 'planning', 'conversation'],
+    'Investigación → Planificación estadística → Conversación',
+  ],
+])('muestra solo los agentes persistidos: %s', async (agents, label) => {
+  const api = service();
+  vi.mocked(api.get).mockResolvedValue(
+    detail([
+      user,
+      {
+        ...assistant,
+        context: {
+          snapshot: 'snapshot-v2',
+          sources: [],
+          omitted_facts: 0,
+          history_changed: false,
+          history_turns: 0,
+          multiagent: {
+            flow_version: '17a.1',
+            request_type: 'planning',
+            nodes: ['router', ...agents],
+            agents,
+            provider_calls: 1,
+            planning_status: 'proposed',
+            errors: [],
+          },
+        },
+      },
+    ]),
+  );
+  await ready(api);
+  expect(screen.getByText(`Agentes utilizados: ${label}`)).toBeInTheDocument();
+  if (!agents.includes('planning'))
+    expect(
+      screen.queryByText(/Planificación estadística/),
+    ).not.toBeInTheDocument();
+});
+
+it('abre mensajes anteriores sin inventar agentes', async () => {
+  const api = service();
+  vi.mocked(api.get).mockResolvedValue(detail([user, assistant]));
+  await ready(api);
+  expect(screen.getByText(assistant.content)).toBeInTheDocument();
+  expect(screen.queryByText(/Agentes utilizados:/)).not.toBeInTheDocument();
+});
+
+it('no presenta la consulta general sin snapshot como una respuesta desactualizada', async () => {
+  const api = service();
+  vi.mocked(api.get).mockResolvedValue(
+    detail([
+      {
+        ...assistant,
+        context: {
+          snapshot: null,
+          sources: [],
+          omitted_facts: 0,
+          history_changed: false,
+          history_turns: 0,
+        },
+      },
+    ]),
+  );
+  await ready(api);
+  fireEvent.click(
+    screen.getByText('Fuentes proporcionadas para esta respuesta'),
+  );
+  expect(
+    screen.queryByText(/Esta respuesta corresponde a una consulta anterior/),
+  ).not.toBeInTheDocument();
+});
 function send() {
   fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje' }));
 }
