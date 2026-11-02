@@ -11,6 +11,61 @@ export interface ResearchDataset {
   uploaded_at: string;
   active: boolean;
   warnings: string[];
+  source_dataset_id?: string | null;
+}
+
+export type PreparationKind =
+  | 'drop_duplicates'
+  | 'drop_missing'
+  | 'replace_missing'
+  | 'drop_columns'
+  | 'rename_column'
+  | 'trim'
+  | 'to_numeric';
+
+export interface PreparationOperation {
+  type: PreparationKind;
+  columns?: string[];
+  column?: string;
+  new_name?: string;
+  value?: string;
+  missing_markers?: ('NA' | 'N/A' | 'null' | 'none')[];
+  empty_is_missing?: boolean;
+}
+
+export interface PreparationPlan {
+  operations: PreparationOperation[];
+}
+export interface PreparationPreview {
+  preview_id: string;
+  plan_hash: string;
+  source_sha256: string;
+  expires_at: string;
+  original_rows: number;
+  result_rows: number;
+  original_columns: string[];
+  result_columns: string[];
+  rows_removed: number;
+  cells_changed: number;
+  warnings: string[];
+  rows: (string | null)[][];
+  operations: {
+    type: PreparationKind;
+    rows_removed: number;
+    cells_changed: number;
+    columns_removed: string[];
+    rename: Record<string, string>;
+  }[];
+}
+export interface PreparationRecord extends Omit<
+  PreparationPreview,
+  'rows' | 'expires_at'
+> {
+  project_id: string;
+  source_id: string;
+  result_id: string;
+  prepared_at: string;
+  plan: PreparationPlan;
 }
 
 export interface DatasetPreview {
@@ -73,6 +128,21 @@ export interface DatasetApi {
   delete(projectId: string, id: string): Promise<void>;
   getEda(projectId: string, id: string): Promise<EDAReport>;
   runEda(projectId: string, id: string, force?: boolean): Promise<EDAReport>;
+  previewPreparation?(
+    projectId: string,
+    id: string,
+    plan: PreparationPlan,
+  ): Promise<PreparationPreview>;
+  applyPreparation?(
+    projectId: string,
+    id: string,
+    plan: PreparationPlan,
+    preview: PreparationPreview,
+  ): Promise<PreparationRecord>;
+  listPreparations?(
+    projectId: string,
+    id: string,
+  ): Promise<PreparationRecord[]>;
 }
 
 export function createDatasetApi(
@@ -133,5 +203,24 @@ export function createDatasetApi(
       request(`${item(projectId, id)}/eda${force ? '?force=true' : ''}`, {
         method: 'POST',
       }),
+    previewPreparation: (projectId, id, plan) =>
+      request(`${item(projectId, id)}/preparation/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(plan),
+      }),
+    applyPreparation: (projectId, id, plan, preview) =>
+      request(`${item(projectId, id)}/preparation/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan,
+          preview_id: preview.preview_id,
+          plan_hash: preview.plan_hash,
+          confirm: true,
+        }),
+      }),
+    listPreparations: (projectId, id) =>
+      request(`${item(projectId, id)}/preparations`),
   };
 }

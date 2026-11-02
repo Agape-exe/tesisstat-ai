@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createDatasetApi } from './api';
 import { DatasetEDA } from './DatasetEDA';
+import { DatasetPreparation } from './DatasetPreparation';
 import type { DatasetApi, DatasetPreview, ResearchDataset } from './api';
 
 const defaultApi = createDatasetApi();
@@ -216,6 +217,9 @@ export function ProjectDatasets({
                   {(dataset.size / 1024).toFixed(1)} KB · {dataset.row_count}{' '}
                   filas · {dataset.column_count} columnas
                 </small>
+                {dataset.source_dataset_id && (
+                  <small>Derivado de {dataset.source_dataset_id}</small>
+                )}
                 {dataset.warnings.map((warning) => (
                   <p key={warning} role="status">
                     {warning}
@@ -250,6 +254,12 @@ export function ProjectDatasets({
                 projectId={projectId}
                 datasetId={dataset.id}
                 api={api}
+              />
+              <DatasetPreparation
+                projectId={projectId}
+                dataset={dataset}
+                api={api}
+                onCreated={() => setRetry((value) => value + 1)}
               />
               {selected === dataset.id && (
                 <div className="rp-dataset-preview">
