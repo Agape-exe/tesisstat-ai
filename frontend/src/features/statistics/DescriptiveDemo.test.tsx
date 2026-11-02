@@ -35,6 +35,34 @@ const api: DescriptiveApi = {
       },
     },
   ],
+  getPlan: async () => ({
+    id: 'plan-1',
+    research_package_id: 'package-1',
+    hypothesis_id: 'descriptive-demo',
+    dataset_id: 'sample',
+    status: 'approved',
+    technique: 'descriptive_summary',
+    rationale: 'Resumen de demostración',
+    assumptions_to_check: ['validación de entrada'],
+    pending_questions: [],
+  }),
+  execute: async () => ({
+    id: 'result-1',
+    analysis_plan_id: 'plan-1',
+    dataset_id: 'sample',
+    status: 'completed',
+    metrics: [{ name: 'score.mean', value: 3 }],
+    assumptions: [
+      {
+        name: 'descriptive_input_validation',
+        status: 'passed',
+        details: 'Dataset validado',
+      },
+    ],
+    warnings: [],
+    engine_version: 'statistics-engine-v1',
+    interpretation: 'Resumen ejecutado',
+  }),
 };
 
 describe('DescriptiveDemo', () => {
@@ -53,5 +81,7 @@ describe('DescriptiveDemo', () => {
     expect(
       screen.getByLabelText('Resumen de cuantiles de score'),
     ).toBeInTheDocument();
+    expect(await screen.findByText('Plan estadístico')).toBeInTheDocument();
+    expect(screen.getByText('Resumen ejecutado')).toBeInTheDocument();
   });
 });

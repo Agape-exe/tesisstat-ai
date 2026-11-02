@@ -1,15 +1,22 @@
+from io import BytesIO
 from math import isclose
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from openpyxl import Workbook
+from pytest import raises
 
 from app.modules.statistics.api import create_descriptive_app
+from app.modules.statistics.datasets import DatasetReadError
 from app.modules.statistics.descriptive import (
     describe_categorical,
     describe_column,
     describe_numeric,
     profile_column,
 )
+from app.modules.statistics.research_bridge import BytesDatasetReader
+from app.modules.statistics.service import describe_dataset
+from app.shared.contracts import DatasetReference
 
 
 def test_numeric_summary_uses_sample_statistics_and_type_7_quantiles():
@@ -65,6 +72,18 @@ def test_descriptive_endpoints_expose_only_allowlisted_fixture_data():
     summary = client.post("/datasets/association/descriptive", json={"columns": ["study_hours"]})
     assert summary.status_code == 200
     assert summary.json()[0]["numeric"]["valid_count"] == 30
+    plan = client.get("/datasets/association/plan")
+    assert plan.status_code == 200
+    assert plan.json()["status"] == "approved"
+    assert plan.json()["technique"] == "descriptive_summary"
+    analysis = client.post("/datasets/association/analysis")
+    assert analysis.status_code == 200
+    assert analysis.json()["status"] == "completed"
+    assert any(metric["name"] == "study_hours.mean" for metric in analysis.json()["metrics"])
+    report = client.get("/datasets/association/report?format=pdf")
+    assert report.status_code == 200
+    assert report.headers["content-type"] == "application/pdf"
+    assert report.content.startswith(b"%PDF-1.4")
     cors = client.options(
         "/datasets/association/columns",
         headers={
@@ -92,3 +111,104 @@ def test_descriptive_endpoints_expose_only_allowlisted_fixture_data():
         == 422
     )
     assert client.get("/datasets/nope/columns").status_code == 404
+
+
+def _reference(
+    *, dataset_id: str, format: str, row_count: int, columns: list[str]
+) -> DatasetReference:
+    return DatasetReference(
+        schema_version="1.0.0",
+        id=dataset_id,
+        location="opaque://research/project-1/dataset-1",
+        format=format,
+        row_count=row_count,
+        columns=columns,
+        synthetic=True,
+    )
+
+
+def test_research_bridge_describes_a_controlled_csv_reference():
+    reference = _reference(
+        dataset_id="dataset-1",
+        format="csv",
+        row_count=4,
+        columns=["participant_id", "score", "group"],
+    )
+    payload = b"participant_id,score,group\nSYN-1,10,A\nSYN-2,20,A\nSYN-3,,B\nSYN-4,30,B\n"
+    reader = BytesDatasetReader(lambda _: payload)
+
+    results = describe_dataset(reference, reader, ["score", "group"])
+
+    assert results[0].numeric is not None
+    assert results[0].numeric.valid_count == 3
+    assert results[0].numeric.missing_count == 1
+    assert results[0].numeric.mean == 20
+    assert results[1].categorical is not None
+    assert [(item.value, item.count) for item in results[1].categorical.frequencies] == [
+        ("A", 2),
+        ("B", 2),
+    ]
+
+
+def test_research_bridge_reads_xlsx_and_keeps_formula_warning():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["score", "group"])
+    sheet.append([10, "A"])
+    sheet.append([20, "B"])
+    sheet.append(["=SUM(10,20)", "B"])
+    output = BytesIO()
+    workbook.save(output)
+    reference = _reference(
+        dataset_id="dataset-xlsx",
+        format="xlsx",
+        row_count=3,
+        columns=["score", "group"],
+    )
+    reader = BytesDatasetReader(lambda _: output.getvalue())
+
+    table = reader.read(reference)
+    results = describe_dataset(reference, reader, ["score"])
+
+    assert table.warnings == (
+        "El archivo contiene fórmulas: se muestran como texto y no se calculan.",
+    )
+    assert results[0].kind == "categorical"
+    assert results[0].categorical is not None
+    assert results[0].categorical.valid_count == 3
+
+
+def test_research_bridge_rejects_metadata_mismatch_and_does_not_open_location():
+    reference = _reference(
+        dataset_id="dataset-1",
+        format="csv",
+        row_count=99,
+        columns=["score"],
+    )
+    reader = BytesDatasetReader(
+        lambda received: b"score\n10\n" if received.location.startswith("opaque://") else b""
+    )
+
+    try:
+        describe_dataset(reference, reader, ["score"])
+    except ValueError as error:
+        assert "filas" in str(error)
+    else:
+        raise AssertionError("A metadata mismatch must be rejected")
+
+
+def test_research_bridge_rejects_invalid_bytes_and_unknown_columns():
+    reference = _reference(
+        dataset_id="dataset-1",
+        format="csv",
+        row_count=1,
+        columns=["score"],
+    )
+    reader = BytesDatasetReader(lambda _: b"score\n10\n")
+
+    with raises(ValueError, match="Columnas desconocidas"):
+        describe_dataset(reference, reader, ["missing"])
+
+    invalid_reader = BytesDatasetReader(lambda _: b"score\n\xff\n")
+    with raises(DatasetReadError, match="UTF-8"):
+        invalid_reader.read(reference)
