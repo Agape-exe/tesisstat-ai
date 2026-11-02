@@ -12,6 +12,25 @@ export interface Message {
   content: string;
   created_at: string;
   sequence: number;
+  context?: ContextTrace | null;
+}
+export interface ContextSource {
+  kind: string;
+  id: string;
+  status: string;
+  version: string;
+}
+export interface ContextTrace {
+  snapshot: string;
+  sources: ContextSource[];
+  omitted_facts: number;
+  history_changed: boolean;
+  history_turns: number;
+}
+export interface ResearchContextStatus {
+  project_id: string;
+  snapshot: string;
+  sources: ContextSource[];
 }
 export interface ConversationDetail {
   conversation: Conversation;
@@ -24,6 +43,9 @@ export interface ProviderStatus {
   max_message_characters: number;
   timeout_seconds: number;
   context: string;
+  project_title?: string;
+  consent_scope?: string;
+  research_context?: ResearchContextStatus | null;
 }
 export class ConversationApiError extends Error {
   constructor(
@@ -102,6 +124,7 @@ export function createConversationApi(
             content,
             request_id: requestId,
             external_ai_consent: true,
+            consent_scope: 'research_context_v2',
           }),
         },
       ),

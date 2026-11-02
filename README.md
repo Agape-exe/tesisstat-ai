@@ -95,8 +95,10 @@ sin cambios. [Guía de contratos](contracts/README.md), [fixtures](fixtures/READ
 ## Límites actuales
 
 Sin autenticación, Supabase ni despliegue público. La API de demo rechaza clientes/hosts
-externos y entornos distintos de desarrollo. Pearson devuelve `r` y `n`, sin p-valor ni
-conclusión de significancia. El PDF es un informe textual paginado con WinAnsi; los
+externos y entornos distintos de desarrollo. Pearson puede devolver `r`, `n`, `p_value`,
+`t_statistic` y `degrees_of_freedom`; el chat solo utiliza las métricas persistidas.
+Un p-valor representado como cero no debe describirse como probabilidad exactamente nula.
+El PDF es un informe textual paginado con WinAnsi; los
 caracteres fuera de esa codificación se sustituyen con aviso, y DOCX conserva Unicode.
 Los resultados históricos se pueden consultar, pero no exportar ni volver a ejecutar con
 fuentes desactualizadas. Las sesiones anteriores están documentadas en `docs/` como
@@ -105,4 +107,10 @@ antecedentes; los comandos vigentes de demostración están en esta guía y en l
 El detalle de investigación incluye **4. Asistente IA**, con conversaciones e historial SQLite.
 El envío requiere Cloudflare configurado y consentimiento explícito. Consulta configuración,
 pruebas y limitaciones en [CHAT_CONVERSACIONAL.md](docs/CHAT_CONVERSACIONAL.md).
-La conectividad real con Qwen3 queda pendiente de validación autorizada.
+La Sesión 16A incorpora metodología confirmada, metadatos del dataset, planes y
+resultados persistidos, con vigencia y trazabilidad por respuesta. Requiere aceptar
+el alcance ampliado del consentimiento. Consulta arquitectura, pruebas y validación
+manual en la [guía de contexto de investigación](docs/CONTEXTO_INVESTIGACION_CHAT.md).
+La conexión real del chat anterior fue validada por la usuaria; la validación del
+contexto ampliado con Qwen3 real queda pendiente. La demo reproducible con proveedor
+simulado no necesita credenciales ni realiza solicitudes externas.

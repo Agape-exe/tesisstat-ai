@@ -7,6 +7,7 @@ from pydantic import Field
 from app.modules.conversation.context import build_context
 from app.modules.conversation.models import ConversationError, MessageDraft
 from app.modules.conversation.ports import ConversationRepository, ResponseGenerator
+from app.modules.conversation.research_context import ResearchContextBuilder
 from app.modules.research.projects.use_cases import ProjectService
 from app.shared.adapters.cloudflare import CloudflareSettings
 from app.shared.ai_errors import AIError
@@ -39,6 +40,7 @@ class ConversationService:
         repository: ConversationRepository,
         provider: ResponseGenerator,
         settings: ConversationSettings,
+        research_context: ResearchContextBuilder | None = None,
     ):
         self.projects, self.repository, self.provider, self.settings = (
             projects,
@@ -46,16 +48,22 @@ class ConversationService:
             provider,
             settings,
         )
+        self.research_context = research_context
 
     def status(self, project_id: UUID):
-        self.projects.get(project_id)
+        project = self.projects.get(project_id)
         return {
             "provider_configured": self.provider.configured,
             "model": self.settings.cloudflare_model,
             "max_message_characters": self.settings.conversation_max_message_characters,
             "timeout_seconds": self.settings.cloudflare_timeout_seconds,
             "external_provider": "Cloudflare Workers AI",
-            "context": "Solo título e historial reciente; sin documentos ni resultados.",
+            "context": "Fuentes persistidas del proyecto, seleccionadas según tu pregunta.",
+            "consent_scope": "research_context_v2",
+            "project_title": project.title,
+            "research_context": self.research_context.build(project_id).summary()
+            if self.research_context
+            else None,
         }
 
     def create(self, project_id: UUID, title: str):
@@ -104,25 +112,28 @@ class ConversationService:
             history = self.repository.messages(
                 conversation_id, self.settings.conversation_history_turns * 2, completed_only=True
             )
+            output_tokens = min(
+                self.settings.conversation_max_output_tokens,
+                self.settings.cloudflare_max_output_tokens,
+            )
             budget = min(
                 self.settings.conversation_max_context_bytes,
-                self.settings.cloudflare_max_input_tokens - 512,
+                self.settings.cloudflare_max_input_tokens - output_tokens - 512,
             )
-            context = build_context(project.title, history, draft.content, budget)
+            research = self.research_context.build(project_id) if self.research_context else None
+            trace = {"consent_scope": draft.consent_scope}
+            context = build_context(project.title, history, draft.content, budget, research, trace)
             if len(json.dumps(context, ensure_ascii=False).encode()) > budget:
                 raise AIError("input_limit")
             answer = self.provider.chat(
                 context,
-                max_tokens=min(
-                    self.settings.conversation_max_output_tokens,
-                    self.settings.cloudflare_max_output_tokens,
-                ),
+                max_tokens=output_tokens,
             )
             if not isinstance(answer, str) or not answer.strip() or len(answer.encode()) > 65536:
                 raise AIError("invalid_response")
             return {
                 "messages": self.repository.complete(
-                    conversation_id, draft.request_id, answer.strip()
+                    conversation_id, draft.request_id, answer.strip(), trace
                 )
             }
         except (AIError, TimeoutError) as exc:

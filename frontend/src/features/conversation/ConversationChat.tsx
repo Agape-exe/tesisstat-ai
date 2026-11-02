@@ -15,6 +15,37 @@ const errorText = (error: unknown) =>
   error instanceof ConversationApiError
     ? error.message
     : 'No se pudo completar la operación del chat.';
+const sourceNames: Record<string, string> = {
+  project: 'Proyecto',
+  methodology: 'Metodología',
+  dataset: 'Dataset',
+  eda: 'Perfil EDA',
+  preparation: 'Preparación',
+  package: 'ResearchPackage',
+  plan: 'Plan estadístico',
+  result: 'Resultado',
+  sources: 'Fuentes',
+};
+const sourceStates: Record<string, string> = {
+  current: 'Vigente',
+  confirmed: 'Confirmada',
+  draft: 'Borrador: requiere confirmación',
+  missing: 'No disponible',
+  stale: 'Desactualizado: requiere actualización',
+  incomplete: 'Incompleto: revisa las fuentes y vinculaciones',
+  ready: 'Listo para generar; aún sin paquete',
+  warnings: 'Pendiente de generar con advertencias',
+  historical: 'Histórico: corresponde a fuentes anteriores',
+  proposed: 'Propuesto: pendiente de aprobación',
+  approved: 'Aprobado',
+  needs_clarification: 'Requiere aclaraciones',
+  completed: 'Ejecutado y completado',
+  failed: 'Fallido: sin resultados utilizables',
+  not_executed: 'No ejecutado',
+  original: 'Dataset original',
+  prepared: 'Preparación aplicada',
+  unverified: 'No se pudo verificar; actualiza las fuentes',
+};
 
 export function ConversationChat({
   projectId,
@@ -36,6 +67,8 @@ export function ConversationChat({
   const [deleting, setDeleting] = useState(false);
   const [more, setMore] = useState(true);
   const [refresh, setRefresh] = useState(0);
+  const [contextError, setContextError] = useState('');
+  const [contextBusy, setContextBusy] = useState(false);
   const locked = useRef(false);
   const active = useRef(true);
   const selection = useRef(0);
@@ -47,13 +80,25 @@ export function ConversationChat({
   useEffect(() => {
     active.current = true;
     const controller = new AbortController();
-    Promise.all([
-      api.status(projectId, controller.signal),
-      api.list(projectId, 0, controller.signal),
-    ])
-      .then(async ([provider, conversations]) => {
+    // Source failures must not block access to local conversation history.
+    api
+      .status(projectId, controller.signal)
+      .then((provider) => {
+        if (!controller.signal.aborted) {
+          setStatus(provider);
+          setContextError('');
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setContextError(
+            'No se pudo actualizar el contexto. Puedes consultar tu historial.',
+          );
+      });
+    api
+      .list(projectId, 0, controller.signal)
+      .then(async (conversations) => {
         if (controller.signal.aborted) return;
-        setStatus(provider);
         setItems(conversations);
         setMore(conversations.length > 0);
         let saved: string | null = null;
@@ -88,6 +133,49 @@ export function ConversationChat({
       controller.abort();
     };
   }, [api, projectId, selectedKey, refresh]);
+
+  async function refreshContext() {
+    setContextBusy(true);
+    try {
+      const provider = await api.status(projectId);
+      if (active.current) {
+        setStatus(provider);
+        setContextError('');
+      }
+    } catch {
+      if (active.current)
+        setContextError(
+          'No se pudo actualizar el contexto. Puedes consultar tu historial.',
+        );
+    } finally {
+      if (active.current) setContextBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const update = () => {
+      api
+        .status(projectId, controller.signal)
+        .then((provider) => {
+          if (!controller.signal.aborted) {
+            setStatus(provider);
+            setContextError('');
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted)
+            setContextError(
+              'No se pudo actualizar el contexto. Puedes consultar tu historial.',
+            );
+        });
+    };
+    window.addEventListener('focus', update);
+    return () => {
+      controller.abort();
+      window.removeEventListener('focus', update);
+    };
+  }, [api, projectId]);
 
   useEffect(() => {
     listEnd.current?.scrollIntoView?.({ block: 'nearest' });
@@ -183,6 +271,7 @@ export function ConversationChat({
           },
       );
       setDraft('');
+      void refreshContext();
     } catch (caught) {
       if (!active.current) return;
       setError(errorText(caught));
@@ -276,13 +365,56 @@ export function ConversationChat({
           <h3>Asistente IA</h3>
           <p>Una pregunta a la vez, avanza con tu investigación.</p>
         </div>
-        <span className="rp-badge">Qwen3 · Cloudflare</span>
+        <span className="rp-badge">
+          {status?.model === 'simulado-local-sin-red'
+            ? 'Proveedor simulado · Sin red'
+            : 'Qwen3 · Cloudflare'}
+        </span>
       </header>
       <p className="rp-hint">
-        Solo se utiliza el título del proyecto y el historial reciente. Los
-        documentos, datasets y resultados todavía no están conectados. Revisa
-        las respuestas con criterio académico.
+        El contexto se verifica para cada pregunta. El historial puede referirse
+        a versiones anteriores. Revisa las respuestas con criterio académico.
+        Demostración local sin autenticación: usa únicamente información
+        ficticia.
       </p>
+      <section className="chat-context" aria-label="Contexto de investigación">
+        <div className="chat-toolbar">
+          <h4>Contexto de investigación</h4>
+          <button
+            className="rp-secondary"
+            disabled={sending || contextBusy}
+            onClick={() => void refreshContext()}
+          >
+            {contextBusy ? 'Actualizando contexto…' : 'Actualizar contexto'}
+          </button>
+        </div>
+        <p>
+          <strong>Proyecto activo:</strong> {status?.project_title ?? projectId}
+        </p>
+        {contextError && (
+          <p role="status" className="chat-warning">
+            {contextError}
+          </p>
+        )}
+        {status?.research_context ? (
+          <dl className="chat-source-grid">
+            {status.research_context.sources
+              .filter((s) => s.kind !== 'project')
+              .map((s) => (
+                <div key={`${s.kind}:${s.id}`}>
+                  <dt>{sourceNames[s.kind] ?? s.kind}</dt>
+                  <dd>{sourceStates[s.status] ?? s.status}</dd>
+                </div>
+              ))}
+          </dl>
+        ) : (
+          <p>Los estados de las fuentes aún no se han verificado.</p>
+        )}
+        <small>
+          Un borrador no confirma la metodología. Generar un paquete y ejecutar
+          análisis requieren los pasos de revisión del sistema.
+        </small>
+      </section>
       {loading && <p role="status">Cargando conversaciones…</p>}
       {error && (
         <div role="alert" className="rp-error">
@@ -398,6 +530,42 @@ export function ConversationChat({
                     ) : (
                       <p>{m.content}</p>
                     )}
+                    {m.role === 'assistant' && m.context && (
+                      <details className="chat-provenance">
+                        <summary>
+                          Fuentes proporcionadas para esta respuesta
+                        </summary>
+                        {m.context.history_changed && (
+                          <p>
+                            El historial contiene referencias a fuentes
+                            anteriores o sin trazabilidad.
+                          </p>
+                        )}
+                        {m.context.snapshot !==
+                          status?.research_context?.snapshot && (
+                          <p>
+                            Esta respuesta corresponde a una consulta anterior;
+                            comprueba las fuentes actuales.
+                          </p>
+                        )}
+                        {m.context.omitted_facts > 0 && (
+                          <p>
+                            Se omitieron {m.context.omitted_facts} datos
+                            completos por el límite de contexto. Haz una
+                            pregunta más específica.
+                          </p>
+                        )}
+                        {m.context.sources.map((s) => (
+                          <p key={`${s.kind}:${s.id}`}>
+                            {sourceNames[s.kind] ?? s.kind}:{' '}
+                            {sourceStates[s.status] ?? s.status}
+                            <small>
+                              Referencia: {s.id} · Versión: {s.version}
+                            </small>
+                          </p>
+                        ))}
+                      </details>
+                    )}
                     <time dateTime={m.created_at}>
                       {new Date(m.created_at).toLocaleTimeString('es-PE', {
                         hour: '2-digit',
@@ -421,9 +589,12 @@ export function ConversationChat({
                     onChange={(e) => setConsent(e.target.checked)}
                     disabled={sending}
                   />{' '}
-                  Autorizo enviar mis mensajes, el título y el historial
-                  reciente a Cloudflare Workers AI para su procesamiento. Usaré
-                  solo información ficticia.
+                  Autorizo enviar mi mensaje, el título, el historial reciente,
+                  información metodológica seleccionada, metadatos del dataset y
+                  métricas estadísticas verificadas a Cloudflare Workers AI. No
+                  se envían documentos completos ni datos individuales del
+                  dataset. Usaré solo información ficticia. Sin aceptar puedo
+                  consultar mi historial local.
                 </label>
               </div>
               <form

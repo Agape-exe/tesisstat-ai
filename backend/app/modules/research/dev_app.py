@@ -12,6 +12,7 @@ from pydantic import Field
 
 from app.modules.conversation.models import ConversationError
 from app.modules.conversation.ports import ResponseGenerator
+from app.modules.conversation.research_context import ResearchContextBuilder
 from app.modules.conversation.routes import create_router as create_conversation_router
 from app.modules.conversation.service import ConversationService, ConversationSettings
 from app.modules.conversation.sqlite_repository import SQLiteConversationRepository
@@ -262,18 +263,6 @@ def create_app(
         )
 
     projects = ProjectService(repository)
-    app.include_router(
-        create_conversation_router(
-            ConversationService(
-                projects,
-                SQLiteConversationRepository(settings.research_db_path),
-                conversation_provider
-                if conversation_provider is not None
-                else CloudflareLanguageModel(settings),
-                settings,
-            )
-        )
-    )
     document_repository = SQLiteDocumentRepository(
         settings.research_db_path, settings.research_documents_path
     )
@@ -349,6 +338,30 @@ def create_app(
     )
     app.include_router(create_analysis_router(app.state.research_analysis))
     app.include_router(create_statistics_router(app.state.research_analysis))
+    context = ResearchContextBuilder(
+        projects,
+        documents,
+        methodology_repository,
+        datasets,
+        EDAService(datasets, SQLiteEDARepository(settings.research_db_path), ExploratoryAnalyzer()),
+        packages,
+        app.state.research_analysis,
+        SQLitePreparationRepository(dataset_repository),
+    )
+    app.state.conversation_context = context
+    app.include_router(
+        create_conversation_router(
+            ConversationService(
+                projects,
+                SQLiteConversationRepository(settings.research_db_path),
+                conversation_provider
+                if conversation_provider is not None
+                else CloudflareLanguageModel(settings),
+                settings,
+                context,
+            )
+        )
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:

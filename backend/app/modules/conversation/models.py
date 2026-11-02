@@ -20,6 +20,7 @@ class Message(BaseModel):
     content: str
     created_at: datetime
     sequence: int
+    context: dict | None = None
 
 
 class ConversationDraft(BaseModel):
@@ -32,6 +33,7 @@ class MessageDraft(BaseModel):
     content: str = Field(min_length=1, max_length=16000)
     request_id: UUID
     external_ai_consent: Literal[True]
+    consent_scope: Literal["research_context_v2"]
 
 
 class ConversationError(Exception):
