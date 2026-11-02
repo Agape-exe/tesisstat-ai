@@ -10,6 +10,7 @@ from app.shared.adapters.fixtures import (
     FixtureStatisticalEngine,
 )
 from app.shared.adapters.supabase import SupabaseAdapter
+from app.shared.ai_errors import AIError
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -36,8 +37,8 @@ def test_independent_modules_can_exchange_fixture_contracts():
 def test_external_adapters_fail_explicitly_without_network():
     import asyncio
 
-    settings = Settings(_env_file=None)
-    with pytest.raises(NotImplementedError):
+    settings = Settings(_env_file=None, cloudflare_account_id="", cloudflare_api_token="")
+    with pytest.raises(AIError, match="not_configured"):
         asyncio.run(CloudflareLanguageModel(settings).complete("fixture", max_tokens=10))
     with pytest.raises(NotImplementedError):
         asyncio.run(SupabaseAdapter(settings).read("fixture"))

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createDocumentApi } from './api';
 import type { DocumentApi, ExtractionResult, ResearchDocument } from './api';
+import { DocumentMethodology } from '../methodology/DocumentMethodology';
 
 const defaultApi = createDocumentApi();
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -294,6 +295,17 @@ export function ProjectDocuments({
                         </div>
                       )}
                     </>
+                  )}
+                  {!extractionLoading && (
+                    <DocumentMethodology
+                      key={document.id}
+                      projectId={projectId}
+                      documentId={document.id}
+                      hasText={
+                        extraction?.status === 'completed' &&
+                        !!extraction.text.trim()
+                      }
+                    />
                   )}
                 </div>
               )}
