@@ -18,6 +18,7 @@ def test_pearson_returns_perfect_linear_association():
     assert result.technique == "pearson"
     assert result.metrics["n"] == 4
     assert isclose(result.metrics["r"], 1.0)
+    assert result.metrics["p_value"] == 0
 
 
 def test_spearman_uses_ranks_and_ignores_missing_pairs():
@@ -32,6 +33,7 @@ def test_chi_square_returns_reference_statistic():
 
     assert isclose(result.metrics["chi_square"], 2 / 3)
     assert result.metrics["degrees_of_freedom"] == 1
+    assert isclose(result.metrics["p_value"], 0.4142161782425252)
 
 
 def test_fisher_exact_returns_two_by_two_result():

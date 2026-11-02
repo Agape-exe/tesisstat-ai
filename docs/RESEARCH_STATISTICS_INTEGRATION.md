@@ -24,7 +24,6 @@ completo está en `backend/tests/research/test_analysis_e2e.py`, con documentos 
 archivos realmente almacenados por Research, planificador y motor existentes.
 
 La demo es local y solo para datos sintéticos. El flujo Research→Statistics conecta
-16 de las 19 técnicas del catálogo, incluyendo Tukey HSD y Games–Howell como
-comparaciones post-hoc multigrupo. ANCOVA y las dos variantes de regresión todavía
-necesitan adaptadores de integración coordinados; no se cambian los seis contratos
-ni las fórmulas del módulo Statistics.
+las 19 técnicas del catálogo, incluyendo Tukey HSD, Games–Howell, ANCOVA y regresión
+lineal simple y múltiple. La integración no cambia los seis contratos ni las fórmulas
+del módulo Statistics.

@@ -60,6 +60,7 @@ def research_case(
     fmt="csv",
     data=CSV,
     scales=("ratio", "ratio"),
+    variables=None,
     **config_changes,
 ):
     client, document, settings, provider = setup(
@@ -72,7 +73,11 @@ def research_case(
     content["general_objective"] = manual("Analizar horas y rendimiento ficticios")
     content["general_hypothesis"] = manual("Hipótesis sintética de horas y rendimiento")
     content["research_design"] = manual("Observacional con observaciones independientes")
-    ids = [str(uuid4()), str(uuid4())]
+    variable_specs = variables or [
+        ("Horas de estudio", "independent", scales[0], "horas_estudio"),
+        ("Rendimiento", "dependent", scales[1], "rendimiento"),
+    ]
+    ids = [str(uuid4()) for _ in variable_specs]
     content["variables"] = [
         {
             "id": variable_id,
@@ -83,13 +88,7 @@ def research_case(
             "indicators": [],
             "instrument_items": [],
         }
-        for variable_id, name, role, scale in zip(
-            ids,
-            ["Horas de estudio", "Rendimiento"],
-            ["independent", "dependent"],
-            scales,
-            strict=True,
-        )
+        for variable_id, (name, role, scale, _column) in zip(ids, variable_specs, strict=True)
     ]
     assert (
         client.put(
@@ -120,17 +119,12 @@ def research_case(
         observations="independent",
         variables=[
             {
-                "variable_id": ids[0],
-                "columns": ["horas_estudio"],
-                "role": "independent",
-                "measurement_scale": scales[0],
-            },
-            {
-                "variable_id": ids[1],
-                "columns": ["rendimiento"],
-                "role": "dependent",
-                "measurement_scale": scales[1],
-            },
+                "variable_id": variable_id,
+                "columns": [column],
+                "role": role,
+                "measurement_scale": scale,
+            }
+            for variable_id, (_name, role, scale, column) in zip(ids, variable_specs, strict=True)
         ],
         hypotheses=[
             {
@@ -232,7 +226,10 @@ def test_real_pearson_columns(tmp_path, fmt):
     record, result = executed(case)
     assert record["plan"]["technique"] == "pearson"
     assert record["plan"]["assumptions_to_check"]
-    assert {item.name: item.value for item in result.metrics} == {"n": 4, "r": 1}
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 4
+    assert metrics["r"] == 1
+    assert metrics["p_value"] == 0
     assert any("p-valor" in warning for warning in result.warnings)
     assert result.assumptions  # Report actual engine diagnostic, not implied significance.
 
@@ -250,6 +247,7 @@ def test_real_spearman_columns_with_ordinal_variable(tmp_path):
     assert metrics["n"] == 4
     assert metrics["rho"] == pytest.approx(1)
     assert any("coeficiente de asociación" in warning for warning in result.warnings)
+    assert metrics["p_value"] == 0
 
 
 def test_real_chi_square_columns_with_categorical_variables(tmp_path):
@@ -627,15 +625,53 @@ def test_clarification_cannot_be_approved_or_executed(tmp_path, changes):
     assert case.execute(record).status_code == 409
 
 
-def test_unsupported_adapter_preserves_technique_and_blocks_approval(tmp_path):
+def test_real_simple_regression_columns(tmp_path):
     case = research_case(tmp_path, kind="prediction")
-    record = proposed(case)
+    record, result = executed(case)
     assert record["plan"]["technique"] == "linear_regression_simple"
-    assert record["plan"]["status"] == "proposed"
-    assert not record["executable"]
-    assert "adaptador" in record["limitation"]
-    assert case.approve(record).status_code == 409
-    assert case.execute(record).status_code == 409
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 4
+    assert metrics["slope"] == pytest.approx(2)
+    assert metrics["r_squared"] == pytest.approx(1)
+
+
+def test_real_multiple_regression_columns(tmp_path):
+    case = research_case(
+        tmp_path,
+        kind="prediction",
+        data=(b"pred_1,pred_2,resultado\n1,2,9\n2,1,8\n3,4,19\n4,3,18\n5,6,29\n6,5,28\n"),
+        variables=[
+            ("Predictor 1", "independent", "ratio", "pred_1"),
+            ("Predictor 2", "covariate", "ratio", "pred_2"),
+            ("Resultado", "dependent", "ratio", "resultado"),
+        ],
+    )
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "linear_regression_multiple"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["predictor_count"] == 2
+    assert metrics["intercept"] == pytest.approx(1)
+    assert metrics["beta_1"] == pytest.approx(2)
+    assert metrics["beta_2"] == pytest.approx(3)
+
+
+def test_real_ancova_columns(tmp_path):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        data=(b"grupo,covariable,resultado\nA,1,3\nA,2,5\nB,1,5\nB,2,7\nB,3,9\nA,3,7\n"),
+        variables=[
+            ("Grupo", "independent", "nominal", "grupo"),
+            ("Covariable", "covariate", "ratio", "covariable"),
+            ("Resultado", "dependent", "ratio", "resultado"),
+        ],
+    )
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "ancova"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["group_count"] == 2
+    assert metrics["group_B_effect"] == pytest.approx(2)
+    assert metrics["covariate_beta"] == pytest.approx(2)
 
 
 @pytest.mark.parametrize(

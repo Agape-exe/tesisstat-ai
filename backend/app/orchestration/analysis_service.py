@@ -18,11 +18,14 @@ from app.modules.statistics.research_bridge import BytesDatasetReader
 from app.orchestration.analysis_inputs import (
     CONNECTED,
     analysis_input,
+    ancova_questions,
     categorical_association_questions,
     independent_questions,
+    multiple_regression_questions,
     paired_questions,
     pearson_questions,
     reliability_questions,
+    simple_regression_questions,
     spearman_questions,
 )
 from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
@@ -136,6 +139,9 @@ class ResearchAnalysisService:
             "kruskal_wallis",
             "tukey",
             "games_howell",
+            "ancova",
+            "linear_regression_simple",
+            "linear_regression_multiple",
             "cronbach_alpha",
         }:
             questions = {
@@ -153,6 +159,9 @@ class ResearchAnalysisService:
                 "kruskal_wallis": independent_questions,
                 "tukey": independent_questions,
                 "games_howell": independent_questions,
+                "ancova": ancova_questions,
+                "linear_regression_simple": simple_regression_questions,
+                "linear_regression_multiple": multiple_regression_questions,
                 "cronbach_alpha": reliability_questions,
             }[plan.technique](package, plan.hypothesis_id)
             if questions:
@@ -248,6 +257,9 @@ class ResearchAnalysisService:
                     "kruskal_wallis",
                     "tukey",
                     "games_howell",
+                    "ancova",
+                    "linear_regression_simple",
+                    "linear_regression_multiple",
                     "cronbach_alpha",
                 }:
                     table = reader.read(package.dataset)
@@ -287,13 +299,11 @@ class ResearchAnalysisService:
                         "se excluyeron pares incompletos según la política del motor."
                     )
                 result.warnings.append(
-                    "Se informa solo el coeficiente de asociación; no se calculó p-valor "
-                    "ni significancia. Revisa monotonicidad, normalidad y valores atípicos "
-                    "antes de interpretar."
+                    "Se informa el coeficiente de asociación y un p-valor bilateral aproximado. "
+                    "Revisa monotonicidad, independencia y valores atípicos antes de interpretar."
                     if record.plan.technique == "spearman"
-                    else "Se informa solo el coeficiente r; no se calculó p-valor ni "
-                    "significancia. Revisa linealidad, normalidad y valores atípicos "
-                    "antes de interpretar."
+                    else "Se informa el coeficiente r y un p-valor bilateral. Revisa linealidad, "
+                    "normalidad y valores atípicos antes de interpretar."
                 )
             record.result = result
         return result

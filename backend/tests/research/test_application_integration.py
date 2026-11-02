@@ -48,7 +48,9 @@ def test_full_preparation_analysis_export_restart(tmp_path, monkeypatch, kind):
     _, result = executed(case)
     values = {metric.name: metric.value for metric in result.metrics}
     if kind == "association":
-        assert values == {"n": 4, "r": 1}
+        assert values["n"] == 4
+        assert values["r"] == 1
+        assert values["p_value"] == 0
     if kind == "descriptive":
         assert values["horas_estudio.mean"] == 2.5
         assert values["rendimiento.mean"] == 5

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from .distributions import chi_square_survival
 from .inferential import (
     StatisticalCalculationError,
     TechniqueResult,
@@ -99,7 +100,23 @@ def kruskal_wallis(groups: Sequence[Sequence[object]]) -> TechniqueResult:
     h = 12 / (total * (total + 1)) * sum(
         rank_sum**2 / len(group) for rank_sum, group in zip(rank_sums, numeric_groups, strict=True)
     ) - 3 * (total + 1)
+    tie_counts: dict[float, int] = {}
+    for value in values:
+        tie_counts[value] = tie_counts.get(value, 0) + 1
+    correction = 1 - sum(count**3 - count for count in tie_counts.values()) / (total**3 - total)
+    if correction <= 0:
+        raise StatisticalCalculationError(
+            "Kruskal–Wallis no está definido cuando todos los rangos empatan."
+        )
+    h /= correction
+    degrees_of_freedom = len(groups) - 1
     return TechniqueResult(
         "kruskal_wallis",
-        {"n": float(total), "h": h, "degrees_of_freedom": float(len(groups) - 1)},
+        {
+            "n": float(total),
+            "h": h,
+            "degrees_of_freedom": float(degrees_of_freedom),
+            "p_value": chi_square_survival(h, float(degrees_of_freedom)),
+            "tie_correction": correction,
+        },
     )

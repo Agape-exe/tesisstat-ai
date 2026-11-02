@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from .descriptive import is_missing
+from .distributions import chi_square_survival, student_t_two_sided
 
 
 class StatisticalCalculationError(ValueError):
@@ -74,7 +75,25 @@ def pearson(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
     x, y = _paired_numbers(left, right)
     if len(x) < 3:
         raise StatisticalCalculationError("Pearson requiere al menos tres pares válidos.")
-    return TechniqueResult("pearson", {"n": float(len(x)), "r": _pearson(x, y)})
+    correlation = _pearson(x, y)
+    degrees_of_freedom = len(x) - 2
+    statistic = (
+        math.copysign(float.fromhex("0x1.fffffffffffffp+1023"), correlation)
+        if abs(correlation) == 1
+        else correlation * math.sqrt(degrees_of_freedom / (1 - correlation**2))
+    )
+    return TechniqueResult(
+        "pearson",
+        {
+            "n": float(len(x)),
+            "r": correlation,
+            "t_statistic": statistic,
+            "degrees_of_freedom": float(degrees_of_freedom),
+            "p_value": 0.0
+            if abs(correlation) == 1
+            else student_t_two_sided(statistic, float(degrees_of_freedom)),
+        },
+    )
 
 
 def _ranks(values: Sequence[float]) -> list[float]:
@@ -98,7 +117,26 @@ def spearman(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
     x, y = _paired_numbers(left, right)
     if len(x) < 3:
         raise StatisticalCalculationError("Spearman requiere al menos tres pares válidos.")
-    return TechniqueResult("spearman", {"n": float(len(x)), "rho": _pearson(_ranks(x), _ranks(y))})
+    rho = _pearson(_ranks(x), _ranks(y))
+    degrees_of_freedom = len(x) - 2
+    statistic = (
+        math.copysign(float.fromhex("0x1.fffffffffffffp+1023"), rho)
+        if abs(rho) == 1
+        else rho * math.sqrt(degrees_of_freedom / (1 - rho**2))
+    )
+    return TechniqueResult(
+        "spearman",
+        {
+            "n": float(len(x)),
+            "rho": rho,
+            "t_statistic": statistic,
+            "degrees_of_freedom": float(degrees_of_freedom),
+            "p_value": 0.0
+            if abs(rho) == 1
+            else student_t_two_sided(statistic, float(degrees_of_freedom)),
+        },
+        ("El p-valor de Spearman usa la aproximación t; úsalo con cautela en muestras pequeñas.",),
+    )
 
 
 def _paired_categories(left: Sequence[object], right: Sequence[object]) -> list[tuple[str, str]]:
@@ -145,12 +183,14 @@ def chi_square(left: Sequence[object], right: Sequence[object]) -> TechniqueResu
         for column, column_total in enumerate(column_totals):
             expected = row_total * column_total / total
             statistic += (table[row][column] - expected) ** 2 / expected
+    degrees_of_freedom = (len(rows) - 1) * (len(columns) - 1)
     return TechniqueResult(
         "chi_square",
         {
             "n": float(total),
             "chi_square": statistic,
-            "degrees_of_freedom": float((len(rows) - 1) * (len(columns) - 1)),
+            "degrees_of_freedom": float(degrees_of_freedom),
+            "p_value": chi_square_survival(statistic, float(degrees_of_freedom)),
         },
     )
 
