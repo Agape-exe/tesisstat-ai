@@ -66,10 +66,10 @@ observaciones, y devuelve un `AnalysisPlan`. Cuando la información es insuficie
 ## Motor determinista (ST-03)
 
 `engine.py` implementa `DeterministicStatisticalEngine`. Exige planes `approved`, resuelve el
-dataset mediante un mapa de referencias autorizado y, por ahora, ejecuta únicamente
-`descriptive_summary`, devolviendo métricas, advertencias, comprobaciones y `AnalysisResult`.
-Las técnicas catalogadas pero aún no implementadas terminan explícitamente en estado `failed`;
-no se ejecuta código basado en nombres recibidos.
+dataset mediante un mapa de referencias autorizado y despacha mediante una allowlist las
+técnicas implementadas en ST-04–ST-08, devolviendo métricas, advertencias, diagnósticos y
+`AnalysisResult`. Las entradas de columnas se inyectan mediante `AnalysisInput`; no se ejecuta
+código basado en nombres recibidos y los planes sin entradas suficientes terminan en `failed`.
 
 ## Técnicas inferenciales iniciales (ST-04)
 

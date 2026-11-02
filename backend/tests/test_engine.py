@@ -1,4 +1,5 @@
 from app.modules.statistics.engine import DeterministicStatisticalEngine
+from app.modules.statistics.execution import AnalysisInput
 from app.modules.statistics.research_bridge import BytesDatasetReader
 from app.shared.contracts import AnalysisPlan, DatasetReference
 
@@ -57,11 +58,11 @@ def test_engine_does_not_execute_unapproved_plan():
     assert "aprobado" in result.warnings[0]
 
 
-def test_engine_rejects_catalogued_but_not_yet_implemented_technique():
+def test_engine_requires_selected_columns_for_catalogued_technique():
     result = _engine().execute(_plan(technique="pearson"))
 
     assert result.status == "failed"
-    assert "no está implementada" in result.warnings[0]
+    assert "AnalysisInput" in result.warnings[0]
 
 
 def test_engine_rejects_unknown_dataset_reference():
@@ -74,3 +75,17 @@ def test_engine_rejects_unknown_dataset_reference():
 
     assert result.status == "failed"
     assert "referencia autorizada" in result.warnings[0]
+
+
+def test_engine_dispatches_an_allowlisted_pearson_plan_to_analysis_result():
+    plan = _plan(technique="pearson")
+    engine = DeterministicStatisticalEngine(
+        BytesDatasetReader(lambda _: b"score,group\n10,A\n20,A\n30,B\n"),
+        {"dataset-1": _reference()},
+        {plan.id: AnalysisInput(left=(1, 2, 3, 4), right=(2, 4, 6, 8))},
+    )
+
+    result = engine.execute(plan)
+
+    assert result.status == "completed"
+    assert {metric.name: metric.value for metric in result.metrics}["r"] == 1

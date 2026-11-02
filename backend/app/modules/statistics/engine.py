@@ -12,8 +12,23 @@ from app.shared.contracts import (
     Metric,
 )
 
+from .anova import anova, anova_welch, games_howell, tukey
+from .assumptions import homogeneity, normality
+from .comparisons import t_independent, t_paired, t_welch
 from .descriptive import DescriptiveResult
+from .execution import AnalysisInput
+from .inferential import (
+    StatisticalCalculationError,
+    TechniqueResult,
+    chi_square,
+    cronbach_alpha,
+    fisher_exact,
+    pearson,
+    spearman,
+)
+from .nonparametric import kruskal_wallis, mann_whitney, wilcoxon
 from .ports import DatasetReader
+from .regression import ancova, linear_regression_multiple, linear_regression_simple
 from .service import describe_table
 
 
@@ -21,15 +36,39 @@ class DeterministicStatisticalEngine:
     """Execute only techniques explicitly implemented by this engine version."""
 
     VERSION = "statistics-engine-v1"
-    _IMPLEMENTED_TECHNIQUES = frozenset({"descriptive_summary"})
+    _IMPLEMENTED_TECHNIQUES = frozenset(
+        {
+            "descriptive_summary",
+            "cronbach_alpha",
+            "pearson",
+            "spearman",
+            "t_independent",
+            "t_paired",
+            "t_welch",
+            "mann_whitney",
+            "wilcoxon",
+            "anova",
+            "anova_welch",
+            "kruskal_wallis",
+            "tukey",
+            "games_howell",
+            "chi_square",
+            "fisher_exact",
+            "ancova",
+            "linear_regression_simple",
+            "linear_regression_multiple",
+        }
+    )
 
     def __init__(
         self,
         reader: DatasetReader,
         references: Mapping[str, DatasetReference],
+        inputs: Mapping[str, AnalysisInput] | None = None,
     ) -> None:
         self._reader = reader
         self._references = references
+        self._inputs = inputs or {}
 
     def execute(self, plan: AnalysisPlan) -> AnalysisResult:
         if plan.status != "approved":
@@ -46,29 +85,120 @@ class DeterministicStatisticalEngine:
             )
         try:
             table = self._reader.read(reference)
-            descriptions = describe_table(table)
-        except (OSError, ValueError) as error:
+            descriptions = describe_table(table) if plan.technique == "descriptive_summary" else []
+            calculation = (
+                None
+                if plan.technique == "descriptive_summary"
+                else self._calculate(plan.technique, self._inputs.get(plan.id))
+            )
+        except (OSError, ValueError, StatisticalCalculationError) as error:
             return self._failed(plan, str(error))
+
+        metrics = self._metrics(descriptions)
+        warnings = list(table.warnings)
+        assumptions = [
+            AssumptionCheck(
+                name="descriptive_input_validation",
+                status="passed",
+                details="El dataset fue validado por DatasetReader antes del cálculo.",
+            )
+        ]
+        if calculation is not None:
+            metrics.extend(
+                Metric(name=name, value=value) for name, value in calculation.metrics.items()
+            )
+            warnings.extend(calculation.warnings)
+            assumptions.extend(self._assumption_checks(plan.technique, self._inputs[plan.id]))
         return AnalysisResult(
             schema_version="1.0.0",
             id=f"result-{plan.id}",
             analysis_plan_id=plan.id,
             dataset_id=plan.dataset_id,
             status="completed",
-            metrics=self._metrics(descriptions),
-            assumptions=[
-                AssumptionCheck(
-                    name="descriptive_input_validation",
-                    status="passed",
-                    details="El dataset fue validado por DatasetReader antes del cálculo.",
-                )
-            ],
-            warnings=list(table.warnings),
+            metrics=metrics,
+            assumptions=assumptions,
+            warnings=warnings,
             engine_version=self.VERSION,
             interpretation=(
-                "Se ejecutó un resumen descriptivo determinista sobre el dataset autorizado."
+                f"Se ejecutó {plan.technique} de forma determinista sobre el dataset autorizado."
             ),
         )
+
+    @staticmethod
+    def _calculate(technique: str | None, data: AnalysisInput | None) -> TechniqueResult:
+        if data is None:
+            raise StatisticalCalculationError(
+                "La técnica requiere columnas seleccionadas mediante AnalysisInput."
+            )
+        if technique == "cronbach_alpha":
+            return cronbach_alpha(data.matrix)
+        if technique == "pearson":
+            return pearson(data.left, data.right)
+        if technique == "spearman":
+            return spearman(data.left, data.right)
+        if technique == "t_independent":
+            return t_independent(data.left, data.right)
+        if technique == "t_paired":
+            return t_paired(data.left, data.right)
+        if technique == "t_welch":
+            return t_welch(data.left, data.right)
+        if technique == "mann_whitney":
+            return mann_whitney(data.left, data.right)
+        if technique == "wilcoxon":
+            return wilcoxon(data.left, data.right)
+        if technique == "anova":
+            return anova(data.groups)
+        if technique == "anova_welch":
+            return anova_welch(data.groups)
+        if technique == "kruskal_wallis":
+            return kruskal_wallis(data.groups)
+        if technique == "tukey":
+            return tukey(data.groups, data.labels or None)
+        if technique == "games_howell":
+            return games_howell(data.groups, data.labels or None)
+        if technique == "chi_square":
+            return chi_square(data.left, data.right)
+        if technique == "fisher_exact":
+            return fisher_exact(data.left, data.right)
+        if technique == "ancova":
+            return ancova(data.outcome, data.group, data.covariate)
+        if technique == "linear_regression_simple":
+            return linear_regression_simple(data.left, data.right)
+        if technique == "linear_regression_multiple":
+            return linear_regression_multiple(data.predictors, data.outcome)
+        raise StatisticalCalculationError(f"Técnica no permitida: {technique}")
+
+    @staticmethod
+    def _assumption_checks(technique: str, data: AnalysisInput) -> list[AssumptionCheck]:
+        checks: list[AssumptionCheck] = []
+        if technique in {"t_independent", "t_welch", "mann_whitney"} and data.groups:
+            diagnostic = homogeneity(data.groups)
+            checks.append(
+                AssumptionCheck(
+                    name=diagnostic.name,
+                    status=diagnostic.status,
+                    details=diagnostic.details,
+                )
+            )
+        if technique in {"pearson", "spearman", "linear_regression_simple"}:
+            diagnostic = normality(data.left)
+            checks.append(
+                AssumptionCheck(
+                    name=diagnostic.name,
+                    status=diagnostic.status,
+                    details=diagnostic.details,
+                )
+            )
+        if technique == "linear_regression_multiple":
+            diagnostic = normality(data.outcome)
+            checks.append(
+                AssumptionCheck(
+                    name=diagnostic.name,
+                    status=diagnostic.status,
+                    details=diagnostic.details,
+                )
+            )
+        return checks
 
     @staticmethod
     def _metrics(descriptions: list[DescriptiveResult]) -> list[Metric]:
