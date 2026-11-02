@@ -12,6 +12,8 @@ def test_independent_t_returns_reference_statistic_and_degrees_of_freedom():
     assert result.technique == "t_independent"
     assert result.metrics["degrees_of_freedom"] == 4
     assert isclose(result.metrics["t_statistic"], -3.6742346141747673)
+    assert isclose(result.metrics["p_value"], 0.021311641128756727)
+    assert isclose(result.metrics["cohens_d"], -3.0)
 
 
 def test_welch_t_uses_satterthwaite_degrees_of_freedom():

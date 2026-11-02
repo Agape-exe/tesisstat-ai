@@ -6,6 +6,7 @@ import math
 from collections.abc import Sequence
 from itertools import combinations
 
+from .distributions import f_survival
 from .inferential import StatisticalCalculationError, TechniqueResult, _number, _sample_variance
 
 
@@ -56,13 +57,16 @@ def anova(groups: Sequence[Sequence[object]]) -> TechniqueResult:
     mean_within = within / df_within
     if mean_within == 0:
         raise StatisticalCalculationError("La varianza intragrupo es cero; F no está definido.")
+    f_statistic = (between / df_between) / mean_within
     return TechniqueResult(
         "anova",
         {
             "n": float(total),
-            "f_statistic": (between / df_between) / mean_within,
+            "f_statistic": f_statistic,
             "degrees_of_freedom_between": float(df_between),
             "degrees_of_freedom_within": float(df_within),
+            "p_value": f_survival(f_statistic, float(df_between), float(df_within)),
+            "eta_squared": between / (between + within),
         },
     )
 
@@ -100,6 +104,9 @@ def anova_welch(groups: Sequence[Sequence[object]]) -> TechniqueResult:
             "f_statistic": f_statistic,
             "degrees_of_freedom_between": float(degrees_of_freedom_between),
             "degrees_of_freedom_within": degrees_of_freedom_within,
+            "p_value": f_survival(
+                f_statistic, float(degrees_of_freedom_between), degrees_of_freedom_within
+            ),
         },
     )
 
