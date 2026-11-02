@@ -6,7 +6,13 @@ from app.modules.statistics.datasets import DatasetTable
 from app.modules.statistics.execution import AnalysisInput
 from app.shared.contracts import AnalysisPlan, ResearchPackage
 
-CONNECTED = {"descriptive_summary", "pearson", "spearman"}
+CONNECTED = {
+    "descriptive_summary",
+    "pearson",
+    "spearman",
+    "chi_square",
+    "fisher_exact",
+}
 
 
 def pearson_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
@@ -44,30 +50,39 @@ def spearman_questions(package: ResearchPackage, hypothesis_id: str) -> list[str
     return questions
 
 
+def categorical_association_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Validate the Research metadata needed by categorical associations."""
+    questions = pearson_questions(package, hypothesis_id)
+    variables = {item.id: item for item in package.variables}
+    hypothesis = next(item for item in package.hypotheses if item.id == hypothesis_id)
+    selected = [variables[item] for item in hypothesis.variable_ids]
+    if any(item.measurement_scale not in {"nominal", "ordinal"} for item in selected):
+        questions.append("La asociación categórica requiere escalas nominales u ordinales.")
+    return questions
+
+
 def analysis_input(
     package: ResearchPackage, plan: AnalysisPlan, table: DatasetTable
 ) -> AnalysisInput:
-    questions = (
-        pearson_questions(package, plan.hypothesis_id)
-        if plan.technique == "pearson"
-        else spearman_questions(package, plan.hypothesis_id)
-        if plan.technique == "spearman"
-        else ["La técnica no admite esta entrada de dos columnas."]
+    questions = {
+        "pearson": pearson_questions,
+        "spearman": spearman_questions,
+        "chi_square": categorical_association_questions,
+        "fisher_exact": categorical_association_questions,
+    }.get(plan.technique, lambda *_: ["La técnica no admite esta entrada de dos columnas."])(
+        package, plan.hypothesis_id
     )
     if questions:
         raise HTTPException(409, "Las vinculaciones no permiten construir la entrada solicitada.")
     hypothesis = next(item for item in package.hypotheses if item.id == plan.hypothesis_id)
     variables = {item.id: item for item in package.variables}
     selected = [variables[item] for item in hypothesis.variable_ids]
-    allowed = (
-        {"interval", "ratio"}
-        if plan.technique == "pearson"
-        else {
-            "ordinal",
-            "interval",
-            "ratio",
-        }
-    )
+    allowed = {
+        "pearson": {"interval", "ratio"},
+        "spearman": {"ordinal", "interval", "ratio"},
+        "chi_square": {"nominal", "ordinal"},
+        "fisher_exact": {"nominal", "ordinal"},
+    }.get(plan.technique, set())
     if any(item.measurement_scale not in allowed for item in selected):
         raise HTTPException(409, "La técnica requiere escalas de medición confirmadas.")
     try:

@@ -252,6 +252,21 @@ def test_real_spearman_columns_with_ordinal_variable(tmp_path):
     assert any("coeficiente de asociación" in warning for warning in result.warnings)
 
 
+def test_real_chi_square_columns_with_categorical_variables(tmp_path):
+    case = research_case(
+        tmp_path,
+        kind="association",
+        scales=("nominal", "nominal"),
+        data=b"horas_estudio,rendimiento\nA,X\nA,Y\nB,X\nB,Y\n",
+    )
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "chi_square"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 4
+    assert metrics["chi_square"] == pytest.approx(0)
+    assert metrics["degrees_of_freedom"] == 1
+
+
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):
     case = research_case(
         tmp_path,

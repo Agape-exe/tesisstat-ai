@@ -18,6 +18,7 @@ from app.modules.statistics.research_bridge import BytesDatasetReader
 from app.orchestration.analysis_inputs import (
     CONNECTED,
     analysis_input,
+    categorical_association_questions,
     pearson_questions,
     spearman_questions,
 )
@@ -117,12 +118,13 @@ class ResearchAnalysisService:
             raise HTTPException(409, "El planificador devolvió referencias incompatibles.")
         # A new proposal must never reuse an earlier approval, even for the same hypothesis.
         plan.id = str(uuid4())
-        if plan.technique in {"pearson", "spearman"}:
-            questions = (
-                pearson_questions(package, plan.hypothesis_id)
-                if plan.technique == "pearson"
-                else spearman_questions(package, plan.hypothesis_id)
-            )
+        if plan.technique in {"pearson", "spearman", "chi_square", "fisher_exact"}:
+            questions = {
+                "pearson": pearson_questions,
+                "spearman": spearman_questions,
+                "chi_square": categorical_association_questions,
+                "fisher_exact": categorical_association_questions,
+            }[plan.technique](package, plan.hypothesis_id)
             if questions:
                 plan.status = "needs_clarification"
                 plan.pending_questions.extend(questions)
@@ -182,7 +184,12 @@ class ResearchAnalysisService:
             )
             try:
                 inputs = {}
-                if record.plan.technique in {"pearson", "spearman"}:
+                if record.plan.technique in {
+                    "pearson",
+                    "spearman",
+                    "chi_square",
+                    "fisher_exact",
+                }:
                     table = reader.read(package.dataset)
                     inputs[plan_id] = analysis_input(package, record.plan, table)
                     engine = DeterministicStatisticalEngine(
