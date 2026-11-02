@@ -40,6 +40,9 @@ from app.modules.research.methodology.service import (
     MethodologyService,
 )
 from app.modules.research.methodology.sqlite_repository import SQLiteMethodologyRepository
+from app.modules.research.packages.routes import create_router as create_package_router
+from app.modules.research.packages.sqlite_repository import SQLitePackageRepository
+from app.modules.research.packages.use_cases import PackageService
 from app.modules.research.preparation.engine import InvalidPlan
 from app.modules.research.preparation.routes import create_router as create_preparation_router
 from app.modules.research.preparation.sqlite_repository import SQLitePreparationRepository
@@ -258,8 +261,18 @@ def create_app(
             retry_seconds=settings.research_methodology_retry_seconds,
         ),
     )
+    reviews = ReviewService(methodology, methodology_repository)
+    app.include_router(create_methodology_router(methodology, reviews))
     app.include_router(
-        create_methodology_router(methodology, ReviewService(methodology, methodology_repository))
+        create_package_router(
+            PackageService(
+                projects,
+                documents,
+                reviews,
+                datasets,
+                SQLitePackageRepository(settings.research_db_path),
+            )
+        )
     )
 
     @app.get("/health")

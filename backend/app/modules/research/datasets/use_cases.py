@@ -88,6 +88,15 @@ class DatasetService:
             raise DatasetNotFound
         return self.get(project_id, dataset_id)
 
+    def set_synthetic(self, project_id: UUID, dataset_id: UUID, synthetic: bool) -> Dataset:
+        dataset = self.get(project_id, dataset_id)
+        if dataset.source_dataset_id is not None:
+            raise ValueError("La procedencia de un derivado se hereda del dataset original.")
+        result = self.repository.set_synthetic(project_id, dataset_id, synthetic)
+        if result is None:
+            raise DatasetNotFound
+        return result
+
     def delete(self, project_id: UUID, dataset_id: UUID) -> None:
         self.get(project_id, dataset_id)
         if not self.repository.delete(project_id, dataset_id):

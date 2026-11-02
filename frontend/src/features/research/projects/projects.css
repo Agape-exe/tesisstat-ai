@@ -500,3 +500,36 @@ body:has(.rp-shell) {
   max-width: 100%;
   margin: 0.25rem 0 0.5rem;
 }
+.rp-package {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #dbe4ed;
+}
+
+.rp-package fieldset {
+  border: 1px solid #dbe4ed;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+.rp-package fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.35rem 1rem 0.35rem 0;
+}
+
+.rp-package > label,
+.rp-package > div > label {
+  display: block;
+  margin: 0.75rem 0;
+}
+
+.rp-package select,
+.rp-package textarea,
+.rp-package input:not([type='checkbox']) {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.3rem;
+}

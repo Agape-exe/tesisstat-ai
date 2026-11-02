@@ -19,6 +19,7 @@ class Dataset(BaseModel):
     active: bool = False
     warnings: list[str] = []
     source_dataset_id: UUID | None = None
+    synthetic: bool | None = None
 
 
 class DatasetPreview(BaseModel):
