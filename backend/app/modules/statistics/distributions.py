@@ -57,6 +57,11 @@ def student_t_two_sided(statistic: float, degrees_of_freedom: float) -> float:
     return max(0.0, min(1.0, regularized_beta(degrees_of_freedom / 2, 0.5, x)))
 
 
+def normal_two_sided(statistic: float) -> float:
+    """Two-sided standard-normal probability for a finite z statistic."""
+    return math.erfc(abs(statistic) / math.sqrt(2))
+
+
 def chi_square_survival(statistic: float, degrees_of_freedom: float) -> float:
     """Upper regularized gamma Q(a, x), using continued fractions or a series."""
     if statistic <= 0:

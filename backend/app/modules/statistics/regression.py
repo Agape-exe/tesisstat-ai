@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from .distributions import f_survival
 from .inferential import StatisticalCalculationError, TechniqueResult, _number, _paired_numbers
 
 
@@ -70,6 +71,26 @@ def _fit_linear(
     return coefficients, r_squared, residual_standard_error
 
 
+def _model_metrics(sample_size: int, predictor_count: int, r_squared: float) -> dict[str, float]:
+    residual_degrees_of_freedom = sample_size - predictor_count - 1
+    if r_squared >= 1 - 1e-15:
+        f_statistic = float.fromhex("0x1.fffffffffffffp+1023")
+        p_value = 0.0
+    else:
+        f_statistic = (r_squared / predictor_count) / (
+            (1 - r_squared) / residual_degrees_of_freedom
+        )
+        p_value = f_survival(
+            f_statistic, float(predictor_count), float(residual_degrees_of_freedom)
+        )
+    return {
+        "model_f_statistic": f_statistic,
+        "model_degrees_of_freedom_numerator": float(predictor_count),
+        "model_degrees_of_freedom_denominator": float(residual_degrees_of_freedom),
+        "model_p_value": p_value,
+    }
+
+
 def linear_regression_simple(x: Sequence[object], y: Sequence[object]) -> TechniqueResult:
     """Fit y = intercept + slope*x using complete finite pairs."""
 
@@ -79,15 +100,17 @@ def linear_regression_simple(x: Sequence[object], y: Sequence[object]) -> Techni
             "La regresión simple requiere al menos tres pares válidos."
         )
     coefficients, r_squared, residual_error = _fit_linear([[value] for value in values_x], values_y)
+    metrics = {
+        "n": float(len(values_x)),
+        "intercept": coefficients[0],
+        "slope": coefficients[1],
+        "r_squared": r_squared,
+        "residual_standard_error": residual_error,
+    }
+    metrics.update(_model_metrics(len(values_x), 1, r_squared))
     return TechniqueResult(
         "linear_regression_simple",
-        {
-            "n": float(len(values_x)),
-            "intercept": coefficients[0],
-            "slope": coefficients[1],
-            "r_squared": r_squared,
-            "residual_standard_error": residual_error,
-        },
+        metrics,
     )
 
 
@@ -126,6 +149,7 @@ def linear_regression_multiple(
     metrics.update(
         {f"beta_{index}": coefficient for index, coefficient in enumerate(coefficients[1:], 1)}
     )
+    metrics.update(_model_metrics(len(complete_outcomes), width, r_squared))
     return TechniqueResult("linear_regression_multiple", metrics)
 
 
@@ -173,4 +197,5 @@ def ancova(
             for index, category in enumerate(group_values[1:], 1)
         }
     )
+    metrics.update(_model_metrics(len(outcomes), len(features[0]), r_squared))
     return TechniqueResult("ancova", metrics)

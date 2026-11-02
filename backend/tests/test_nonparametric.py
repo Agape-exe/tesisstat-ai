@@ -11,6 +11,8 @@ def test_mann_whitney_returns_zero_for_separated_groups():
 
     assert result.metrics["u"] == 0
     assert result.metrics["n_left"] == 3
+    assert isclose(result.metrics["p_value"], 0.08085559837005228)
+    assert result.metrics["rank_biserial_effect"] == 1
 
 
 def test_wilcoxon_uses_average_ranks_for_tied_absolute_differences():
@@ -20,6 +22,7 @@ def test_wilcoxon_uses_average_ranks_for_tied_absolute_differences():
     assert result.metrics["w_positive"] == 0
     assert result.metrics["w_negative"] == 3
     assert result.metrics["w"] == 0
+    assert isclose(result.metrics["p_value"], 0.2059032107320683)
 
 
 def test_kruskal_wallis_returns_reference_statistic():
