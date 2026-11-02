@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { ProjectDatasets } from './ProjectDatasets';
+import { DatasetApiError } from './api';
 import type { DatasetApi, ResearchDataset } from './api';
 
 const dataset: ResearchDataset = {
@@ -37,6 +38,12 @@ const api: DatasetApi = {
   })),
   activate: vi.fn(async () => ({ ...dataset, active: true })),
   delete: vi.fn(async () => undefined),
+  getEda: vi.fn(async () => {
+    throw new DatasetApiError('Sin reporte', 404);
+  }),
+  runEda: vi.fn(async () => {
+    throw new Error('Sin reporte');
+  }),
 };
 
 beforeEach(() => vi.clearAllMocks());

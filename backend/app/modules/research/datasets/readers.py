@@ -1,9 +1,11 @@
-"""Bounded CSV/XLSX parsing; only UTF-8 (with optional BOM) is accepted."""
+"""Bounded CSV/XLSX parsing shared by preview and full profiling."""
 
 import csv
 import io
 import zipfile
-from dataclasses import dataclass
+from collections.abc import Iterator
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from openpyxl import load_workbook
@@ -25,6 +27,16 @@ class DatasetLimits:
     max_zip_entries: int = 1000
 
 
+@dataclass
+class DatasetRows:
+    columns: list[str]
+    rows: Iterator[list[str | None]]
+    format: str
+    sheet: str | None = None
+    warnings: list[str] = field(default_factory=list)
+    formula_columns: set[int] = field(default_factory=set)
+
+
 def _headers(values: list[str | None], limits: DatasetLimits) -> list[str]:
     if not values or len(values) > limits.max_columns:
         raise InvalidDataset("El archivo no tiene cabeceras o supera el límite de columnas.")
@@ -36,46 +48,6 @@ def _headers(values: list[str | None], limits: DatasetLimits) -> list[str]:
     return names
 
 
-def read_csv(data: bytes, limits: DatasetLimits) -> DatasetPreview:
-    try:
-        content = data.decode("utf-8-sig")
-    except UnicodeDecodeError as exc:
-        raise InvalidDataset("El CSV debe estar codificado en UTF-8.") from exc
-    if not content.strip():
-        raise InvalidDataset("El archivo está vacío.")
-    try:
-        delimiter = max(
-            (",", ";"),
-            key=lambda candidate: len(
-                next(csv.reader(io.StringIO(content, newline=""), delimiter=candidate, strict=True))
-            ),
-        )
-        reader = csv.reader(io.StringIO(content, newline=""), delimiter=delimiter, strict=True)
-        columns = _headers(next(reader), limits)
-        rows: list[list[str | None]] = []
-        count = 0
-        for row in reader:
-            count += 1
-            if count > limits.max_rows:
-                raise InvalidDataset("El dataset supera el límite de filas.")
-            if len(row) != len(columns):
-                raise InvalidDataset(
-                    f"La fila {count + 1} tiene una cantidad incorrecta de campos."
-                )
-            if len(rows) < limits.preview_rows:
-                rows.append(row)
-    except (csv.Error, StopIteration) as exc:
-        raise InvalidDataset("El CSV no tiene una estructura válida.") from exc
-    return DatasetPreview(
-        columns=columns,
-        rows=rows,
-        row_count=count,
-        column_count=len(columns),
-        format="csv",
-        warnings=[],
-    )
-
-
 def _cell(value: object) -> str | None:
     if value is None:
         return None
@@ -84,7 +56,48 @@ def _cell(value: object) -> str | None:
     return str(value)
 
 
-def read_xlsx(data: bytes, limits: DatasetLimits) -> DatasetPreview:
+@contextmanager
+def iter_dataset(data: bytes, format: str, limits: DatasetLimits) -> Iterator[DatasetRows]:
+    """Iterate every validated row; XLSX workbook is closed when the context exits."""
+    if not data or len(data) > limits.max_bytes:
+        raise InvalidDataset("El archivo está vacío o supera el límite de 10 MiB.")
+    if format == "csv":
+        try:
+            content = data.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise InvalidDataset("El CSV debe estar codificado en UTF-8.") from exc
+        if not content.strip() or data.startswith(b"PK\x03\x04") or b"\x00" in data:
+            raise InvalidDataset("El contenido no corresponde a un CSV.")
+        try:
+            delimiter = max(
+                (",", ";"),
+                key=lambda candidate: len(
+                    next(
+                        csv.reader(
+                            io.StringIO(content, newline=""), delimiter=candidate, strict=True
+                        )
+                    )
+                ),
+            )
+            reader = csv.reader(io.StringIO(content, newline=""), delimiter=delimiter, strict=True)
+            columns = _headers(next(reader), limits)
+
+            def rows() -> Iterator[list[str | None]]:
+                for count, row in enumerate(reader, 1):
+                    if count > limits.max_rows:
+                        raise InvalidDataset("El dataset supera el límite de filas.")
+                    if len(row) != len(columns):
+                        raise InvalidDataset(
+                            f"La fila {count + 1} tiene una cantidad incorrecta de campos."
+                        )
+                    yield row
+
+            yield DatasetRows(columns, rows(), "csv")
+        except (csv.Error, StopIteration) as exc:
+            raise InvalidDataset("El CSV no tiene una estructura válida.") from exc
+        return
+    if format != "xlsx" or not data.startswith(b"PK\x03\x04"):
+        raise InvalidDataset("El contenido no corresponde a un XLSX.")
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             entries = archive.infolist()
@@ -101,8 +114,6 @@ def read_xlsx(data: bytes, limits: DatasetLimits) -> DatasetPreview:
             io.BytesIO(data), read_only=True, data_only=False, keep_links=False
         )
         try:
-            if not workbook.sheetnames:
-                raise InvalidDataset("El XLSX no contiene hojas.")
             sheet = workbook[workbook.sheetnames[0]]
             if sheet.max_column > limits.max_columns:
                 raise InvalidDataset("El dataset supera el límite de columnas.")
@@ -113,38 +124,61 @@ def read_xlsx(data: bytes, limits: DatasetLimits) -> DatasetPreview:
             )
             header = next(iterator)
             columns = _headers([_cell(cell.value) for cell in header], limits)
-            rows: list[list[str | None]] = []
-            count = 0
-            formulas = any(cell.data_type == "f" for cell in header)
-            for cells in iterator:
-                count += 1
-                if count > limits.max_rows:
-                    raise InvalidDataset("El dataset supera el límite de filas.")
-                if len(cells) > len(columns) and any(
-                    cell.value is not None for cell in cells[len(columns) :]
-                ):
-                    raise InvalidDataset("Hay datos fuera de las columnas declaradas.")
-                formulas |= any(cell.data_type == "f" for cell in cells)
-                if len(rows) < limits.preview_rows:
-                    rows.append(
+            result = DatasetRows(columns, iter(()), "xlsx", sheet.title)
+            if any(cell.data_type == "f" for cell in header):
+                result.warnings.append("El XLSX contiene fórmulas no calculadas.")
+
+            def rows() -> Iterator[list[str | None]]:
+                for count, cells in enumerate(iterator, 1):
+                    if count > limits.max_rows:
+                        raise InvalidDataset("El dataset supera el límite de filas.")
+                    if len(cells) > len(columns) and any(
+                        cell.value is not None for cell in cells[len(columns) :]
+                    ):
+                        raise InvalidDataset("Hay datos fuera de las columnas declaradas.")
+                    formula_indices = {
+                        index
+                        for index, cell in enumerate(cells[: len(columns)])
+                        if cell.data_type == "f"
+                    }
+                    result.formula_columns.update(formula_indices)
+                    if formula_indices and not result.warnings:
+                        result.warnings.append("El XLSX contiene fórmulas no calculadas.")
+                    yield (
                         [_cell(cell.value) for cell in cells[: len(columns)]]
                         + [None] * max(0, len(columns) - len(cells))
                     )
-            warnings = (
-                ["El archivo contiene fórmulas: se muestran como texto y no se calculan."]
-                if formulas
-                else []
-            )
-            return DatasetPreview(
-                columns=columns,
-                rows=rows,
-                row_count=count,
-                column_count=len(columns),
-                format="xlsx",
-                sheet=sheet.title,
-                warnings=warnings,
-            )
+
+            result.rows = rows()
+            yield result
         finally:
             workbook.close()
-    except (zipfile.BadZipFile, OSError, ValueError, KeyError, StopIteration) as exc:
+    except (zipfile.BadZipFile, OSError, ValueError, KeyError, StopIteration, IndexError) as exc:
         raise InvalidDataset("El XLSX no tiene una estructura válida.") from exc
+
+
+def _preview(data: bytes, format: str, limits: DatasetLimits) -> DatasetPreview:
+    with iter_dataset(data, format, limits) as parsed:
+        preview: list[list[str | None]] = []
+        count = 0
+        for row in parsed.rows:
+            count += 1
+            if len(preview) < limits.preview_rows:
+                preview.append(row)
+        return DatasetPreview(
+            columns=parsed.columns,
+            rows=preview,
+            row_count=count,
+            column_count=len(parsed.columns),
+            format=format,
+            sheet=parsed.sheet,
+            warnings=parsed.warnings,
+        )
+
+
+def read_csv(data: bytes, limits: DatasetLimits) -> DatasetPreview:
+    return _preview(data, "csv", limits)
+
+
+def read_xlsx(data: bytes, limits: DatasetLimits) -> DatasetPreview:
+    return _preview(data, "xlsx", limits)

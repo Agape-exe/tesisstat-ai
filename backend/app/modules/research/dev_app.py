@@ -27,6 +27,10 @@ from app.modules.research.documents.use_cases import (
     DocumentService,
     InvalidDocument,
 )
+from app.modules.research.eda.analyzer import ExploratoryAnalyzer
+from app.modules.research.eda.routes import create_router as create_eda_router
+from app.modules.research.eda.sqlite_repository import EDAStorageError, SQLiteEDARepository
+from app.modules.research.eda.use_cases import EDANotFound, EDAService
 from app.modules.research.methodology.review import ReviewService
 from app.modules.research.methodology.routes import create_router as create_methodology_router
 from app.modules.research.methodology.service import (
@@ -164,6 +168,19 @@ def create_app(
             },
         )
 
+    @app.exception_handler(EDANotFound)
+    async def eda_not_found(request: Request, exc: EDANotFound) -> JSONResponse:
+        return JSONResponse(
+            status_code=404, content={"detail": "Aún no existe un análisis EDA válido."}
+        )
+
+    @app.exception_handler(EDAStorageError)
+    async def eda_storage_error(request: Request, exc: EDAStorageError) -> JSONResponse:
+        logger.error("Research EDA storage failed", exc_info=exc)
+        return JSONResponse(
+            status_code=503, content={"detail": "El reporte EDA no está disponible."}
+        )
+
     projects = ProjectService(repository)
     document_repository = SQLiteDocumentRepository(
         settings.research_db_path, settings.research_documents_path
@@ -197,6 +214,13 @@ def create_app(
     app.include_router(create_router(projects, documents, datasets))
     app.include_router(create_document_router(documents, extraction))
     app.include_router(create_dataset_router(datasets))
+    app.include_router(
+        create_eda_router(
+            EDAService(
+                datasets, SQLiteEDARepository(settings.research_db_path), ExploratoryAnalyzer()
+            )
+        )
+    )
     methodology_repository = SQLiteMethodologyRepository(settings.research_db_path)
     methodology = MethodologyService(
         extraction,
