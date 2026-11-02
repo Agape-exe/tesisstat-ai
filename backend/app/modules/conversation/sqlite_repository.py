@@ -204,13 +204,19 @@ class SQLiteConversationRepository:
             self._append(db, cid, rid, "assistant", content, context)
             return self._pair(db, cid, rid)
 
-    def fail(self, conversation_id: UUID, request_id: UUID) -> None:
+    def fail(self, conversation_id: UUID, request_id: UUID, context: dict | None = None) -> None:
         with closing(self._connect()) as db, db:
             db.execute(
                 "UPDATE conversation_requests SET status='failed' WHERE conversation_id=? "
                 "AND request_id=? AND status='pending'",
                 (str(conversation_id), str(request_id)),
             )
+            if context is not None:
+                db.execute(
+                    "UPDATE conversation_messages SET context=? "
+                    "WHERE conversation_id=? AND request_id=? AND role='user'",
+                    (json.dumps(context), str(conversation_id), str(request_id)),
+                )
 
     def delete(self, project_id: UUID, conversation_id: UUID) -> None:
         with closing(self._connect()) as db, db:

@@ -21,6 +21,7 @@ from app.modules.research.packages.use_cases import PackageService
 from app.modules.research.preparation.repository import PreparationRepository
 from app.modules.research.projects.use_cases import ProjectService
 from app.orchestration.analysis_service import ResearchAnalysisService
+from app.orchestration.research_statistics import ResearchInputError
 
 
 class ContextSource(BaseModel):
@@ -418,7 +419,9 @@ class ResearchContextBuilder:
                 },
             )
 
-        records = self.analyses.list(project_id)
+        # The public analysis list refreshes records by writing invalidations. Chat
+        # must remain read-only: compute historical status from verified sources.
+        records = self.analyses.repository.list(project_id)
         for record in records:
             plan, result = record.plan, record.result
             # Validate stored provenance as well as the project-scoped repository lookup.
@@ -429,12 +432,21 @@ class ResearchContextBuilder:
                 or plan.hypothesis_id not in {h.id for h in record.package.hypotheses}
             ):
                 continue
+            # Reuse the existing read-only provenance validator; unlike list(),
+            # _current() does not persist invalidations or change approvals.
+            invalid_current = False
+            try:
+                self.analyses._current(record)
+            except ResearchInputError:
+                invalid_current = True
             historical = bool(
-                record.invalidated_at
+                invalid_current
+                or record.invalidated_at
                 or package is None
                 or dataset is None
                 or plan.dataset_id != str(dataset.id)
                 or plan.research_package_id != package.id
+                or record.package != package
             )
             linked_result = (
                 result

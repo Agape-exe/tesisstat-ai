@@ -11,6 +11,11 @@ import type {
 import './conversation.css';
 
 const defaultApi = createConversationApi();
+const agentNames: Record<string, string> = {
+  research: 'Investigación',
+  planning: 'Planificación estadística',
+  conversation: 'Conversación',
+};
 const errorText = (error: unknown) =>
   error instanceof ConversationApiError
     ? error.message
@@ -541,13 +546,14 @@ export function ConversationChat({
                             anteriores o sin trazabilidad.
                           </p>
                         )}
-                        {m.context.snapshot !==
-                          status?.research_context?.snapshot && (
-                          <p>
-                            Esta respuesta corresponde a una consulta anterior;
-                            comprueba las fuentes actuales.
-                          </p>
-                        )}
+                        {m.context.snapshot !== null &&
+                          m.context.snapshot !==
+                            status?.research_context?.snapshot && (
+                            <p>
+                              Esta respuesta corresponde a una consulta
+                              anterior; comprueba las fuentes actuales.
+                            </p>
+                          )}
                         {m.context.omitted_facts > 0 && (
                           <p>
                             Se omitieron {m.context.omitted_facts} datos
@@ -566,6 +572,15 @@ export function ConversationChat({
                         ))}
                       </details>
                     )}
+                    {m.role === 'assistant' &&
+                      !!m.context?.multiagent?.agents.length && (
+                        <small className="chat-agents">
+                          Agentes utilizados:{' '}
+                          {m.context.multiagent.agents
+                            .map((agent) => agentNames[agent] ?? agent)
+                            .join(' → ')}
+                        </small>
+                      )}
                     <time dateTime={m.created_at}>
                       {new Date(m.created_at).toLocaleTimeString('es-PE', {
                         hour: '2-digit',

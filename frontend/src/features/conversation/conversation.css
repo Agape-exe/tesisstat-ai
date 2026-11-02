@@ -241,3 +241,8 @@
   display: block;
   overflow-wrap: anywhere;
 }
+.chat-agents {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--rp-text-muted, #52616b);
+}

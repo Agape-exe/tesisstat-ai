@@ -21,11 +21,20 @@ export interface ContextSource {
   version: string;
 }
 export interface ContextTrace {
-  snapshot: string;
+  snapshot: string | null;
   sources: ContextSource[];
   omitted_facts: number;
   history_changed: boolean;
   history_turns: number;
+  multiagent?: {
+    flow_version: string;
+    request_type: string;
+    nodes: string[];
+    agents: string[];
+    provider_calls: number;
+    planning_status: string;
+    errors: string[];
+  };
 }
 export interface ResearchContextStatus {
   project_id: string;

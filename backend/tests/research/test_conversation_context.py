@@ -277,7 +277,8 @@ def test_mismatched_result_provenance_never_reaches_model(case, monkeypatch, cor
         record.project_id = uuid4()
     else:
         record.plan.research_package_id = "foreign-package"
-    monkeypatch.setattr(case.builder.analyses, "list", lambda project: records)
+    # Chat now reads the repository directly to avoid list() invalidation writes.
+    monkeypatch.setattr(case.builder.analyses.repository, "list", lambda project: records)
     payload, _ = send(case, "¿Cuál es mi resultado de Pearson?")
     assert not [f for f in payload["facts"] if f["source"]["kind"] == "result"]
 
