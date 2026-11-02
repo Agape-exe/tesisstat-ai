@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Annotated, Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -92,3 +92,63 @@ class MethodologyState(BaseModel):
     message: str | None = None
     retry_after: datetime | None = None
     draft: MethodologyDraft | None = None
+
+
+class ReviewFinding(StrictModel):
+    value: Text | None = None
+    kind: Literal["unknown", "quotation", "inference", "manual"] = "unknown"
+    evidence: list[Text] = Field(default_factory=list, max_length=5)
+
+    @model_validator(mode="after")
+    def coherent(self):
+        if self.kind in ("unknown", "manual") and self.evidence:
+            raise ValueError("Manual and unknown values cannot claim document evidence")
+        if self.kind == "unknown" and self.value is not None:
+            raise ValueError("Unknown values must be empty")
+        if self.kind in ("quotation", "inference") and (not self.value or not self.evidence):
+            raise ValueError("AI values require original evidence")
+        return self
+
+
+ReviewFindings = Annotated[list[ReviewFinding], Field(max_length=40)]
+
+
+class ReviewVariable(StrictModel):
+    id: UUID = Field(default_factory=uuid4, strict=False)
+    name: ReviewFinding = Field(default_factory=ReviewFinding)
+    role: ReviewFinding = Field(default_factory=ReviewFinding)
+    measurement_scale: ReviewFinding = Field(default_factory=ReviewFinding)
+    dimensions: ReviewFindings = Field(default_factory=list)
+    indicators: ReviewFindings = Field(default_factory=list)
+    instrument_items: ReviewFindings = Field(default_factory=list)
+
+
+class ReviewContent(StrictModel):
+    title: ReviewFinding = Field(default_factory=ReviewFinding)
+    general_problem: ReviewFinding = Field(default_factory=ReviewFinding)
+    general_objective: ReviewFinding = Field(default_factory=ReviewFinding)
+    specific_objectives: ReviewFindings = Field(default_factory=list)
+    general_hypothesis: ReviewFinding = Field(default_factory=ReviewFinding)
+    specific_hypotheses: ReviewFindings = Field(default_factory=list)
+    variables: list[ReviewVariable] = Field(default_factory=list, max_length=20)
+    research_design: ReviewFinding = Field(default_factory=ReviewFinding)
+    observation_design: ReviewFinding = Field(default_factory=ReviewFinding)
+    additional_methodology: ReviewFindings = Field(default_factory=list)
+    clarifications: ReviewFindings = Field(default_factory=list)
+
+
+class ReviewUpdate(StrictModel):
+    version: int = Field(ge=0)
+    content: ReviewContent
+
+
+class MethodologyReview(StrictModel):
+    project_id: UUID
+    document_id: UUID
+    origin: Literal["ai", "manual"]
+    content: ReviewContent
+    pending_fields: list[str]
+    review_status: Literal["unreviewed", "reviewed"] = "unreviewed"
+    version: int = 0
+    updated_at: datetime
+    reviewed_at: datetime | None = None

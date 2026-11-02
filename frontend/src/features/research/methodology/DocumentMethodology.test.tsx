@@ -110,7 +110,9 @@ describe('DocumentMethodology', () => {
     ).toBeDisabled();
     expect(api.analyze).toHaveBeenCalledTimes(1);
     resolve(completed);
-    expect(await screen.findByText(/Borrador no revisado/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Borrador original de IA/),
+    ).toBeInTheDocument();
     expect(screen.getByText('¿Cuál es la hipótesis?')).toBeInTheDocument();
     expect(screen.getByText('Texto omitido por límites')).toBeInTheDocument();
     expect(screen.getAllByText('No identificado').length).toBeGreaterThan(0);
@@ -174,7 +176,9 @@ describe('DocumentMethodology', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Consultar estado de IA' }),
     );
-    expect(await screen.findByText(/Borrador no revisado/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Borrador original de IA/),
+    ).toBeInTheDocument();
     expect(api.analyze).toHaveBeenCalledTimes(1);
   });
 

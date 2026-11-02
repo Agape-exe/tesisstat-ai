@@ -20,6 +20,7 @@ from app.modules.research.documents.use_cases import (
     DocumentService,
     InvalidDocument,
 )
+from app.modules.research.methodology.review import ReviewService
 from app.modules.research.methodology.routes import create_router as create_methodology_router
 from app.modules.research.methodology.service import (
     MethodologyLimits,
@@ -72,8 +73,13 @@ def create_app(
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
         errors = {}
+        is_review = "/methodology/review" in request.url.path
         for error in exc.errors():
-            field = str(error["loc"][-1])
+            field = (
+                ".".join(str(part) for part in error["loc"] if part != "body")
+                if is_review
+                else str(error["loc"][-1])
+            )
             kind = error["type"]
             context = error.get("ctx", {})
             if kind == "string_too_short":
@@ -93,7 +99,12 @@ def create_app(
             errors[field] = message
         return JSONResponse(
             status_code=422,
-            content={"detail": "Revisa los datos del proyecto.", "errors": errors},
+            content={
+                "detail": "Revisa los campos de metodología."
+                if is_review
+                else "Revisa los datos del proyecto.",
+                "errors": errors,
+            },
         )
 
     @app.exception_handler(sqlite3.Error)
@@ -140,9 +151,10 @@ def create_app(
     )
     app.include_router(create_router(projects, documents))
     app.include_router(create_document_router(documents, extraction))
+    methodology_repository = SQLiteMethodologyRepository(settings.research_db_path)
     methodology = MethodologyService(
         extraction,
-        SQLiteMethodologyRepository(settings.research_db_path),
+        methodology_repository,
         methodology_provider or CloudflareLanguageModel(settings),
         MethodologyLimits(
             max_characters=settings.research_methodology_max_characters,
@@ -152,7 +164,9 @@ def create_app(
             retry_seconds=settings.research_methodology_retry_seconds,
         ),
     )
-    app.include_router(create_methodology_router(methodology))
+    app.include_router(
+        create_methodology_router(methodology, ReviewService(methodology, methodology_repository))
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:

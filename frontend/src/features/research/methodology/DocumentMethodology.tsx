@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createMethodologyApi } from './api';
 import type { Finding, MethodologyApi, MethodologyState } from './api';
+import type { MethodologyReview } from './api';
+import { ReviewEditor } from './ReviewEditor';
 
 const defaultApi = createMethodologyApi();
 const labels: Record<string, string> = {
@@ -74,6 +76,7 @@ export function DocumentMethodology({
   api?: MethodologyApi;
 }) {
   const [state, setState] = useState<MethodologyState | null>(null);
+  const [review, setReview] = useState<MethodologyReview | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -107,6 +110,42 @@ export function DocumentMethodology({
       controller.current?.abort();
     };
   }, [api, projectId, documentId]);
+
+  useEffect(() => {
+    if (!api.reviewStatus) return;
+    const read = new AbortController();
+    api
+      .reviewStatus(projectId, documentId, read.signal)
+      .then((result) => {
+        if (!read.signal.aborted) setReview(result);
+      })
+      .catch((caught) => {
+        if (!read.signal.aborted)
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : 'No se pudo consultar la revisión.',
+          );
+      });
+    return () => read.abort();
+  }, [api, projectId, documentId]);
+
+  async function createReview() {
+    if (!api.createReview) return;
+    setBusy(true);
+    setError('');
+    try {
+      setReview(await api.createReview(projectId, documentId));
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'No se pudo crear la metodología.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!state?.retry_after) return;
@@ -225,7 +264,7 @@ export function DocumentMethodology({
           )}
           {draft && (
             <>
-              <p role="status">Borrador no revisado · {draft.model}</p>
+              <p role="status">Borrador original de IA · {draft.model}</p>
               {(
                 [
                   'title',
@@ -313,6 +352,26 @@ export function DocumentMethodology({
                 ))}
               </details>
             </>
+          )}
+          {!review && api.createReview && (
+            <button
+              type="button"
+              disabled={busy || state?.status === 'processing'}
+              onClick={() => void createReview()}
+            >
+              {draft
+                ? 'Revisar metodología de IA'
+                : 'Crear metodología manualmente'}
+            </button>
+          )}
+          {review && (
+            <ReviewEditor
+              review={review}
+              api={api}
+              projectId={projectId}
+              documentId={documentId}
+              onChange={setReview}
+            />
           )}
         </>
       )}

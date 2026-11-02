@@ -404,3 +404,43 @@ body:has(.rp-shell) {
   padding-left: 0.75rem;
   white-space: pre-wrap;
 }
+
+.rp-review {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid #bdcabe;
+  border-radius: 0.5rem;
+  background: #f8faf7;
+}
+
+.rp-review fieldset {
+  border: 1px solid #ccd4df;
+  border-radius: 0.4rem;
+  margin: 1rem 0;
+  padding: 0.75rem;
+}
+
+.rp-review input,
+.rp-review select,
+.rp-review textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.25rem;
+}
+
+.rp-review textarea {
+  min-height: 4rem;
+}
+
+.rp-review-row,
+.rp-review-actions {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rp-review-row label {
+  flex: 1 1 16rem;
+}
