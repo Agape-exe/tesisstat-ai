@@ -19,6 +19,7 @@ from app.orchestration.analysis_inputs import (
     CONNECTED,
     analysis_input,
     categorical_association_questions,
+    paired_questions,
     pearson_questions,
     spearman_questions,
 )
@@ -118,12 +119,21 @@ class ResearchAnalysisService:
             raise HTTPException(409, "El planificador devolvió referencias incompatibles.")
         # A new proposal must never reuse an earlier approval, even for the same hypothesis.
         plan.id = str(uuid4())
-        if plan.technique in {"pearson", "spearman", "chi_square", "fisher_exact"}:
+        if plan.technique in {
+            "pearson",
+            "spearman",
+            "chi_square",
+            "fisher_exact",
+            "t_paired",
+            "wilcoxon",
+        }:
             questions = {
                 "pearson": pearson_questions,
                 "spearman": spearman_questions,
                 "chi_square": categorical_association_questions,
                 "fisher_exact": categorical_association_questions,
+                "t_paired": paired_questions,
+                "wilcoxon": paired_questions,
             }[plan.technique](package, plan.hypothesis_id)
             if questions:
                 plan.status = "needs_clarification"
@@ -189,6 +199,8 @@ class ResearchAnalysisService:
                     "spearman",
                     "chi_square",
                     "fisher_exact",
+                    "t_paired",
+                    "wilcoxon",
                 }:
                     table = reader.read(package.dataset)
                     inputs[plan_id] = analysis_input(package, record.plan, table)

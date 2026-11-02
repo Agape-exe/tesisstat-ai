@@ -292,6 +292,21 @@ def test_real_fisher_exact_columns_with_categorical_variables(tmp_path, monkeypa
     assert metrics["p_value"] == pytest.approx(1)
 
 
+def test_real_paired_t_columns_with_paired_observations(tmp_path):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        observations="paired",
+        data=b"horas_estudio,rendimiento\n1,1\n2,1\n4,2\n5,3\n",
+    )
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "t_paired"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 4
+    assert metrics["mean_difference"] == pytest.approx(1.25)
+    assert metrics["degrees_of_freedom"] == 3
+
+
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):
     case = research_case(
         tmp_path,

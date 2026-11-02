@@ -12,6 +12,8 @@ CONNECTED = {
     "spearman",
     "chi_square",
     "fisher_exact",
+    "t_paired",
+    "wilcoxon",
 }
 
 
@@ -61,6 +63,14 @@ def categorical_association_questions(package: ResearchPackage, hypothesis_id: s
     return questions
 
 
+def paired_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Validate metadata for paired numeric or ordinal comparisons."""
+    questions = pearson_questions(package, hypothesis_id)
+    if package.observations not in {"paired", "repeated"}:
+        questions.append("La comparación pareada requiere observaciones emparejadas o repetidas.")
+    return [question for question in questions if "observaciones independientes" not in question]
+
+
 def analysis_input(
     package: ResearchPackage, plan: AnalysisPlan, table: DatasetTable
 ) -> AnalysisInput:
@@ -69,6 +79,8 @@ def analysis_input(
         "spearman": spearman_questions,
         "chi_square": categorical_association_questions,
         "fisher_exact": categorical_association_questions,
+        "t_paired": paired_questions,
+        "wilcoxon": paired_questions,
     }.get(plan.technique, lambda *_: ["La técnica no admite esta entrada de dos columnas."])(
         package, plan.hypothesis_id
     )
@@ -82,6 +94,8 @@ def analysis_input(
         "spearman": {"ordinal", "interval", "ratio"},
         "chi_square": {"nominal", "ordinal"},
         "fisher_exact": {"nominal", "ordinal"},
+        "t_paired": {"interval", "ratio"},
+        "wilcoxon": {"ordinal", "interval", "ratio"},
     }.get(plan.technique, set())
     if any(item.measurement_scale not in allowed for item in selected):
         raise HTTPException(409, "La técnica requiere escalas de medición confirmadas.")
