@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { ResearchStatisticsPanel } from '../../statistics/ResearchStatisticsPanel';
+import type { RuntimeHypothesis } from '../../statistics/researchStatisticsApi';
 import { createDatasetApi, type ResearchDataset } from '../datasets/api';
 import {
   createPackageApi,
@@ -556,9 +558,19 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
                 <p key={item}>Aclaración pendiente: {item}</p>
               ))}
               <p role="status">
-                El paquete de investigación está preparado. La integración con
-                Statistics está pendiente.
+                El paquete de investigación está preparado para Statistics.
               </p>
+              <ResearchStatisticsPanel
+                projectId={projectId}
+                packageId={result.id}
+                hypotheses={result.hypotheses.map(
+                  (item): RuntimeHypothesis => ({
+                    id: item.id,
+                    statement: item.statement,
+                    variable_ids: item.variable_ids,
+                  }),
+                )}
+              />
             </div>
           )}
         </>
