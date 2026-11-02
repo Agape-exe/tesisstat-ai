@@ -362,6 +362,41 @@ def test_real_mann_whitney_columns_with_two_groups(tmp_path, monkeypatch):
     assert metrics["u"] == 0
 
 
+def test_real_cronbach_alpha_with_linked_item_columns(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        data=(b"horas_estudio,rendimiento,item_3\n1,1,1\n2,2,2\n3,3,3\n"),
+        scales=("ordinal", "ordinal"),
+    )
+    config = case.client.get(case.package_root + "/configuration").json()
+    construct_id = config["variables"][0]["variable_id"]
+    config["variables"][0]["columns"] = ["horas_estudio", "rendimiento", "item_3"]
+    config["hypotheses"][0]["variable_ids"] = [construct_id]
+    assert case.client.put(case.package_root + "/configuration", json=config).status_code == 200
+    rebuilt = case.client.post(case.package_root + "/build")
+    assert rebuilt.status_code == 200, rebuilt.text
+    case.package = rebuilt.json()
+
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def reliability_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "cronbach_alpha"
+        plan.rationale = "Alfa de Cronbach para tres ítems vinculados."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", reliability_plan)
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "cronbach_alpha"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 3
+    assert metrics["items"] == 3
+    assert metrics["alpha"] == pytest.approx(1)
+
+
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):
     case = research_case(
         tmp_path,

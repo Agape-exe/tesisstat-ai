@@ -16,6 +16,7 @@ CONNECTED = {
     "wilcoxon",
     "t_independent",
     "mann_whitney",
+    "cronbach_alpha",
 }
 
 
@@ -106,6 +107,24 @@ def independent_questions(package: ResearchPackage, hypothesis_id: str) -> list[
     return questions
 
 
+def reliability_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Validate item-column metadata for a Cronbach reliability analysis."""
+    hypothesis = next(item for item in package.hypotheses if item.id == hypothesis_id)
+    variables = {item.id: item for item in package.variables}
+    selected = [variables[item] for item in hypothesis.variable_ids]
+    columns = [column for variable in selected for column in variable.columns]
+    questions: list[str] = []
+    if len(columns) < 2:
+        questions.append("Alfa de Cronbach requiere al menos dos columnas de ítems.")
+    if len(columns) != len(set(columns)):
+        questions.append("Las columnas de ítems para Alfa de Cronbach no pueden repetirse.")
+    if any(
+        variable.measurement_scale not in {"ordinal", "interval", "ratio"} for variable in selected
+    ):
+        questions.append("Los ítems deben tener escala ordinal, intervalar o de razón.")
+    return questions
+
+
 def analysis_input(
     package: ResearchPackage, plan: AnalysisPlan, table: DatasetTable
 ) -> AnalysisInput:
@@ -118,6 +137,7 @@ def analysis_input(
         "wilcoxon": paired_questions,
         "t_independent": independent_questions,
         "mann_whitney": independent_questions,
+        "cronbach_alpha": reliability_questions,
     }.get(plan.technique, lambda *_: ["La técnica no admite esta entrada de dos columnas."])(
         package, plan.hypothesis_id
     )
@@ -135,7 +155,17 @@ def analysis_input(
         "wilcoxon": {"ordinal", "interval", "ratio"},
         "t_independent": {"ordinal", "interval", "ratio"},
         "mann_whitney": {"ordinal", "interval", "ratio"},
+        "cronbach_alpha": {"ordinal", "interval", "ratio"},
     }.get(plan.technique, set())
+    if plan.technique == "cronbach_alpha":
+        columns = [column for item in selected for column in item.columns]
+        try:
+            indices = [table.columns.index(column) for column in columns]
+        except ValueError as exc:
+            raise HTTPException(409, "Una columna de ítem vinculada ya no existe.") from exc
+        return AnalysisInput(
+            matrix=tuple(tuple(row[index] for index in indices) for row in table.rows)
+        )
     if plan.technique in {"t_independent", "mann_whitney"}:
         group_variable = next(item for item in selected if item.role == "independent")
         outcome_variable = next(item for item in selected if item.role == "dependent")
