@@ -131,3 +131,11 @@ La API de desarrollo expone `GET /datasets/{dataset_id}/plan` y
 `POST /datasets/{dataset_id}/analysis` para el flujo descriptivo aprobado. La demo React muestra
 el plan, su justificación, métricas del `AnalysisResult`, supuestos, advertencias, tablas,
 gráficos y estados de carga/error sin modificar `frontend/src/app/App.tsx`.
+
+## Gráficos de resultados persistidos (avance 18B)
+
+`PersistedResultCharts` recibe exclusivamente métricas almacenadas en un `AnalysisResult` dentro
+de `ProjectAnalysis`. Convierte frecuencias categóricas en barras, métricas de asociación acotadas
+en escalas y pares de IC 95 % en intervalos; si el resultado no contiene una representación válida,
+explica la limitación en lugar de reconstruir datos o inventar una figura. No vuelve a ejecutar el
+análisis ni accede al dataset del proyecto.

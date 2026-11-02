@@ -1,13 +1,13 @@
 # Auditoría del plan de trabajo — Integrante 2
 
-Actualizada contra `develop` después del merge del PR #33.
+Actualizada contra `develop` después del merge del PR #34.
 
 | Sesión | Estado | Evidencia / pendiente principal |
 | --- | --- | --- |
 | 15B — Validación del motor | En progreso | Pearson, Spearman, chi-cuadrado, t, ANOVA, Kruskal–Wallis, Mann–Whitney, Wilcoxon y los modelos de regresión/ANCOVA reportan p-valores con distribuciones deterministas; Kruskal–Wallis aplica corrección por empates. Pruebas t, Pearson y coeficientes de regresión/ANCOVA entregan IC 95 % cuando son estimables; chi-cuadrado, ANOVA y no paramétricas incluyen medidas de magnitud. Quedan IC para Spearman y cobertura inferencial uniforme de técnicas que no disponen aún de distribución exacta. Se decidió no incorporar SciPy/statsmodels todavía: el motor mantiene implementaciones pequeñas, deterministas y sin dependencias científicas pesadas. |
 | 16B — Técnicas fundamentales | Completada | Spearman, chi-cuadrado, Fisher, t independiente/pareada/Welch y ANOVA/ANOVA Welch recorren Research → propuesta → aprobación → ejecución. |
 | 17B — Catálogo restante | Completada | Las 19 técnicas del catálogo tienen adaptadores de entrada, incluyendo Cronbach, no paramétricas, post-hoc, regresiones y ANCOVA. Los post-hoc conservan la advertencia de que la significancia requiere su distribución crítica. |
-| 18B — Gráficos e interpretación | Parcial | La demo Statistics tiene histogramas, cajas, barras y dispersión para datasets de demostración; falta conectar gráficos derivados de resultados persistidos del recorrido Research. |
+| 18B — Gráficos e interpretación | Parcial | La demo Statistics tiene histogramas, cajas, barras y dispersión para datasets de demostración. `ProjectAnalysis` ahora visualiza métricas persistidas: barras de frecuencias categóricas, escalas de asociación/efecto acotado e intervalos de confianza. Faltan gráficos que requieran observaciones crudas (por ejemplo, dispersión o residuos) y contexto interpretativo más rico. |
 | 19B — Informes académicos | Parcial | Las exportaciones TXT/DOCX/PDF incluyen metadatos reproducibles, contexto metodológico explícito y tablas numeradas de métricas y supuestos. Faltan figuras derivadas de datos reales y revisión visual sistemática. |
 | 20B — Datos reales y pruebas integrales | Pendiente | El servicio integrado sigue denegando datasets no sintéticos por defecto. Falta una interfaz de autorización simulada, pruebas de acceso autorizado/no autorizado y E2E válido para las 19 técnicas. |
 

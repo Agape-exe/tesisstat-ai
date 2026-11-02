@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PersistedResultCharts } from '../../statistics/PersistedResultCharts';
 import type { ResearchPackageSummary } from '../packages/api';
 import { createAnalysisApi, type AnalysisRecord } from './api';
 
@@ -200,25 +201,30 @@ export function ProjectAnalysis({
                         <p>{record.result.interpretation}</p>
                       )}
                       {!!record.result.metrics?.length && (
-                        <table>
-                          <caption>
-                            Métricas calculadas sobre el dataset Research
-                          </caption>
-                          <thead>
-                            <tr>
-                              <th scope="col">Métrica</th>
-                              <th scope="col">Valor</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {record.result.metrics.map((metric) => (
-                              <tr key={metric.name}>
-                                <th scope="row">{metric.name}</th>
-                                <td>{metric.value}</td>
+                        <>
+                          <table>
+                            <caption>
+                              Métricas calculadas sobre el dataset Research
+                            </caption>
+                            <thead>
+                              <tr>
+                                <th scope="col">Métrica</th>
+                                <th scope="col">Valor</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {record.result.metrics.map((metric) => (
+                                <tr key={metric.name}>
+                                  <th scope="row">{metric.name}</th>
+                                  <td>{metric.value}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <PersistedResultCharts
+                            metrics={record.result.metrics}
+                          />
+                        </>
                       )}
                       {record.result.assumptions?.map((item) => (
                         <p key={item.name}>
