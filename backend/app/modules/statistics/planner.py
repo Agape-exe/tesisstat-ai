@@ -90,6 +90,8 @@ class DeterministicStatisticalPlanner:
         variables: list[ResearchVariable],
     ) -> AnalysisPlan:
         dependent = [variable for variable in variables if variable.role == "dependent"]
+        covariates = [variable for variable in variables if variable.role == "covariate"]
+        groups = [variable for variable in variables if variable.role == "independent"]
         if len(dependent) != 1:
             return self._clarification(
                 base,
@@ -97,6 +99,8 @@ class DeterministicStatisticalPlanner:
                 ["Marca exactamente una variable como dependiente."],
             )
         scale = dependent[0].measurement_scale
+        if covariates:
+            return self._plan_ancova(base, package, variables, dependent, groups, covariates)
         if scale not in {"interval", "ratio", "ordinal"}:
             return self._clarification(
                 base,
@@ -132,6 +136,41 @@ class DeterministicStatisticalPlanner:
             "No se conoce si las observaciones son independientes o emparejadas.",
             ["Confirma la relación entre las observaciones."],
         )
+
+    def _plan_ancova(
+        self,
+        base: dict[str, object],
+        package: ResearchPackage,
+        variables: list[ResearchVariable],
+        dependent: list[ResearchVariable],
+        groups: list[ResearchVariable],
+        covariates: list[ResearchVariable],
+    ) -> AnalysisPlan:
+        """Select ANCOVA only for an explicitly complete three-variable comparison."""
+        if len(variables) != 3 or len(groups) != 1 or len(covariates) != 1:
+            return self._clarification(
+                base,
+                "ANCOVA requiere una agrupación y una única covariable cuantitativa.",
+                ["Identifica una agrupación y una covariable para la comparación ajustada."],
+            )
+        if package.observations != "independent":
+            return self._clarification(
+                base,
+                "ANCOVA requiere observaciones independientes.",
+                ["Confirma que las observaciones son independientes."],
+            )
+        if (
+            dependent[0].measurement_scale not in {"interval", "ratio"}
+            or groups[0].measurement_scale not in {"nominal", "ordinal"}
+            or covariates[0].measurement_scale not in {"interval", "ratio"}
+        ):
+            return self._clarification(
+                base,
+                "ANCOVA requiere resultado y covariable cuantitativos, más una "
+                "agrupación categórica.",
+                ["Confirma las escalas de resultado, agrupación y covariable."],
+            )
+        return self._proposed(base, "ancova")
 
     def _plan_prediction(
         self, base: dict[str, object], variables: list[ResearchVariable]

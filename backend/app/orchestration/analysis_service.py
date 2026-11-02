@@ -18,11 +18,14 @@ from app.modules.statistics.research_bridge import BytesDatasetReader
 from app.orchestration.analysis_inputs import (
     CONNECTED,
     analysis_input,
+    ancova_questions,
     categorical_association_questions,
     independent_questions,
+    multiple_regression_questions,
     paired_questions,
     pearson_questions,
     reliability_questions,
+    simple_regression_questions,
     spearman_questions,
 )
 from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
@@ -136,6 +139,9 @@ class ResearchAnalysisService:
             "kruskal_wallis",
             "tukey",
             "games_howell",
+            "ancova",
+            "linear_regression_simple",
+            "linear_regression_multiple",
             "cronbach_alpha",
         }:
             questions = {
@@ -153,6 +159,9 @@ class ResearchAnalysisService:
                 "kruskal_wallis": independent_questions,
                 "tukey": independent_questions,
                 "games_howell": independent_questions,
+                "ancova": ancova_questions,
+                "linear_regression_simple": simple_regression_questions,
+                "linear_regression_multiple": multiple_regression_questions,
                 "cronbach_alpha": reliability_questions,
             }[plan.technique](package, plan.hypothesis_id)
             if questions:
@@ -248,6 +257,9 @@ class ResearchAnalysisService:
                     "kruskal_wallis",
                     "tukey",
                     "games_howell",
+                    "ancova",
+                    "linear_regression_simple",
+                    "linear_regression_multiple",
                     "cronbach_alpha",
                 }:
                     table = reader.read(package.dataset)

@@ -1,4 +1,4 @@
-"""Adapt verified two-column association techniques, without formulas."""
+"""Build validated Statistics inputs from Research metadata, without formulas."""
 
 from fastapi import HTTPException
 
@@ -28,6 +28,9 @@ CONNECTED = {
     "kruskal_wallis",
     "tukey",
     "games_howell",
+    "ancova",
+    "linear_regression_simple",
+    "linear_regression_multiple",
 }
 
 
@@ -136,6 +139,97 @@ def reliability_questions(package: ResearchPackage, hypothesis_id: str) -> list[
     return questions
 
 
+def regression_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Validate metadata for linear regression with one or more predictors."""
+    hypothesis = next(item for item in package.hypotheses if item.id == hypothesis_id)
+    variables = {item.id: item for item in package.variables}
+    selected = [variables[item] for item in hypothesis.variable_ids]
+    dependents = [item for item in selected if item.role == "dependent"]
+    predictors = [item for item in selected if item.role in {"independent", "covariate"}]
+    questions: list[str] = []
+    if package.design == "unknown":
+        questions.append("Confirma el diseño de investigación en las vinculaciones.")
+    if package.observations != "independent":
+        questions.append("La regresión requiere observaciones independientes declaradas.")
+    if len(dependents) != 1 or not predictors:
+        questions.append("Identifica una variable dependiente y uno o más predictores.")
+        return questions
+    if len(selected) != len(dependents) + len(predictors) or any(
+        len(item.columns) != 1 for item in selected
+    ):
+        questions.append("Cada variable de regresión debe vincularse a una única columna.")
+        return questions
+    if any(item.measurement_scale not in {"interval", "ratio"} for item in selected):
+        questions.append("La regresión lineal requiere escalas intervalares o de razón.")
+    columns = [item.columns[0] for item in selected]
+    if len(columns) != len(set(columns)):
+        questions.append("La respuesta y los predictores deben usar columnas distintas.")
+    return questions
+
+
+def simple_regression_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Require exactly one predictor for a simple linear regression."""
+    questions = regression_questions(package, hypothesis_id)
+    hypothesis = next(item for item in package.hypotheses if item.id == hypothesis_id)
+    variables = {item.id: item for item in package.variables}
+    predictor_count = sum(
+        variables[item].role in {"independent", "covariate"} for item in hypothesis.variable_ids
+    )
+    if predictor_count != 1:
+        questions.append("La regresión simple requiere exactamente un predictor.")
+    return questions
+
+
+def multiple_regression_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Require at least two predictors for a multiple linear regression."""
+    questions = regression_questions(package, hypothesis_id)
+    hypothesis = next(item for item in package.hypotheses if item.id == hypothesis_id)
+    variables = {item.id: item for item in package.variables}
+    predictor_count = sum(
+        variables[item].role in {"independent", "covariate"} for item in hypothesis.variable_ids
+    )
+    if predictor_count < 2:
+        questions.append("La regresión múltiple requiere al menos dos predictores.")
+    return questions
+
+
+def ancova_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
+    """Validate the outcome, grouping variable and covariate required by ANCOVA."""
+    hypothesis = next(item for item in package.hypotheses if item.id == hypothesis_id)
+    variables = {item.id: item for item in package.variables}
+    selected = [variables[item] for item in hypothesis.variable_ids]
+    dependents = [item for item in selected if item.role == "dependent"]
+    groups = [item for item in selected if item.role == "independent"]
+    covariates = [item for item in selected if item.role == "covariate"]
+    questions: list[str] = []
+    if package.design == "unknown":
+        questions.append("Confirma el diseño de investigación en las vinculaciones.")
+    if package.observations != "independent":
+        questions.append("ANCOVA requiere observaciones independientes declaradas.")
+    if (
+        len(selected) != 3
+        or len(dependents) != 1
+        or len(groups) != 1
+        or len(covariates) != 1
+        or any(len(item.columns) != 1 for item in selected)
+    ):
+        questions.append(
+            "ANCOVA requiere una dependiente, una agrupación y una covariable "
+            "con una columna cada una."
+        )
+        return questions
+    if dependents[0].measurement_scale not in {"interval", "ratio"}:
+        questions.append("La variable dependiente de ANCOVA debe ser intervalar o de razón.")
+    if groups[0].measurement_scale not in {"nominal", "ordinal"}:
+        questions.append("La variable de agrupación de ANCOVA debe ser nominal u ordinal.")
+    if covariates[0].measurement_scale not in {"interval", "ratio"}:
+        questions.append("La covariable de ANCOVA debe ser intervalar o de razón.")
+    columns = [item.columns[0] for item in selected]
+    if len(columns) != len(set(columns)):
+        questions.append("La respuesta, agrupación y covariable deben usar columnas distintas.")
+    return questions
+
+
 def analysis_input(
     package: ResearchPackage, plan: AnalysisPlan, table: DatasetTable
 ) -> AnalysisInput:
@@ -154,6 +248,9 @@ def analysis_input(
         "kruskal_wallis": independent_questions,
         "tukey": independent_questions,
         "games_howell": independent_questions,
+        "ancova": ancova_questions,
+        "linear_regression_simple": simple_regression_questions,
+        "linear_regression_multiple": multiple_regression_questions,
         "cronbach_alpha": reliability_questions,
     }.get(plan.technique, lambda *_: ["La técnica no admite esta entrada de dos columnas."])(
         package, plan.hypothesis_id
@@ -163,6 +260,40 @@ def analysis_input(
     hypothesis = next(item for item in package.hypotheses if item.id == plan.hypothesis_id)
     variables = {item.id: item for item in package.variables}
     selected = [variables[item] for item in hypothesis.variable_ids]
+    if plan.technique in {"linear_regression_simple", "linear_regression_multiple"}:
+        dependent = next(item for item in selected if item.role == "dependent")
+        predictors = [item for item in selected if item.role in {"independent", "covariate"}]
+        try:
+            outcome_index = table.columns.index(dependent.columns[0])
+            predictor_indices = [table.columns.index(item.columns[0]) for item in predictors]
+        except ValueError as exc:
+            raise HTTPException(409, "Una columna vinculada ya no existe.") from exc
+        outcome = tuple(row[outcome_index] for row in table.rows)
+        if plan.technique == "linear_regression_simple":
+            return AnalysisInput(
+                left=tuple(row[predictor_indices[0]] for row in table.rows), right=outcome
+            )
+        return AnalysisInput(
+            predictors=tuple(
+                tuple(row[index] for index in predictor_indices) for row in table.rows
+            ),
+            outcome=outcome,
+        )
+    if plan.technique == "ancova":
+        dependent = next(item for item in selected if item.role == "dependent")
+        group = next(item for item in selected if item.role == "independent")
+        covariate = next(item for item in selected if item.role == "covariate")
+        try:
+            outcome_index = table.columns.index(dependent.columns[0])
+            group_index = table.columns.index(group.columns[0])
+            covariate_index = table.columns.index(covariate.columns[0])
+        except ValueError as exc:
+            raise HTTPException(409, "Una columna vinculada ya no existe.") from exc
+        return AnalysisInput(
+            outcome=tuple(row[outcome_index] for row in table.rows),
+            group=tuple(row[group_index] for row in table.rows),
+            covariate=tuple(row[covariate_index] for row in table.rows),
+        )
     allowed = {
         "pearson": {"interval", "ratio"},
         "spearman": {"ordinal", "interval", "ratio"},
