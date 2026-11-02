@@ -49,6 +49,12 @@ grados de libertad de Welch–Satterthwaite. Se eliminan únicamente pares falta
 se rechazan muestras insuficientes o valores inválidos; las funciones devuelven estadísticas
 reproducibles y todavía no realizan decisiones automáticas de significancia.
 
+## Comparaciones no paramétricas (ST-06)
+
+`nonparametric.py` implementa Mann–Whitney, Wilcoxon de rangos con signo y Kruskal–Wallis,
+incluyendo rangos promedio para empates, eliminación explícita de diferencias cero y
+validación de tamaños mínimos. Sus estadísticas se verifican con fixtures numéricos pequeños.
+
 ## Planner determinista (ST-02)
 
 `catalog.py` contiene el catálogo declarativo de 18 técnicas inferenciales previstas y el
