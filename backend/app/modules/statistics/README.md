@@ -61,7 +61,7 @@ validación de tamaños mínimos. Sus estadísticas se verifican con fixtures nu
 
 ## Planner determinista (ST-02)
 
-`catalog.py` contiene el catálogo declarativo de 18 técnicas inferenciales previstas y el
+`catalog.py` contiene el catálogo declarativo de 19 técnicas inferenciales previstas y el
 resumen descriptivo. `planner.py` implementa `DeterministicStatisticalPlanner`: consume un
 `ResearchPackage` revisado, evalúa el tipo de hipótesis, roles, escalas y relación entre
 observaciones, y devuelve un `AnalysisPlan`. Cuando la información es insuficiente devuelve
@@ -87,7 +87,9 @@ motor de ejecución completo.
 
 `anova.py` implementa ANOVA de un factor, ANOVA de Welch, Tukey HSD y Games–Howell. Devuelve
 estadísticos globales, grados de libertad y métricas por pares; deja explícito que la decisión
-de significancia requiere el valor crítico de la distribución correspondiente.
+de significancia requiere el valor crítico de la distribución correspondiente. El adaptador
+Research→Statistics conecta Tukey y Games–Howell para datasets con tres o más grupos válidos;
+la selección del test global previo queda como responsabilidad metodológica del plan.
 
 ## Regresión y ANCOVA (ST-08)
 

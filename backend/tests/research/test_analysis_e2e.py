@@ -454,6 +454,20 @@ def test_real_welch_t_columns_with_two_groups(tmp_path, monkeypatch):
             "h",
             4.571428571428569,
         ),
+        (
+            "tukey",
+            "ratio",
+            b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,5\nB,6\nC,7\nC,8\nC,9\n",
+            "A_vs_B.mean_difference",
+            -3,
+        ),
+        (
+            "games_howell",
+            "ratio",
+            b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,6\nB,8\nC,9\nC,10\nC,12\n",
+            "pair_count",
+            3,
+        ),
     ],
 )
 def test_real_multigroup_columns(tmp_path, monkeypatch, technique, scale, data, metric, expected):
@@ -505,6 +519,33 @@ def test_multigroup_adapter_rejects_only_two_group_values(tmp_path, monkeypatch)
     response = case.execute(record)
     assert response.status_code == 409
     assert "tres o más grupos" in response.json()["detail"]
+
+
+def test_posthoc_adapter_exposes_pairwise_metrics_and_limitation_warning(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", "ratio"),
+        data=b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,5\nB,6\nC,7\nC,8\nC,9\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def posthoc_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "tukey"
+        plan.rationale = "Tukey HSD para comparaciones post-hoc entre tres grupos."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", posthoc_plan)
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "tukey"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["pair_count"] == 3
+    assert metrics["A_vs_B.mean_difference"] == pytest.approx(-3)
+    assert any("valor crítico" in warning for warning in result.warnings)
 
 
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):

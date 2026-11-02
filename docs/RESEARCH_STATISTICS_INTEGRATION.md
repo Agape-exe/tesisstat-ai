@@ -2,8 +2,9 @@
 
 Los PR #12, #13 y #14 ya están fusionados en develop. La sesión 13 conserva el
 helper `build_engine_from_research_bridge` del Integrante 2 y completa el flujo
-para **resumen descriptivo, Pearson y Spearman** con aprobación independiente, resultados
-persistidos y vigencia. Ver [RESEARCH_STATISTICS_E2E.md](RESEARCH_STATISTICS_E2E.md).
+para **resumen descriptivo, Pearson, Spearman, comparaciones de dos grupos y
+comparaciones multigrupo** con aprobación independiente, resultados persistidos y
+vigencia. Ver [RESEARCH_STATISTICS_E2E.md](RESEARCH_STATISTICS_E2E.md).
 
 `ResearchStatisticsBridge` valida proyecto, paquete, referencia opaca, dataset
 activo, formato, columnas, filas, tamaño y fuentes antes de proporcionar bytes.
@@ -22,6 +23,8 @@ runtime verifican compatibilidad y rechazo del atajo de aprobación. El recorrid
 completo está en `backend/tests/research/test_analysis_e2e.py`, con documentos y
 archivos realmente almacenados por Research, planificador y motor existentes.
 
-La demo es local y solo para datos sintéticos. Las demás técnicas necesitan
-adaptadores de integración coordinados; no se cambian los seis contratos ni las
-fórmulas o archivos del módulo Statistics.
+La demo es local y solo para datos sintéticos. El flujo Research→Statistics conecta
+16 de las 19 técnicas del catálogo, incluyendo Tukey HSD y Games–Howell como
+comparaciones post-hoc multigrupo. ANCOVA y las dos variantes de regresión todavía
+necesitan adaptadores de integración coordinados; no se cambian los seis contratos
+ni las fórmulas del módulo Statistics.
