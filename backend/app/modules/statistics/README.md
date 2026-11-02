@@ -84,3 +84,9 @@ motor de ejecución completo.
 `anova.py` implementa ANOVA de un factor, ANOVA de Welch, Tukey HSD y Games–Howell. Devuelve
 estadísticos globales, grados de libertad y métricas por pares; deja explícito que la decisión
 de significancia requiere el valor crítico de la distribución correspondiente.
+
+## Regresión y ANCOVA (ST-08)
+
+`regression.py` implementa regresión lineal simple y múltiple mediante ecuaciones normales con
+eliminación gaussiana y pivoteo; también ofrece una ANCOVA inicial con indicadores de grupo y
+una covariable. Se detectan matrices singulares, muestras insuficientes y respuestas constantes.
