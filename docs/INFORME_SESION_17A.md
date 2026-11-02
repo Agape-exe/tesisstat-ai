@@ -109,6 +109,7 @@ presentar una consulta general sin snapshot como desactualizada o como cambio de
 - `backend/tests/research/test_multiagent.py`
 - `docs/ORQUESTACION_MULTIAGENTE.md`
 - `docs/INFORME_SESION_17A.md`
+- `docs/PR_SESION_17A.md`: descripción en español y enlace para crear el PR manualmente.
 
 ## 6. Archivos modificados
 
@@ -136,6 +137,7 @@ presentar una consulta general sin snapshot como desactualizada o como cambio de
 | --- | --- |
 | Pytest completo | **385 aprobadas**, 0 fallidas |
 | Pruebas nuevas multiagente | **47 casos** incluidos en la regresión |
+| Verificación final Conversation/contexto/multiagente | **131 aprobadas**, 0 fallidas |
 | Vitest | **99 aprobadas**, 19 archivos, 0 fallidas |
 | Ruff check | Correcto |
 | Ruff format --check | **139 archivos** con formato correcto |
@@ -219,10 +221,15 @@ Rama obligatoria `feat/orquestacion-multiagente`, commits en español y autoría
 Destino del PR: `develop`; no se modifica `main`, no se fuerza push, no se fusiona ni se
 añade Codex como colaborador, revisor, asignado o coautor.
 
-Los identificadores de commits, enlace del PR y estado final de CI se entregan en la
-respuesta de cierre y quedan consultables en el PR. La publicación se realiza después
-de aprobar los controles locales. La CI del repositorio repite pruebas, formatos,
-contratos y builds en Linux.
+Commit de implementación: `026d771`, `feat: implementar orquestación multiagente con LangGraph`.
+La rama está publicada después de aprobar los controles locales. GitHub devolvió **403**,
+`Resource not accessible by integration`, al intentar crear el PR mediante su integración.
+No se creó ni se fusionó un PR. Se entrega [el enlace de creación manual hacia develop](https://github.com/Agape-exe/tesisstat-ai/compare/develop...feat/orquestacion-multiagente?expand=1)
+y la descripción completa en `PR_SESION_17A.md`.
+
+La publicación activó la [CI de la rama](https://github.com/Agape-exe/tesisstat-ai/actions?query=branch%3Afeat%2Forquestacion-multiagente),
+que repite pruebas, formatos, contratos y builds en Linux. El resultado del commit final
+se informa en la respuesta de cierre; no se equiparan los controles locales con CI aprobada.
 
 **Confirmación:** no se modificaron `backend/app/modules/statistics/`,
 `backend/app/orchestration/analysis_inputs.py`, `backend/app/orchestration/analysis_service.py`,
