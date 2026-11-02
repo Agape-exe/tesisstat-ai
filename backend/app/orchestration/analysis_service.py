@@ -22,6 +22,7 @@ from app.orchestration.analysis_inputs import (
     independent_questions,
     paired_questions,
     pearson_questions,
+    reliability_questions,
     spearman_questions,
 )
 from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
@@ -129,6 +130,7 @@ class ResearchAnalysisService:
             "wilcoxon",
             "t_independent",
             "mann_whitney",
+            "cronbach_alpha",
         }:
             questions = {
                 "pearson": pearson_questions,
@@ -139,6 +141,7 @@ class ResearchAnalysisService:
                 "wilcoxon": paired_questions,
                 "t_independent": independent_questions,
                 "mann_whitney": independent_questions,
+                "cronbach_alpha": reliability_questions,
             }[plan.technique](package, plan.hypothesis_id)
             if questions:
                 plan.status = "needs_clarification"
@@ -208,6 +211,7 @@ class ResearchAnalysisService:
                     "wilcoxon",
                     "t_independent",
                     "mann_whitney",
+                    "cronbach_alpha",
                 }:
                     table = reader.read(package.dataset)
                     inputs[plan_id] = analysis_input(package, record.plan, table)
