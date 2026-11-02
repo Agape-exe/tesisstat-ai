@@ -299,13 +299,11 @@ class ResearchAnalysisService:
                         "se excluyeron pares incompletos según la política del motor."
                     )
                 result.warnings.append(
-                    "Se informa solo el coeficiente de asociación; no se calculó p-valor "
-                    "ni significancia. Revisa monotonicidad, normalidad y valores atípicos "
-                    "antes de interpretar."
+                    "Se informa el coeficiente de asociación y un p-valor bilateral aproximado. "
+                    "Revisa monotonicidad, independencia y valores atípicos antes de interpretar."
                     if record.plan.technique == "spearman"
-                    else "Se informa solo el coeficiente r; no se calculó p-valor ni "
-                    "significancia. Revisa linealidad, normalidad y valores atípicos "
-                    "antes de interpretar."
+                    else "Se informa el coeficiente r y un p-valor bilateral. Revisa linealidad, "
+                    "normalidad y valores atípicos antes de interpretar."
                 )
             record.result = result
         return result
