@@ -1,7 +1,8 @@
 # Research → Statistics: integración real de desarrollo
 
 Sesión 13. Base: `develop@578ae277968fa99e4a6447300809a68d8c94a766`, con PR #11,
-#12 y #13 fusionados. Rama: `feat/research-statistics-e2e`. Los seis contratos
+#12 y #13 fusionados. Antes de publicar se incorporó también `develop@f776dcd`
+(PR #14 del compañero). Rama: `feat/research-statistics-e2e`. Los seis contratos
 v1.0.0, el planificador, las fórmulas y los archivos de Statistics permanecen intactos.
 
 ## Flujo y responsabilidades
@@ -44,8 +45,11 @@ engine = DeterministicStatisticalEngine(
 result = engine.execute(approved_plan)
 ```
 
-No se utiliza directamente `build_engine(DatasetService, ...)`: ese helper no
-llama al puente. La composición exige referencia opaca válida, proyecto, actividad,
+Se reutiliza `build_engine_from_research_bridge` del PR #14 para descriptivos.
+Pearson construye el mismo motor con su `AnalysisInput`, porque ese helper no
+recibe entradas seleccionadas. No se utiliza directamente
+`build_engine(DatasetService, ...)`: ese helper no llama al puente. La composición
+exige referencia opaca válida, proyecto, actividad,
 formato, columnas, filas, tamaño y vigencia antes y después de leer. Statistics
 nunca recibe rutas privadas. Para la huella del documento se inyecta el puerto
 público `DocumentRepository.read(project_id, document_id)`; su contenido no se
@@ -137,6 +141,17 @@ SQLite no disponible. Un fallo de cálculo devuelve 200 con
 `AnalysisResult.status = failed`, métricas vacías y advertencias. Las excepciones
 inesperadas del motor se convierten en fallos controlados sin detalle interno en HTTP.
 
+Compatibilidad con PR #14: `POST /statistics/plan` conserva la respuesta
+`AnalysisPlan`, pero registra la propuesta mediante el mismo servicio. Para
+`POST /statistics/analysis` ahora se exige `plan_id` junto a paquete e hipótesis,
+y aprobación previa en `/analysis/plans/{plan_id}/approve`. `approve=true` se
+acepta como campo heredado, pero **no concede aprobación**. Sin ID/aprobación
+devuelve 409 con instrucciones; no vuelve a proponer ni aprueba en la ejecución.
+Ambas rutas aplican loopback y las restricciones sintéticas. Se conservaron el
+helper, algoritmos y panel Statistics del compañero. Su panel anterior no se
+monta en Research: su protocolo de ejecución queda pendiente de migración si
+se reutiliza por separado. La demo integrada usa `ProjectAnalysis`.
+
 ## Persistencia, vigencia y reintentos
 
 Tabla `research_analyses` en el `research_db_path` existente. Guarda proyecto,
@@ -191,17 +206,20 @@ el proyecto para comprobar persistencia.
 
 ## Evidencia de la sesión
 
-- Backend completo: **226 pruebas aprobadas**, incluidas **34 nuevas** en
+- Backend completo: **229 pruebas aprobadas**, incluidas **34 nuevas** en
   `tests/research/test_analysis_e2e.py`. Los casos reales usan HTTP de Research,
   SQLite, documentos/datasets almacenados, planificador y motor existentes.
   Cubren CSV/XLSX, derivado, pertenencia, fuentes obsoletas, documento modificado,
   aclaraciones, aprobación, faltantes, errores numéricos, reintento y recarga.
   Pydantic valida planes/resultados; la regresión valida los seis esquemas compartidos.
+  También se adaptan las dos pruebas runtime del PR #14 para la aprobación
+  independiente y se añade una prueba contra el atajo `approve=true`, aclaraciones
+  y referencias incompatibles en sus rutas de compatibilidad.
 - Unidad: rechazo del adaptador frente a una tabla sin columna vinculada; esa
   llamada aislada no sustituye las pruebas del recorrido completo.
 - Mocks/instrumentación: inyección de excepción inesperada del motor y contador
   alrededor del motor real para demostrar deduplicación. No sustituyen cálculos reales.
-- Frontend: **62 pruebas aprobadas** en 16 archivos; 8 nuevas de API/componente,
+- Frontend: **63 pruebas aprobadas** en 17 archivos; 8 nuevas de API/componente,
   más 3 de paquete actualizadas. Sus respuestas HTTP son simuladas. Comprueban
   acciones separadas, métricas, advertencias, recuperación visual, aclaraciones,
   obsolescencia, límites y errores; no son pruebas de backend.
@@ -215,6 +233,11 @@ el proyecto para comprobar persistencia.
   POST plan 201, approve 200, execute 200, GET plans 200. Se usaron puertos
   18013/15174 porque 5174 estaba ocupado. No se repitió manualmente la preparación
   metodológica completa en navegador; sí mediante pruebas HTTP reales.
+  Tras incorporar PR #14 se verificó nuevamente Pearson persistido, se cambió
+  el tipo a descriptivo mediante la interfaz, se observó la obsolescencia del
+  paquete anterior y se generó/aprobó/ejecutó otra propuesta. La demo mostró
+  media 2.5 y varianza 1.6666666666666667; el resultado Pearson anterior quedó
+  etiquetado como histórico y perdió su aprobación activa.
 
 El sandbox Windows bloqueó el socket interno de asyncio de `TestClient`; la
 regresión se ejecutó con autorización fuera del sandbox. `uv` encontró un bloqueo
@@ -234,3 +257,31 @@ Pendiente de coordinación: adaptadores del resto del catálogo, comprobación c
 de supuestos, inferencia/p-valores según contratos y motor disponibles, informes
 exportables y persistencia/autenticación de producción. No se demostró un defecto
 bloqueante que requiriera modificar algoritmos del Integrante 2.
+
+## Archivos de esta integración respecto de develop con PR #14
+
+Nuevos:
+
+- `backend/app/orchestration/analysis_inputs.py`
+- `backend/app/orchestration/analysis_models.py`
+- `backend/app/orchestration/analysis_repository.py`
+- `backend/app/orchestration/analysis_routes.py`
+- `backend/app/orchestration/analysis_service.py`
+- `backend/tests/research/test_analysis_e2e.py`
+- `frontend/src/features/research/analysis/api.ts`
+- `frontend/src/features/research/analysis/api.test.ts`
+- `frontend/src/features/research/analysis/ProjectAnalysis.tsx`
+- `frontend/src/features/research/analysis/ProjectAnalysis.test.tsx`
+- `docs/RESEARCH_STATISTICS_E2E.md`
+
+Modificados:
+
+- `backend/app/modules/research/dev_app.py`
+- `backend/app/orchestration/statistics_routes.py`
+- `backend/tests/research/test_statistics_runtime.py`
+- `frontend/src/features/research/packages/ProjectPackage.tsx`
+- `frontend/src/features/research/packages/ProjectPackage.test.tsx`
+- `frontend/src/features/research/projects/ResearchProjects.tsx`
+- `frontend/src/features/research/projects/projects.css`
+- `docs/RESEARCH_PACKAGE.md`
+- `docs/RESEARCH_STATISTICS_INTEGRATION.md`

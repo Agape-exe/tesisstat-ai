@@ -11,6 +11,7 @@ from fastapi import HTTPException
 
 from app.modules.research.documents.repository import DocumentRepository
 from app.modules.research.documents.sqlite_repository import DocumentStorageError
+from app.modules.statistics.composition import build_engine_from_research_bridge
 from app.modules.statistics.engine import DeterministicStatisticalEngine
 from app.modules.statistics.planner import DeterministicStatisticalPlanner, UnknownHypothesis
 from app.modules.statistics.research_bridge import BytesDatasetReader
@@ -175,9 +176,11 @@ class ResearchAnalysisService:
                 if record.plan.technique == "pearson":
                     table = reader.read(package.dataset)
                     inputs[plan_id] = analysis_input(package, record.plan, table)
-                engine = DeterministicStatisticalEngine(
-                    reader, {package.dataset.id: package.dataset}, inputs
-                )
+                    engine = DeterministicStatisticalEngine(
+                        reader, {package.dataset.id: package.dataset}, inputs
+                    )
+                else:
+                    engine = build_engine_from_research_bridge(self.bridge, project_id, package)
                 result = engine.execute(record.plan)
             except ResearchInputError:
                 raise

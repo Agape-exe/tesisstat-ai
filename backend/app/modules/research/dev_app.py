@@ -55,6 +55,7 @@ from app.orchestration.analysis_repository import SQLiteAnalysisRepository
 from app.orchestration.analysis_routes import create_router as create_analysis_router
 from app.orchestration.analysis_service import ResearchAnalysisService
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
+from app.orchestration.statistics_routes import create_statistics_router
 from app.shared.adapters.cloudflare import CloudflareLanguageModel, CloudflareSettings
 
 logger = logging.getLogger(__name__)
@@ -289,6 +290,7 @@ def create_app(
         document_repository,
     )
     app.include_router(create_analysis_router(app.state.research_analysis))
+    app.include_router(create_statistics_router(app.state.research_analysis))
 
     @app.get("/health")
     def health() -> dict[str, str]:
