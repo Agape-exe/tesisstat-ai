@@ -267,6 +267,31 @@ def test_real_chi_square_columns_with_categorical_variables(tmp_path):
     assert metrics["degrees_of_freedom"] == 1
 
 
+def test_real_fisher_exact_columns_with_categorical_variables(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        kind="association",
+        scales=("nominal", "nominal"),
+        data=b"horas_estudio,rendimiento\nA,X\nA,Y\nB,X\nB,Y\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def fisher_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "fisher_exact"
+        plan.rationale = "Fisher exacto para una tabla categórica 2 × 2."
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", fisher_plan)
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "fisher_exact"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 4
+    assert metrics["odds_ratio"] == 1
+    assert metrics["p_value"] == pytest.approx(1)
+
+
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):
     case = research_case(
         tmp_path,
