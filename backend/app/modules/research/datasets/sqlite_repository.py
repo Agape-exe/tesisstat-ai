@@ -107,6 +107,47 @@ class SQLiteDatasetRepository:
             )
             return cursor.rowcount == 1
 
+    def set_synthetic(self, project_id: UUID, dataset_id: UUID, synthetic: bool) -> Dataset | None:
+        with closing(self._connect()) as connection, connection:
+            row = connection.execute(
+                "SELECT payload, active FROM research_datasets WHERE project_id = ? AND id = ?",
+                (str(project_id), str(dataset_id)),
+            ).fetchone()
+            if row is None:
+                return None
+            dataset = Dataset.model_validate_json(row[0]).model_copy(
+                update={"synthetic": synthetic}
+            )
+            connection.execute(
+                "UPDATE research_datasets SET payload = ? WHERE project_id = ? AND id = ?",
+                (dataset.model_dump_json(), str(project_id), str(dataset_id)),
+            )
+            descendants = connection.execute(
+                "SELECT id, payload FROM research_datasets WHERE project_id = ?",
+                (str(project_id),),
+            ).fetchall()
+            classified = {dataset_id}
+            remaining = descendants
+            while remaining:
+                next_remaining = []
+                changed = False
+                for child_id, payload in remaining:
+                    child = Dataset.model_validate_json(payload)
+                    if child.source_dataset_id in classified and child.id not in classified:
+                        child = child.model_copy(update={"synthetic": synthetic})
+                        connection.execute(
+                            "UPDATE research_datasets SET payload = ? WHERE id = ?",
+                            (child.model_dump_json(), child_id),
+                        )
+                        classified.add(child.id)
+                        changed = True
+                    elif child.id not in classified:
+                        next_remaining.append((child_id, payload))
+                if not changed:
+                    break
+                remaining = next_remaining
+            return dataset.model_copy(update={"active": bool(row[1])})
+
     def read(self, project_id: UUID, dataset_id: UUID) -> bytes:
         if self.get(project_id, dataset_id) is None:
             raise FileNotFoundError

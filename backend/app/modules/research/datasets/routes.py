@@ -1,11 +1,17 @@
 from urllib.parse import unquote
 from uuid import UUID
 
-from fastapi import APIRouter, Header, Request, Response, status
+from fastapi import APIRouter, Header, HTTPException, Request, Response, status
+from pydantic import BaseModel, ConfigDict
 
 from app.modules.research.datasets.models import Dataset, DatasetPreview
 from app.modules.research.datasets.readers import InvalidDataset
 from app.modules.research.datasets.use_cases import DatasetService
+
+
+class DatasetOrigin(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    synthetic: bool
 
 
 def create_router(service: DatasetService) -> APIRouter:
@@ -40,6 +46,13 @@ def create_router(service: DatasetService) -> APIRouter:
     @router.post("/{dataset_id}/activate", response_model=Dataset)
     def activate_dataset(project_id: UUID, dataset_id: UUID) -> Dataset:
         return service.activate(project_id, dataset_id)
+
+    @router.put("/{dataset_id}/origin", response_model=Dataset)
+    def set_origin(project_id: UUID, dataset_id: UUID, origin: DatasetOrigin) -> Dataset:
+        try:
+            return service.set_synthetic(project_id, dataset_id, origin.synthetic)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
 
     @router.delete("/{dataset_id}", status_code=status.HTTP_204_NO_CONTENT)
     def delete_dataset(project_id: UUID, dataset_id: UUID) -> Response:

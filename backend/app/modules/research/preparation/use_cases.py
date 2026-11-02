@@ -87,6 +87,7 @@ class PreparationService:
             uploaded_at=datetime.now(UTC),
             warnings=result["warnings"],
             source_dataset_id=source_id,
+            synthetic=source.synthetic,
         )
         preview = DatasetPreview(
             columns=result["columns"],

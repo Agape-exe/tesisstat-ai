@@ -12,6 +12,7 @@ export interface ResearchDataset {
   active: boolean;
   warnings: string[];
   source_dataset_id?: string | null;
+  synthetic?: boolean | null;
 }
 
 export type PreparationKind =
@@ -126,6 +127,11 @@ export interface DatasetApi {
   preview(projectId: string, id: string): Promise<DatasetPreview>;
   activate(projectId: string, id: string): Promise<ResearchDataset>;
   delete(projectId: string, id: string): Promise<void>;
+  setOrigin?(
+    projectId: string,
+    id: string,
+    synthetic: boolean,
+  ): Promise<ResearchDataset>;
   getEda(projectId: string, id: string): Promise<EDAReport>;
   runEda(projectId: string, id: string, force?: boolean): Promise<EDAReport>;
   previewPreparation?(
@@ -198,6 +204,12 @@ export function createDatasetApi(
       request(`${item(projectId, id)}/activate`, { method: 'POST' }),
     delete: (projectId, id) =>
       request(item(projectId, id), { method: 'DELETE' }),
+    setOrigin: (projectId, id, synthetic) =>
+      request(`${item(projectId, id)}/origin`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ synthetic }),
+      }),
     getEda: (projectId, id) => request(`${item(projectId, id)}/eda`),
     runEda: (projectId, id, force = false) =>
       request(`${item(projectId, id)}/eda${force ? '?force=true' : ''}`, {
