@@ -151,8 +151,26 @@ it('shows reviewed links, validates and builds an explicitly configured package'
   );
   expect(await screen.findByText(/package-1/)).toBeTruthy();
   expect(
+    screen.getByText(
+      /El paquete de investigación está preparado para Statistics/,
+    ),
+  ).toBeTruthy();
+  expect(
     screen.getByText(/Integración disponible: resumen descriptivo y Pearson/),
   ).toBeTruthy();
+  expect(
+    screen.getAllByRole('region', { name: 'Análisis estadístico Research' }),
+  ).toHaveLength(1);
+  expect(
+    screen.queryByRole('region', { name: 'Statistics sobre paquete Research' }),
+  ).toBeNull();
+  expect(
+    screen.getAllByRole('button', { name: 'Proponer análisis' }),
+  ).toHaveLength(1);
+  expect(
+    screen.queryByRole('button', { name: 'Ejecutar descriptivos' }),
+  ).toBeNull();
+  expect(calls.some((item) => item.includes('/statistics/'))).toBe(false);
   expect(screen.getByText(/Existe relación \(ID: hypothesis\)/)).toBeTruthy();
 });
 
@@ -190,6 +208,17 @@ it('shows a stale package without claiming Statistics is ready', async () => {
   expect(screen.getByText('El dataset cambió.')).toBeTruthy();
   expect(
     screen.queryByText(/La integración con Statistics está pendiente/),
+  ).toBeNull();
+  expect(
+    screen.queryByText(
+      /El paquete de investigación está preparado para Statistics/,
+    ),
+  ).toBeNull();
+  expect(
+    screen.queryByRole('region', { name: 'Análisis estadístico Research' }),
+  ).toBeNull();
+  expect(
+    screen.queryByRole('region', { name: 'Statistics sobre paquete Research' }),
   ).toBeNull();
 });
 
@@ -246,4 +275,11 @@ it('loads an existing current package when the project is reopened', async () =>
     screen.getByText('Aclaración pendiente: Confirmar escala'),
   ).toBeTruthy();
   expect(calls.some((url) => url.endsWith('/package'))).toBe(true);
+  expect(
+    screen.getAllByRole('region', { name: 'Análisis estadístico Research' }),
+  ).toHaveLength(1);
+  expect(
+    screen.queryByRole('region', { name: 'Statistics sobre paquete Research' }),
+  ).toBeNull();
+  expect(calls.some((url) => url.includes('/statistics/'))).toBe(false);
 });

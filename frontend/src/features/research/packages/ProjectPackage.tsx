@@ -556,6 +556,9 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
               {result.pending_questions.map((item) => (
                 <p key={item}>Aclaración pendiente: {item}</p>
               ))}
+              <p role="status">
+                El paquete de investigación está preparado para Statistics.
+              </p>
               <ProjectAnalysis
                 key={`${projectId}-${result.id}`}
                 projectId={projectId}

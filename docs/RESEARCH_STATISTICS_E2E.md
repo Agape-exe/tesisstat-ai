@@ -5,6 +5,14 @@ Sesión 13. Base: `develop@578ae277968fa99e4a6447300809a68d8c94a766`, con PR #11
 (PR #14 del compañero). Rama: `feat/research-statistics-e2e`. Los seis contratos
 v1.0.0, el planificador, las fórmulas y los archivos de Statistics permanecen intactos.
 
+Cierre de integración: se incorporó mediante merge normal `develop@33ec482`
+(PR #15). Se resolvieron los conflictos de `ProjectPackage.tsx` y su prueba
+conservando el aviso de paquete preparado del compañero y un único panel visible,
+`ProjectAnalysis`, con planificación, aprobación independiente y ejecución.
+`ResearchStatisticsPanel` y el módulo Statistics no se modificaron. Las pruebas
+del paquete comprueban que no se monte el segundo panel ni se use su ruta anterior;
+las pruebas backend mantienen el rechazo del atajo `approve=true`.
+
 ## Flujo y responsabilidades
 
 1. Research crea el proyecto, almacena un documento y confirma una revisión
