@@ -78,3 +78,9 @@ Fisher exacto para tablas 2×2 y alfa de Cronbach. Cada función valida tamaño,
 constantes y dimensiones, y devuelve métricas deterministas con pruebas de referencia. Estas
 funciones todavía requieren un adaptador de columnas del `AnalysisPlan` para incorporarse al
 motor de ejecución completo.
+
+## ANOVA y comparaciones posteriores (ST-07)
+
+`anova.py` implementa ANOVA de un factor, ANOVA de Welch, Tukey HSD y Games–Howell. Devuelve
+estadísticos globales, grados de libertad y métricas por pares; deja explícito que la decisión
+de significancia requiere el valor crítico de la distribución correspondiente.
