@@ -11,6 +11,16 @@ técnicas como código.
 limita la lectura a `association.csv` y `quality_issues.csv`; y `api.py` los presenta en una API
 de desarrollo independiente. No modifica ni se monta desde `app.main`.
 
+## Integración controlada con Research (ST-01)
+
+`ports.py` expone `DatasetReader`, un puerto que recibe un `DatasetReference` y devuelve una
+tabla validada. `research_bridge.py` adapta un lector de bytes inyectado por la composición de la
+aplicación; Statistics no interpreta `location` como una ruta ni abre archivos arbitrarios.
+`datasets.py` valida y parsea CSV UTF-8 y XLSX en memoria, comprueba límites, cabeceras,
+dimensiones y la metadata de `DatasetReference`. `service.py` reutiliza el motor descriptivo
+para columnas seleccionadas. La composición con `Research.DatasetService` queda fuera del
+módulo hasta acordar el adaptador entre ambos integrantes.
+
 - Una columna es **identificador** si su encabezado contiene un token `id`, `identifier`,
   `code`, `codigo` o `cod`; no se calcula como variable cuantitativa.
 - Una columna es **numérica** únicamente si cada valor no faltante se puede convertir a un número

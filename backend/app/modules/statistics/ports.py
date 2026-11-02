@@ -1,6 +1,14 @@
 from typing import Protocol
 
-from app.shared.contracts import AnalysisPlan, AnalysisResult, ResearchPackage
+from app.shared.contracts import AnalysisPlan, AnalysisResult, DatasetReference, ResearchPackage
+
+from .datasets import DatasetTable
+
+
+class DatasetReader(Protocol):
+    """Read an authorized dataset without exposing storage paths to Statistics."""
+
+    def read(self, reference: DatasetReference) -> DatasetTable: ...
 
 
 class AnalysisPlanner(Protocol):
