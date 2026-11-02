@@ -12,22 +12,45 @@ from textwrap import wrap
 from app.shared.contracts import AnalysisResult
 
 
+def _metadata_lines(result: AnalysisResult) -> tuple[str, ...]:
+    """Keep the minimum reproducibility metadata with every export."""
+
+    return (
+        f"Resultado: {result.id}",
+        f"Plan de análisis: {result.analysis_plan_id}",
+        f"Dataset: {result.dataset_id}",
+        f"Estado: {result.status}",
+        f"Esquema: {result.schema_version}",
+        f"Motor: {result.engine_version}",
+    )
+
+
 def render_text(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> str:
     lines = [
         "TesisStat AI — Informe estadístico",
-        f"Resultado: {result.id}",
-        f"Estado: {result.status}",
-        f"Motor: {result.engine_version}",
-        *context,
         "",
-        "Métricas",
+        "Metadatos de reproducibilidad",
+        *_metadata_lines(result),
     ]
+    if context:
+        lines.extend(
+            [
+                "",
+                "Contexto metodológico",
+                *context,
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "Tabla 1. Métricas calculadas",
+        ]
+    )
     if result.metrics:
         lines.extend(f"- {metric.name}: {metric.value:.6g}" for metric in result.metrics)
     else:
         lines.append("- No hay métricas disponibles.")
-    lines.append("")
-    lines.append("Supuestos")
+    lines.extend(["", "Tabla 2. Verificación de supuestos"])
     if result.assumptions:
         lines.extend(
             f"- {item.name}: {item.status} — {item.details}" for item in result.assumptions
@@ -46,14 +69,20 @@ def render_docx(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> byt
     from io import BytesIO
 
     from docx import Document
+    from docx.shared import RGBColor
 
     document = Document()
-    document.add_heading("TesisStat AI — Informe estadístico", level=1)
-    document.add_paragraph(f"Resultado: {result.id}")
-    document.add_paragraph(f"Estado: {result.status} · Motor: {result.engine_version}")
-    for line in context:
+    for style_name in ("Title", "Heading 1", "Heading 2"):
+        document.styles[style_name].font.color.rgb = RGBColor(0, 0, 0)
+    document.add_heading("TesisStat AI Informe Estadistico", level=0)
+    document.add_heading("Metadatos de reproducibilidad", level=2)
+    for line in _metadata_lines(result):
         document.add_paragraph(line)
-    document.add_heading("Métricas", level=2)
+    if context:
+        document.add_heading("Contexto metodológico", level=2)
+        for line in context:
+            document.add_paragraph(line)
+    document.add_heading("Tabla 1. Métricas calculadas", level=2)
     table = document.add_table(rows=1, cols=2)
     table.style = "Light Shading Accent 1"
     table.rows[0].cells[0].text = "Métrica"
@@ -62,11 +91,17 @@ def render_docx(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> byt
         cells = table.add_row().cells
         cells[0].text = metric.name
         cells[1].text = f"{metric.value:.6g}"
-    document.add_heading("Supuestos", level=2)
+    document.add_heading("Tabla 2. Verificación de supuestos", level=2)
+    assumptions = document.add_table(rows=1, cols=3)
+    assumptions.style = "Light Shading Accent 1"
+    assumptions.rows[0].cells[0].text = "Supuesto"
+    assumptions.rows[0].cells[1].text = "Estado"
+    assumptions.rows[0].cells[2].text = "Detalle"
     for assumption in result.assumptions:
-        document.add_paragraph(
-            f"{assumption.name}: {assumption.status} — {assumption.details}", style="List Bullet"
-        )
+        cells = assumptions.add_row().cells
+        cells[0].text = assumption.name
+        cells[1].text = assumption.status
+        cells[2].text = assumption.details
     if result.warnings:
         document.add_heading("Advertencias", level=2)
         for warning in result.warnings:

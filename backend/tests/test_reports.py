@@ -19,13 +19,31 @@ def result() -> AnalysisResult:
 
 def test_text_report_contains_result_sections() -> None:
     rendered = render_text(result())
-    assert "Métricas" in rendered
+    assert "Metadatos de reproducibilidad" in rendered
+    assert "Plan de análisis: plan-demo" in rendered
+    assert "Tabla 1. Métricas calculadas" in rendered
+    assert "Tabla 2. Verificación de supuestos" in rendered
     assert "x.mean: 2.5" in rendered
     assert "Advertencia de prueba" in rendered
 
 
 def test_docx_report_is_valid_zip() -> None:
     assert render_docx(result()).startswith(b"PK")
+
+
+def test_docx_report_has_numbered_tables_and_methodological_context() -> None:
+    from io import BytesIO
+
+    from docx import Document
+
+    document = Document(BytesIO(render_docx(result(), context=("Diseño transversal.",))))
+    text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+    assert "Metadatos de reproducibilidad" in text
+    assert "Contexto metodológico" in text
+    assert "Tabla 1. Métricas calculadas" in text
+    assert "Tabla 2. Verificación de supuestos" in text
+    assert len(document.tables) == 2
+    assert document.tables[1].rows[0].cells[1].text == "Estado"
 
 
 def test_pdf_report_has_pdf_signature_and_eof() -> None:

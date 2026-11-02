@@ -1,6 +1,6 @@
 # Auditoría del plan de trabajo — Integrante 2
 
-Actualizada contra `develop` después del merge del PR #31.
+Actualizada contra `develop` después del merge del PR #33.
 
 | Sesión | Estado | Evidencia / pendiente principal |
 | --- | --- | --- |
@@ -8,7 +8,7 @@ Actualizada contra `develop` después del merge del PR #31.
 | 16B — Técnicas fundamentales | Completada | Spearman, chi-cuadrado, Fisher, t independiente/pareada/Welch y ANOVA/ANOVA Welch recorren Research → propuesta → aprobación → ejecución. |
 | 17B — Catálogo restante | Completada | Las 19 técnicas del catálogo tienen adaptadores de entrada, incluyendo Cronbach, no paramétricas, post-hoc, regresiones y ANCOVA. Los post-hoc conservan la advertencia de que la significancia requiere su distribución crítica. |
 | 18B — Gráficos e interpretación | Parcial | La demo Statistics tiene histogramas, cajas, barras y dispersión para datasets de demostración; falta conectar gráficos derivados de resultados persistidos del recorrido Research. |
-| 19B — Informes académicos | Parcial | Existen exportaciones TXT/DOCX/PDF con métricas, supuestos, advertencias e interpretación. Faltan figuras, tablas académicas numeradas, metadatos metodológicos completos y revisión visual sistemática. |
+| 19B — Informes académicos | Parcial | Las exportaciones TXT/DOCX/PDF incluyen metadatos reproducibles, contexto metodológico explícito y tablas numeradas de métricas y supuestos. Faltan figuras derivadas de datos reales y revisión visual sistemática. |
 | 20B — Datos reales y pruebas integrales | Pendiente | El servicio integrado sigue denegando datasets no sintéticos por defecto. Falta una interfaz de autorización simulada, pruebas de acceso autorizado/no autorizado y E2E válido para las 19 técnicas. |
 
 ## Decisiones de seguridad y calidad

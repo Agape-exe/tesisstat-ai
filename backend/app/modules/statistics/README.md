@@ -116,6 +116,15 @@ que depende del diseño muestral. Cada diagnóstico devuelve `passed`, `failed` 
 con estadístico, p aproximado y explicación; no convierte una inferencia de datos en certeza
 sobre el diseño.
 
+## Informes académicos (avance ST-11)
+
+`reports.py` mantiene el cálculo separado de la presentación y exporta TXT, DOCX y PDF. Cada
+informe conserva identificadores de resultado, plan y dataset, versión de esquema y motor para
+reproducibilidad; además presenta métricas y supuestos como tablas académicas numeradas. El
+contexto metodológico se recibe de forma explícita, nunca se inventa. Las figuras requieren un
+contrato de datos gráficos del flujo Research y por ello no se fabrican a partir de métricas
+incompletas.
+
 ## Demo integrada (ST-10)
 
 La API de desarrollo expone `GET /datasets/{dataset_id}/plan` y
