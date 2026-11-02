@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createDocumentApi } from './api';
-import type { DocumentApi, ResearchDocument } from './api';
+import type { DocumentApi, ExtractionResult, ResearchDocument } from './api';
 
 const defaultApi = createDocumentApi();
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -19,6 +19,11 @@ export function ProjectDocuments({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [retry, setRetry] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
+  const [extractionLoading, setExtractionLoading] = useState(false);
+  const [extractionBusy, setExtractionBusy] = useState(false);
+  const [extractionError, setExtractionError] = useState('');
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -98,6 +103,10 @@ export function ProjectDocuments({
     setNotice('');
     try {
       await api.delete(projectId, document.id);
+      if (selected === document.id) {
+        setSelected(null);
+        setExtraction(null);
+      }
       setDocuments((items) => items.filter((item) => item.id !== document.id));
       setNotice('Documento eliminado.');
     } catch (caught) {
@@ -108,6 +117,44 @@ export function ProjectDocuments({
       );
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function select(documentId: string) {
+    if (selected === documentId) {
+      setSelected(null);
+      return;
+    }
+    setSelected(documentId);
+    setExtraction(null);
+    setExtractionError('');
+    setExtractionLoading(true);
+    try {
+      setExtraction(await api.extraction(projectId, documentId));
+    } catch (caught) {
+      setExtractionError(
+        caught instanceof Error
+          ? caught.message
+          : 'No se pudo consultar la extracción.',
+      );
+    } finally {
+      setExtractionLoading(false);
+    }
+  }
+
+  async function extract(documentId: string) {
+    setExtractionBusy(true);
+    setExtractionError('');
+    try {
+      setExtraction(await api.extract(projectId, documentId));
+    } catch (caught) {
+      setExtractionError(
+        caught instanceof Error
+          ? caught.message
+          : 'No se pudo extraer el texto.',
+      );
+    } finally {
+      setExtractionBusy(false);
     }
   }
 
@@ -176,6 +223,13 @@ export function ProjectDocuments({
                 </small>
               </div>
               <button
+                className="rp-secondary"
+                disabled={busy}
+                onClick={() => void select(document.id)}
+              >
+                {selected === document.id ? 'Ocultar texto' : 'Ver extracción'}
+              </button>
+              <button
                 className="rp-delete"
                 disabled={busy}
                 onClick={() => void remove(document)}
@@ -183,6 +237,66 @@ export function ProjectDocuments({
               >
                 Eliminar
               </button>
+              {selected === document.id && (
+                <div
+                  className="rp-extraction"
+                  aria-busy={extractionLoading || extractionBusy}
+                >
+                  {extractionLoading ? (
+                    <p role="status">Consultando extracción…</p>
+                  ) : (
+                    <>
+                      <button
+                        disabled={extractionBusy}
+                        onClick={() => void extract(document.id)}
+                      >
+                        {extractionBusy
+                          ? 'Extrayendo texto…'
+                          : extraction?.status === 'failed'
+                            ? 'Reintentar extracción'
+                            : 'Extraer texto'}
+                      </button>
+                      {extractionError && (
+                        <p role="alert" className="rp-error">
+                          {extractionError}
+                        </p>
+                      )}
+                      {extraction && (
+                        <div>
+                          <p role="status">
+                            Estado:{' '}
+                            {extraction.status === 'completed'
+                              ? 'Completado'
+                              : extraction.status === 'no_text'
+                                ? 'Sin texto extraíble'
+                                : 'Fallido'}
+                          </p>
+                          <small>
+                            {extraction.character_count} caracteres ·{' '}
+                            {extraction.units_processed}{' '}
+                            {document.format === 'pdf' ? 'páginas' : 'unidades'}{' '}
+                            ·{' '}
+                            {new Date(extraction.processed_at).toLocaleString(
+                              'es-PE',
+                            )}
+                            {extraction.truncated ? ' · Truncado' : ''}
+                          </small>
+                          {extraction.warnings.map((warning) => (
+                            <p role="alert" key={warning}>
+                              {warning}
+                            </p>
+                          ))}
+                          {extraction.text && (
+                            <pre className="rp-text-preview">
+                              {extraction.text}
+                            </pre>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>

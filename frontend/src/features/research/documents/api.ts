@@ -7,10 +7,27 @@ export interface ResearchDocument {
   uploaded_at: string;
 }
 
+export interface ExtractionResult {
+  document_id: string;
+  project_id: string;
+  status: 'completed' | 'no_text' | 'failed';
+  text: string;
+  character_count: number;
+  units_processed: number;
+  processed_at: string;
+  warnings: string[];
+  truncated: boolean;
+}
+
 export interface DocumentApi {
   list(projectId: string, signal?: AbortSignal): Promise<ResearchDocument[]>;
   upload(projectId: string, file: File): Promise<ResearchDocument>;
   delete(projectId: string, documentId: string): Promise<void>;
+  extraction(
+    projectId: string,
+    documentId: string,
+  ): Promise<ExtractionResult | null>;
+  extract(projectId: string, documentId: string): Promise<ExtractionResult>;
 }
 
 export class DocumentApiError extends Error {}
@@ -68,5 +85,24 @@ export function createDocumentApi(
       request<void>(`${path(projectId)}/${encodeURIComponent(documentId)}`, {
         method: 'DELETE',
       }),
+    extraction: async (projectId, documentId) => {
+      try {
+        return await request<ExtractionResult>(
+          `${path(projectId)}/${encodeURIComponent(documentId)}/extraction`,
+        );
+      } catch (error) {
+        if (
+          error instanceof DocumentApiError &&
+          error.message === 'Aún no hay extracción para este documento.'
+        )
+          return null;
+        throw error;
+      }
+    },
+    extract: (projectId, documentId) =>
+      request<ExtractionResult>(
+        `${path(projectId)}/${encodeURIComponent(documentId)}/extract`,
+        { method: 'POST' },
+      ),
   };
 }
