@@ -7,17 +7,18 @@ free text report suitable for the development/demo flow.
 
 from __future__ import annotations
 
-from html import escape
+from textwrap import wrap
 
 from app.shared.contracts import AnalysisResult
 
 
-def render_text(result: AnalysisResult) -> str:
+def render_text(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> str:
     lines = [
         "TesisStat AI — Informe estadístico",
         f"Resultado: {result.id}",
         f"Estado: {result.status}",
         f"Motor: {result.engine_version}",
+        *context,
         "",
         "Métricas",
     ]
@@ -41,7 +42,7 @@ def render_text(result: AnalysisResult) -> str:
     return "\n".join(lines) + "\n"
 
 
-def render_docx(result: AnalysisResult) -> bytes:
+def render_docx(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> bytes:
     from io import BytesIO
 
     from docx import Document
@@ -50,6 +51,8 @@ def render_docx(result: AnalysisResult) -> bytes:
     document.add_heading("TesisStat AI — Informe estadístico", level=1)
     document.add_paragraph(f"Resultado: {result.id}")
     document.add_paragraph(f"Estado: {result.status} · Motor: {result.engine_version}")
+    for line in context:
+        document.add_paragraph(line)
     document.add_heading("Métricas", level=2)
     table = document.add_table(rows=1, cols=2)
     table.style = "Light Shading Accent 1"
@@ -76,27 +79,52 @@ def render_docx(result: AnalysisResult) -> bytes:
     return output.getvalue()
 
 
-def render_pdf(result: AnalysisResult) -> bytes:
-    """Render a compact single-page PDF without adding a scientific dependency."""
-    text = render_text(result).splitlines()
-    commands = ["BT", "/F1 10 Tf", "50 760 Td"]
-    for index, line in enumerate(text[:48]):
-        safe = escape(line).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-        if index:
-            commands.append("0 -14 Td")
-        commands.append(f"({safe}) Tj")
-    commands.append("ET")
-    stream = "\n".join(commands).encode("latin-1", errors="replace")
+def render_pdf(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> bytes:
+    """Paginated plain-text PDF. WinAnsi supports Spanish, but not full Unicode.
+
+    Unsupported glyphs are explicitly disclosed and replaced; DOCX retains Unicode.
+    Keep byte offsets exact, wrap long tokens and never truncate report content.
+    """
+    report = render_text(result, context=context)
+    try:
+        report.encode("cp1252")
+    except UnicodeEncodeError:
+        report += (
+            "\nLimitación PDF: caracteres fuera de WinAnsi se sustituyen por ?. "
+            "Descarga DOCX para conservar Unicode completo.\n"
+        )
+    lines = [part for line in report.splitlines() for part in (wrap(line, 82) or [""])]
+    pages = [lines[start : start + 49] for start in range(0, len(lines), 49)]
+    kids = " ".join(f"{4 + index * 2} 0 R" for index in range(len(pages)))
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        (
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-            b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>"
-        ),
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        f"<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>".encode(),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>",
     ]
+    for index, page in enumerate(pages):
+        commands = ["BT", "/F1 10 Tf", "50 750 Td"]
+        for number, line in enumerate(page):
+            safe = line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+            if number:
+                commands.append("0 -14 Td")
+            commands.append(f"({safe}) Tj")
+        commands.extend(
+            ["ET", "BT", "/F1 9 Tf", "50 35 Td", f"({index + 1}/{len(pages)}) Tj", "ET"]
+        )
+        stream = "\n".join(commands).encode("cp1252", errors="replace")
+        objects.extend(
+            [
+                (
+                    f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                    f"/Resources << /Font << /F1 3 0 R >> >> /Contents {5 + index * 2} 0 R >>"
+                ).encode(),
+                b"<< /Length "
+                + str(len(stream)).encode()
+                + b" >>\nstream\n"
+                + stream
+                + b"\nendstream",
+            ]
+        )
     output = bytearray(b"%PDF-1.4\n")
     offsets = [0]
     for number, body in enumerate(objects, 1):

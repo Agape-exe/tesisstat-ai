@@ -1,9 +1,12 @@
 """Loopback-only synthetic integration API, mounted only in Research's dev app."""
 
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response
 
+from app.modules.statistics.reports import render_docx, render_pdf
 from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
 from app.orchestration.analysis_service import ResearchAnalysisService
 from app.shared.contracts import AnalysisResult
@@ -44,5 +47,37 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
     @router.get("/results", response_model=list[AnalysisRecord])
     def results(project_id: UUID) -> list[AnalysisRecord]:
         return [record for record in service.list(project_id) if record.result is not None]
+
+    @router.get("/plans/{plan_id}/results/{result_id}/report.{format}")
+    def report(
+        project_id: UUID, plan_id: UUID, result_id: str, format: Literal["docx", "pdf"]
+    ) -> Response:
+        record = service.completed_report(project_id, str(plan_id), result_id)
+        context = (
+            f"Proyecto: {project_id}",
+            f"Investigación: {record.package.title}",
+            f"Paquete: {record.plan.research_package_id}",
+            f"Plan: {record.plan.id}",
+            f"Dataset: {record.result.dataset_id}",
+            f"Técnica: {record.plan.technique}",
+            f"Justificación: {record.plan.rationale}",
+            f"Aprobación explícita: {record.approved_at.isoformat()}",
+            "Demostración local con datos sintéticos. No implica significancia estadística.",
+        )
+        renderer = render_docx if format == "docx" else render_pdf
+        media = (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            if format == "docx"
+            else "application/pdf"
+        )
+        return Response(
+            renderer(record.result, context=context),
+            media_type=media,
+            headers={
+                "Content-Disposition": f'attachment; filename="analysis-{plan_id}.{format}"',
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
 
     return router

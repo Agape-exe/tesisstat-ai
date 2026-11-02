@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import Field
 
 from app.modules.research.datasets.readers import DatasetLimits, InvalidDataset
 from app.modules.research.datasets.routes import create_router as create_dataset_router
@@ -53,6 +54,7 @@ from app.modules.research.projects.sqlite_repository import SQLiteProjectReposit
 from app.modules.research.projects.use_cases import ProjectNotFound, ProjectService
 from app.orchestration.analysis_repository import SQLiteAnalysisRepository
 from app.orchestration.analysis_routes import create_router as create_analysis_router
+from app.orchestration.analysis_routes import local_only
 from app.orchestration.analysis_service import ResearchAnalysisService
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
 from app.orchestration.statistics_routes import create_statistics_router
@@ -62,6 +64,14 @@ logger = logging.getLogger(__name__)
 
 
 class ResearchDevSettings(CloudflareSettings):
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+        ]
+    )
     research_db_path: Path = Path(".cache/research/projects.sqlite3")
     research_documents_path: Path = Path(".cache/research/documents")
     research_datasets_path: Path = Path(".cache/research/datasets")
@@ -85,6 +95,8 @@ def create_app(
     methodology_provider: MethodologyProvider | None = None,
 ) -> FastAPI:
     settings = settings or ResearchDevSettings()
+    if settings.app_env != "development":
+        raise RuntimeError("La API de demostración solo admite APP_ENV=development.")
     if repository is None:
         repository = SQLiteProjectRepository(settings.research_db_path)
     app = FastAPI(title="TesisStat Research — development only", version="0.2.0")
@@ -95,6 +107,16 @@ def create_app(
         allow_headers=["Content-Type", "X-File-Name"],
         allow_credentials=False,
     )
+
+    @app.middleware("http")
+    async def require_loopback(request: Request, call_next):
+        from fastapi import HTTPException
+
+        try:
+            local_only(request)
+        except HTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        return await call_next(request)
 
     @app.exception_handler(ProjectNotFound)
     async def not_found(request: Request, exc: ProjectNotFound) -> JSONResponse:
