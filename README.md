@@ -105,4 +105,10 @@ antecedentes; los comandos vigentes de demostración están en esta guía y en l
 El detalle de investigación incluye **4. Asistente IA**, con conversaciones e historial SQLite.
 El envío requiere Cloudflare configurado y consentimiento explícito. Consulta configuración,
 pruebas y limitaciones en [CHAT_CONVERSACIONAL.md](docs/CHAT_CONVERSACIONAL.md).
-La conectividad real con Qwen3 queda pendiente de validación autorizada.
+La Sesión 16A incorpora metodología confirmada, metadatos del dataset, planes y
+resultados persistidos, con vigencia y trazabilidad por respuesta. Requiere aceptar
+el alcance ampliado del consentimiento. Consulta arquitectura, pruebas y validación
+manual en la [guía de contexto de investigación](docs/CONTEXTO_INVESTIGACION_CHAT.md).
+La conexión real del chat anterior fue validada por la usuaria; la validación del
+contexto ampliado con Qwen3 real queda pendiente. La demo reproducible con proveedor
+simulado no necesita credenciales ni realiza solicitudes externas.

@@ -208,3 +208,36 @@
     max-width: 96%;
   }
 }
+.chat-context {
+  margin: 1rem 0;
+  padding: 1rem 1.2rem;
+  border: 1px solid #dce5e3;
+  border-radius: 14px;
+  background: #f5faf8;
+}
+.chat-context h4 {
+  margin: 0;
+}
+.chat-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.7rem 1rem;
+}
+.chat-source-grid dt {
+  font-weight: 600;
+}
+.chat-source-grid dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+}
+.chat-provenance {
+  margin: 0.65rem 0;
+  font-size: 0.85rem;
+}
+.chat-provenance summary {
+  cursor: pointer;
+}
+.chat-provenance small {
+  display: block;
+  overflow-wrap: anywhere;
+}

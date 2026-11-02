@@ -20,6 +20,7 @@ it('sends only content, idempotency key and explicit consent to the project API'
         content: 'Pregunta',
         request_id: 'r1',
         external_ai_consent: true,
+        consent_scope: 'research_context_v2',
       }),
     }),
   );

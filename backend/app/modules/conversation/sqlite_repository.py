@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
@@ -37,6 +38,9 @@ class SQLiteConversationRepository:
                     DELETE FROM conversation_messages WHERE conversation_id = OLD.id;
                     DELETE FROM conversation_requests WHERE conversation_id = OLD.id; END;
             """)
+            columns = {row[1] for row in db.execute("PRAGMA table_info(conversation_messages)")}
+            if "context" not in columns:
+                db.execute("ALTER TABLE conversation_messages ADD COLUMN context TEXT")
             if db.execute("SELECT 1 FROM sqlite_master WHERE name='research_projects'").fetchone():
                 db.execute(
                     "CREATE TRIGGER IF NOT EXISTS delete_project_conversations "
@@ -102,7 +106,9 @@ class SQLiteConversationRepository:
 
     @staticmethod
     def _message(row):
-        return Message(**{k: row[k] for k in Message.model_fields})
+        data = {k: row[k] for k in Message.model_fields}
+        data["context"] = json.loads(data["context"]) if data["context"] else None
+        return Message(**data)
 
     def _pair(self, db, cid, rid):
         return [
@@ -156,7 +162,7 @@ class SQLiteConversationRepository:
             self._append(db, cid, rid, "user", content)
         return None
 
-    def _append(self, db, cid, rid, role, content):
+    def _append(self, db, cid, rid, role, content, context=None):
         now = datetime.now(UTC).isoformat()
         sequence = db.execute(
             "SELECT COALESCE(MAX(sequence), 0)+1 FROM conversation_messages "
@@ -164,12 +170,25 @@ class SQLiteConversationRepository:
             (cid,),
         ).fetchone()[0]
         db.execute(
-            "INSERT INTO conversation_messages VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (str(uuid4()), cid, rid, role, content, now, sequence),
+            "INSERT INTO conversation_messages "
+            "(id, conversation_id, request_id, role, content, created_at, sequence, context) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                str(uuid4()),
+                cid,
+                rid,
+                role,
+                content,
+                now,
+                sequence,
+                json.dumps(context) if context is not None else None,
+            ),
         )
         db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now, cid))
 
-    def complete(self, conversation_id: UUID, request_id: UUID, content: str) -> list[Message]:
+    def complete(
+        self, conversation_id: UUID, request_id: UUID, content: str, context: dict | None = None
+    ) -> list[Message]:
         cid, rid = str(conversation_id), str(request_id)
         with closing(self._connect()) as db, db:
             db.execute("BEGIN IMMEDIATE")
@@ -182,7 +201,7 @@ class SQLiteConversationRepository:
                 raise ConversationError(
                     "request_expired", "El envío ya no está activo. Consulta el historial."
                 )
-            self._append(db, cid, rid, "assistant", content)
+            self._append(db, cid, rid, "assistant", content, context)
             return self._pair(db, cid, rid)
 
     def fail(self, conversation_id: UUID, request_id: UUID) -> None:

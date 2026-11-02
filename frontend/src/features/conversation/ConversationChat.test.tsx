@@ -14,6 +14,7 @@ import type {
   ConversationApi,
   ConversationDetail,
   Message,
+  ProviderStatus,
 } from './api';
 
 const conversation: Conversation = {
@@ -65,6 +66,35 @@ function service(): ConversationApi {
   };
 }
 
+function researchStatus(states: Record<string, string> = {}): ProviderStatus {
+  return {
+    provider_configured: true,
+    model: 'mock',
+    max_message_characters: 2000,
+    timeout_seconds: 45,
+    context: 'Contexto persistido',
+    project_title: 'Investigación sintética activa',
+    consent_scope: 'research_context_v2',
+    research_context: {
+      project_id: 'p1',
+      snapshot: 'snapshot-v2',
+      sources: Object.entries({
+        methodology: 'confirmed',
+        dataset: 'current',
+        eda: 'missing',
+        package: 'stale',
+        result: 'historical',
+        ...states,
+      }).map(([kind, status]) => ({
+        kind,
+        status,
+        id: `source-${kind}`,
+        version: '2',
+      })),
+    },
+  };
+}
+
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = function () {
     this.setAttribute('open', '');
@@ -92,6 +122,131 @@ function write(value = user.content) {
 function send() {
   fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje' }));
 }
+
+it('shows source states and explains historical results and incomplete sources', async () => {
+  const api = service();
+  vi.mocked(api.status).mockResolvedValue(researchStatus());
+  await ready(api);
+  const panel = screen.getByRole('region', {
+    name: 'Contexto de investigación',
+  });
+  expect(
+    within(panel).getByText('Investigación sintética activa'),
+  ).toBeInTheDocument();
+  expect(within(panel).getByText('Confirmada')).toBeInTheDocument();
+  expect(within(panel).getByText('Vigente')).toBeInTheDocument();
+  expect(within(panel).getByText('No disponible')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Desactualizado: requiere actualización'),
+  ).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Histórico: corresponde a fuentes anteriores'),
+  ).toBeInTheDocument();
+});
+
+it('refreshes changed sources without losing history or consent', async () => {
+  const api = service();
+  vi.mocked(api.status)
+    .mockResolvedValueOnce(researchStatus({ methodology: 'draft' }))
+    .mockResolvedValue(researchStatus());
+  vi.mocked(api.get).mockResolvedValue(detail([user, assistant]));
+  await ready(api);
+  expect(
+    screen.getByText('Borrador: requiere confirmación'),
+  ).toBeInTheDocument();
+  authorize();
+  fireEvent.click(screen.getByRole('button', { name: 'Actualizar contexto' }));
+  expect(await screen.findByText('Confirmada')).toBeInTheDocument();
+  expect(screen.getByText(assistant.content)).toBeInTheDocument();
+  expect(screen.getByRole('checkbox')).toBeChecked();
+  expect(api.send).not.toHaveBeenCalled();
+});
+
+it('keeps local history readable if source status fails and no consent is given', async () => {
+  const api = service();
+  vi.mocked(api.status).mockRejectedValue(new Error('Sources unavailable'));
+  vi.mocked(api.get).mockResolvedValue(detail([user, assistant]));
+  await ready(api);
+  expect(screen.getByText(assistant.content)).toBeInTheDocument();
+  expect(
+    screen.getByText(/No se pudo actualizar el contexto/),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText('Tu mensaje')).toBeDisabled();
+  expect(api.send).not.toHaveBeenCalled();
+});
+
+it('describes the expanded consent scope without reusing old session storage', async () => {
+  sessionStorage.setItem('tesisstat:consent:v1:p1', 'true');
+  await ready();
+  const checkbox = screen.getByRole('checkbox');
+  expect(checkbox).not.toBeChecked();
+  expect(checkbox).toHaveAccessibleName(
+    /información metodológica seleccionada/,
+  );
+  expect(checkbox).toHaveAccessibleName(
+    /metadatos del dataset y métricas estadísticas verificadas/,
+  );
+  expect(checkbox).toHaveAccessibleName(
+    /No se envían documentos completos ni datos individuales/,
+  );
+});
+
+it('shows backend provenance, source changes and context omissions after reload', async () => {
+  const api = service();
+  vi.mocked(api.status).mockResolvedValue(researchStatus());
+  vi.mocked(api.get).mockResolvedValue(
+    detail([
+      user,
+      {
+        ...assistant,
+        context: {
+          snapshot: 'previous-snapshot',
+          history_changed: true,
+          omitted_facts: 3,
+          history_turns: 1,
+          sources: [
+            {
+              kind: 'methodology',
+              id: 'verified-review-id',
+              status: 'confirmed',
+              version: '2',
+            },
+          ],
+        },
+      },
+    ]),
+  );
+  await ready(api);
+  fireEvent.click(
+    screen.getByText('Fuentes proporcionadas para esta respuesta'),
+  );
+  expect(screen.getByText(/verified-review-id/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Se omitieron 3 datos completos/),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/Esta respuesta corresponde a una consulta anterior/),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/El historial contiene referencias a fuentes anteriores/),
+  ).toBeInTheDocument();
+});
+
+it('rechecks sources when returning focus to the chat', async () => {
+  const api = service();
+  vi.mocked(api.status)
+    .mockResolvedValueOnce(researchStatus())
+    .mockResolvedValue(researchStatus({ dataset: 'missing' }));
+  await ready(api);
+  fireEvent(window, new Event('focus'));
+  await waitFor(() => expect(api.status).toHaveBeenCalledTimes(2));
+  const panel = screen.getByRole('region', {
+    name: 'Contexto de investigación',
+  });
+  await waitFor(() =>
+    expect(within(panel).queryByText('Vigente')).not.toBeInTheDocument(),
+  );
+});
 
 it('renders assistant Markdown safely while keeping user messages as text', async () => {
   const api = service();

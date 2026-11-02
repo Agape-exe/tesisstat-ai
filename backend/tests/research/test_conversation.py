@@ -73,7 +73,13 @@ def conversation(client, root):
 
 
 def message(content="¿Qué es una variable?", **extra):
-    return {"content": content, "request_id": str(uuid4()), "external_ai_consent": True, **extra}
+    return {
+        "content": content,
+        "request_id": str(uuid4()),
+        "external_ai_consent": True,
+        "consent_scope": "research_context_v2",
+        **extra,
+    }
 
 
 def test_crud_multiturn_restart_and_cascade(tmp_path):
@@ -92,7 +98,7 @@ def test_crud_multiturn_restart_and_cascade(tmp_path):
     assert [m["role"] for m in context] == ["system", "user", "assistant", "user"]
     assert context[1]["content"] == first["content"]
     assert PROJECT["title"] in context[0]["content"]
-    assert "No tienes acceso a documentos" in context[0]["content"]
+    assert "No tienes acceso a documentos completos" in context[0]["content"]
     restarted = TestClient(create_app(settings=settings, conversation_provider=provider))
     history = restarted.get(target).json()["messages"]
     assert [m["sequence"] for m in history] == [1, 2, 3, 4]
@@ -277,12 +283,12 @@ def test_paging_history_limits_and_body_limit(tmp_path):
 
 
 def test_context_bytes_trim_whole_turns_and_check_current_input(tmp_path):
-    client, root, _, provider = setup(tmp_path, conversation_max_context_bytes=2100)
+    client, root, _, provider = setup(tmp_path, conversation_max_context_bytes=3300)
     target = conversation(client, root)
     provider.answer = "s" * 1000
     for _ in range(3):
         assert client.post(target + "/messages", json=message("p" * 600)).status_code == 200
-    assert len(json.dumps(provider.calls[-1][0], ensure_ascii=False).encode()) <= 2100
+    assert len(json.dumps(provider.calls[-1][0], ensure_ascii=False).encode()) <= 3300
     assert len(provider.calls[-1][0]) == 2
     assert (
         client.post(target + "/messages", json=message("á" * 1800)).json()["code"] == "input_limit"

@@ -1,5 +1,10 @@
 # Chat conversacional — Sesión 15A
 
+> Antecedente histórico. El alcance vigente de fuentes y consentimiento se amplía en
+> [CONTEXTO_INVESTIGACION_CHAT.md](CONTEXTO_INVESTIGACION_CHAT.md), Sesión 16A.
+> Ahora cada envío requiere además `consent_scope: "research_context_v2"`.
+> Las limitaciones de «solo título e historial» descritas aquí corresponden a 15A.
+
 Implementación del 2 de noviembre de 2026, basada en `origin/develop` (`f507f4f`, PR #25).
 Rama: `feat/chat-conversacional`. Demostración local sin autenticación; usar solo datos ficticios.
 
@@ -84,7 +89,8 @@ Ejemplo de envío con datos ficticios:
 {
   "content": "¿Qué diferencia hay entre variable e hipótesis?",
   "request_id": "37ae1f8e-93b8-4f20-8dbf-d559edc2d847",
-  "external_ai_consent": true
+  "external_ai_consent": true,
+  "consent_scope": "research_context_v2"
 }
 ```
 
