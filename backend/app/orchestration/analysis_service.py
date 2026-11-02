@@ -134,6 +134,8 @@ class ResearchAnalysisService:
             "anova",
             "anova_welch",
             "kruskal_wallis",
+            "tukey",
+            "games_howell",
             "cronbach_alpha",
         }:
             questions = {
@@ -149,6 +151,8 @@ class ResearchAnalysisService:
                 "anova": independent_questions,
                 "anova_welch": independent_questions,
                 "kruskal_wallis": independent_questions,
+                "tukey": independent_questions,
+                "games_howell": independent_questions,
                 "cronbach_alpha": reliability_questions,
             }[plan.technique](package, plan.hypothesis_id)
             if questions:
@@ -223,6 +227,8 @@ class ResearchAnalysisService:
                     "anova",
                     "anova_welch",
                     "kruskal_wallis",
+                    "tukey",
+                    "games_howell",
                     "cronbach_alpha",
                 }:
                     table = reader.read(package.dataset)

@@ -8,7 +8,8 @@ from app.shared.contracts import AnalysisPlan, ResearchPackage
 
 TWO_GROUP_TECHNIQUES = {"t_independent", "t_welch", "mann_whitney"}
 MULTI_GROUP_TECHNIQUES = {"anova", "anova_welch", "kruskal_wallis"}
-GROUP_TECHNIQUES = TWO_GROUP_TECHNIQUES | MULTI_GROUP_TECHNIQUES
+POSTHOC_TECHNIQUES = {"tukey", "games_howell"}
+GROUP_TECHNIQUES = TWO_GROUP_TECHNIQUES | MULTI_GROUP_TECHNIQUES | POSTHOC_TECHNIQUES
 
 CONNECTED = {
     "descriptive_summary",
@@ -25,6 +26,8 @@ CONNECTED = {
     "anova",
     "anova_welch",
     "kruskal_wallis",
+    "tukey",
+    "games_howell",
 }
 
 
@@ -149,6 +152,8 @@ def analysis_input(
         "anova": independent_questions,
         "anova_welch": independent_questions,
         "kruskal_wallis": independent_questions,
+        "tukey": independent_questions,
+        "games_howell": independent_questions,
         "cronbach_alpha": reliability_questions,
     }.get(plan.technique, lambda *_: ["La técnica no admite esta entrada de dos columnas."])(
         package, plan.hypothesis_id
@@ -171,6 +176,8 @@ def analysis_input(
         "anova": {"interval", "ratio"},
         "anova_welch": {"interval", "ratio"},
         "kruskal_wallis": {"ordinal", "interval", "ratio"},
+        "tukey": {"interval", "ratio"},
+        "games_howell": {"interval", "ratio"},
         "cronbach_alpha": {"ordinal", "interval", "ratio"},
     }.get(plan.technique, set())
     if plan.technique == "cronbach_alpha":
@@ -212,6 +219,8 @@ def analysis_input(
             )
         if plan.technique in MULTI_GROUP_TECHNIQUES and len(groups) < 3:
             raise HTTPException(409, "La comparación multigrupo requiere tres o más grupos.")
+        if plan.technique in POSTHOC_TECHNIQUES and len(groups) < 3:
+            raise HTTPException(409, "La comparación post-hoc requiere tres o más grupos.")
         values = tuple(tuple(group) for group in groups.values())
         labels = tuple(groups)
         if plan.technique in TWO_GROUP_TECHNIQUES:
