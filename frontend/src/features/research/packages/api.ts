@@ -49,9 +49,15 @@ export interface ResearchPackageSummary {
   id: string;
   schema_version: '1.0.0';
   title: string;
-  variables: VariableLink[];
-  hypotheses: HypothesisLink[];
-  dataset: { id: string; columns: string[]; synthetic: boolean };
+  variables: { id: string; name: string; columns: string[] }[];
+  hypotheses: { id: string; statement: string; variable_ids: string[] }[];
+  dataset: {
+    id: string;
+    format: 'csv' | 'xlsx';
+    row_count: number;
+    columns: string[];
+    synthetic: boolean;
+  };
   pending_questions: string[];
 }
 

@@ -94,12 +94,14 @@ it('shows reviewed links, validates and builds an explicitly configured package'
   };
   const calls: string[] = [];
   const savedBodies: string[] = [];
+  let built = false;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, options?: RequestInit) => {
       calls.push(`${options?.method ?? 'GET'} ${url}`);
       if (url.endsWith('/configuration') && options?.body)
         savedBodies.push(String(options.body));
+      if (url.endsWith('/build')) built = true;
       const value = url.endsWith('/datasets')
         ? [dataset]
         : url.endsWith('/build')
@@ -108,13 +110,19 @@ it('shows reviewed links, validates and builds an explicitly configured package'
               schema_version: '1.0.0',
               title: 'Tesis ficticia',
               variables: config.variables,
-              hypotheses: config.hypotheses,
+              hypotheses: [
+                { ...config.hypotheses[0], statement: 'Existe relación' },
+              ],
               dataset,
               pending_questions: [],
             }
           : url.endsWith('/configuration')
             ? { ...config, version: 2 }
-            : status;
+            : {
+                ...status,
+                state: built ? 'generated' : 'warnings',
+                package_id: built ? 'package-1' : null,
+              };
       return { ok: true, json: async () => value };
     }),
   );
@@ -140,4 +148,98 @@ it('shows reviewed links, validates and builds an explicitly configured package'
     screen.getByRole('button', { name: 'Generar paquete de investigación' }),
   );
   expect(await screen.findByText(/package-1/)).toBeTruthy();
+  expect(
+    screen.getByText(/La integración con Statistics está pendiente/),
+  ).toBeTruthy();
+  expect(screen.getByText(/Existe relación \(ID: hypothesis\)/)).toBeTruthy();
+});
+
+it('shows a stale package without claiming Statistics is ready', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => ({
+      ok: true,
+      json: async () =>
+        url.endsWith('/datasets')
+          ? []
+          : {
+              state: 'stale',
+              errors: ['El dataset cambió.'],
+              warnings: [],
+              configuration: {
+                version: 0,
+                document_id: null,
+                dataset_id: null,
+                design: 'unknown',
+                observations: 'unknown',
+                sampling_notes: '',
+                variables: [],
+                hypotheses: [],
+              },
+              documents: [],
+              dataset: null,
+              review: null,
+              package_id: 'old-package',
+            },
+    })),
+  );
+  render(<ProjectPackage projectId="project" />);
+  expect(await screen.findByText('Validación: stale')).toBeTruthy();
+  expect(screen.getByText('El dataset cambió.')).toBeTruthy();
+  expect(
+    screen.queryByText(/La integración con Statistics está pendiente/),
+  ).toBeNull();
+});
+
+it('loads an existing current package when the project is reopened', async () => {
+  const calls: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      calls.push(url);
+      return {
+        ok: true,
+        json: async () =>
+          url.endsWith('/datasets')
+            ? []
+            : url.endsWith('/package')
+              ? {
+                  id: 'current-package',
+                  variables: [
+                    { id: 'v', name: 'Variable', columns: ['score'] },
+                  ],
+                  hypotheses: [{ id: 'h', statement: 'Hipótesis ficticia' }],
+                  dataset: { id: 'd', format: 'csv', row_count: 1 },
+                  pending_questions: ['Confirmar escala'],
+                }
+              : {
+                  state: 'generated',
+                  errors: [],
+                  warnings: [],
+                  configuration: {
+                    version: 1,
+                    document_id: null,
+                    dataset_id: 'd',
+                    design: 'unknown',
+                    observations: 'unknown',
+                    sampling_notes: '',
+                    variables: [],
+                    hypotheses: [],
+                  },
+                  documents: [],
+                  dataset: null,
+                  review: null,
+                  package_id: 'current-package',
+                },
+      };
+    }),
+  );
+  render(<ProjectPackage projectId="project" />);
+  expect(
+    await screen.findByText(/Paquete vigente: current-package/),
+  ).toBeTruthy();
+  expect(
+    screen.getByText('Aclaración pendiente: Confirmar escala'),
+  ).toBeTruthy();
+  expect(calls.some((url) => url.endsWith('/package'))).toBe(true);
 });
