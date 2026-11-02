@@ -33,7 +33,7 @@ def _package(
             location="opaque://research/project-1/dataset-1",
             format="csv",
             row_count=4,
-            columns=["x", "y", "group"],
+            columns=["x", "y", "group", "covariate"],
             synthetic=True,
         ),
     )
@@ -155,6 +155,50 @@ def test_planner_selects_paired_nonparametric_test_for_ordinal_observations():
 
     assert plan.status == "proposed"
     assert plan.technique == "wilcoxon"
+
+
+def test_planner_selects_ancova_for_group_outcome_and_covariate():
+    variables = [
+        ResearchVariable(
+            schema_version="1.0.0",
+            id="group",
+            name="Grupo",
+            role="independent",
+            measurement_scale="nominal",
+            columns=["group"],
+        ),
+        ResearchVariable(
+            schema_version="1.0.0",
+            id="covariate",
+            name="Covariable",
+            role="covariate",
+            measurement_scale="ratio",
+            columns=["covariate"],
+        ),
+        ResearchVariable(
+            schema_version="1.0.0",
+            id="y",
+            name="Resultado",
+            role="dependent",
+            measurement_scale="ratio",
+            columns=["y"],
+        ),
+    ]
+    hypothesis = ResearchHypothesis(
+        schema_version="1.0.0",
+        id="h1",
+        statement="El resultado difiere por grupo al ajustar por covariable.",
+        objective="Comparar grupos ajustados.",
+        kind="comparison",
+        variable_ids=["group", "covariate", "y"],
+    )
+
+    plan = DeterministicStatisticalPlanner().propose(
+        _package(hypothesis=hypothesis, variables=variables), "h1"
+    )
+
+    assert plan.status == "proposed"
+    assert plan.technique == "ancova"
 
 
 def test_planner_requires_review_and_rejects_unknown_hypothesis():
