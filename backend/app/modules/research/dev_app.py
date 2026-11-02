@@ -10,6 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import Settings
+from app.modules.research.documents.routes import create_router as create_document_router
+from app.modules.research.documents.sqlite_repository import (
+    DocumentStorageError,
+    SQLiteDocumentRepository,
+)
+from app.modules.research.documents.use_cases import (
+    DocumentNotFound,
+    DocumentService,
+    InvalidDocument,
+)
 from app.modules.research.projects.repository import ProjectRepository
 from app.modules.research.projects.routes import create_router
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
@@ -20,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 class ResearchDevSettings(Settings):
     research_db_path: Path = Path(".cache/research/projects.sqlite3")
+    research_documents_path: Path = Path(".cache/research/documents")
 
 
 def create_app(
@@ -33,7 +44,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", "X-File-Name"],
         allow_credentials=False,
     )
 
@@ -76,7 +87,31 @@ def create_app(
             content={"detail": "El almacenamiento local no está disponible. Intenta nuevamente."},
         )
 
-    app.include_router(create_router(ProjectService(repository)))
+    @app.exception_handler(DocumentStorageError)
+    async def document_storage_error(request: Request, exc: DocumentStorageError) -> JSONResponse:
+        logger.error("Research document storage failed", exc_info=exc)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "El almacenamiento de documentos no está disponible. Intenta nuevamente."
+            },
+        )
+
+    @app.exception_handler(InvalidDocument)
+    async def invalid_document(request: Request, exc: InvalidDocument) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(DocumentNotFound)
+    async def document_not_found(request: Request, exc: DocumentNotFound) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": "No se encontró el documento."})
+
+    projects = ProjectService(repository)
+    documents = DocumentService(
+        SQLiteDocumentRepository(settings.research_db_path, settings.research_documents_path),
+        projects,
+    )
+    app.include_router(create_router(projects, documents))
+    app.include_router(create_document_router(documents))
 
     @app.get("/health")
     def health() -> dict[str, str]:

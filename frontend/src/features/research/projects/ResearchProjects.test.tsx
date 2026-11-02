@@ -306,9 +306,9 @@ describe('Research projects UI', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Eliminar definitivamente' }),
     );
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No se pudo eliminar.',
-    );
+    expect(
+      await within(screen.getByRole('dialog')).findByRole('alert'),
+    ).toHaveTextContent('No se pudo eliminar.');
     expect(
       screen.getByRole('heading', { name: project.title }),
     ).toBeInTheDocument();
