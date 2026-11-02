@@ -1,0 +1,90 @@
+.persisted-charts {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border: 1px solid #d9e0dc;
+  border-radius: 0.4rem;
+  background: #f8fbf8;
+}
+
+.persisted-charts h5 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.persisted-chart {
+  margin: 0.75rem 0;
+}
+
+.persisted-chart figcaption {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.persisted-frequency,
+.persisted-scale,
+.persisted-interval {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(6rem, 2fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.4rem 0;
+}
+
+.persisted-frequency i,
+.persisted-interval i {
+  display: block;
+  min-width: 2px;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #587747;
+}
+
+.persisted-scale > div,
+.persisted-interval > div {
+  position: relative;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: linear-gradient(
+    90deg,
+    #d68a76 0 49.5%,
+    #d9e0dc 49.5% 50.5%,
+    #587747 50.5% 100%
+  );
+}
+
+.persisted-scale i {
+  position: absolute;
+  top: -0.2rem;
+  width: 0.2rem;
+  height: 1.1rem;
+  border-radius: 0.1rem;
+  background: #193c36;
+  transform: translateX(-50%);
+}
+
+.persisted-interval > div {
+  background: #d9e0dc;
+}
+
+.persisted-interval i {
+  position: absolute;
+  top: 0;
+}
+
+.persisted-chart small {
+  white-space: nowrap;
+}
+
+.persisted-chart-empty {
+  margin: 0.75rem 0;
+  color: #536b65;
+}
+
+@media (max-width: 38rem) {
+  .persisted-frequency,
+  .persisted-scale,
+  .persisted-interval {
+    grid-template-columns: 1fr;
+  }
+}

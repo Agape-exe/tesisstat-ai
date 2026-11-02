@@ -75,7 +75,11 @@ it('proposes, explicitly approves, executes and reloads metrics with separate re
           dataset_id: 'dataset',
           status: 'completed',
           engine_version: 'statistics-engine-v1',
-          metrics: [{ name: 'horas.mean', value: 2.5 }],
+          metrics: [
+            { name: 'horas.mean', value: 2.5 },
+            { name: 'horas.category.Alto.count', value: 2 },
+            { name: 'horas.category.Alto.percentage', value: 50 },
+          ],
           assumptions: [],
           warnings: ['Datos sintéticos; revisar supuestos.'],
         };
@@ -110,6 +114,9 @@ it('proposes, explicitly approves, executes and reloads metrics with separate re
   );
   fireEvent.click(execute);
   expect(await screen.findByText('horas.mean')).toBeTruthy();
+  expect(
+    screen.getByLabelText('Frecuencias categóricas persistidas'),
+  ).toBeInTheDocument();
   expect(screen.getByText('2.5')).toBeTruthy();
   expect(screen.getByText(/Advertencia: Datos sintéticos/)).toBeTruthy();
   expect(screen.queryByText('Ejecutar análisis')).toBeNull();
