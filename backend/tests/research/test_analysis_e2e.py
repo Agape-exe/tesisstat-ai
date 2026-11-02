@@ -307,6 +307,61 @@ def test_real_paired_t_columns_with_paired_observations(tmp_path):
     assert metrics["degrees_of_freedom"] == 3
 
 
+def test_real_independent_t_columns_with_two_groups(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", "ratio"),
+        data=b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,5\nB,6\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def independent_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "t_independent"
+        plan.rationale = "t de Student para dos grupos independientes."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", independent_plan)
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "t_independent"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n_left"] == 3
+    assert metrics["n_right"] == 3
+    assert metrics["mean_difference"] == pytest.approx(-3)
+    assert metrics["degrees_of_freedom"] == 4
+
+
+def test_real_mann_whitney_columns_with_two_groups(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", "ordinal"),
+        data=b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,5\nB,6\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def mann_whitney_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "mann_whitney"
+        plan.rationale = "Mann–Whitney para dos grupos independientes."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", mann_whitney_plan)
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "mann_whitney"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n_left"] == 3
+    assert metrics["n_right"] == 3
+    assert metrics["u"] == 0
+
+
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):
     case = research_case(
         tmp_path,
