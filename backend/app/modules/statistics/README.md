@@ -42,6 +42,13 @@ uv run uvicorn app.modules.statistics.dev_app:app --reload --host 127.0.0.1 --po
 Rutas: `GET /datasets`, `GET /datasets/{dataset_id}/columns` y
 `POST /datasets/{dataset_id}/descriptive` con `{"columns": ["study_hours"]}`.
 
+## Comparaciones paramétricas (ST-05)
+
+`comparisons.py` implementa t independiente con varianza combinada, t pareada y t de Welch con
+grados de libertad de Welch–Satterthwaite. Se eliminan únicamente pares faltantes completos y
+se rechazan muestras insuficientes o valores inválidos; las funciones devuelven estadísticas
+reproducibles y todavía no realizan decisiones automáticas de significancia.
+
 ## Planner determinista (ST-02)
 
 `catalog.py` contiene el catálogo declarativo de 18 técnicas inferenciales previstas y el
