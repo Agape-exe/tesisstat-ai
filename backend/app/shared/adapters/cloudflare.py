@@ -60,6 +60,31 @@ class CloudflareLanguageModel:
             "temperature": 0,
             "stream": False,
         }
+        return self._request(payload)
+
+    def chat(self, messages: list[dict[str, str]], *, max_tokens: int) -> str:
+        """Free text operation; extraction retains its separate JSON contract."""
+        if not self.configured:
+            raise AIError("not_configured")
+        if not 1 <= max_tokens <= self.limits.cloudflare_max_output_tokens:
+            raise AIError("output_limit")
+        value = self._request(
+            {
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": 0.3,
+                "stream": False,
+            },
+            structured=False,
+        )
+        # Some Qwen deployments include thinking inline rather than separately.
+        if "</think>" in value:
+            value = value.split("</think>", 1)[1]
+        if "<think>" in value or not value.strip():
+            raise AIError("invalid_response")
+        return value.strip()
+
+    def _request(self, payload: dict, *, structured: bool = True) -> str:
         # UTF-8 bytes conservatively bound tokens, including schema and framing.
         if len(json.dumps(payload, ensure_ascii=False).encode()) + 256 > (
             self.limits.cloudflare_max_input_tokens
@@ -107,8 +132,12 @@ class CloudflareLanguageModel:
                     raise AIError("invalid_response")
                 value = choice["message"]["content"]
             else:
+                if result.get("finish_reason") not in (None, "stop"):
+                    raise AIError("invalid_response")
                 value = result["response"]
             if isinstance(value, dict):
+                if not structured:
+                    raise AIError("invalid_response")
                 return json.dumps(value, ensure_ascii=False)
             if not isinstance(value, str):
                 raise AIError("invalid_response")

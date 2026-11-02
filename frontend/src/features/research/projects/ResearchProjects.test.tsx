@@ -5,7 +5,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { ProjectApiError } from './api';
 import { ResearchProjects } from './ResearchProjects';
 import type { Project, ProjectService } from './types';
@@ -23,6 +23,8 @@ const project: Project = {
   created_at: '2026-10-31T12:00:00Z',
   updated_at: '2026-10-31T12:00:00Z',
 };
+
+afterEach(() => window.history.replaceState(null, '', '/'));
 
 function mockService(): ProjectService {
   return {
@@ -381,4 +383,77 @@ it('navigates between document and dataset steps', async () => {
     screen.getByRole('region', { name: 'Documentos de investigación' }),
   ).toBeInTheDocument();
   vi.unstubAllGlobals();
+});
+
+it('opens Asistente IA, preserves document state and restores the project after refresh', async () => {
+  const service = mockService();
+  vi.mocked(service.list).mockResolvedValue([project]);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation(async (url: string) => {
+      if (url.endsWith('/conversations/status'))
+        return new Response(
+          JSON.stringify({
+            provider_configured: false,
+            max_message_characters: 2000,
+          }),
+        );
+      return new Response('[]');
+    }),
+  );
+  const first = render(<ResearchProjects service={service} integrated />);
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: `Ver investigación: ${project.title}`,
+    }),
+  );
+  const documents = await screen.findByRole('region', {
+    name: 'Documentos de investigación',
+  });
+  fireEvent.click(screen.getByRole('button', { name: '4. Asistente IA' }));
+  expect(
+    await screen.findByRole('region', { name: 'Asistente IA' }),
+  ).toBeInTheDocument();
+  expect(
+    await screen.findByText(/Cloudflare no está configurado/),
+  ).toBeInTheDocument();
+  expect(window.location.hash).toContain('section=assistant');
+  for (const name of [
+    '1. Documento y metodología',
+    '2. Dataset, EDA y preparación',
+    '3. Paquete, análisis y resultados',
+  ]) {
+    expect(screen.getByRole('button', { name })).toBeEnabled();
+  }
+  fireEvent.click(
+    screen.getByRole('button', { name: '1. Documento y metodología' }),
+  );
+  expect(
+    screen.getByRole('region', { name: 'Documentos de investigación' }),
+  ).toBe(documents);
+  fireEvent.click(screen.getByRole('button', { name: '4. Asistente IA' }));
+  first.unmount();
+  render(<ResearchProjects service={service} integrated />);
+  expect(
+    await screen.findByRole('region', { name: 'Asistente IA' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('heading', { name: project.title }),
+  ).toBeInTheDocument();
+  vi.unstubAllGlobals();
+});
+
+it('reports a missing project restored from the chat URL', async () => {
+  const service = mockService();
+  vi.mocked(service.get).mockRejectedValue(
+    new ProjectApiError('No se encontró el proyecto.', 404),
+  );
+  window.history.replaceState(null, '', '#project=missing&section=assistant');
+  render(<ResearchProjects service={service} integrated />);
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'No se encontró el proyecto.',
+  );
+  expect(
+    screen.queryByRole('region', { name: 'Asistente IA' }),
+  ).not.toBeInTheDocument();
 });

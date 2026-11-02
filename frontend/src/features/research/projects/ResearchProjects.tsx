@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ConversationChat } from '../../conversation/ConversationChat';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
 import { ProjectDatasets } from '../datasets/ProjectDatasets';
 import { ProjectPackage } from '../packages/ProjectPackage';
@@ -37,9 +38,10 @@ export function ResearchProjects({
   const [view, setView] = useState<View>({ kind: 'list' });
   const [notice, setNotice] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [step, setStep] = useState<'documents' | 'datasets' | 'package'>(
-    'documents',
-  );
+  const [step, setStep] = useState<
+    'documents' | 'datasets' | 'package' | 'assistant'
+  >('documents');
+  const [visited, setVisited] = useState<string[]>(['documents']);
   const detailRequest = useRef<AbortController | null>(null);
   const deleteButton = useRef<HTMLButtonElement>(null);
 
@@ -69,7 +71,41 @@ export function ResearchProjects({
 
   useEffect(() => () => detailRequest.current?.abort(), []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const id = params.get('project');
+    if (!id) return;
+    const controller = new AbortController();
+    service
+      .get(id, controller.signal)
+      .then((project) => {
+        if (controller.signal.aborted) return;
+        const selected =
+          params.get('section') === 'assistant' ? 'assistant' : 'documents';
+        setStep(selected);
+        setVisited([selected]);
+        setView({ kind: 'detail', project });
+      })
+      .catch((caught) => {
+        if (!controller.signal.aborted)
+          setView({
+            kind: 'detail-error',
+            id,
+            message:
+              caught instanceof ProjectApiError
+                ? caught.message
+                : 'No se pudo cargar la investigación.',
+          });
+      });
+    return () => controller.abort();
+  }, [service]);
+
   function goList() {
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + window.location.search,
+    );
     detailRequest.current?.abort();
     setView({ kind: 'list' });
     setNotice('');
@@ -79,6 +115,8 @@ export function ResearchProjects({
 
   async function showDetail(id: string) {
     setStep('documents');
+    setVisited(['documents']);
+    window.history.replaceState(null, '', `#project=${encodeURIComponent(id)}`);
     detailRequest.current?.abort();
     const controller = new AbortController();
     detailRequest.current = controller;
@@ -105,7 +143,15 @@ export function ResearchProjects({
     const project = edited
       ? await service.update(view.project.id, draft)
       : await service.create(draft);
-    if (!edited) setStep('documents');
+    if (!edited) {
+      setStep('documents');
+      setVisited(['documents']);
+    }
+    window.history.replaceState(
+      null,
+      '',
+      `#project=${encodeURIComponent(project.id)}`,
+    );
     setProjects((items) => [
       project,
       ...items.filter((item) => item.id !== project.id),
@@ -318,13 +364,22 @@ export function ResearchProjects({
                 ['documents', '1. Documento y metodología'],
                 ['datasets', '2. Dataset, EDA y preparación'],
                 ['package', '3. Paquete, análisis y resultados'],
+                ['assistant', '4. Asistente IA'],
               ] as const
             ).map(([id, label]) => (
               <button
                 key={id}
                 className={step === id ? '' : 'rp-secondary'}
                 aria-pressed={step === id}
-                onClick={() => setStep(id)}
+                onClick={() => {
+                  setStep(id);
+                  setVisited((old) => (old.includes(id) ? old : [...old, id]));
+                  window.history.replaceState(
+                    null,
+                    '',
+                    `#project=${encodeURIComponent(view.project.id)}&section=${id}`,
+                  );
+                }}
               >
                 {label}
               </button>
@@ -335,13 +390,29 @@ export function ResearchProjects({
             antes de generar el paquete. Revisa y aprueba cada propuesta antes
             de ejecutarla.
           </p>
-          {step === 'documents' && (
-            <ProjectDocuments projectId={view.project.id} />
+          {visited.includes('documents') && (
+            <div hidden={step !== 'documents'}>
+              <ProjectDocuments projectId={view.project.id} />
+            </div>
           )}
-          {step === 'datasets' && (
-            <ProjectDatasets projectId={view.project.id} />
+          {visited.includes('datasets') && (
+            <div hidden={step !== 'datasets'}>
+              <ProjectDatasets projectId={view.project.id} />
+            </div>
           )}
-          {step === 'package' && <ProjectPackage projectId={view.project.id} />}
+          {visited.includes('package') && (
+            <div hidden={step !== 'package'}>
+              <ProjectPackage projectId={view.project.id} />
+            </div>
+          )}
+          {visited.includes('assistant') && (
+            <div hidden={step !== 'assistant'}>
+              <ConversationChat
+                key={view.project.id}
+                projectId={view.project.id}
+              />
+            </div>
+          )}
           <div className="rp-actions">
             <button
               onClick={() => {
