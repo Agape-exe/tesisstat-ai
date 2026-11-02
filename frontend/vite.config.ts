@@ -8,6 +8,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         app: 'index.html',
+        researchDemo: 'research-demo/index.html',
         descriptiveDemo: 'statistics-demo.html',
       },
     },

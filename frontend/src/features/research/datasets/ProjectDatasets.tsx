@@ -133,6 +133,30 @@ export function ProjectDatasets({
     }
   }
 
+  async function setOrigin(dataset: ResearchDataset, synthetic: boolean) {
+    if (!api.setOrigin) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const updated = await api.setOrigin(projectId, dataset.id, synthetic);
+      setDatasets((items) =>
+        items.map((item) => (item.id === dataset.id ? updated : item)),
+      );
+      setNotice(
+        'Procedencia guardada. Los nuevos derivados heredarán esta declaración.',
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'No se pudo guardar la procedencia.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove(dataset: ResearchDataset) {
     if (!window.confirm(`¿Eliminar el dataset «${dataset.name}»?`)) return;
     setBusy(true);
@@ -219,6 +243,37 @@ export function ProjectDatasets({
                 </small>
                 {dataset.source_dataset_id && (
                   <small>Derivado de {dataset.source_dataset_id}</small>
+                )}
+                {api.setOrigin && (
+                  <label>
+                    Origen de {dataset.name}
+                    <select
+                      value={
+                        dataset.synthetic == null
+                          ? ''
+                          : String(dataset.synthetic)
+                      }
+                      disabled={busy || !!dataset.source_dataset_id}
+                      onChange={(event) =>
+                        void setOrigin(dataset, event.target.value === 'true')
+                      }
+                    >
+                      <option value="" disabled>
+                        Sin declarar
+                      </option>
+                      <option value="true">Sintético</option>
+                      <option value="false">No sintético</option>
+                    </select>
+                  </label>
+                )}
+                {dataset.source_dataset_id ? (
+                  <p className="rp-hint">
+                    La procedencia se hereda del original al crear el derivado.
+                  </p>
+                ) : (
+                  <p className="rp-hint">
+                    Declara el origen sintético antes de preparar los datos.
+                  </p>
                 )}
                 {dataset.warnings.map((warning) => (
                   <p key={warning} role="status">

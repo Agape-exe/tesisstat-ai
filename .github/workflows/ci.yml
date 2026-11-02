@@ -25,10 +25,14 @@ jobs:
         working-directory: backend
       - run: uv run python -m scripts.export_contracts --check
         working-directory: backend
+      - run: uv run python -m compileall -q app scripts tests
+        working-directory: backend
       - run: npm ci
         working-directory: frontend
       - run: npm run contracts:generate
         working-directory: frontend
       - run: git diff --exit-code -- contracts frontend/src/shared/contracts/generated
       - run: npm run lint && npm run format:check && npm test && npm run build
+        working-directory: frontend
+      - run: npm run build:research
         working-directory: frontend

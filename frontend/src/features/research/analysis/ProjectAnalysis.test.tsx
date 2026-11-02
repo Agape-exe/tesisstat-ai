@@ -206,3 +206,34 @@ it('shows API errors and disables actions while state cannot be recovered', asyn
   );
   expect(screen.getByText('Proponer análisis')).toBeDisabled();
 });
+
+it('shows persisted historical results when there is no current package', async () => {
+  const record = proposal();
+  record.invalidated_at = '2026-11-02';
+  record.stale_reason = 'Fuentes modificadas';
+  record.result = {
+    schema_version: '1.0.0',
+    id: 'result',
+    analysis_plan_id: 'plan',
+    dataset_id: 'dataset',
+    status: 'completed',
+    engine_version: 'v1',
+    metrics: [{ name: 'horas.mean', value: 2.5 }],
+    warnings: [],
+    assumptions: [],
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({ ok: true, json: async () => [record] })),
+  );
+  render(<ProjectAnalysis projectId="project" researchPackage={null} />);
+  expect(await screen.findByText('horas.mean')).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      'Resultado: completed · histórico, fuentes desactualizadas',
+    ),
+  ).toBeInTheDocument();
+  expect(screen.queryByText('Proponer análisis')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Descargar DOCX' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Descargar PDF' })).toBeDisabled();
+});

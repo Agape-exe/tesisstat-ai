@@ -23,8 +23,12 @@ const dateLabel = (value: string) =>
 
 export function ResearchProjects({
   service = defaultService,
+  homeHref = '/research-demo/',
+  integrated = false,
 }: {
   service?: ProjectService;
+  homeHref?: string;
+  integrated?: boolean;
 }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +37,9 @@ export function ResearchProjects({
   const [view, setView] = useState<View>({ kind: 'list' });
   const [notice, setNotice] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [step, setStep] = useState<'documents' | 'datasets' | 'package'>(
+    'documents',
+  );
   const detailRequest = useRef<AbortController | null>(null);
   const deleteButton = useRef<HTMLButtonElement>(null);
 
@@ -71,6 +78,7 @@ export function ResearchProjects({
   }
 
   async function showDetail(id: string) {
+    setStep('documents');
     detailRequest.current?.abort();
     const controller = new AbortController();
     detailRequest.current = controller;
@@ -97,6 +105,7 @@ export function ResearchProjects({
     const project = edited
       ? await service.update(view.project.id, draft)
       : await service.create(draft);
+    if (!edited) setStep('documents');
     setProjects((items) => [
       project,
       ...items.filter((item) => item.id !== project.id),
@@ -126,10 +135,14 @@ export function ResearchProjects({
   return (
     <main className="rp-shell">
       <header className="rp-header">
-        <a href="/research-demo/" aria-label="TesisStat AI, investigaciones">
+        <a href={homeHref} aria-label="TesisStat AI, investigaciones">
           TesisStat <strong>AI</strong>
         </a>
-        <span>Research · Entorno de desarrollo</span>
+        <span>
+          {integrated
+            ? 'Research + Statistics · Demostración local'
+            : 'Research · Entorno de desarrollo'}
+        </span>
       </header>
       <p className="rp-eyebrow">TU ESPACIO DE INVESTIGACIÓN</p>
       <div className="rp-heading">
@@ -296,9 +309,39 @@ export function ResearchProjects({
               <dd>{dateLabel(view.project.updated_at)}</dd>
             </div>
           </dl>
-          <ProjectDocuments projectId={view.project.id} />
-          <ProjectDatasets projectId={view.project.id} />
-          <ProjectPackage projectId={view.project.id} />
+          <nav
+            className="rp-actions rp-steps"
+            aria-label="Recorrido de la investigación"
+          >
+            {(
+              [
+                ['documents', '1. Documento y metodología'],
+                ['datasets', '2. Dataset, EDA y preparación'],
+                ['package', '3. Paquete, análisis y resultados'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                className={step === id ? '' : 'rp-secondary'}
+                aria-pressed={step === id}
+                onClick={() => setStep(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <p className="rp-hint">
+            Completa las fuentes, confirma la metodología y activa un dataset
+            antes de generar el paquete. Revisa y aprueba cada propuesta antes
+            de ejecutarla.
+          </p>
+          {step === 'documents' && (
+            <ProjectDocuments projectId={view.project.id} />
+          )}
+          {step === 'datasets' && (
+            <ProjectDatasets projectId={view.project.id} />
+          )}
+          {step === 'package' && <ProjectPackage projectId={view.project.id} />}
           <div className="rp-actions">
             <button
               onClick={() => {

@@ -118,6 +118,35 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
         Revisa cada relación antes de generar el paquete. Los valores
         desconocidos se envían como advertencias.
       </p>
+      <button
+        className="rp-secondary"
+        disabled={busy}
+        onClick={() =>
+          void work(async () => {
+            const [next, list] = await Promise.all([
+              packageApi.status(projectId),
+              datasetApi.list(projectId),
+            ]);
+            setStatus(next);
+            setConfig(next.configuration);
+            setDatasets(list);
+            setResult(
+              next.state === 'generated'
+                ? await packageApi.get(projectId)
+                : null,
+            );
+            setNotice(
+              'Fuentes y estado actualizados. Se cargaron las vinculaciones guardadas.',
+            );
+          })
+        }
+      >
+        Actualizar fuentes y estado
+      </button>
+      <p className="rp-hint">
+        Actualizar vuelve a cargar las vinculaciones guardadas. Guarda tus
+        cambios antes de salir de este paso.
+      </p>
       {error && (
         <p role="alert" className="rp-error">
           {error}
@@ -194,33 +223,16 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
               <p>
                 Filas: {selected.row_count} · Formato: {selected.format}
               </p>
-              <label>
-                Origen{' '}
-                <select
-                  value={
-                    selected.synthetic == null ? '' : String(selected.synthetic)
-                  }
-                  disabled={!!selected.source_dataset_id || busy}
-                  onChange={(event) =>
-                    void work(async () => {
-                      await datasetApi.setOrigin!(
-                        projectId,
-                        selected.id,
-                        event.target.value === 'true',
-                      );
-                      const list = await datasetApi.list(projectId);
-                      setDatasets(list);
-                      setNotice(
-                        'Procedencia guardada. Guarda de nuevo la configuración para confirmar la fuente.',
-                      );
-                    })
-                  }
-                >
-                  <option value="">Sin declarar</option>
-                  <option value="true">Sintético</option>
-                  <option value="false">No sintético</option>
-                </select>
-              </label>
+              <p>
+                Origen:{' '}
+                {selected.synthetic == null
+                  ? 'Sin declarar'
+                  : selected.synthetic
+                    ? 'Sintético'
+                    : 'No sintético'}
+                . Declara el origen en el paso Dataset antes de preparar un
+                derivado.
+              </p>
               {selected.source_dataset_id && (
                 <p>
                   Procedencia heredada del dataset original{' '}
@@ -559,15 +571,15 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
               <p role="status">
                 El paquete de investigación está preparado para Statistics.
               </p>
-              <ProjectAnalysis
-                key={`${projectId}-${result.id}`}
-                projectId={projectId}
-                researchPackage={result}
-              />
             </div>
           )}
         </>
       )}
+      <ProjectAnalysis
+        key={`${projectId}-${status?.state}-${result?.id ?? 'history'}`}
+        projectId={projectId}
+        researchPackage={status?.state === 'generated' ? result : null}
+      />
     </section>
   );
 }

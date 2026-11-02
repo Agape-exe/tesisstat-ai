@@ -174,13 +174,13 @@ it('shows reviewed links, validates and builds an explicitly configured package'
   expect(screen.getByText(/Existe relación \(ID: hypothesis\)/)).toBeTruthy();
 });
 
-it('shows a stale package without claiming Statistics is ready', async () => {
+it('shows stale history without allowing new proposals', async () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => ({
       ok: true,
       json: async () =>
-        url.endsWith('/datasets')
+        url.endsWith('/datasets') || url.endsWith('/analysis/plans')
           ? []
           : {
               state: 'stale',
@@ -215,7 +215,10 @@ it('shows a stale package without claiming Statistics is ready', async () => {
     ),
   ).toBeNull();
   expect(
-    screen.queryByRole('region', { name: 'Análisis estadístico Research' }),
+    screen.getByRole('region', { name: 'Análisis estadístico Research' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Proponer análisis' }),
   ).toBeNull();
   expect(
     screen.queryByRole('region', { name: 'Statistics sobre paquete Research' }),
