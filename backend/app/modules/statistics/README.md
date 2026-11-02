@@ -41,3 +41,11 @@ uv run uvicorn app.modules.statistics.dev_app:app --reload --host 127.0.0.1 --po
 
 Rutas: `GET /datasets`, `GET /datasets/{dataset_id}/columns` y
 `POST /datasets/{dataset_id}/descriptive` con `{"columns": ["study_hours"]}`.
+
+## Planner determinista (ST-02)
+
+`catalog.py` contiene el catálogo declarativo de 18 técnicas inferenciales previstas y el
+resumen descriptivo. `planner.py` implementa `DeterministicStatisticalPlanner`: consume un
+`ResearchPackage` revisado, evalúa el tipo de hipótesis, roles, escalas y relación entre
+observaciones, y devuelve un `AnalysisPlan`. Cuando la información es insuficiente devuelve
+`needs_clarification` con preguntas explícitas; nunca inventa una técnica ni ejecuta cálculos.
