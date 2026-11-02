@@ -99,6 +99,20 @@ body:has(.rp-shell) {
   margin-top: 5px;
   color: #5d7168;
 }
+.rp-extraction {
+  flex-basis: 100%;
+  padding: 14px;
+  background: #f6f7f2;
+  border-radius: 7px;
+}
+.rp-text-preview {
+  max-height: 340px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.5;
+}
 .rp-dev-note {
   background: #edf0e5;
   padding: 13px 18px;

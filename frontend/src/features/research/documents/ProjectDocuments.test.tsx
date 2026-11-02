@@ -17,10 +17,73 @@ function mockApi(): DocumentApi {
     list: vi.fn().mockResolvedValue([]),
     upload: vi.fn().mockResolvedValue(document),
     delete: vi.fn().mockResolvedValue(undefined),
+    extraction: vi.fn().mockResolvedValue(null),
+    extract: vi.fn().mockResolvedValue({
+      document_id: document.id,
+      project_id: document.project_id,
+      status: 'completed',
+      text: 'Texto sintético',
+      character_count: 15,
+      units_processed: 1,
+      processed_at: '2026-10-31T12:00:00Z',
+      warnings: [],
+      truncated: false,
+    }),
   };
 }
 
 describe('Research documents UI', () => {
+  it('shows cached text and warnings after selecting a document', async () => {
+    const api = mockApi();
+    vi.mocked(api.list).mockResolvedValue([document]);
+    vi.mocked(api.extraction).mockResolvedValue({
+      document_id: document.id,
+      project_id: document.project_id,
+      status: 'no_text',
+      text: '',
+      character_count: 0,
+      units_processed: 1,
+      processed_at: '2026-10-31T12:00:00Z',
+      warnings: ['Requiere OCR'],
+      truncated: false,
+    });
+    render(<ProjectDocuments projectId="synthetic-project" api={api} />);
+    await screen.findByText('fixture.pdf');
+    fireEvent.click(screen.getByRole('button', { name: 'Ver extracción' }));
+    expect(
+      await screen.findByText('Estado: Sin texto extraíble'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Requiere OCR')).toBeInTheDocument();
+    expect(api.extract).not.toHaveBeenCalled();
+  });
+
+  it('extracts text and offers retry after a failed result', async () => {
+    const api = mockApi();
+    vi.mocked(api.list).mockResolvedValue([document]);
+    vi.mocked(api.extract).mockResolvedValueOnce({
+      document_id: document.id,
+      project_id: document.project_id,
+      status: 'failed',
+      text: '',
+      character_count: 0,
+      units_processed: 0,
+      processed_at: '2026-10-31T12:00:00Z',
+      warnings: ['Archivo inválido'],
+      truncated: false,
+    });
+    render(<ProjectDocuments projectId="synthetic-project" api={api} />);
+    await screen.findByText('fixture.pdf');
+    fireEvent.click(screen.getByRole('button', { name: 'Ver extracción' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Extraer texto' }),
+    );
+    expect(await screen.findByText('Estado: Fallido')).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reintentar extracción' }),
+    );
+    expect(await screen.findByText('Texto sintético')).toBeInTheDocument();
+  });
+
   it('uploads, lists and confirms deletion', async () => {
     const api = mockApi();
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);

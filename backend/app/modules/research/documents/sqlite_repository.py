@@ -6,6 +6,7 @@ from contextlib import closing
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from app.modules.research.documents.extraction import ExtractionResult
 from app.modules.research.documents.models import Document
 
 
@@ -26,6 +27,10 @@ class SQLiteDocumentRepository:
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS research_documents_project "
                 "ON research_documents (project_id)"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS research_extractions "
+                "(document_id TEXT PRIMARY KEY, project_id TEXT NOT NULL, payload TEXT NOT NULL)"
             )
 
     def _connect(self) -> sqlite3.Connection:
@@ -60,6 +65,39 @@ class SQLiteDocumentRepository:
             reverse=True,
         )
 
+    def get(self, project_id: UUID, document_id: UUID) -> Document | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                "SELECT payload FROM research_documents WHERE id = ? AND project_id = ?",
+                (str(document_id), str(project_id)),
+            ).fetchone()
+        return Document.model_validate_json(row[0]) if row else None
+
+    def read(self, project_id: UUID, document_id: UUID) -> bytes:
+        if self.get(project_id, document_id) is None:
+            raise FileNotFoundError
+        try:
+            return self._path(document_id).read_bytes()
+        except OSError as exc:
+            raise DocumentStorageError from exc
+
+    def get_extraction(self, project_id: UUID, document_id: UUID) -> ExtractionResult | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                "SELECT payload FROM research_extractions WHERE project_id = ? AND document_id = ?",
+                (str(project_id), str(document_id)),
+            ).fetchone()
+        return ExtractionResult.model_validate_json(row[0]) if row else None
+
+    def save_extraction(self, result: ExtractionResult) -> None:
+        with closing(self._connect()) as connection, connection:
+            connection.execute(
+                "INSERT INTO research_extractions (document_id, project_id, payload) "
+                "VALUES (?, ?, ?) ON CONFLICT(document_id) "
+                "DO UPDATE SET payload = excluded.payload",
+                (str(result.document_id), str(result.project_id), result.model_dump_json()),
+            )
+
     def delete(self, project_id: UUID, document_id: UUID) -> bool:
         with closing(self._connect()) as connection:
             row = connection.execute(
@@ -75,6 +113,10 @@ class SQLiteDocumentRepository:
             with closing(self._connect()) as connection, connection:
                 connection.execute(
                     "DELETE FROM research_documents WHERE id = ? AND project_id = ?",
+                    (str(document_id), str(project_id)),
+                )
+                connection.execute(
+                    "DELETE FROM research_extractions WHERE document_id = ? AND project_id = ?",
                     (str(document_id), str(project_id)),
                 )
             staged.unlink()

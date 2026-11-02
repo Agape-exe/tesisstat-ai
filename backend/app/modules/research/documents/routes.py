@@ -1,8 +1,9 @@
 from urllib.parse import unquote
 from uuid import UUID
 
-from fastapi import APIRouter, Header, Request, Response, status
+from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 
+from app.modules.research.documents.extraction import ExtractionResult, ExtractionService
 from app.modules.research.documents.models import Document
 from app.modules.research.documents.use_cases import (
     MAX_DOCUMENT_BYTES,
@@ -11,7 +12,7 @@ from app.modules.research.documents.use_cases import (
 )
 
 
-def create_router(service: DocumentService) -> APIRouter:
+def create_router(service: DocumentService, extraction: ExtractionService) -> APIRouter:
     router = APIRouter(
         prefix="/api/research/projects/{project_id}/documents",
         tags=["Research documents (development)"],
@@ -36,5 +37,18 @@ def create_router(service: DocumentService) -> APIRouter:
     def delete_document(project_id: UUID, document_id: UUID) -> Response:
         service.delete(project_id, document_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post("/{document_id}/extract", response_model=ExtractionResult)
+    def extract_document(project_id: UUID, document_id: UUID) -> ExtractionResult:
+        return extraction.extract(project_id, document_id)
+
+    @router.get("/{document_id}/extraction", response_model=ExtractionResult)
+    def get_extraction(project_id: UUID, document_id: UUID) -> ExtractionResult:
+        result = extraction.get(project_id, document_id)
+        if result is None:
+            raise HTTPException(
+                status_code=404, detail="Aún no hay extracción para este documento."
+            )
+        return result
 
     return router

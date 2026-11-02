@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import Settings
+from app.modules.research.documents.extraction import ExtractionLimits, ExtractionService
 from app.modules.research.documents.routes import create_router as create_document_router
 from app.modules.research.documents.sqlite_repository import (
     DocumentStorageError,
@@ -31,6 +32,10 @@ logger = logging.getLogger(__name__)
 class ResearchDevSettings(Settings):
     research_db_path: Path = Path(".cache/research/projects.sqlite3")
     research_documents_path: Path = Path(".cache/research/documents")
+    research_extraction_max_pages: int = 100
+    research_extraction_max_units: int = 10000
+    research_extraction_max_characters: int = 200000
+    research_extraction_max_content_bytes: int = 20 * 1024 * 1024
 
 
 def create_app(
@@ -106,12 +111,23 @@ def create_app(
         return JSONResponse(status_code=404, content={"detail": "No se encontró el documento."})
 
     projects = ProjectService(repository)
-    documents = DocumentService(
-        SQLiteDocumentRepository(settings.research_db_path, settings.research_documents_path),
+    document_repository = SQLiteDocumentRepository(
+        settings.research_db_path, settings.research_documents_path
+    )
+    documents = DocumentService(document_repository, projects)
+    extraction = ExtractionService(
+        document_repository,
+        document_repository,
         projects,
+        ExtractionLimits(
+            max_pages=settings.research_extraction_max_pages,
+            max_units=settings.research_extraction_max_units,
+            max_characters=settings.research_extraction_max_characters,
+            max_content_bytes=settings.research_extraction_max_content_bytes,
+        ),
     )
     app.include_router(create_router(projects, documents))
-    app.include_router(create_document_router(documents))
+    app.include_router(create_document_router(documents, extraction))
 
     @app.get("/health")
     def health() -> dict[str, str]:
