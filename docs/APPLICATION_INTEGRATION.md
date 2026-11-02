@@ -190,8 +190,9 @@ no escribible; se usaron directamente los ejecutables del entorno equivalente in
   PDF real y versión larga de tres páginas renderizados con Poppler e inspeccionados:
   sin recortes ni superposición. Son material temporal de QA en `.cache`, no evidencias
   ni capturas para Notion.
-- DOCX válido y reabierto con contenido completo. El renderizador empaquetado no pudo
-  ejecutarse porque falta LibreOffice (`soffice.exe`); revisión visual DOCX pendiente.
+- DOCX válido y reabierto con contenido completo. El renderizador empaquetado del agente
+  no pudo ejecutarse por falta de LibreOffice (`soffice.exe`). La revisión visual de los
+  DOCX y PDF descargados fue completada y confirmada por la usuaria en la prueba manual.
 
 ### Navegador
 
@@ -201,11 +202,34 @@ IA sin configurar y creación/edición/guardado del borrador metodológico con d
 Al intentar confirmar la revisión, la autorización del navegador para ese origen fue
 rechazada. Se detuvo la automatización sin intentar otra vía para esa acción.
 
-Por tanto, **no se acredita navegación manual completa hasta exportar ni recarga con
-resultados desde navegador**. El recorrido completo está comprobado mediante HTTP,
-almacenamiento, motor real y pruebas de componentes. Falta repetirlo en navegador con
-acceso autorizado y revisar visualmente los DOCX en Word/LibreOffice. No se generaron
-capturas ni documentación de evidencias para Notion. CI no sustituye esa prueba pendiente.
+El bloqueo del agente persistió incluso después de que la usuaria autorizara navegación
+y descargas para el origen local y reiniciara la aplicación. La usuaria completó el
+recorrido directamente y confirmó todos los controles de la lista siguiente el
+**2 de noviembre de 2026**. Se distingue su validación manual de las pruebas automatizadas
+y de la navegación parcial del agente; no se atribuye al agente una prueba que no realizó.
+
+| Comprobación manual | Confirmación de la usuaria |
+|---|---|
+| Proyecto creado | Sí |
+| Documento cargado y texto extraído | Sí |
+| Metodología guardada y confirmada | Sí |
+| CSV declarado sintético | Sí |
+| EDA con cinco filas y un duplicado | Sí |
+| Derivado activo con cuatro filas | Sí |
+| ResearchPackage generado | Sí |
+| Ejecución bloqueada antes de aprobar | Sí |
+| Descriptivos con medias 2.5 y 5 | Sí |
+| Pearson con n=4 y r=1 | Sí |
+| DOCX descargados y visualmente correctos | Sí |
+| PDF descargados y visualmente correctos | Sí |
+| Resultados conservados después de F5 | Sí |
+| Aclaraciones bloquean el análisis | Sí |
+| Resultados históricos desactualizados bloqueados | Sí |
+| Archivo vacío rechazado | Sí |
+
+**La validación manual de la demostración local queda completada según la confirmación
+expresa de la usuaria.** No se generaron capturas ni documentación de evidencias para
+Notion. La CI complementa esta comprobación manual y no la sustituye.
 
 ### Seguimiento de la prueba manual
 
@@ -221,8 +245,9 @@ sus avisos y las restricciones de aprobación/descarga.
 
 La inspección de solo lectura del almacenamiento del proyecto sintético de esa prueba
 confirmó un plan Pearson aprobado y un resultado completado, vigente, con `n=4` y `r=1`.
-Esta comprobación no sustituye la revisión visual de las descargas por la usuaria ni
-acredita acceso del agente al navegador, que continuaba bloqueado.
+La usuaria confirmó posteriormente el resultado de Pearson, la persistencia tras F5 y
+las descargas visualmente correctas en su lista de cierre. El agente continuó sin acceso
+al navegador.
 
 ## Cambios principales
 
@@ -235,14 +260,17 @@ Los seis contratos v1.0.0 y `backend/app/main.py` permanecen sin cambios.
 ## Git y CI
 
 Rama publicada: `feat/application-integration`, base `28816d0`. Commits de implementación:
-`385dc50` (API/informes) y `6abad5a` (aplicación). Árbol limpio tras esos commits.
+`385dc50` (API/informes), `6abad5a` (aplicación) y `bcb0eba` (sincronización de versiones
+y planes recientes primero). La CI de la corrección está aprobada:
+[Foundation checks, ejecución 41421516566](https://github.com/Agape-exe/tesisstat-ai/actions/runs/41421516566).
 El intento de crear un PR borrador hacia `develop` mediante el conector GitHub devolvió
 `403 Resource not accessible by integration`. No se intentó eludir la restricción.
 Título y descripción quedan en [PR_APPLICATION_INTEGRATION.md](PR_APPLICATION_INTEGRATION.md).
-No se fusionó ninguna rama. La verificación remota final se consigna en el informe
-entregado. La consulta inicial por el conector devolvió
-cero ejecuciones de PR para el commit de cierre de la sesión anterior; eso no se
-interpreta como CI aprobada.
+La consulta de GitHub al registrar la confirmación manual no encontró un PR desde esta
+rama hacia `develop`. La validación funcional de la sesión está cerrada; la creación
+del PR por una persona con permisos y su revisión siguen pendientes de gestión en GitHub.
+No se fusionó ninguna rama. La CI del commit documental final se consigna en el informe
+entregado.
 
 ### Inventario de archivos de la sesión
 

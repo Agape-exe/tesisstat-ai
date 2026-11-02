@@ -3,7 +3,7 @@
 Título: `feat: unify local application and export persisted analysis reports`
 
 Rama origen: `feat/application-integration` · Destino: `develop` · Estado recomendado:
-borrador hasta completar las verificaciones manuales pendientes.
+listo para revisión tras la validación manual confirmada por la usuaria.
 
 La entrada principal todavía mostraba la base de la sesión 1. Ahora reutiliza los
 formularios reales de Research y organiza el recorrido en documento/metodología,
@@ -31,10 +31,16 @@ El seguimiento manual añade sincronización de la versión del formulario despu
 generar un paquete y ordena los planes del más reciente al más antiguo. Dos pruebas de
 regresión cubren la edición posterior a la generación y la posición del plan vigente.
 
-Pendientes: el navegador rechazó la autorización al intentar confirmar la metodología;
-no se acredita recorrido manual completo hasta exportar. La revisión visual DOCX también
-queda pendiente por falta de LibreOffice. Instrucciones de inicio, datos ficticios y
-límites en [APPLICATION_INTEGRATION.md](APPLICATION_INTEGRATION.md).
+La usuaria confirmó el recorrido manual completo el 2 de noviembre de 2026, incluidos
+los cálculos descriptivos y Pearson, la aprobación obligatoria, la persistencia tras F5,
+las descargas DOCX/PDF visualmente correctas y los bloqueos de aclaraciones, obsolescencia
+y archivo vacío. El agente no pudo completar su propia navegación por un bloqueo de su
+herramienta; esta confirmación manual procede de la usuaria.
+
+CI de la corrección `bcb0eba` aprobada:
+[Foundation checks](https://github.com/Agape-exe/tesisstat-ai/actions/runs/41421516566).
+Instrucciones de inicio, datos ficticios y límites en
+[APPLICATION_INTEGRATION.md](APPLICATION_INTEGRATION.md).
 
 No fusionar automáticamente. Demo exclusivamente local, sin despliegue público ni
 llamadas a Cloudflare.

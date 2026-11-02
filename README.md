@@ -9,8 +9,9 @@ con descarga DOCX/PDF de resultados completados y vigentes. Los cálculos integr
 resumen descriptivo y Pearson. Las demás técnicas del catálogo tienen adaptadores pendientes.
 
 Esta es una demostración sin autenticación, exclusivamente local y con información ficticia.
-No es un servicio de producción. La verificación manual completa sigue pendiente; consulta
-los resultados y límites de validación en [APPLICATION_INTEGRATION.md](docs/APPLICATION_INTEGRATION.md).
+No es un servicio de producción. El recorrido manual completo, las descargas y su revisión
+visual fueron confirmados por la usuaria el 2 de noviembre de 2026; consulta los resultados
+y límites en [APPLICATION_INTEGRATION.md](docs/APPLICATION_INTEGRATION.md).
 
 ## Iniciar la aplicación
 
