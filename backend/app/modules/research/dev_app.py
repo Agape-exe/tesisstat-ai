@@ -9,6 +9,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.modules.research.datasets.readers import DatasetLimits, InvalidDataset
+from app.modules.research.datasets.routes import create_router as create_dataset_router
+from app.modules.research.datasets.sqlite_repository import (
+    DatasetStorageError,
+    SQLiteDatasetRepository,
+)
+from app.modules.research.datasets.use_cases import DatasetNotFound, DatasetService
 from app.modules.research.documents.extraction import ExtractionLimits, ExtractionService
 from app.modules.research.documents.routes import create_router as create_document_router
 from app.modules.research.documents.sqlite_repository import (
@@ -40,6 +47,12 @@ logger = logging.getLogger(__name__)
 class ResearchDevSettings(CloudflareSettings):
     research_db_path: Path = Path(".cache/research/projects.sqlite3")
     research_documents_path: Path = Path(".cache/research/documents")
+    research_datasets_path: Path = Path(".cache/research/datasets")
+    research_dataset_max_bytes: int = 10 * 1024 * 1024
+    research_dataset_max_rows: int = 50000
+    research_dataset_max_columns: int = 200
+    research_dataset_preview_rows: int = 20
+    research_dataset_max_zip_bytes: int = 50 * 1024 * 1024
     research_extraction_max_pages: int = 100
     research_extraction_max_units: int = 10000
     research_extraction_max_characters: int = 200000
@@ -133,11 +146,43 @@ def create_app(
     async def document_not_found(request: Request, exc: DocumentNotFound) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": "No se encontró el documento."})
 
+    @app.exception_handler(InvalidDataset)
+    async def invalid_dataset(request: Request, exc: InvalidDataset) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(DatasetNotFound)
+    async def dataset_not_found(request: Request, exc: DatasetNotFound) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": "No se encontró el dataset."})
+
+    @app.exception_handler(DatasetStorageError)
+    async def dataset_storage_error(request: Request, exc: DatasetStorageError) -> JSONResponse:
+        logger.error("Research dataset storage failed", exc_info=exc)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "El almacenamiento de datasets no está disponible. Intenta nuevamente."
+            },
+        )
+
     projects = ProjectService(repository)
     document_repository = SQLiteDocumentRepository(
         settings.research_db_path, settings.research_documents_path
     )
     documents = DocumentService(document_repository, projects)
+    dataset_repository = SQLiteDatasetRepository(
+        settings.research_db_path, settings.research_datasets_path
+    )
+    datasets = DatasetService(
+        dataset_repository,
+        projects,
+        DatasetLimits(
+            max_bytes=settings.research_dataset_max_bytes,
+            max_rows=settings.research_dataset_max_rows,
+            max_columns=settings.research_dataset_max_columns,
+            preview_rows=settings.research_dataset_preview_rows,
+            max_zip_bytes=settings.research_dataset_max_zip_bytes,
+        ),
+    )
     extraction = ExtractionService(
         document_repository,
         document_repository,
@@ -149,8 +194,9 @@ def create_app(
             max_content_bytes=settings.research_extraction_max_content_bytes,
         ),
     )
-    app.include_router(create_router(projects, documents))
+    app.include_router(create_router(projects, documents, datasets))
     app.include_router(create_document_router(documents, extraction))
+    app.include_router(create_dataset_router(datasets))
     methodology_repository = SQLiteMethodologyRepository(settings.research_db_path)
     methodology = MethodologyService(
         extraction,

@@ -444,3 +444,23 @@ body:has(.rp-shell) {
 .rp-review-row label {
   flex: 1 1 16rem;
 }
+.rp-dataset-preview {
+  width: 100%;
+  margin-top: 1rem;
+}
+.rp-dataset-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.rp-dataset-scroll table {
+  border-collapse: collapse;
+  min-width: 100%;
+  text-align: left;
+}
+.rp-dataset-scroll th,
+.rp-dataset-scroll td {
+  border: 1px solid #d8dce5;
+  padding: 0.45rem 0.65rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
