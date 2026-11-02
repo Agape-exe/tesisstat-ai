@@ -23,12 +23,56 @@ export interface DatasetPreview {
   warnings: string[];
 }
 
+export interface EDAColumn {
+  name: string;
+  suggested_type: string;
+  present: number;
+  missing: number;
+  missing_percentage: number;
+  distinct: number;
+  uniqueness_percentage: number;
+  numeric_valid: number;
+  numeric_min: string | null;
+  numeric_max: string | null;
+  date_min: string | null;
+  date_max: string | null;
+  incompatible_examples: string[];
+  frequencies: { value: string; count: number; percentage: number }[];
+  warnings: { severity: string; message: string }[];
+}
+
+export interface EDAReport {
+  processed_at: string;
+  rule_version: string;
+  summary: {
+    rows: number;
+    columns: number;
+    missing: number;
+    missing_percentage: number;
+    duplicates: number;
+    problem_columns: number;
+  };
+  columns: EDAColumn[];
+  warnings: { severity: string; message: string }[];
+}
+
+export class DatasetApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
+}
+
 export interface DatasetApi {
   list(projectId: string, signal?: AbortSignal): Promise<ResearchDataset[]>;
   upload(projectId: string, file: File): Promise<ResearchDataset>;
   preview(projectId: string, id: string): Promise<DatasetPreview>;
   activate(projectId: string, id: string): Promise<ResearchDataset>;
   delete(projectId: string, id: string): Promise<void>;
+  getEda(projectId: string, id: string): Promise<EDAReport>;
+  runEda(projectId: string, id: string, force?: boolean): Promise<EDAReport>;
 }
 
 export function createDatasetApi(
@@ -55,10 +99,11 @@ export function createDatasetApi(
     }
     if (!response.ok) {
       const body = await response.json().catch(() => null);
-      throw new Error(
+      throw new DatasetApiError(
         typeof body?.detail === 'string'
           ? body.detail
           : 'No se pudo completar la operación. Intenta nuevamente.',
+        response.status,
       );
     }
     return response.status === 204
@@ -83,5 +128,10 @@ export function createDatasetApi(
       request(`${item(projectId, id)}/activate`, { method: 'POST' }),
     delete: (projectId, id) =>
       request(item(projectId, id), { method: 'DELETE' }),
+    getEda: (projectId, id) => request(`${item(projectId, id)}/eda`),
+    runEda: (projectId, id, force = false) =>
+      request(`${item(projectId, id)}/eda${force ? '?force=true' : ''}`, {
+        method: 'POST',
+      }),
   };
 }

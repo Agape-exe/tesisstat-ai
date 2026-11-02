@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createDatasetApi } from './api';
+import { DatasetEDA } from './DatasetEDA';
 import type { DatasetApi, DatasetPreview, ResearchDataset } from './api';
 
 const defaultApi = createDatasetApi();
@@ -245,6 +246,11 @@ export function ProjectDatasets({
               >
                 Eliminar
               </button>
+              <DatasetEDA
+                projectId={projectId}
+                datasetId={dataset.id}
+                api={api}
+              />
               {selected === dataset.id && (
                 <div className="rp-dataset-preview">
                   {previewLoading ? (

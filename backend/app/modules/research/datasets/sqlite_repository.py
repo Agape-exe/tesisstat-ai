@@ -20,6 +20,10 @@ class SQLiteDatasetRepository:
         self.storage_path.mkdir(parents=True, exist_ok=True)
         with closing(self._connect()) as connection, connection:
             connection.execute(
+                "CREATE TABLE IF NOT EXISTS research_eda "
+                "(dataset_id TEXT PRIMARY KEY, project_id TEXT NOT NULL, payload TEXT NOT NULL)"
+            )
+            connection.execute(
                 "CREATE TABLE IF NOT EXISTS research_datasets "
                 "(id TEXT PRIMARY KEY, project_id TEXT NOT NULL, payload TEXT NOT NULL, "
                 "preview TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 0)"
@@ -115,6 +119,10 @@ class SQLiteDatasetRepository:
         try:
             os.replace(path, staged)
             with closing(self._connect()) as connection, connection:
+                connection.execute(
+                    "DELETE FROM research_eda WHERE project_id = ? AND dataset_id = ?",
+                    (str(project_id), str(dataset_id)),
+                )
                 connection.execute(
                     "DELETE FROM research_datasets WHERE project_id = ? AND id = ?",
                     (str(project_id), str(dataset_id)),
