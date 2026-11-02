@@ -90,3 +90,11 @@ de significancia requiere el valor crítico de la distribución correspondiente.
 `regression.py` implementa regresión lineal simple y múltiple mediante ecuaciones normales con
 eliminación gaussiana y pivoteo; también ofrece una ANCOVA inicial con indicadores de grupo y
 una covariable. Se detectan matrices singulares, muestras insuficientes y respuestas constantes.
+
+## Diagnóstico de supuestos (ST-09)
+
+`assumptions.py` ofrece normalidad mediante Jarque–Bera, homogeneidad mediante Brown–Forsythe,
+homocedasticidad mediante un cribado Breusch–Pagan y un estado explícito para independencia,
+que depende del diseño muestral. Cada diagnóstico devuelve `passed`, `failed` o `not_checked`,
+con estadístico, p aproximado y explicación; no convierte una inferencia de datos en certeza
+sobre el diseño.
