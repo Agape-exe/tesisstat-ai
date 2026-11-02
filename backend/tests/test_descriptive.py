@@ -72,6 +72,14 @@ def test_descriptive_endpoints_expose_only_allowlisted_fixture_data():
     summary = client.post("/datasets/association/descriptive", json={"columns": ["study_hours"]})
     assert summary.status_code == 200
     assert summary.json()[0]["numeric"]["valid_count"] == 30
+    plan = client.get("/datasets/association/plan")
+    assert plan.status_code == 200
+    assert plan.json()["status"] == "approved"
+    assert plan.json()["technique"] == "descriptive_summary"
+    analysis = client.post("/datasets/association/analysis")
+    assert analysis.status_code == 200
+    assert analysis.json()["status"] == "completed"
+    assert any(metric["name"] == "study_hours.mean" for metric in analysis.json()["metrics"])
     cors = client.options(
         "/datasets/association/columns",
         headers={

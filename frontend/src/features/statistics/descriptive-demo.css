@@ -48,6 +48,21 @@
   border-radius: 10px;
   background: #fcfdf9;
 }
+.analysis-plan,
+.analysis-result {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid #d4ded6;
+  border-radius: 10px;
+  background: #edf0e8;
+}
+.analysis-plan h2,
+.analysis-result h2 {
+  margin-top: 0;
+}
+.assumption {
+  color: #315b51;
+}
 table {
   width: 100%;
   border-collapse: collapse;

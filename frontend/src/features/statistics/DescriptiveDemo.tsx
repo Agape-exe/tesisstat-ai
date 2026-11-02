@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   createDescriptiveApi,
   type DescriptiveApi,
+  type AnalysisPlan,
+  type AnalysisResult,
   type DescriptiveResult,
 } from './descriptiveApi';
 import './descriptive-demo.css';
@@ -86,6 +88,8 @@ export function DescriptiveDemo({
   >([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [results, setResults] = useState<DescriptiveResult[]>([]);
+  const [plan, setPlan] = useState<AnalysisPlan | null>(null);
+  const [execution, setExecution] = useState<AnalysisResult | null>(null);
   const [state, setState] = useState<
     'loading' | 'ready' | 'error' | 'analyzing'
   >('loading');
@@ -140,7 +144,14 @@ export function DescriptiveDemo({
     setState('analyzing');
     setMessage('');
     try {
-      setResults(await api.describe(datasetId, selected));
+      const [descriptive, nextPlan, nextExecution] = await Promise.all([
+        api.describe(datasetId, selected),
+        api.getPlan ? api.getPlan(datasetId) : Promise.resolve(null),
+        api.execute ? api.execute(datasetId) : Promise.resolve(null),
+      ]);
+      setResults(descriptive);
+      setPlan(nextPlan);
+      setExecution(nextExecution);
       setState('ready');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Error desconocido');
@@ -285,6 +296,47 @@ export function DescriptiveDemo({
               </article>
             ))}
           </div>
+        </section>
+      )}
+      {plan && (
+        <section className="analysis-plan" aria-label="Plan estadístico">
+          <h2>Plan estadístico</h2>
+          <p>
+            <strong>{plan.technique ?? 'Pendiente de aclaración'}</strong> ·{' '}
+            estado: {plan.status}
+          </p>
+          <p>{plan.rationale}</p>
+          {plan.assumptions_to_check.length > 0 && (
+            <p>Supuestos a comprobar: {plan.assumptions_to_check.join(', ')}</p>
+          )}
+        </section>
+      )}
+      {execution && (
+        <section className="analysis-result" aria-label="Resultado del motor">
+          <h2>Resultado del motor</h2>
+          <p>{execution.interpretation ?? `Estado: ${execution.status}`}</p>
+          {execution.metrics.length > 0 && (
+            <table>
+              <tbody>
+                {execution.metrics.map((metric) => (
+                  <tr key={metric.name}>
+                    <th>{metric.name}</th>
+                    <td>{value(metric.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {execution.assumptions.map((assumption) => (
+            <p className="assumption" key={assumption.name}>
+              {assumption.name}: {assumption.status} — {assumption.details}
+            </p>
+          ))}
+          {execution.warnings.map((warning) => (
+            <p className="warning" key={warning}>
+              {warning}
+            </p>
+          ))}
         </section>
       )}
     </main>

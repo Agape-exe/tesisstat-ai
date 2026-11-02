@@ -98,3 +98,10 @@ homocedasticidad mediante un cribado Breusch–Pagan y un estado explícito para
 que depende del diseño muestral. Cada diagnóstico devuelve `passed`, `failed` o `not_checked`,
 con estadístico, p aproximado y explicación; no convierte una inferencia de datos en certeza
 sobre el diseño.
+
+## Demo integrada (ST-10)
+
+La API de desarrollo expone `GET /datasets/{dataset_id}/plan` y
+`POST /datasets/{dataset_id}/analysis` para el flujo descriptivo aprobado. La demo React muestra
+el plan, su justificación, métricas del `AnalysisResult`, supuestos, advertencias, tablas,
+gráficos y estados de carga/error sin modificar `frontend/src/app/App.tsx`.
