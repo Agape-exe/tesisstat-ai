@@ -99,6 +99,8 @@ it('shows reviewed links, validates and builds an explicitly configured package'
     'fetch',
     vi.fn(async (url: string, options?: RequestInit) => {
       calls.push(`${options?.method ?? 'GET'} ${url}`);
+      if (url.endsWith('/analysis/plans'))
+        return { ok: true, json: async () => [] };
       if (url.endsWith('/configuration') && options?.body)
         savedBodies.push(String(options.body));
       if (url.endsWith('/build')) built = true;
@@ -149,7 +151,7 @@ it('shows reviewed links, validates and builds an explicitly configured package'
   );
   expect(await screen.findByText(/package-1/)).toBeTruthy();
   expect(
-    screen.getByText(/La integración con Statistics está pendiente/),
+    screen.getByText(/Integración disponible: resumen descriptivo y Pearson/),
   ).toBeTruthy();
   expect(screen.getByText(/Existe relación \(ID: hypothesis\)/)).toBeTruthy();
 });
@@ -197,6 +199,8 @@ it('loads an existing current package when the project is reopened', async () =>
     'fetch',
     vi.fn(async (url: string) => {
       calls.push(url);
+      if (url.endsWith('/analysis/plans'))
+        return { ok: true, json: async () => [] };
       return {
         ok: true,
         json: async () =>

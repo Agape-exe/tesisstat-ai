@@ -332,8 +332,9 @@ export function ResearchProjects({
         </section>
       )}
       <footer className="rp-footer">
-        Research Module · Los proyectos se guardan en SQLite local. La
-        metodología y los análisis se incorporarán después.
+        Research Module · Persistencia SQLite local. Revisión metodológica y
+        análisis descriptivo/Pearson con aprobación explícita, solo para datos
+        sintéticos en esta demo.
       </footer>
     </main>
   );
