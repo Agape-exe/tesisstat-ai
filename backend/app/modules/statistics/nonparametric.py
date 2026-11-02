@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from .distributions import chi_square_survival
+from .distributions import chi_square_survival, normal_two_sided
 from .inferential import (
     StatisticalCalculationError,
     TechniqueResult,
@@ -48,12 +48,23 @@ def mann_whitney(left: Sequence[object], right: Sequence[object]) -> TechniqueRe
     rank_sum_left = sum(ranks[: len(x)])
     u_left = rank_sum_left - len(x) * (len(x) + 1) / 2
     u_right = len(x) * len(y) - u_left
+    u = min(u_left, u_right)
+    total = len(x) + len(y)
+    tie_counts: dict[float, int] = {}
+    for value in x + y:
+        tie_counts[value] = tie_counts.get(value, 0) + 1
+    tie_adjustment = sum(count**3 - count for count in tie_counts.values())
+    variance = len(x) * len(y) / 12 * ((total + 1) - tie_adjustment / (total * (total - 1)))
+    z_statistic = max(0.0, abs(u - len(x) * len(y) / 2) - 0.5) / variance**0.5
     return TechniqueResult(
         "mann_whitney",
         {
             "n_left": float(len(x)),
             "n_right": float(len(y)),
-            "u": min(u_left, u_right),
+            "u": u,
+            "z_statistic": z_statistic,
+            "p_value": normal_two_sided(z_statistic),
+            "rank_biserial_effect": 1 - 2 * u / (len(x) * len(y)),
         },
     )
 
@@ -72,13 +83,26 @@ def wilcoxon(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
     negative = sum(
         rank for rank, difference in zip(ranks, differences, strict=True) if difference < 0
     )
+    statistic = min(positive, negative)
+    count = len(differences)
+    tie_counts: dict[float, int] = {}
+    for value in (abs(item) for item in differences):
+        tie_counts[value] = tie_counts.get(value, 0) + 1
+    variance = (
+        count * (count + 1) * (2 * count + 1)
+        - sum(size * (size + 1) * (2 * size + 1) / 2 for size in tie_counts.values())
+    ) / 24
+    z_statistic = max(0.0, abs(statistic - count * (count + 1) / 4) - 0.5) / variance**0.5
     return TechniqueResult(
         "wilcoxon",
         {
             "n": float(len(differences)),
             "w_positive": positive,
             "w_negative": negative,
-            "w": min(positive, negative),
+            "w": statistic,
+            "z_statistic": z_statistic,
+            "p_value": normal_two_sided(z_statistic),
+            "rank_effect": z_statistic / count**0.5,
         },
     )
 

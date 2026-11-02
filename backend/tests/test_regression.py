@@ -16,6 +16,7 @@ def test_simple_regression_returns_reference_coefficients():
     assert isclose(result.metrics["intercept"], 0)
     assert isclose(result.metrics["slope"], 2)
     assert isclose(result.metrics["r_squared"], 1)
+    assert result.metrics["model_p_value"] == 0
 
 
 def test_multiple_regression_returns_reference_coefficients():
@@ -28,6 +29,7 @@ def test_multiple_regression_returns_reference_coefficients():
     assert isclose(result.metrics["beta_1"], 2)
     assert isclose(result.metrics["beta_2"], 3)
     assert isclose(result.metrics["r_squared"], 1)
+    assert result.metrics["model_p_value"] == 0
 
 
 def test_ancova_returns_group_effect_and_covariate_coefficient():
@@ -40,6 +42,7 @@ def test_ancova_returns_group_effect_and_covariate_coefficient():
     assert result.metrics["group_count"] == 2
     assert isclose(result.metrics["group_B_effect"], 2)
     assert isclose(result.metrics["covariate_beta"], 2)
+    assert result.metrics["model_p_value"] == 0
 
 
 def test_regression_rejects_singular_design_and_small_samples():

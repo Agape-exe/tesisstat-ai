@@ -4,7 +4,7 @@ Actualizada contra `develop` después del merge del PR #28.
 
 | Sesión | Estado | Evidencia / pendiente principal |
 | --- | --- | --- |
-| 15B — Validación del motor | En progreso | Las técnicas son deterministas y ahora Pearson, Spearman, chi-cuadrado, t, ANOVA y Kruskal–Wallis reportan p-valores; Kruskal–Wallis aplica corrección por empates. Quedan IC/tamaños de efecto y cobertura inferencial uniforme. Se decidió no incorporar SciPy/statsmodels todavía: el motor mantiene implementaciones pequeñas, deterministas y sin dependencias científicas pesadas. |
+| 15B — Validación del motor | En progreso | Pearson, Spearman, chi-cuadrado, t, ANOVA, Kruskal–Wallis, Mann–Whitney, Wilcoxon y los modelos de regresión/ANCOVA reportan p-valores con distribuciones deterministas; Kruskal–Wallis aplica corrección por empates. Quedan IC/tamaños de efecto y cobertura inferencial uniforme. Se decidió no incorporar SciPy/statsmodels todavía: el motor mantiene implementaciones pequeñas, deterministas y sin dependencias científicas pesadas. |
 | 16B — Técnicas fundamentales | Completada | Spearman, chi-cuadrado, Fisher, t independiente/pareada/Welch y ANOVA/ANOVA Welch recorren Research → propuesta → aprobación → ejecución. |
 | 17B — Catálogo restante | Completada | Las 19 técnicas del catálogo tienen adaptadores de entrada, incluyendo Cronbach, no paramétricas, post-hoc, regresiones y ANCOVA. Los post-hoc conservan la advertencia de que la significancia requiere su distribución crítica. |
 | 18B — Gráficos e interpretación | Parcial | La demo Statistics tiene histogramas, cajas, barras y dispersión para datasets de demostración; falta conectar gráficos derivados de resultados persistidos del recorrido Research. |
