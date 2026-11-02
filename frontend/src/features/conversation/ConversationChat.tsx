@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 import { createConversationApi, ConversationApiError } from './api';
 import type {
   Conversation,
@@ -384,7 +386,18 @@ export function ConversationChat({
                 {detail.messages.map((m) => (
                   <article key={m.id} className={`chat-message chat-${m.role}`}>
                     <strong>{m.role === 'user' ? 'Tú' : 'Asistente IA'}</strong>
-                    <p>{m.content}</p>
+                    {m.role === 'assistant' ? (
+                      <div className="chat-markdown">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkBreaks]}
+                          components={{ img: ({ alt }) => <>{alt}</> }}
+                        >
+                          {m.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p>{m.content}</p>
+                    )}
                     <time dateTime={m.created_at}>
                       {new Date(m.created_at).toLocaleTimeString('es-PE', {
                         hour: '2-digit',

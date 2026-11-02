@@ -93,6 +93,38 @@ function send() {
   fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje' }));
 }
 
+it('renders assistant Markdown safely while keeping user messages as text', async () => {
+  const api = service();
+  vi.mocked(api.get).mockResolvedValue(
+    detail([
+      { ...user, content: '**Pregunta literal**' },
+      {
+        ...assistant,
+        content:
+          '### Ejemplo de **variable cuantitativa**\n\nUna *medida*.\nSegunda línea.\n\n- Primer elemento\n- Segundo elemento\n\n<script>alert(1)</script>\n\n[enlace](javascript:alert(1))',
+      },
+    ]),
+  );
+  await ready(api);
+  expect(screen.getByText('**Pregunta literal**').tagName).toBe('P');
+  const heading = screen.getByRole('heading', {
+    name: 'Ejemplo de variable cuantitativa',
+  });
+  expect(within(heading).getByText('variable cuantitativa').tagName).toBe(
+    'STRONG',
+  );
+  expect(screen.getByText('medida').tagName).toBe('EM');
+  expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  expect(
+    screen.getByText('medida').closest('p')?.querySelector('br'),
+  ).not.toBeNull();
+  expect(document.querySelector('.chat-markdown script')).toBeNull();
+  expect(screen.getByText('enlace')).not.toHaveAttribute(
+    'href',
+    'javascript:alert(1)',
+  );
+});
+
 it('loads only the current project and requires explicit external consent', async () => {
   const { api } = await ready();
   expect(api.list).toHaveBeenCalledWith('p1', 0, expect.any(AbortSignal));
