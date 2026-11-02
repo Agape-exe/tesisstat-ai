@@ -237,3 +237,23 @@ it('shows persisted historical results when there is no current package', async 
   expect(screen.getByRole('button', { name: 'Descargar DOCX' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Descargar PDF' })).toBeDisabled();
 });
+
+it('shows the newest current analysis before older historical plans', async () => {
+  const historical = proposal();
+  historical.plan.id = 'old-plan';
+  historical.invalidated_at = '2026-11-02';
+  const current = proposal();
+  current.plan.id = 'new-plan';
+  current.plan.technique = 'pearson';
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({ ok: true, json: async () => [historical, current] })),
+  );
+  render(
+    <ProjectAnalysis projectId="project" researchPackage={researchPackage} />,
+  );
+  await screen.findByRole('article', { name: 'Plan new-plan' });
+  const plans = screen.getAllByRole('article');
+  expect(plans[0]).toHaveAccessibleName('Plan new-plan');
+  expect(plans[1]).toHaveAccessibleName('Plan old-plan');
+});

@@ -20,12 +20,16 @@ cliente ni recalculan. Se reutilizan los generadores de Statistics; el PDF pagin
 truncar y conserva español mediante WinAnsi, con aviso para caracteres no representables.
 Sin cambios en fórmulas, motor, app.main ni los seis contratos v1.0.0.
 
-Validación local: 235 pruebas backend, 64 frontend; Ruff check/format, ESLint, Prettier,
+Validación local: 235 pruebas backend, 66 frontend; Ruff check/format, ESLint, Prettier,
 contratos, compileall, TypeScript, build principal (incluye Statistics) y Research
 independiente correctos. Los builds consecutivos conservan las tres entradas. E2E HTTP
 real con DOCX, metodología manual, CSV, EDA, derivado, paquete, descriptivos/Pearson,
 aprobación, persistencia tras reinicio y exportaciones. La descarga no invoca el motor.
 PDF real y largo de tres páginas inspeccionados; DOCX reabierto y contenido verificado.
+
+El seguimiento manual añade sincronización de la versión del formulario después de
+generar un paquete y ordena los planes del más reciente al más antiguo. Dos pruebas de
+regresión cubren la edición posterior a la generación y la posición del plan vigente.
 
 Pendientes: el navegador rechazó la autorización al intentar confirmar la metodología;
 no se acredita recorrido manual completo hasta exportar. La revisión visual DOCX también

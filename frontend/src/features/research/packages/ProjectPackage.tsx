@@ -515,7 +515,9 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
                 void work(async () => {
                   const built = await packageApi.build(projectId);
                   setResult(built);
-                  setStatus(await packageApi.status(projectId));
+                  const next = await packageApi.status(projectId);
+                  setStatus(next);
+                  setConfig(next.configuration);
                   setNotice('Paquete generado y validado.');
                 })
               }

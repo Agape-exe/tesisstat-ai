@@ -170,7 +170,7 @@ no escribible; se usaron directamente los ejecutables del entorno equivalente in
 
 - Backend: **235/235 pruebas correctas** en la pasada final (53,86 segundos).
   Incluye los casos nuevos de aplicación e informes. Sin llamadas a Cloudflare.
-- Frontend: **64/64 pruebas correctas** en 17 archivos (12,36 segundos).
+- Frontend: **66/66 pruebas correctas** en 17 archivos tras el ajuste de la prueba manual.
 - Ruff check y format, contratos JSON Schema, compileall, ESLint, Prettier, TypeScript:
   correctos tras las últimas correcciones.
 - Build principal y Research independiente correctos. El principal incluye Statistics.
@@ -206,6 +206,23 @@ resultados desde navegador**. El recorrido completo está comprobado mediante HT
 almacenamiento, motor real y pruebas de componentes. Falta repetirlo en navegador con
 acceso autorizado y revisar visualmente los DOCX en Word/LibreOffice. No se generaron
 capturas ni documentación de evidencias para Notion. CI no sustituye esa prueba pendiente.
+
+### Seguimiento de la prueba manual
+
+Durante el recorrido realizado por la usuaria se detectó que generar un paquete
+incrementa la versión de configuración en el servidor, pero el formulario conservaba
+la anterior. Se sincroniza la configuración devuelta por el estado posterior a la
+generación para que la siguiente edición pueda guardarse sin un conflicto de versión
+espurio. Una prueba de regresión verifica generar, editar y guardar con la nueva versión.
+
+El panel muestra los planes más recientes primero para que una propuesta o resultado
+vigente no quede debajo de varios descriptivos históricos. Se mantiene todo el historial,
+sus avisos y las restricciones de aprobación/descarga.
+
+La inspección de solo lectura del almacenamiento del proyecto sintético de esa prueba
+confirmó un plan Pearson aprobado y un resultado completado, vigente, con `n=4` y `r=1`.
+Esta comprobación no sustituye la revisión visual de las descargas por la usuaria ni
+acredita acceso del agente al navegador, que continuaba bloqueado.
 
 ## Cambios principales
 

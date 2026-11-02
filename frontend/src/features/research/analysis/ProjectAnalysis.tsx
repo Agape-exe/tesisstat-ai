@@ -120,6 +120,7 @@ export function ProjectAnalysis({
           )}
           {records
             .filter((record) => record.plan.hypothesis_id === hypothesis.id)
+            .reverse()
             .map((record) => {
               const stale =
                 !!record.invalidated_at ||

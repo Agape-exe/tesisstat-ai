@@ -286,3 +286,94 @@ it('loads an existing current package when the project is reopened', async () =>
   ).toBeNull();
   expect(calls.some((url) => url.includes('/statistics/'))).toBe(false);
 });
+
+it('uses the server configuration version after building before saving the next edit', async () => {
+  let config = {
+    version: 4,
+    document_id: 'doc',
+    dataset_id: 'data',
+    review_version: 2,
+    review_hash: 'review',
+    dataset_hash: 'data',
+    design: 'observational',
+    observations: 'independent',
+    sampling_notes: '',
+    variables: [],
+    hypotheses: [],
+    updated_at: null,
+  };
+  let built = false;
+  const saved: (typeof config)[] = [];
+  const currentPackage = {
+    id: 'package-new',
+    schema_version: '1.0.0',
+    title: 'Synthetic',
+    variables: [],
+    hypotheses: [],
+    dataset: {
+      id: 'data',
+      format: 'csv',
+      row_count: 4,
+      columns: [],
+      synthetic: true,
+    },
+    pending_questions: [],
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.endsWith('/datasets') || url.endsWith('/analysis/plans'))
+        return { ok: true, json: async () => [] };
+      if (url.endsWith('/build')) {
+        config = { ...config, version: config.version + 1 };
+        built = true;
+        return { ok: true, json: async () => currentPackage };
+      }
+      if (url.endsWith('/configuration') && options?.body) {
+        const body = JSON.parse(String(options.body));
+        saved.push(body);
+        if (body.version !== config.version)
+          return {
+            ok: false,
+            json: async () => ({
+              detail: 'La configuración cambió. Recarga antes de guardar.',
+            }),
+          };
+        config = { ...body, version: config.version + 1 };
+        return { ok: true, json: async () => structuredClone(config) };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          state: built ? 'generated' : 'ready',
+          errors: [],
+          warnings: [],
+          configuration: structuredClone(config),
+          documents: [],
+          dataset: null,
+          review: null,
+          package_id: built ? currentPackage.id : null,
+        }),
+      };
+    }),
+  );
+  render(<ProjectPackage projectId="project" />);
+  await screen.findByText('Validación: ready');
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Generar paquete de investigación' }),
+  );
+  await screen.findByText('Paquete generado y validado.');
+  fireEvent.change(screen.getByLabelText('Notas de muestreo'), {
+    target: { value: 'Cambio posterior a la generación' },
+  });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Guardar vinculaciones' }),
+  );
+  expect(
+    await screen.findByText('Configuración guardada.'),
+  ).toBeInTheDocument();
+  expect(saved).toHaveLength(1);
+  expect(saved[0].version).toBe(5);
+  expect(saved[0].sampling_notes).toBe('Cambio posterior a la generación');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
