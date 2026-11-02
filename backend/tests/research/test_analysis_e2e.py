@@ -397,6 +397,116 @@ def test_real_cronbach_alpha_with_linked_item_columns(tmp_path, monkeypatch):
     assert metrics["alpha"] == pytest.approx(1)
 
 
+def test_real_welch_t_columns_with_two_groups(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", "ratio"),
+        data=b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,6\nB,8\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def welch_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "t_welch"
+        plan.rationale = "t de Welch para dos grupos independientes."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", welch_plan)
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "t_welch"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n_left"] == 3
+    assert metrics["n_right"] == 3
+    assert metrics["mean_difference"] == pytest.approx(-4)
+    assert metrics["degrees_of_freedom"] > 2
+    assert {item.name for item in result.assumptions} >= {
+        "homogeneity",
+        "normality_A",
+        "normality_B",
+    }
+
+
+@pytest.mark.parametrize(
+    ("technique", "scale", "data", "metric", "expected"),
+    [
+        (
+            "anova",
+            "ratio",
+            b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,5\nB,6\nC,7\nC,8\nC,9\n",
+            "f_statistic",
+            27,
+        ),
+        (
+            "anova_welch",
+            "ratio",
+            b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,6\nB,8\nC,9\nC,10\nC,12\n",
+            "degrees_of_freedom_between",
+            2,
+        ),
+        (
+            "kruskal_wallis",
+            "ordinal",
+            b"horas_estudio,rendimiento\nA,1\nA,2\nB,3\nB,4\nC,5\nC,6\n",
+            "h",
+            4.571428571428569,
+        ),
+    ],
+)
+def test_real_multigroup_columns(tmp_path, monkeypatch, technique, scale, data, metric, expected):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", scale),
+        data=data,
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def multigroup_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = technique
+        plan.rationale = f"{technique} para tres grupos independientes."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", multigroup_plan)
+    record, result = executed(case)
+    assert record["plan"]["technique"] == technique
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics[metric] == pytest.approx(expected)
+
+
+def test_multigroup_adapter_rejects_only_two_group_values(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", "ratio"),
+        data=b"horas_estudio,rendimiento\nA,1\nA,2\nB,3\nB,4\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def invalid_anova_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "anova"
+        plan.rationale = "ANOVA requiere tres o más grupos."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", invalid_anova_plan)
+    record = proposed(case)
+    assert case.approve(record).status_code == 200
+    response = case.execute(record)
+    assert response.status_code == 409
+    assert "tres o más grupos" in response.json()["detail"]
+
+
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):
     case = research_case(
         tmp_path,
