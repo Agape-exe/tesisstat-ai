@@ -19,7 +19,9 @@ aplicación; Statistics no interpreta `location` como una ruta ni abre archivos 
 `datasets.py` valida y parsea CSV UTF-8 y XLSX en memoria, comprueba límites, cabeceras,
 dimensiones y la metadata de `DatasetReference`. `service.py` reutiliza el motor descriptivo
 para columnas seleccionadas. La composición con `Research.DatasetService` queda fuera del
-módulo hasta acordar el adaptador entre ambos integrantes.
+módulo de demostración: `composition.build_engine` permite conectarlo mediante un servicio
+autorizado y un `project_id`, leyendo únicamente por IDs y nunca resolviendo `location` como
+ruta controlada por el cliente.
 
 - Una columna es **identificador** si su encabezado contiene un token `id`, `identifier`,
   `code`, `codigo` o `cod`; no se calcula como variable cuantitativa.
@@ -41,6 +43,8 @@ uv run uvicorn app.modules.statistics.dev_app:app --reload --host 127.0.0.1 --po
 
 Rutas: `GET /datasets`, `GET /datasets/{dataset_id}/columns` y
 `POST /datasets/{dataset_id}/descriptive` con `{"columns": ["study_hours"]}`.
+También se dispone de `GET /datasets/{dataset_id}/plan`, `POST /datasets/{dataset_id}/analysis`
+y `GET /datasets/{dataset_id}/report?format=txt|docx|pdf` para el flujo ST-10/ST-11.
 
 ## Comparaciones paramétricas (ST-05)
 

@@ -80,6 +80,10 @@ def test_descriptive_endpoints_expose_only_allowlisted_fixture_data():
     assert analysis.status_code == 200
     assert analysis.json()["status"] == "completed"
     assert any(metric["name"] == "study_hours.mean" for metric in analysis.json()["metrics"])
+    report = client.get("/datasets/association/report?format=pdf")
+    assert report.status_code == 200
+    assert report.headers["content-type"] == "application/pdf"
+    assert report.content.startswith(b"%PDF-1.4")
     cors = client.options(
         "/datasets/association/columns",
         headers={

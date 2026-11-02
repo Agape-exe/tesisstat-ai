@@ -58,6 +58,7 @@ export type AnalysisResult = {
   engine_version: string;
   interpretation: string | null;
 };
+export type ReportFormat = 'txt' | 'docx' | 'pdf';
 
 export interface DescriptiveApi {
   getDatasets(): Promise<Dataset[]>;
@@ -65,6 +66,7 @@ export interface DescriptiveApi {
   describe(datasetId: string, columns: string[]): Promise<DescriptiveResult[]>;
   getPlan?(datasetId: string): Promise<AnalysisPlan>;
   execute?(datasetId: string): Promise<AnalysisResult>;
+  getReport?(datasetId: string, format: ReportFormat): Promise<Blob>;
 }
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -102,5 +104,12 @@ export function createDescriptiveApi(
       fetch(`${baseUrl}/datasets/${datasetId}/analysis`, {
         method: 'POST',
       }).then(readJson<AnalysisResult>),
+    getReport: async (datasetId, format) => {
+      const response = await fetch(
+        `${baseUrl}/datasets/${datasetId}/report?format=${format}`,
+      );
+      if (!response.ok) throw new Error('No se pudo generar el reporte.');
+      return response.blob();
+    },
   };
 }

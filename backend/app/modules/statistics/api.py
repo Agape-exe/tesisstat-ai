@@ -5,15 +5,16 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app.shared.contracts import AnalysisPlan, DatasetReference
+from app.shared.contracts import AnalysisPlan, AnalysisResult, DatasetReference
 
 from .datasets import fixture_catalog, list_profiles, read_csv_dataset
 from .descriptive import describe_column
 from .engine import DeterministicStatisticalEngine
+from .reports import render_docx, render_pdf, render_text
 from .research_bridge import BytesDatasetReader
 
 
@@ -116,5 +117,35 @@ def create_descriptive_app(root: Path | None = None) -> FastAPI:
         except (OSError, ValueError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         return result.model_dump()
+
+    @app.get("/datasets/{dataset_id}/report")
+    def report(
+        dataset_id: str,
+        format: str = Query(default="txt", pattern="^(txt|docx|pdf)$"),
+    ) -> Response:
+        """Render the completed demo result without accepting arbitrary code or paths."""
+        try:
+            result = AnalysisResult.model_validate(analysis(dataset_id))
+        except (OSError, ValueError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        if result.status != "completed":
+            raise HTTPException(status_code=422, detail="El análisis no está completado.")
+        if format == "docx":
+            return Response(
+                content=render_docx(result),
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={"Content-Disposition": f'attachment; filename="{dataset_id}-report.docx"'},
+            )
+        if format == "pdf":
+            return Response(
+                content=render_pdf(result),
+                media_type="application/pdf",
+                headers={"Content-Disposition": f'attachment; filename="{dataset_id}-report.pdf"'},
+            )
+        return Response(
+            content=render_text(result),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{dataset_id}-report.txt"'},
+        )
 
     return app

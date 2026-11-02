@@ -5,6 +5,7 @@ import {
   type AnalysisPlan,
   type AnalysisResult,
   type DescriptiveResult,
+  type ReportFormat,
 } from './descriptiveApi';
 import './descriptive-demo.css';
 
@@ -156,6 +157,20 @@ export function DescriptiveDemo({
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Error desconocido');
       setState('error');
+    }
+  }
+  async function downloadReport(format: ReportFormat) {
+    if (!api.getReport) return;
+    try {
+      const blob = await api.getReport(datasetId, format);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${datasetId}-report.${format}`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Error desconocido');
     }
   }
   return (
@@ -337,6 +352,20 @@ export function DescriptiveDemo({
               {warning}
             </p>
           ))}
+          {api.getReport && execution.status === 'completed' && (
+            <div className="report-actions" aria-label="Exportar reporte">
+              <span>Exportar:</span>
+              {(['txt', 'docx', 'pdf'] as ReportFormat[]).map((format) => (
+                <button
+                  key={format}
+                  type="button"
+                  onClick={() => downloadReport(format)}
+                >
+                  {format.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       )}
     </main>

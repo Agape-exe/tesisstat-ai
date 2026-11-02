@@ -37,6 +37,13 @@
 .warning {
   color: #8a351f;
 }
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
 .result-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
