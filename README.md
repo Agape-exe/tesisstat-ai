@@ -1,90 +1,68 @@
 # TesisStat AI
 
-Sistema multiagente para análisis estadístico de tesis cuantitativas. **Sesión 1: base
-compartida**, sin funcionalidades completas de investigación o estadística. Presupuesto S/ 0.
-Contexto completo: [docs/PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md).
+Demostración local para conectar metodología revisada y datos de un proyecto con un
+análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.
 
-## Requisitos
+La aplicación principal permite recorrer **Proyecto → Documento → Metodología → Dataset →
+EDA → Preparación → ResearchPackage → Propuesta → Aprobación → Ejecución → Resultados**,
+con descarga DOCX/PDF de resultados completados y vigentes. Los cálculos integrados son
+resumen descriptivo y Pearson. Las demás técnicas del catálogo tienen adaptadores pendientes.
 
-Git, Python **3.12**, [uv](https://docs.astral.sh/uv/) y Node.js **24** con npm.
-Los lockfiles fijan dependencias. Primera instalación requiere conexión; ejecución local y
-pruebas no necesitan credenciales ni servicios externos. Ejecutar comandos desde esta carpeta
-(el repositorio Git está en `tesisstat-ai/tesisstat-ai` si se abrió su directorio padre).
+Esta es una demostración sin autenticación, exclusivamente local y con información ficticia.
+No es un servicio de producción. El recorrido manual completo, las descargas y su revisión
+visual fueron confirmados por la usuaria el 2 de noviembre de 2026; consulta los resultados
+y límites en [APPLICATION_INTEGRATION.md](docs/APPLICATION_INTEGRATION.md).
 
-## Ejecutar localmente
+## Iniciar la aplicación
 
-Terminal 1, backend:
+Requisitos: Git, Python **3.12**, [uv](https://docs.astral.sh/uv/) y Node.js **24** con npm.
+Ejecuta desde el repositorio Git (`tesisstat-ai/tesisstat-ai` si abriste su carpeta padre).
+
+Terminal 1:
 
 ```powershell
 cd backend
 uv sync --locked
+# Solo si no existe .env:
 Copy-Item .env.example .env
-uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uv run uvicorn app.modules.research.dev_app:app --reload --host 127.0.0.1 --port 8001
 ```
 
-Terminal 2, desde la raíz, frontend:
+Terminal 2, desde la raíz:
 
 ```powershell
 cd frontend
 npm ci
+# Solo si no existe .env:
 Copy-Item .env.example .env
 npm run dev
 ```
 
-Abrir [http://localhost:5173](http://localhost:5173). La pantalla debe mostrar
-`Backend conectado · API v0.1.0`. Salud: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health).
-OpenAPI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
-En macOS/Linux usar `cp .env.example .env`.
+Abre [http://localhost:5173/](http://localhost:5173/). API:
+[salud](http://127.0.0.1:8001/health) y [OpenAPI](http://127.0.0.1:8001/docs).
+Una sola API reúne los servicios del recorrido. `app.main:app` conserva su API base de
+salud y no monta los endpoints sin autenticación. No se necesita iniciarla para esta demo.
 
-`CORS_ORIGINS` es un array JSON de orígenes exactos (sin barra final). Si se abre la web con
-`127.0.0.1`, agregar `"http://127.0.0.1:5173"` al array en `backend/.env`. Reiniciar backend
-al cambiar configuración; reiniciar Vite al cambiar `VITE_API_BASE_URL`. El cliente tiene
-un tiempo máximo de espera de 8 segundos y permite reintentar. Variables `VITE_*` son públicas:
-nunca poner claves privadas allí. Los demás campos de `.env.example` pueden permanecer vacíos.
+Si conservas un `.env` anterior, usa `APP_ENV=development` y autoriza el origen exacto de
+Vite en `CORS_ORIGINS`. El ejemplo incluye localhost/127.0.0.1 en 5173/5174. El frontend usa
+`VITE_RESEARCH_API_BASE_URL=http://127.0.0.1:8001`; reinicia Vite si lo cambias. No pongas
+secretos en variables `VITE_*`. La revisión manual no necesita Cloudflare ni credenciales.
 
-## Estructura
+## Datos ficticios y demostración
 
-```text
-frontend/
-  src/
-    app/                        # Pantalla inicial y sus pruebas
-    features/research/          # Puerto frontend + mock del módulo 1
-    features/statistics/        # Puerto frontend + mock del módulo 2
-    shared/api/                 # Cliente de salud
-    shared/contracts/generated/ # Tipos TS generados desde JSON Schema
-  scripts/                      # Generador de tipos
-backend/
-  app/
-    main.py                     # Composición de la API y GET /health
-    core/                       # Configuración de entorno
-    modules/research/           # Puertos, responsabilidad integrante 1
-    modules/statistics/         # Puertos, responsabilidad integrante 2
-    orchestration/agents/       # Tres agentes reservados, sin implementación
-    shared/                     # Contratos, puertos externos, adaptadores y fixtures
-  scripts/                      # Exportación de JSON Schema
-  tests/                        # Salud, CORS, contratos e intercambio de módulos
-contracts/v1/                   # Seis esquemas y ejemplos JSON
-fixtures/                       # Metodología, datasets y respuestas sintéticas
-docs/                           # Contexto del proyecto y decisiones
-.github/workflows/ci.yml         # Verificaciones reproducibles
+Desde `backend/`, genera entradas reproducibles:
+
+```powershell
+uv run python -m scripts.create_demo_inputs
 ```
 
-Los paquetes Python usan namespace packages. No se crean carpetas vacías: las capas de
-dominio, casos de uso y rutas se agregarán a cada módulo cuando tengan código. Los módulos
-consumen contratos y puertos; no importan implementaciones internas del compañero.
+El comando crea un DOCX y un CSV bajo `.cache/application-demo/`. Sigue el recorrido
+explicado en [la guía de integración](docs/APPLICATION_INTEGRATION.md), incluyendo la
+declaración de origen sintético **antes** de preparar el derivado.
 
-## Contratos y trabajo independiente
-
-Contratos v1: `ResearchPackage`, `ResearchHypothesis`, `ResearchVariable`,
-`DatasetReference`, `AnalysisPlan`, `AnalysisResult`. Fuente canónica en Pydantic;
-JSON Schema y TypeScript generados. Ver [contracts/README.md](contracts/README.md) para
-campos, versionado y regeneración; [fixtures/README.md](fixtures/README.md) para usar mocks.
-
-Integrante 1 puede usar planes/resultados fixture para construir Research. Integrante 2
-puede usar ResearchPackage fixture para construir Statistics. Los mocks se inyectan mediante
-puertos; no hay APIs ficticias montadas en producción ni llamadas a proveedores externos.
-Los adaptadores Cloudflare/Supabase son esqueletos y fallan explícitamente con
-`NotImplementedError` si se invocan; la salud no depende de ellos.
+Las demos independientes se conservan en `/research-demo/` y `/statistics-demo.html`.
+La de Statistics utiliza fixtures y su API independiente; sus resultados no pertenecen a
+los proyectos. No hace falta ese servidor para el recorrido principal.
 
 ## Pruebas y calidad
 
@@ -95,6 +73,7 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 uv run python -m scripts.export_contracts --check
+uv run python -m compileall -q app scripts tests
 ```
 
 Desde `frontend/`:
@@ -103,26 +82,22 @@ Desde `frontend/`:
 npm run lint
 npm run format:check
 npm test
+npm run contracts:generate
 npm run build
+npm run build:research
 ```
 
-Formatear con `uv run ruff format .` o `npm run format`. Tras cambiar contratos,
-regenerar esquemas desde backend y tipos con `npm run contracts:generate` desde frontend.
-CI detecta divergencias y ejecuta las mismas comprobaciones. El build no incluye fixtures
-ni librerías de cálculo; los fixtures solo se importan en pruebas.
+El build principal incluye los tres puntos de entrada, también la demo Statistics. CI
+valida contratos, formato, pruebas y compilaciones. Los seis contratos v1.0.0 permanecen
+sin cambios. [Guía de contratos](contracts/README.md), [fixtures](fixtures/README.md) y
+[contexto arquitectónico](docs/PROJECT_CONTEXT.md).
 
-## Alcance y siguientes pasos
+## Límites actuales
 
-No se implementan aún autenticación, carga/extracción documental, análisis, gráficos,
-informes ni despliegue. LangGraph, Plotly, Supabase y librerías estadísticas se incorporarán
-cuando sean necesarios. No se han creado recursos de pago ni cargado datos reales.
-
-1. **Integrante 1:** proyectos y persistencia con aislamiento por usuario; validación y carga
-   acotada de archivos; extracción metodológica revisable; exploración y preparación de datos.
-2. **Integrante 2:** catálogo verificado y criterios de elegibilidad; planificación según
-   metodología; motor determinista con pruebas de referencia; después gráficos e informes.
-3. **Ambos:** acordar cambios de contratos, integrar Auth/RLS y almacenamiento; definir
-   presupuestos de memoria, archivos, concurrencia y tokens antes del despliegue gratuito.
-
-Trabajo en `chore/bootstrap-foundation`; no push ni PR en esta sesión. Verificar las cuotas
-vigentes de los proveedores antes de desplegar; no se garantiza capacidad de sus planes gratuitos.
+Sin autenticación, Supabase ni despliegue público. La API de demo rechaza clientes/hosts
+externos y entornos distintos de desarrollo. Pearson devuelve `r` y `n`, sin p-valor ni
+conclusión de significancia. El PDF es un informe textual paginado con WinAnsi; los
+caracteres fuera de esa codificación se sustituyen con aviso, y DOCX conserva Unicode.
+Los resultados históricos se pueden consultar, pero no exportar ni volver a ejecutar con
+fuentes desactualizadas. Las sesiones anteriores están documentadas en `docs/` como
+antecedentes; los comandos vigentes de demostración están en esta guía y en la sesión 14.

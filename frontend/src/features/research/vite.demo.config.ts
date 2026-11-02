@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: { port: 5174, strictPort: true },
   build: {
-    outDir: 'dist/research-demo',
+    outDir: 'dist/research-independent',
     rollupOptions: { input: 'research-demo/index.html' },
   },
 });

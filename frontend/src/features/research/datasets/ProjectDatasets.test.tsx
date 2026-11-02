@@ -88,3 +88,15 @@ it('validates upload and requires confirmation to delete', async () => {
   );
   confirm.mockRestore();
 });
+
+it('declares synthetic provenance before preparing a derivative', async () => {
+  const setOrigin = vi.fn(async () => ({ ...dataset, synthetic: true }));
+  render(<ProjectDatasets projectId="project-1" api={{ ...api, setOrigin }} />);
+  const origin = await screen.findByRole('combobox', {
+    name: 'Origen de datos.csv',
+  });
+  fireEvent.change(origin, { target: { value: 'true' } });
+  expect(await screen.findByText(/Procedencia guardada/)).toBeInTheDocument();
+  expect(setOrigin).toHaveBeenCalledWith('project-1', 'dataset-1', true);
+  expect(origin).toHaveValue('true');
+});

@@ -54,6 +54,36 @@ export function createAnalysisApi(
     return value as T;
   }
   return {
+    download: async (
+      project: string,
+      record: AnalysisRecord,
+      format: 'docx' | 'pdf',
+    ) => {
+      if (!record.result)
+        throw new Error('No existe un resultado para exportar.');
+      const response = await fetch(
+        `${baseUrl.replace(/\/$/, '')}/api/research/projects/${encodeURIComponent(project)}/analysis/plans/${encodeURIComponent(record.plan.id)}/results/${encodeURIComponent(record.result.id)}/report.${format}`,
+        { signal: AbortSignal.timeout(30000) },
+      );
+      if (!response.ok) {
+        const value = await response.json().catch(() => null);
+        throw new Error(
+          typeof value?.detail === 'string'
+            ? value.detail
+            : 'No se pudo descargar el informe.',
+        );
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analysis-${record.plan.id}.${format}`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      // Give the browser time to start the download before releasing the blob.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
     plans: (project: string) => request<AnalysisRecord[]>(project, '/plans'),
     results: (project: string) =>
       request<AnalysisRecord[]>(project, '/results'),

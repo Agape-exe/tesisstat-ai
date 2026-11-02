@@ -9,7 +9,7 @@ export function ProjectAnalysis({
   researchPackage,
 }: {
   projectId: string;
-  researchPackage: ResearchPackageSummary;
+  researchPackage: Pick<ResearchPackageSummary, 'id' | 'hypotheses'> | null;
 }) {
   const [records, setRecords] = useState<AnalysisRecord[]>([]);
   const [ready, setReady] = useState(false);
@@ -32,7 +32,7 @@ export function ProjectAnalysis({
     return () => {
       cancelled = true;
     };
-  }, [projectId, researchPackage.id]);
+  }, [projectId, researchPackage?.id]);
 
   async function work(action: () => Promise<unknown>) {
     setBusy(true);
@@ -82,25 +82,49 @@ export function ProjectAnalysis({
       >
         Recargar análisis
       </button>
-      {researchPackage.hypotheses.map((hypothesis) => (
+      {!researchPackage && (
+        <p>
+          Genera un paquete vigente para proponer análisis. Los resultados
+          anteriores se conservan como históricos.
+        </p>
+      )}
+      {[
+        ...(researchPackage?.hypotheses ?? []),
+        ...Array.from(
+          new Set(records.map((record) => record.plan.hypothesis_id)),
+        )
+          .filter(
+            (id) => !researchPackage?.hypotheses.some((item) => item.id === id),
+          )
+          .map((id) => ({
+            id,
+            statement: `Hipótesis histórica: ${id}`,
+            variable_ids: [],
+          })),
+      ].map((hypothesis) => (
         <fieldset key={hypothesis.id}>
           <legend>{hypothesis.statement}</legend>
-          <button
-            disabled={busy || !ready}
-            onClick={() =>
-              void work(() =>
-                api.propose(projectId, researchPackage.id, hypothesis.id),
-              )
-            }
-          >
-            Proponer análisis
-          </button>
+          {researchPackage?.hypotheses.some(
+            (item) => item.id === hypothesis.id,
+          ) && (
+            <button
+              disabled={busy || !ready}
+              onClick={() =>
+                void work(() =>
+                  api.propose(projectId, researchPackage.id, hypothesis.id),
+                )
+              }
+            >
+              Proponer análisis
+            </button>
+          )}
           {records
             .filter((record) => record.plan.hypothesis_id === hypothesis.id)
+            .reverse()
             .map((record) => {
               const stale =
                 !!record.invalidated_at ||
-                record.plan.research_package_id !== researchPackage.id;
+                record.plan.research_package_id !== researchPackage?.id;
               return (
                 <article
                   key={record.plan.id}
@@ -205,6 +229,37 @@ export function ProjectAnalysis({
                       {record.result.warnings?.map((item) => (
                         <p key={item}>Advertencia: {item}</p>
                       ))}
+                      {record.result.status === 'completed' && (
+                        <>
+                          <div className="rp-actions">
+                            {(['docx', 'pdf'] as const).map((format) => (
+                              <button
+                                key={format}
+                                disabled={busy || !ready || stale}
+                                onClick={() =>
+                                  void work(() =>
+                                    api.download(projectId, record, format),
+                                  )
+                                }
+                              >
+                                Descargar {format.toUpperCase()}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="rp-hint">
+                            PDF de texto paginado con caracteres españoles. Para
+                            caracteres fuera de WinAnsi utiliza DOCX. Las
+                            descargas usan el resultado almacenado; no repiten
+                            el cálculo.
+                          </p>
+                          {stale && (
+                            <p>
+                              La exportación está bloqueada porque las fuentes
+                              cambiaron. Genera y aprueba un nuevo análisis.
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </article>
@@ -212,17 +267,6 @@ export function ProjectAnalysis({
             })}
         </fieldset>
       ))}
-      {records.some(
-        (record) =>
-          !researchPackage.hypotheses.some(
-            (item) => item.id === record.plan.hypothesis_id,
-          ),
-      ) && (
-        <p>
-          Existen análisis históricos de hipótesis anteriores. Consúltalos en la
-          API de resultados del proyecto.
-        </p>
-      )}
     </section>
   );
 }

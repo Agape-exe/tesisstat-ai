@@ -201,6 +201,25 @@ class ResearchAnalysisService:
                 record.approved_at = datetime.now(UTC)
         return record
 
+    def completed_report(self, project_id: UUID, plan_id: str, result_id: str) -> AnalysisRecord:
+        """Read persisted completed output; never calculate during a download."""
+        with self._edit_current(project_id, plan_id) as (record, package):
+            result = record.result
+            if result is None or result.id != result_id:
+                raise HTTPException(404, "No se encontró el resultado de este plan.")
+            if (
+                result.status != "completed"
+                or record.plan.status != "approved"
+                or record.approved_at is None
+                or not record.executable
+            ):
+                raise HTTPException(409, "Solo se exportan análisis aprobados y completados.")
+            if result.analysis_plan_id != plan_id or result.dataset_id != package.dataset.id:
+                raise HTTPException(
+                    409, "El resultado no corresponde al plan y dataset del proyecto."
+                )
+            return record.model_copy(deep=True)
+
     def execute(self, project_id: UUID, plan_id: str) -> AnalysisResult:
         with self._edit_current(project_id, plan_id) as (record, package):
             if record.plan.status != "approved" or record.approved_at is None:

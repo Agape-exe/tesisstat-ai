@@ -31,3 +31,30 @@ it('translates network failure into a recoverable local message', async () => {
     'Recarga para recuperar el estado',
   );
 });
+
+it('reports download errors and never sends calculated values from the client', async () => {
+  const fetcher = vi
+    .fn()
+    .mockResolvedValue(
+      new Response(
+        JSON.stringify({ detail: 'El resultado está desactualizado.' }),
+        { status: 409 },
+      ),
+    );
+  vi.stubGlobal('fetch', fetcher);
+  const record = {
+    plan: { id: 'plan/id' },
+    result: { id: 'result/id' },
+  } as Parameters<ReturnType<typeof createAnalysisApi>['download']>[1];
+  await expect(
+    createAnalysisApi('http://127.0.0.1:8001').download(
+      'project/id',
+      record,
+      'pdf',
+    ),
+  ).rejects.toThrow('El resultado está desactualizado.');
+  expect(fetcher).toHaveBeenCalledWith(
+    'http://127.0.0.1:8001/api/research/projects/project%2Fid/analysis/plans/plan%2Fid/results/result%2Fid/report.pdf',
+    { signal: expect.any(AbortSignal) },
+  );
+});

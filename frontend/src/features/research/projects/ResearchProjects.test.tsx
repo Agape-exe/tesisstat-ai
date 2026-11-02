@@ -348,3 +348,37 @@ describe('Research projects UI', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+it('navigates between document and dataset steps', async () => {
+  const service = mockService();
+  vi.mocked(service.list).mockResolvedValue([project]);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation(async () => new Response('[]')),
+  );
+  render(<ResearchProjects service={service} />);
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: `Ver investigación: ${project.title}`,
+    }),
+  );
+  expect(
+    await screen.findByRole('region', { name: 'Documentos de investigación' }),
+  ).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('button', { name: '2. Dataset, EDA y preparación' }),
+  );
+  expect(
+    screen.queryByRole('region', { name: 'Documentos de investigación' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: '2. Dataset, EDA y preparación' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(
+    screen.getByRole('button', { name: '1. Documento y metodología' }),
+  );
+  expect(
+    screen.getByRole('region', { name: 'Documentos de investigación' }),
+  ).toBeInTheDocument();
+  vi.unstubAllGlobals();
+});
