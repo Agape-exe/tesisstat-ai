@@ -57,3 +57,11 @@ dataset mediante un mapa de referencias autorizado y, por ahora, ejecuta únicam
 `descriptive_summary`, devolviendo métricas, advertencias, comprobaciones y `AnalysisResult`.
 Las técnicas catalogadas pero aún no implementadas terminan explícitamente en estado `failed`;
 no se ejecuta código basado en nombres recibidos.
+
+## Técnicas inferenciales iniciales (ST-04)
+
+`inferential.py` implementa con la biblioteca estándar Pearson, Spearman, chi-cuadrado,
+Fisher exacto para tablas 2×2 y alfa de Cronbach. Cada función valida tamaño, tipos, faltantes,
+constantes y dimensiones, y devuelve métricas deterministas con pruebas de referencia. Estas
+funciones todavía requieren un adaptador de columnas del `AnalysisPlan` para incorporarse al
+motor de ejecución completo.
