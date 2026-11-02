@@ -149,7 +149,12 @@ it('shows reviewed links, validates and builds an explicitly configured package'
   );
   expect(await screen.findByText(/package-1/)).toBeTruthy();
   expect(
-    screen.getByText(/La integración con Statistics está pendiente/),
+    screen.getByText(
+      /El paquete de investigación está preparado para Statistics/,
+    ),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole('region', { name: 'Statistics sobre paquete Research' }),
   ).toBeTruthy();
   expect(screen.getByText(/Existe relación \(ID: hypothesis\)/)).toBeTruthy();
 });
