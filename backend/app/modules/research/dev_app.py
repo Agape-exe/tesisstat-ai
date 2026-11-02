@@ -9,7 +9,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.core.config import Settings
 from app.modules.research.documents.extraction import ExtractionLimits, ExtractionService
 from app.modules.research.documents.routes import create_router as create_document_router
 from app.modules.research.documents.sqlite_repository import (
@@ -21,25 +20,38 @@ from app.modules.research.documents.use_cases import (
     DocumentService,
     InvalidDocument,
 )
+from app.modules.research.methodology.routes import create_router as create_methodology_router
+from app.modules.research.methodology.service import (
+    MethodologyLimits,
+    MethodologyProvider,
+    MethodologyService,
+)
+from app.modules.research.methodology.sqlite_repository import SQLiteMethodologyRepository
 from app.modules.research.projects.repository import ProjectRepository
 from app.modules.research.projects.routes import create_router
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
 from app.modules.research.projects.use_cases import ProjectNotFound, ProjectService
+from app.shared.adapters.cloudflare import CloudflareLanguageModel, CloudflareSettings
 
 logger = logging.getLogger(__name__)
 
 
-class ResearchDevSettings(Settings):
+class ResearchDevSettings(CloudflareSettings):
     research_db_path: Path = Path(".cache/research/projects.sqlite3")
     research_documents_path: Path = Path(".cache/research/documents")
     research_extraction_max_pages: int = 100
     research_extraction_max_units: int = 10000
     research_extraction_max_characters: int = 200000
     research_extraction_max_content_bytes: int = 20 * 1024 * 1024
+    research_methodology_max_characters: int = 6000
+    research_methodology_max_attempts: int = 3
+    research_methodology_retry_seconds: int = 30
 
 
 def create_app(
-    repository: ProjectRepository | None = None, settings: ResearchDevSettings | None = None
+    repository: ProjectRepository | None = None,
+    settings: ResearchDevSettings | None = None,
+    methodology_provider: MethodologyProvider | None = None,
 ) -> FastAPI:
     settings = settings or ResearchDevSettings()
     if repository is None:
@@ -128,6 +140,19 @@ def create_app(
     )
     app.include_router(create_router(projects, documents))
     app.include_router(create_document_router(documents, extraction))
+    methodology = MethodologyService(
+        extraction,
+        SQLiteMethodologyRepository(settings.research_db_path),
+        methodology_provider or CloudflareLanguageModel(settings),
+        MethodologyLimits(
+            max_characters=settings.research_methodology_max_characters,
+            max_input_tokens=settings.cloudflare_max_input_tokens,
+            timeout_seconds=settings.cloudflare_timeout_seconds,
+            max_attempts=settings.research_methodology_max_attempts,
+            retry_seconds=settings.research_methodology_retry_seconds,
+        ),
+    )
+    app.include_router(create_methodology_router(methodology))
 
     @app.get("/health")
     def health() -> dict[str, str]:
