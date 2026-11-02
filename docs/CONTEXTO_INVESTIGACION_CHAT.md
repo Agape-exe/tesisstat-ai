@@ -129,6 +129,14 @@ de instrucciones. Los títulos, variables, documentos y mensajes son datos no co
 Su contenido no cambia roles de API ni obtiene herramientas. Las instrucciones exigen
 separar hechos del proyecto, explicación académica e información desconocida, citar
 solo referencias proporcionadas y no inferir significancia a partir de `r` y `n`.
+Si el resultado incluye métricas inferenciales persistidas, se pueden explicar sin
+recalcularlas. Pearson integrado también devuelve `p_value`, `t_statistic` y
+`degrees_of_freedom`. Para el caso sintético perfecto (`n=4`, `r=1`), el motor guarda
+`degrees_of_freedom=2`, `t_statistic=1.7976931348623157e308` y `p_value=0.0`.
+El estadístico extremo es un centinela finito de la divergencia de t; el cero es la
+representación numérica elegida en esa rama del motor, no una afirmación de probabilidad
+matemáticamente exactamente nula. No implica causalidad ni valida todos los supuestos.
+Esta convención se documenta para el Integrante 2; no se cambian fórmulas ni contratos.
 
 ## Privacidad y consentimiento
 
@@ -236,8 +244,11 @@ Procedimiento manual:
 2. Verifica estados de fuentes y acepta el aviso para la prueba simulada.
 3. Pregunta por objetivo, hipótesis, variables y dimensiones. Deben coincidir con
    la revisión sintética; cada hecho conserva su documento y versión.
-4. Pregunta por filas/columnas: 4 y 2. Pregunta por Pearson: `n=4`, `r=1`; no hay
-   p-valor de la correlación ni conclusión de significancia.
+4. Pregunta por filas/columnas: 4 y 2. Pregunta por Pearson: `n=4`, `r=1`,
+   `degrees_of_freedom=2`, t extremo finito y `p_value=0.0`, según lo persistido por
+   la versión actual. Comprueba que el cero no se explique como probabilidad exactamente
+   nula. Los resultados antiguos pueden contener únicamente `r` y `n`: en ese caso
+   no se debe inventar inferencia. La demo conserva resultados previos al reiniciarse.
 5. Abre las referencias de una respuesta. Contrasta el ID del resultado con el plan
    persistido en la sección Paquete/Resultados.
 6. Edita y guarda la hipótesis en Documento/Metodología. Vuelve al chat y actualiza
@@ -273,7 +284,8 @@ Las pruebas frontend incluyen estados y actualización de fuentes, consentimient
 ampliado, historial pese a error de status, procedencia tras recarga y actualización al
 recuperar foco, además del comportamiento anterior y la navegación Research.
 
-Regresión ejecutada en Windows con las dependencias locales existentes:
+Regresión inicial ejecutada en Windows antes de integrar Statistics actualizado
+(las cifras de la corrección de compatibilidad se informan en su entrega):
 
 | Comprobación | Resultado |
 | --- | --- |

@@ -95,8 +95,10 @@ sin cambios. [Guía de contratos](contracts/README.md), [fixtures](fixtures/READ
 ## Límites actuales
 
 Sin autenticación, Supabase ni despliegue público. La API de demo rechaza clientes/hosts
-externos y entornos distintos de desarrollo. Pearson devuelve `r` y `n`, sin p-valor ni
-conclusión de significancia. El PDF es un informe textual paginado con WinAnsi; los
+externos y entornos distintos de desarrollo. Pearson puede devolver `r`, `n`, `p_value`,
+`t_statistic` y `degrees_of_freedom`; el chat solo utiliza las métricas persistidas.
+Un p-valor representado como cero no debe describirse como probabilidad exactamente nula.
+El PDF es un informe textual paginado con WinAnsi; los
 caracteres fuera de esa codificación se sustituyen con aviso, y DOCX conserva Unicode.
 Los resultados históricos se pueden consultar, pero no exportar ni volver a ejecutar con
 fuentes desactualizadas. Las sesiones anteriores están documentadas en `docs/` como

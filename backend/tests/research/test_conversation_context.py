@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+import sys
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -229,7 +230,18 @@ def test_completed_pearson_sends_only_calculated_metrics_and_plan_provenance(cas
     assert source.links == {"plan_id": record["plan"]["id"], "dataset_id": result.dataset_id}
     expected = [m.model_dump() for m in result.metrics]
     assert source.data["metrics"] == expected
-    assert {m["name"]: m["value"] for m in expected} == {"n": 4.0, "r": 1.0}
+    assert {m["name"]: m["value"] for m in expected} == {
+        "n": 4.0,
+        "r": 1.0,
+        "degrees_of_freedom": 2.0,
+        "t_statistic": sys.float_info.max,
+        "p_value": 0.0,
+    }
+    # Perfect correlation: the engine stores a finite sentinel for divergent t
+    # and a numeric boundary p-value, not a claim of an exactly null probability.
+    persisted = case.builder.analyses.repository.list(case.project_id)[0].result
+    assert persisted.id == result.id
+    assert [m.model_dump() for m in persisted.metrics] == expected
     payload, trace = send(case, "¿Qué significa mi resultado de Pearson?")
     metrics = [
         f
@@ -239,7 +251,7 @@ def test_completed_pearson_sends_only_calculated_metrics_and_plan_provenance(cas
     assert [f["value"] for f in metrics] == expected
     assert all(f["source"]["links"]["plan_id"] == record["plan"]["id"] for f in metrics)
     assert source.reference() in trace["sources"]
-    assert not any(m["name"] in {"p_value", "ci", "significance"} for m in expected)
+    assert not any(m["name"] in {"ci", "significance"} for m in expected)
 
 
 @pytest.mark.parametrize("result_state", ["failed", "not_executed"])
@@ -491,7 +503,8 @@ def test_legacy_message_schema_is_migrated_without_data_loss(tmp_path):
 
 
 def test_category_metrics_and_identifier_column_metrics_are_excluded(case):
-    record, _ = executed(case)
+    record, result = executed(case)
+    calculated = [m.model_dump() for m in result.metrics]
     with case.builder.analyses.repository.edit(case.project_id, record["plan"]["id"]) as saved:
         saved.result.metrics += [
             Metric(name="nombre.category.PersonaSecreta.count", value=1),
@@ -499,7 +512,14 @@ def test_category_metrics_and_identifier_column_metrics_are_excluded(case):
         ]
     source = sources(case, "result")[0]
     assert source.data["omitted_metrics"] == 2
-    assert {m["name"] for m in source.data["metrics"]} == {"n", "r"}
+    assert source.data["metrics"] == calculated
+    assert {m["name"] for m in calculated} == {
+        "n",
+        "r",
+        "p_value",
+        "t_statistic",
+        "degrees_of_freedom",
+    }
     assert "PersonaSecreta" not in json.dumps(source.data)
 
 
