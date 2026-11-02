@@ -15,7 +15,12 @@ from app.modules.statistics.composition import build_engine_from_research_bridge
 from app.modules.statistics.engine import DeterministicStatisticalEngine
 from app.modules.statistics.planner import DeterministicStatisticalPlanner, UnknownHypothesis
 from app.modules.statistics.research_bridge import BytesDatasetReader
-from app.orchestration.analysis_inputs import CONNECTED, analysis_input, pearson_questions
+from app.orchestration.analysis_inputs import (
+    CONNECTED,
+    analysis_input,
+    pearson_questions,
+    spearman_questions,
+)
 from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
 from app.orchestration.analysis_repository import SQLiteAnalysisRepository
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
@@ -112,8 +117,12 @@ class ResearchAnalysisService:
             raise HTTPException(409, "El planificador devolvió referencias incompatibles.")
         # A new proposal must never reuse an earlier approval, even for the same hypothesis.
         plan.id = str(uuid4())
-        if plan.technique == "pearson":
-            questions = pearson_questions(package, plan.hypothesis_id)
+        if plan.technique in {"pearson", "spearman"}:
+            questions = (
+                pearson_questions(package, plan.hypothesis_id)
+                if plan.technique == "pearson"
+                else spearman_questions(package, plan.hypothesis_id)
+            )
             if questions:
                 plan.status = "needs_clarification"
                 plan.pending_questions.extend(questions)
@@ -173,7 +182,7 @@ class ResearchAnalysisService:
             )
             try:
                 inputs = {}
-                if record.plan.technique == "pearson":
+                if record.plan.technique in {"pearson", "spearman"}:
                     table = reader.read(package.dataset)
                     inputs[plan_id] = analysis_input(package, record.plan, table)
                     engine = DeterministicStatisticalEngine(
@@ -202,16 +211,22 @@ class ResearchAnalysisService:
             result = AnalysisResult.model_validate(result.model_dump())
             if result.analysis_plan_id != plan_id or result.dataset_id != package.dataset.id:
                 raise HTTPException(409, "El resultado no corresponde al plan y dataset aprobados.")
-            if record.plan.technique == "pearson" and result.status == "completed":
+            if record.plan.technique in {"pearson", "spearman"} and result.status == "completed":
                 n = next(metric.value for metric in result.metrics if metric.name == "n")
                 if n < package.dataset.row_count:
                     result.warnings.append(
-                        f"Pearson utilizó {int(n)} de {package.dataset.row_count} filas: "
+                        f"{record.plan.technique} utilizó {int(n)} de "
+                        f"{package.dataset.row_count} filas: "
                         "se excluyeron pares incompletos según la política del motor."
                     )
                 result.warnings.append(
-                    "Se informa solo el coeficiente r; no se calculó p-valor ni significancia. "
-                    "Revisa linealidad, normalidad y valores atípicos antes de interpretar."
+                    "Se informa solo el coeficiente de asociación; no se calculó p-valor "
+                    "ni significancia. Revisa monotonicidad, normalidad y valores atípicos "
+                    "antes de interpretar."
+                    if record.plan.technique == "spearman"
+                    else "Se informa solo el coeficiente r; no se calculó p-valor ni "
+                    "significancia. Revisa linealidad, normalidad y valores atípicos "
+                    "antes de interpretar."
                 )
             record.result = result
         return result

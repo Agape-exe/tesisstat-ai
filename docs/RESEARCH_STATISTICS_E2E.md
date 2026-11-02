@@ -36,7 +36,7 @@ siendo la base técnica, y la demo Statistics conserva su funcionamiento indepen
 | --- | --- |
 | `orchestration/research_statistics.py` | Paquete vigente, pertenencia al proyecto y lectura autorizada de datos. |
 | `orchestration/analysis_service.py` | Composición de planificación, aprobación, vigencia y ejecución. |
-| `orchestration/analysis_inputs.py` | Columnas → `AnalysisInput` solo para Pearson; sin fórmulas. |
+| `orchestration/analysis_inputs.py` | Columnas → `AnalysisInput` para Pearson y Spearman; sin fórmulas. |
 | `orchestration/analysis_repository.py` | SQLite local, historial por proyecto y ejecución serializada. |
 | `orchestration/analysis_models.py` | Metadatos de integración alrededor de los contratos existentes. |
 | `orchestration/analysis_routes.py` | API de desarrollo en loopback, solo datos sintéticos. |
@@ -54,7 +54,7 @@ result = engine.execute(approved_plan)
 ```
 
 Se reutiliza `build_engine_from_research_bridge` del PR #14 para descriptivos.
-Pearson construye el mismo motor con su `AnalysisInput`, porque ese helper no
+Pearson y Spearman construyen el mismo motor con su `AnalysisInput`, porque ese helper no
 recibe entradas seleccionadas. No se utiliza directamente
 `build_engine(DatasetService, ...)`: ese helper no llama al puente. La composición
 exige referencia opaca válida, proyecto, actividad,

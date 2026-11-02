@@ -53,7 +53,15 @@ class Case:
         return self.client.post(self.root + f"/plans/{record['plan']['id']}/execute")
 
 
-def research_case(tmp_path, *, kind="descriptive", fmt="csv", data=CSV, **config_changes):
+def research_case(
+    tmp_path,
+    *,
+    kind="descriptive",
+    fmt="csv",
+    data=CSV,
+    scales=("ratio", "ratio"),
+    **config_changes,
+):
     client, document, settings, provider = setup(
         tmp_path, research_datasets_path=tmp_path / "datasets"
     )
@@ -70,13 +78,17 @@ def research_case(tmp_path, *, kind="descriptive", fmt="csv", data=CSV, **config
             "id": variable_id,
             "name": manual(name),
             "role": manual(role),
-            "measurement_scale": manual("ratio"),
+            "measurement_scale": manual(scale),
             "dimensions": [],
             "indicators": [],
             "instrument_items": [],
         }
-        for variable_id, name, role in zip(
-            ids, ["Horas de estudio", "Rendimiento"], ["independent", "dependent"], strict=True
+        for variable_id, name, role, scale in zip(
+            ids,
+            ["Horas de estudio", "Rendimiento"],
+            ["independent", "dependent"],
+            scales,
+            strict=True,
         )
     ]
     assert (
@@ -111,13 +123,13 @@ def research_case(tmp_path, *, kind="descriptive", fmt="csv", data=CSV, **config
                 "variable_id": ids[0],
                 "columns": ["horas_estudio"],
                 "role": "independent",
-                "measurement_scale": "ratio",
+                "measurement_scale": scales[0],
             },
             {
                 "variable_id": ids[1],
                 "columns": ["rendimiento"],
                 "role": "dependent",
-                "measurement_scale": "ratio",
+                "measurement_scale": scales[1],
             },
         ],
         hypotheses=[
@@ -223,6 +235,21 @@ def test_real_pearson_columns(tmp_path, fmt):
     assert {item.name: item.value for item in result.metrics} == {"n": 4, "r": 1}
     assert any("p-valor" in warning for warning in result.warnings)
     assert result.assumptions  # Report actual engine diagnostic, not implied significance.
+
+
+def test_real_spearman_columns_with_ordinal_variable(tmp_path):
+    case = research_case(
+        tmp_path,
+        kind="association",
+        scales=("ordinal", "ratio"),
+        data=b"horas_estudio,rendimiento\n1,10\n2,20\n3,30\n4,40\n",
+    )
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "spearman"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 4
+    assert metrics["rho"] == pytest.approx(1)
+    assert any("coeficiente de asociación" in warning for warning in result.warnings)
 
 
 def test_pearson_nontrivial_values_and_pairwise_missing(tmp_path):
