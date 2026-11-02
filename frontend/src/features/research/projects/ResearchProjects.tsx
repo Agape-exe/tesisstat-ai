@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
+import { ProjectDatasets } from '../datasets/ProjectDatasets';
 import { createProjectApi, ProjectApiError } from './api';
 import { DeleteProjectDialog } from './DeleteProjectDialog';
 import { ProjectForm } from './ProjectForm';
@@ -295,6 +296,7 @@ export function ResearchProjects({
             </div>
           </dl>
           <ProjectDocuments projectId={view.project.id} />
+          <ProjectDatasets projectId={view.project.id} />
           <div className="rp-actions">
             <button
               onClick={() => {

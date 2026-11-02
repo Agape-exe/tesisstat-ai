@@ -2,12 +2,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, Response, status
 
+from app.modules.research.datasets.use_cases import DatasetService
 from app.modules.research.documents.use_cases import DocumentService
 from app.modules.research.projects.models import Project, ProjectDraft
 from app.modules.research.projects.use_cases import ProjectService
 
 
-def create_router(service: ProjectService, documents: DocumentService | None = None) -> APIRouter:
+def create_router(
+    service: ProjectService,
+    documents: DocumentService | None = None,
+    datasets: DatasetService | None = None,
+) -> APIRouter:
     router = APIRouter(prefix="/api/research/projects", tags=["Research projects (development)"])
 
     @router.post("", response_model=Project, status_code=status.HTTP_201_CREATED)
@@ -30,6 +35,10 @@ def create_router(service: ProjectService, documents: DocumentService | None = N
 
     @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
     def delete_project(project_id: UUID) -> Response:
+        if datasets is not None:
+            service.get(project_id)
+            for dataset in datasets.list(project_id):
+                datasets.delete(project_id, dataset.id)
         if documents is not None:
             service.get(project_id)
             for document in documents.list(project_id):
