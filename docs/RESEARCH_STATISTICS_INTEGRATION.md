@@ -2,7 +2,7 @@
 
 ## Estado y responsabilidades
 
-En `develop` después del PR #11, Statistics todavía no incluye `BytesDatasetReader`, el planificador ni el motor de la rama `feat/statistics-research-bridge`. Esta sesión prepara y prueba el proveedor interno de Research. **La integración completa y la ejecución estadística real siguen pendientes.** No se copiaron archivos ni se cambiaron algoritmos de Statistics o los seis contratos v1.0.0.
+Statistics ya aporta `BytesDatasetReader`, el planificador y el motor determinista. Esta sesión conecta esos componentes con el proveedor interno de Research para ejecutar planes descriptivos aprobados sobre paquetes vigentes. No se copiaron archivos ni se cambiaron los seis contratos v1.0.0.
 
 Research conserva proyectos, revisión metodológica, paquetes, datasets y control de acceso a sus recursos. Statistics conserva planificación, selección y ejecución de técnicas y resultados. `app.orchestration.research_statistics.ResearchStatisticsBridge` es la capa de composición. En la app de desarrollo se instancia como `app.state.research_statistics_bridge`; no se publica una ruta HTTP que entregue bytes.
 
@@ -16,23 +16,21 @@ El puente recibe `ProjectService`, `PackageService` y `DatasetService` por inyec
 
 ## Conexión cuando se fusione Statistics
 
-La rama del Integrante 2 expone `BytesDatasetReader(read_bytes: Callable[[DatasetReference], bytes])`. Una vez integrada y coordinada, la capa de composición puede inyectar Research así:
+La capa de composición usa `build_engine_from_research_bridge` e inyecta Research así:
 
 ```python
 package = bridge.get_package(project_id, package_id)
-reader = BytesDatasetReader(
-    lambda reference: bridge.read_dataset(project_id, package, reference)
-)
-table = reader.read(package.dataset)
+engine = build_engine_from_research_bridge(bridge, project_id, package)
+result = engine.execute(approved_plan)
 ```
 
-El código de composición debe obtener `project_id` de un contexto autorizado, no de un identificador arbitrario del cliente. Debe pasar el paquete y la misma referencia recibida del puente. `BytesDatasetReader` validará su propia tabla, sin conocer el almacenamiento de Research. No se requiere modificar Research ni los contratos. Cuando se fusione el planificador, pasarle el paquete y el ID de una hipótesis real, verificar los IDs del `AnalysisPlan` y mantener el estado `proposed` o `needs_clarification`. La conversión de columnas a `AnalysisInput`, la aprobación explícita y la ejecución del motor pertenecen a Statistics; no están implementadas aquí.
+El código de composición debe obtener `project_id` de un contexto autorizado, no de un identificador arbitrario del cliente. El endpoint de orquestación propone el plan y exige `approve=true` antes de ejecutar. Para técnicas inferenciales, la conversión de columnas a `AnalysisInput` todavía requiere una selección explícita de grupos o pares; el endpoint no inventa esa entrada.
 
 ## Pruebas y demostración
 
-`backend/tests/research/test_statistics_bridge.py` usa exclusivamente documentos y datasets ficticios. Prueba el puerto con un consumidor sintético del contrato, CSV original, XLSX original, CSV derivado, proyecto ajeno, paquete ausente o desactualizado, referencia opaca alterada, metadatos incompatibles, inactividad, eliminación y cambio de metodología o archivo. Es una prueba real de lectura de bytes desde Research; **no es una prueba del planificador ni del motor real de Statistics**. El frontend comprueba estados de paquete generado y desactualizado. Las pruebas de integración con `BytesDatasetReader`, planificador y motor quedan pendientes de la fusión del Integrante 2.
+`backend/tests/research/test_statistics_bridge.py` usa exclusivamente documentos y datasets ficticios. `backend/tests/research/test_statistics_runtime.py` verifica propuesta de plan, bloqueo sin aprobación y ejecución descriptiva real. El frontend dispone de `ResearchStatisticsPanel` para consumir ese flujo cuando el paquete es vigente.
 
-Para demostrar localmente, ejecutar el backend con `uv run uvicorn app.modules.research.dev_app:app --host 127.0.0.1 --port 8001` y el frontend con `npx vite --config src/features/research/vite.demo.config.ts --host 127.0.0.1`. Crear un proyecto ficticio, confirmar una revisión metodológica, subir y activar un dataset ficticio, declarar su procedencia, vincular variables e hipótesis, validar y generar el paquete. La sección **Preparar investigación para análisis** muestra el estado, ID vigente, dataset, hipótesis y aclaraciones. Si el paquete es vigente, avisa que Statistics sigue pendiente; no muestra resultados estadísticos.
+Para demostrar localmente, ejecutar el backend con `uv run uvicorn app.modules.research.dev_app:app --host 127.0.0.1 --port 8001` y el frontend con `npx vite --config src/features/research/vite.demo.config.ts --host 127.0.0.1`. Crear un proyecto ficticio, confirmar una revisión metodológica, subir y activar un dataset ficticio, declarar su procedencia, vincular variables e hipótesis, validar y generar el paquete. La sección **Preparar investigación para análisis** muestra el estado, ID vigente, dataset, hipótesis y aclaraciones. `ResearchStatisticsPanel` consume el plan y el resultado integrado cuando el paquete es vigente.
 
 ## Límites de seguridad y despliegue
 
