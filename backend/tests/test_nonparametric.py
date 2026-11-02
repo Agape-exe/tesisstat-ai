@@ -40,6 +40,12 @@ def test_kruskal_wallis_applies_tie_correction_and_reports_p_value():
     assert isclose(result.metrics["p_value"], 0.21750672149066907)
 
 
+def test_kruskal_wallis_reports_epsilon_squared_reference_effect():
+    result = kruskal_wallis([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+    assert isclose(result.metrics["epsilon_squared"], 0.8666666666666671)
+
+
 def test_nonparametric_functions_reject_invalid_group_counts():
     with raises(StatisticalCalculationError, match="tres grupos"):
         kruskal_wallis([[1, 2], [3, 4]])

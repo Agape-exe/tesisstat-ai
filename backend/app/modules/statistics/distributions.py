@@ -57,6 +57,28 @@ def student_t_two_sided(statistic: float, degrees_of_freedom: float) -> float:
     return max(0.0, min(1.0, regularized_beta(degrees_of_freedom / 2, 0.5, x)))
 
 
+def student_t_critical_two_sided(alpha: float, degrees_of_freedom: float) -> float:
+    """Return the positive Student-t critical value for a two-sided interval.
+
+    The inverse is found by bisection over the already validated survival
+    function, keeping the calculation dependency-free and deterministic.
+    """
+
+    if not 0 < alpha < 1 or degrees_of_freedom <= 0:
+        return float("nan")
+    lower = 0.0
+    upper = 1.0
+    while student_t_two_sided(upper, degrees_of_freedom) > alpha:
+        upper *= 2
+    for _ in range(80):
+        midpoint = (lower + upper) / 2
+        if student_t_two_sided(midpoint, degrees_of_freedom) > alpha:
+            lower = midpoint
+        else:
+            upper = midpoint
+    return (lower + upper) / 2
+
+
 def normal_two_sided(statistic: float) -> float:
     """Two-sided standard-normal probability for a finite z statistic."""
     return math.erfc(abs(statistic) / math.sqrt(2))

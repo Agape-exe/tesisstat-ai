@@ -58,6 +58,10 @@ def anova(groups: Sequence[Sequence[object]]) -> TechniqueResult:
     if mean_within == 0:
         raise StatisticalCalculationError("La varianza intragrupo es cero; F no está definido.")
     f_statistic = (between / df_between) / mean_within
+    omega_squared = max(
+        0.0,
+        (between - df_between * mean_within) / (between + within + mean_within),
+    )
     return TechniqueResult(
         "anova",
         {
@@ -67,6 +71,7 @@ def anova(groups: Sequence[Sequence[object]]) -> TechniqueResult:
             "degrees_of_freedom_within": float(df_within),
             "p_value": f_survival(f_statistic, float(df_between), float(df_within)),
             "eta_squared": between / (between + within),
+            "omega_squared": omega_squared,
         },
     )
 
