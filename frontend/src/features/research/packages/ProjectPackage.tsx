@@ -45,11 +45,16 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([packageApi.status(projectId), datasetApi.list(projectId)])
-      .then(([next, list]) => {
+      .then(async ([next, list]) => {
         if (!cancelled) {
           setStatus(next);
           setConfig(next.configuration);
           setDatasets(list);
+          setResult(null);
+        }
+        if (next.state === 'generated' && next.package_id) {
+          const current = await packageApi.get(projectId);
+          if (!cancelled) setResult(current);
         }
       })
       .catch((caught) => {
@@ -468,7 +473,9 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
                 void work(async () => {
                   const saved = await packageApi.save(projectId, config);
                   setConfig(saved);
-                  setStatus(await packageApi.status(projectId));
+                  const next = await packageApi.status(projectId);
+                  setStatus(next);
+                  if (next.state !== 'generated') setResult(null);
                   setNotice('Configuración guardada.');
                 })
               }
@@ -480,7 +487,9 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
               disabled={busy}
               onClick={() =>
                 void work(async () => {
-                  setStatus(await packageApi.validate(projectId));
+                  const next = await packageApi.validate(projectId);
+                  setStatus(next);
+                  if (next.state !== 'generated') setResult(null);
                   setNotice('Validación completada.');
                 })
               }
@@ -505,6 +514,15 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
           {status && (
             <div>
               <h3>Validación: {status.state}</h3>
+              {status.state === 'incomplete' && (
+                <p>
+                  Completa las fuentes y vinculaciones antes de generar el
+                  paquete.
+                </p>
+              )}
+              {status.state === 'stale' && (
+                <p>Revisa los cambios y vuelve a generar el paquete.</p>
+              )}
               {status.errors.map((item) => (
                 <p className="rp-error" key={item}>
                   {item}
@@ -515,12 +533,33 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
               ))}
             </div>
           )}
-          {(result || status?.package_id) && (
-            <p>
-              Paquete: {result?.id ?? status?.package_id} · versión del
-              contrato: 1.0.0 · {result?.variables.length ?? '—'} variables ·{' '}
-              {result?.hypotheses.length ?? '—'} hipótesis
-            </p>
+          {status?.state === 'generated' && result && (
+            <div aria-label="Preparación para Statistics">
+              <p>
+                Paquete vigente: {result.id} · versión del contrato: 1.0.0 ·{' '}
+                {result.variables.length} variables · {result.hypotheses.length}{' '}
+                hipótesis
+              </p>
+              <p>
+                Dataset seleccionado: {selected?.name ?? result.dataset.id} ·{' '}
+                {result.dataset.format} · {result.dataset.row_count} filas
+              </p>
+              <h3>Hipótesis disponibles</h3>
+              <ul>
+                {result.hypotheses.map((item) => (
+                  <li key={item.id}>
+                    {item.statement} (ID: {item.id})
+                  </li>
+                ))}
+              </ul>
+              {result.pending_questions.map((item) => (
+                <p key={item}>Aclaración pendiente: {item}</p>
+              ))}
+              <p role="status">
+                El paquete de investigación está preparado. La integración con
+                Statistics está pendiente.
+              </p>
+            </div>
           )}
         </>
       )}

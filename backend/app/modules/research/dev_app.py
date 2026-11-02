@@ -51,6 +51,7 @@ from app.modules.research.projects.repository import ProjectRepository
 from app.modules.research.projects.routes import create_router
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
 from app.modules.research.projects.use_cases import ProjectNotFound, ProjectService
+from app.orchestration.research_statistics import ResearchStatisticsBridge
 from app.shared.adapters.cloudflare import CloudflareLanguageModel, CloudflareSettings
 
 logger = logging.getLogger(__name__)
@@ -263,17 +264,15 @@ def create_app(
     )
     reviews = ReviewService(methodology, methodology_repository)
     app.include_router(create_methodology_router(methodology, reviews))
-    app.include_router(
-        create_package_router(
-            PackageService(
-                projects,
-                documents,
-                reviews,
-                datasets,
-                SQLitePackageRepository(settings.research_db_path),
-            )
-        )
+    packages = PackageService(
+        projects,
+        documents,
+        reviews,
+        datasets,
+        SQLitePackageRepository(settings.research_db_path),
     )
+    app.include_router(create_package_router(packages))
+    app.state.research_statistics_bridge = ResearchStatisticsBridge(projects, packages, datasets)
 
     @app.get("/health")
     def health() -> dict[str, str]:
