@@ -84,6 +84,24 @@ def normal_two_sided(statistic: float) -> float:
     return math.erfc(abs(statistic) / math.sqrt(2))
 
 
+def normal_critical_two_sided(alpha: float) -> float:
+    """Return the positive standard-normal critical value for a two-sided interval."""
+
+    if not 0 < alpha < 1:
+        return float("nan")
+    lower = 0.0
+    upper = 1.0
+    while normal_two_sided(upper) > alpha:
+        upper *= 2
+    for _ in range(80):
+        midpoint = (lower + upper) / 2
+        if normal_two_sided(midpoint) > alpha:
+            lower = midpoint
+        else:
+            upper = midpoint
+    return (lower + upper) / 2
+
+
 def chi_square_survival(statistic: float, degrees_of_freedom: float) -> float:
     """Upper regularized gamma Q(a, x), using continued fractions or a series."""
     if statistic <= 0:

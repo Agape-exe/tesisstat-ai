@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from .distributions import f_survival
+from .distributions import f_survival, student_t_critical_two_sided
 from .inferential import StatisticalCalculationError, TechniqueResult, _number, _paired_numbers
 
 
@@ -32,9 +32,20 @@ def _solve(matrix: list[list[float]], vector: list[float]) -> list[float]:
     return [augmented[index][-1] for index in range(size)]
 
 
+def _inverse(matrix: list[list[float]]) -> list[list[float]]:
+    """Invert a small non-singular matrix using the same pivoted solver."""
+
+    size = len(matrix)
+    columns = [
+        _solve(matrix, [1.0 if row == column else 0.0 for row in range(size)])
+        for column in range(size)
+    ]
+    return [[columns[column][row] for column in range(size)] for row in range(size)]
+
+
 def _fit_linear(
     features: Sequence[Sequence[float]], outcomes: Sequence[float]
-) -> tuple[list[float], float, float]:
+) -> tuple[list[float], float, float, list[float]]:
     if not features or len(features) != len(outcomes):
         raise StatisticalCalculationError("La matriz de diseño no puede estar vacía.")
     predictor_count = len(features[0])
@@ -67,8 +78,34 @@ def _fit_linear(
         raise StatisticalCalculationError("La variable dependiente es constante.")
     r_squared = 1 - residual_sum / total_sum
     residual_df = len(outcomes) - columns
-    residual_standard_error = math.sqrt(residual_sum / residual_df) if residual_df > 0 else 0.0
-    return coefficients, r_squared, residual_standard_error
+    residual_variance = residual_sum / residual_df
+    residual_standard_error = math.sqrt(residual_variance)
+    inverse_gram = _inverse(gram)
+    standard_errors = [
+        math.sqrt(max(0.0, residual_variance * inverse_gram[index][index]))
+        for index in range(columns)
+    ]
+    return coefficients, r_squared, residual_standard_error, standard_errors
+
+
+def _coefficient_interval_metrics(
+    names: Sequence[str],
+    coefficients: Sequence[float],
+    standard_errors: Sequence[float],
+    residual_df: int,
+) -> dict[str, float]:
+    critical = student_t_critical_two_sided(0.05, float(residual_df))
+    metrics: dict[str, float] = {}
+    for name, coefficient, standard_error in zip(names, coefficients, standard_errors, strict=True):
+        margin = critical * standard_error
+        metrics.update(
+            {
+                f"{name}_standard_error": standard_error,
+                f"{name}_ci_95_low": coefficient - margin,
+                f"{name}_ci_95_high": coefficient + margin,
+            }
+        )
+    return metrics
 
 
 def _model_metrics(sample_size: int, predictor_count: int, r_squared: float) -> dict[str, float]:
@@ -99,7 +136,9 @@ def linear_regression_simple(x: Sequence[object], y: Sequence[object]) -> Techni
         raise StatisticalCalculationError(
             "La regresión simple requiere al menos tres pares válidos."
         )
-    coefficients, r_squared, residual_error = _fit_linear([[value] for value in values_x], values_y)
+    coefficients, r_squared, residual_error, standard_errors = _fit_linear(
+        [[value] for value in values_x], values_y
+    )
     metrics = {
         "n": float(len(values_x)),
         "intercept": coefficients[0],
@@ -107,6 +146,11 @@ def linear_regression_simple(x: Sequence[object], y: Sequence[object]) -> Techni
         "r_squared": r_squared,
         "residual_standard_error": residual_error,
     }
+    metrics.update(
+        _coefficient_interval_metrics(
+            ("intercept", "slope"), coefficients, standard_errors, len(values_x) - 2
+        )
+    )
     metrics.update(_model_metrics(len(values_x), 1, r_squared))
     return TechniqueResult(
         "linear_regression_simple",
@@ -138,7 +182,9 @@ def linear_regression_multiple(
         if parsed_outcome is not None and all(item is not None for item in parsed_row):
             complete_features.append([float(item) for item in parsed_row])
             complete_outcomes.append(parsed_outcome)
-    coefficients, r_squared, residual_error = _fit_linear(complete_features, complete_outcomes)
+    coefficients, r_squared, residual_error, standard_errors = _fit_linear(
+        complete_features, complete_outcomes
+    )
     metrics = {
         "n": float(len(complete_outcomes)),
         "predictor_count": float(width),
@@ -148,6 +194,14 @@ def linear_regression_multiple(
     }
     metrics.update(
         {f"beta_{index}": coefficient for index, coefficient in enumerate(coefficients[1:], 1)}
+    )
+    metrics.update(
+        _coefficient_interval_metrics(
+            ("intercept", *(f"beta_{index}" for index in range(1, width + 1))),
+            coefficients,
+            standard_errors,
+            len(complete_outcomes) - width - 1,
+        )
     )
     metrics.update(_model_metrics(len(complete_outcomes), width, r_squared))
     return TechniqueResult("linear_regression_multiple", metrics)
@@ -180,7 +234,7 @@ def ancova(
             ]
         )
         outcomes.append(parsed_outcome)
-    coefficients, r_squared, residual_error = _fit_linear(
+    coefficients, r_squared, residual_error, standard_errors = _fit_linear(
         [[float(value) for value in row] for row in features],
         [float(value) for value in outcomes],
     )
@@ -196,6 +250,19 @@ def ancova(
             f"group_{category}_effect": coefficients[index]
             for index, category in enumerate(group_values[1:], 1)
         }
+    )
+    coefficient_names = (
+        "intercept",
+        *(f"group_{category}_effect" for category in group_values[1:]),
+        "covariate_beta",
+    )
+    metrics.update(
+        _coefficient_interval_metrics(
+            coefficient_names,
+            coefficients,
+            standard_errors,
+            len(outcomes) - len(features[0]) - 1,
+        )
     )
     metrics.update(_model_metrics(len(outcomes), len(features[0]), r_squared))
     return TechniqueResult("ancova", metrics)
