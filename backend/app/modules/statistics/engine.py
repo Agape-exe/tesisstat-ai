@@ -171,7 +171,17 @@ class DeterministicStatisticalEngine:
     @staticmethod
     def _assumption_checks(technique: str, data: AnalysisInput) -> list[AssumptionCheck]:
         checks: list[AssumptionCheck] = []
-        if technique in {"t_independent", "t_welch", "mann_whitney"} and data.groups:
+        if (
+            technique
+            in {
+                "t_independent",
+                "t_welch",
+                "mann_whitney",
+                "anova",
+                "anova_welch",
+            }
+            and data.groups
+        ):
             diagnostic = homogeneity(data.groups)
             checks.append(
                 AssumptionCheck(
@@ -180,6 +190,19 @@ class DeterministicStatisticalEngine:
                     details=diagnostic.details,
                 )
             )
+        if technique in {"t_independent", "t_welch", "anova", "anova_welch"}:
+            labels = data.labels or tuple(
+                f"group_{index}" for index in range(1, len(data.groups) + 1)
+            )
+            for label, group in zip(labels, data.groups, strict=True):
+                diagnostic = normality(group, name=f"normality_{label}")
+                checks.append(
+                    AssumptionCheck(
+                        name=diagnostic.name,
+                        status=diagnostic.status,
+                        details=diagnostic.details,
+                    )
+                )
         if technique in {"pearson", "spearman", "linear_regression_simple"}:
             diagnostic = normality(data.left)
             checks.append(

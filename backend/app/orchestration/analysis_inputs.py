@@ -6,6 +6,10 @@ from app.modules.statistics.datasets import DatasetTable
 from app.modules.statistics.execution import AnalysisInput
 from app.shared.contracts import AnalysisPlan, ResearchPackage
 
+TWO_GROUP_TECHNIQUES = {"t_independent", "t_welch", "mann_whitney"}
+MULTI_GROUP_TECHNIQUES = {"anova", "anova_welch", "kruskal_wallis"}
+GROUP_TECHNIQUES = TWO_GROUP_TECHNIQUES | MULTI_GROUP_TECHNIQUES
+
 CONNECTED = {
     "descriptive_summary",
     "pearson",
@@ -17,6 +21,10 @@ CONNECTED = {
     "t_independent",
     "mann_whitney",
     "cronbach_alpha",
+    "t_welch",
+    "anova",
+    "anova_welch",
+    "kruskal_wallis",
 }
 
 
@@ -75,7 +83,7 @@ def paired_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
 
 
 def independent_questions(package: ResearchPackage, hypothesis_id: str) -> list[str]:
-    """Validate metadata for two independent groups and one outcome column."""
+    """Validate metadata for independent-group comparisons."""
     hypothesis = next(item for item in package.hypotheses if item.id == hypothesis_id)
     variables = {item.id: item for item in package.variables}
     selected = [variables[item] for item in hypothesis.variable_ids]
@@ -136,7 +144,11 @@ def analysis_input(
         "t_paired": paired_questions,
         "wilcoxon": paired_questions,
         "t_independent": independent_questions,
+        "t_welch": independent_questions,
         "mann_whitney": independent_questions,
+        "anova": independent_questions,
+        "anova_welch": independent_questions,
+        "kruskal_wallis": independent_questions,
         "cronbach_alpha": reliability_questions,
     }.get(plan.technique, lambda *_: ["La técnica no admite esta entrada de dos columnas."])(
         package, plan.hypothesis_id
@@ -153,8 +165,12 @@ def analysis_input(
         "fisher_exact": {"nominal", "ordinal"},
         "t_paired": {"interval", "ratio"},
         "wilcoxon": {"ordinal", "interval", "ratio"},
-        "t_independent": {"ordinal", "interval", "ratio"},
+        "t_independent": {"interval", "ratio"},
+        "t_welch": {"interval", "ratio"},
         "mann_whitney": {"ordinal", "interval", "ratio"},
+        "anova": {"interval", "ratio"},
+        "anova_welch": {"interval", "ratio"},
+        "kruskal_wallis": {"ordinal", "interval", "ratio"},
         "cronbach_alpha": {"ordinal", "interval", "ratio"},
     }.get(plan.technique, set())
     if plan.technique == "cronbach_alpha":
@@ -166,7 +182,7 @@ def analysis_input(
         return AnalysisInput(
             matrix=tuple(tuple(row[index] for index in indices) for row in table.rows)
         )
-    if plan.technique in {"t_independent", "mann_whitney"}:
+    if plan.technique in GROUP_TECHNIQUES:
         group_variable = next(item for item in selected if item.role == "independent")
         outcome_variable = next(item for item in selected if item.role == "dependent")
         if (
@@ -176,7 +192,7 @@ def analysis_input(
             raise HTTPException(409, "La técnica requiere escalas de medición confirmadas.")
     elif any(item.measurement_scale not in allowed for item in selected):
         raise HTTPException(409, "La técnica requiere escalas de medición confirmadas.")
-    if plan.technique in {"t_independent", "mann_whitney"}:
+    if plan.technique in GROUP_TECHNIQUES:
         group_variable = next(item for item in selected if item.role == "independent")
         outcome_variable = next(item for item in selected if item.role == "dependent")
         try:
@@ -190,14 +206,18 @@ def analysis_input(
             if label is None or value is None:
                 continue
             groups.setdefault(label, []).append(value)
-        if len(groups) != 2:
+        if plan.technique in TWO_GROUP_TECHNIQUES and len(groups) != 2:
             raise HTTPException(
                 409, "La comparación independiente requiere exactamente dos grupos."
             )
-        left, right = tuple(groups.values())
-        return AnalysisInput(
-            left=tuple(left), right=tuple(right), groups=(tuple(left), tuple(right))
-        )
+        if plan.technique in MULTI_GROUP_TECHNIQUES and len(groups) < 3:
+            raise HTTPException(409, "La comparación multigrupo requiere tres o más grupos.")
+        values = tuple(tuple(group) for group in groups.values())
+        labels = tuple(groups)
+        if plan.technique in TWO_GROUP_TECHNIQUES:
+            left, right = values
+            return AnalysisInput(left=left, right=right, groups=values, labels=labels)
+        return AnalysisInput(groups=values, labels=labels)
     try:
         left, right = [table.columns.index(item.columns[0]) for item in selected]
     except ValueError as exc:

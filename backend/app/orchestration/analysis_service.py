@@ -129,7 +129,11 @@ class ResearchAnalysisService:
             "t_paired",
             "wilcoxon",
             "t_independent",
+            "t_welch",
             "mann_whitney",
+            "anova",
+            "anova_welch",
+            "kruskal_wallis",
             "cronbach_alpha",
         }:
             questions = {
@@ -140,7 +144,11 @@ class ResearchAnalysisService:
                 "t_paired": paired_questions,
                 "wilcoxon": paired_questions,
                 "t_independent": independent_questions,
+                "t_welch": independent_questions,
                 "mann_whitney": independent_questions,
+                "anova": independent_questions,
+                "anova_welch": independent_questions,
+                "kruskal_wallis": independent_questions,
                 "cronbach_alpha": reliability_questions,
             }[plan.technique](package, plan.hypothesis_id)
             if questions:
@@ -210,7 +218,11 @@ class ResearchAnalysisService:
                     "t_paired",
                     "wilcoxon",
                     "t_independent",
+                    "t_welch",
                     "mann_whitney",
+                    "anova",
+                    "anova_welch",
+                    "kruskal_wallis",
                     "cronbach_alpha",
                 }:
                     table = reader.read(package.dataset)
