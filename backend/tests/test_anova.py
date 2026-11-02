@@ -12,6 +12,8 @@ def test_anova_returns_reference_f_statistic():
     assert isclose(result.metrics["f_statistic"], 27.0)
     assert result.metrics["degrees_of_freedom_between"] == 2
     assert result.metrics["degrees_of_freedom_within"] == 6
+    assert isclose(result.metrics["eta_squared"], 0.9)
+    assert isclose(result.metrics["omega_squared"], 52 / 61)
 
 
 def test_welch_anova_returns_finite_statistic_and_fractional_df():

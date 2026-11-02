@@ -50,14 +50,18 @@ y `GET /datasets/{dataset_id}/report?format=txt|docx|pdf` para el flujo ST-10/ST
 
 `comparisons.py` implementa t independiente con varianza combinada, t pareada y t de Welch con
 grados de libertad de Welch–Satterthwaite. Se eliminan únicamente pares faltantes completos y
-se rechazan muestras insuficientes o valores inválidos; las funciones devuelven estadísticas
-reproducibles y todavía no realizan decisiones automáticas de significancia.
+se rechazan muestras insuficientes o valores inválidos. Las tres devuelven p bilateral,
+intervalo de confianza bilateral del 95 % para la diferencia de medias (invirtiendo la t de
+Student mediante bisección), y tamaño de efecto: d de Cohen para grupos independientes y dz
+para pares. No realizan decisiones automáticas de significancia.
 
 ## Comparaciones no paramétricas (ST-06)
 
 `nonparametric.py` implementa Mann–Whitney, Wilcoxon de rangos con signo y Kruskal–Wallis,
 incluyendo rangos promedio para empates, eliminación explícita de diferencias cero y
-validación de tamaños mínimos. Sus estadísticas se verifican con fixtures numéricos pequeños.
+validación de tamaños mínimos. Mann–Whitney y Wilcoxon incluyen tamaño de efecto y advierten
+cuando su p-valor de aproximación normal se usa con menos de 20 observaciones; Kruskal–Wallis
+reporta epsilon cuadrado. Sus estadísticas se verifican con fixtures numéricos pequeños.
 
 ## Planner determinista (ST-02)
 
@@ -79,7 +83,9 @@ código basado en nombres recibidos y los planes sin entradas suficientes termin
 
 `inferential.py` implementa con la biblioteca estándar Pearson, Spearman, chi-cuadrado,
 Fisher exacto para tablas 2×2 y alfa de Cronbach. Cada función valida tamaño, tipos, faltantes,
-constantes y dimensiones, y devuelve métricas deterministas con pruebas de referencia. Estas
+constantes y dimensiones, y devuelve métricas deterministas con pruebas de referencia.
+Chi-cuadrado informa V de Cramér y advierte cuando hay frecuencias esperadas menores que 5.
+Estas
 funciones todavía requieren un adaptador de columnas del `AnalysisPlan` para incorporarse al
 motor de ejecución completo.
 

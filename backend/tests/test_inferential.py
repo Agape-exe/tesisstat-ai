@@ -34,6 +34,8 @@ def test_chi_square_returns_reference_statistic():
     assert isclose(result.metrics["chi_square"], 2 / 3)
     assert result.metrics["degrees_of_freedom"] == 1
     assert isclose(result.metrics["p_value"], 0.4142161782425252)
+    assert isclose(result.metrics["cramers_v"], 1 / 3)
+    assert result.warnings
 
 
 def test_fisher_exact_returns_two_by_two_result():

@@ -179,11 +179,21 @@ def chi_square(left: Sequence[object], right: Sequence[object]) -> TechniqueResu
     ]
     total = len(pairs)
     statistic = 0.0
+    expected_below_five = 0
     for row, row_total in enumerate(row_totals):
         for column, column_total in enumerate(column_totals):
             expected = row_total * column_total / total
             statistic += (table[row][column] - expected) ** 2 / expected
+            if expected < 5:
+                expected_below_five += 1
     degrees_of_freedom = (len(rows) - 1) * (len(columns) - 1)
+    cramer_v = math.sqrt(statistic / (total * min(len(rows) - 1, len(columns) - 1)))
+    warnings = ()
+    if expected_below_five:
+        warnings = (
+            f"{expected_below_five} celda(s) tienen frecuencia esperada menor que 5; "
+            "considera Fisher exacto cuando la tabla sea 2 × 2.",
+        )
     return TechniqueResult(
         "chi_square",
         {
@@ -191,7 +201,9 @@ def chi_square(left: Sequence[object], right: Sequence[object]) -> TechniqueResu
             "chi_square": statistic,
             "degrees_of_freedom": float(degrees_of_freedom),
             "p_value": chi_square_survival(statistic, float(degrees_of_freedom)),
+            "cramers_v": cramer_v,
         },
+        warnings,
     )
 
 

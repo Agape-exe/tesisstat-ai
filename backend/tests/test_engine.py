@@ -89,3 +89,4 @@ def test_engine_dispatches_an_allowlisted_pearson_plan_to_analysis_result():
 
     assert result.status == "completed"
     assert {metric.name: metric.value for metric in result.metrics}["r"] == 1
+    assert {check.name for check in result.assumptions} >= {"independence", "normality"}

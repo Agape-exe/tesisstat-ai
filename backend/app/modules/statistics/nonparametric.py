@@ -56,6 +56,11 @@ def mann_whitney(left: Sequence[object], right: Sequence[object]) -> TechniqueRe
     tie_adjustment = sum(count**3 - count for count in tie_counts.values())
     variance = len(x) * len(y) / 12 * ((total + 1) - tie_adjustment / (total * (total - 1)))
     z_statistic = max(0.0, abs(u - len(x) * len(y) / 2) - 0.5) / variance**0.5
+    warnings = ()
+    if total < 20:
+        warnings = (
+            "El p-valor usa aproximación normal; interprétalo con cautela en muestras pequeñas.",
+        )
     return TechniqueResult(
         "mann_whitney",
         {
@@ -66,6 +71,7 @@ def mann_whitney(left: Sequence[object], right: Sequence[object]) -> TechniqueRe
             "p_value": normal_two_sided(z_statistic),
             "rank_biserial_effect": 1 - 2 * u / (len(x) * len(y)),
         },
+        warnings,
     )
 
 
@@ -93,6 +99,11 @@ def wilcoxon(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
         - sum(size * (size + 1) * (2 * size + 1) / 2 for size in tie_counts.values())
     ) / 24
     z_statistic = max(0.0, abs(statistic - count * (count + 1) / 4) - 0.5) / variance**0.5
+    warnings = ()
+    if count < 20:
+        warnings = (
+            "El p-valor usa aproximación normal; interprétalo con cautela en muestras pequeñas.",
+        )
     return TechniqueResult(
         "wilcoxon",
         {
@@ -104,6 +115,7 @@ def wilcoxon(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
             "p_value": normal_two_sided(z_statistic),
             "rank_effect": z_statistic / count**0.5,
         },
+        warnings,
     )
 
 
@@ -142,5 +154,6 @@ def kruskal_wallis(groups: Sequence[Sequence[object]]) -> TechniqueResult:
             "degrees_of_freedom": float(degrees_of_freedom),
             "p_value": chi_square_survival(h, float(degrees_of_freedom)),
             "tie_correction": correction,
+            "epsilon_squared": max(0.0, (h - len(groups) + 1) / (total - len(groups))),
         },
     )

@@ -13,7 +13,7 @@ from app.shared.contracts import (
 )
 
 from .anova import anova, anova_welch, games_howell, tukey
-from .assumptions import homogeneity, normality
+from .assumptions import homogeneity, independence, normality
 from .comparisons import t_independent, t_paired, t_welch
 from .descriptive import DescriptiveResult
 from .execution import AnalysisInput
@@ -170,7 +170,14 @@ class DeterministicStatisticalEngine:
 
     @staticmethod
     def _assumption_checks(technique: str, data: AnalysisInput) -> list[AssumptionCheck]:
-        checks: list[AssumptionCheck] = []
+        independence_diagnostic = independence()
+        checks = [
+            AssumptionCheck(
+                name=independence_diagnostic.name,
+                status=independence_diagnostic.status,
+                details=independence_diagnostic.details,
+            )
+        ]
         if (
             technique
             in {
