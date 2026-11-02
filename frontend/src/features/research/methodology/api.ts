@@ -58,6 +58,48 @@ export interface MethodologyState {
   draft: MethodologyDraft | null;
 }
 
+export interface ReviewFinding {
+  value: string | null;
+  kind: Finding['kind'] | 'manual';
+  evidence: string[];
+}
+
+export interface ReviewVariable {
+  id: string;
+  name: ReviewFinding;
+  role: ReviewFinding;
+  measurement_scale: ReviewFinding;
+  dimensions: ReviewFinding[];
+  indicators: ReviewFinding[];
+  instrument_items: ReviewFinding[];
+}
+
+export interface ReviewContent {
+  title: ReviewFinding;
+  general_problem: ReviewFinding;
+  general_objective: ReviewFinding;
+  specific_objectives: ReviewFinding[];
+  general_hypothesis: ReviewFinding;
+  specific_hypotheses: ReviewFinding[];
+  variables: ReviewVariable[];
+  research_design: ReviewFinding;
+  observation_design: ReviewFinding;
+  additional_methodology: ReviewFinding[];
+  clarifications: ReviewFinding[];
+}
+
+export interface MethodologyReview {
+  project_id: string;
+  document_id: string;
+  origin: 'ai' | 'manual';
+  content: ReviewContent;
+  pending_fields: string[];
+  review_status: 'unreviewed' | 'reviewed';
+  version: number;
+  updated_at: string;
+  reviewed_at: string | null;
+}
+
 export interface MethodologyApi {
   status(
     project: string,
@@ -69,6 +111,23 @@ export interface MethodologyApi {
     document: string,
     signal?: AbortSignal,
   ): Promise<MethodologyState>;
+  reviewStatus?(
+    project: string,
+    document: string,
+    signal?: AbortSignal,
+  ): Promise<MethodologyReview | null>;
+  createReview?(project: string, document: string): Promise<MethodologyReview>;
+  saveReview?(
+    project: string,
+    document: string,
+    version: number,
+    content: ReviewContent,
+  ): Promise<MethodologyReview>;
+  confirmReview?(
+    project: string,
+    document: string,
+    version: number,
+  ): Promise<MethodologyReview>;
 }
 
 export function createMethodologyApi(
@@ -112,10 +171,66 @@ export function createMethodologyApi(
       );
     return body as MethodologyState;
   }
+  async function reviewRequest(
+    project: string,
+    document: string,
+    suffix: string,
+    method = 'GET',
+    body?: object,
+    signal?: AbortSignal,
+  ) {
+    const url = `${baseUrl.replace(/\/$/, '')}/api/research/projects/${encodeURIComponent(project)}/documents/${encodeURIComponent(document)}/methodology/review${suffix}`;
+    const response = await fetch(url, {
+      method,
+      ...(body
+        ? {
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          }
+        : {}),
+      signal,
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      const detail = result?.detail;
+      throw new Error(
+        typeof detail === 'string'
+          ? `${detail}${
+              result?.errors
+                ? ` ${Object.entries(result.errors)
+                    .map(([field, message]) => `${field}: ${message}`)
+                    .join(' ')}`
+                : ''
+            }`
+          : JSON.stringify(
+              detail ?? result?.errors ?? 'Revisa los campos de metodología.',
+            ),
+      );
+    }
+    return result as MethodologyReview | null;
+  }
   return {
     status: (project, document, signal) =>
       request(project, document, false, signal),
     analyze: (project, document, signal) =>
       request(project, document, true, signal),
+    reviewStatus: (project, document, signal) =>
+      reviewRequest(project, document, '/status', 'GET', undefined, signal),
+    createReview: (project, document) =>
+      reviewRequest(
+        project,
+        document,
+        '',
+        'POST',
+      ) as Promise<MethodologyReview>,
+    saveReview: (project, document, version, content) =>
+      reviewRequest(project, document, '', 'PUT', {
+        version,
+        content,
+      }) as Promise<MethodologyReview>,
+    confirmReview: (project, document, version) =>
+      reviewRequest(project, document, '/confirm', 'POST', {
+        version,
+      }) as Promise<MethodologyReview>,
   };
 }

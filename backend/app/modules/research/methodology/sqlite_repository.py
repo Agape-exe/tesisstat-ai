@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import UUID
 
 from app.modules.research.documents.use_cases import DocumentNotFound
-from app.modules.research.methodology.models import MethodologyState
+from app.modules.research.methodology.models import MethodologyReview, MethodologyState
 from app.shared.ai_errors import AIError
 
 
@@ -20,6 +20,16 @@ class SQLiteMethodologyRepository:
                 "CREATE TRIGGER IF NOT EXISTS research_methodology_cleanup "
                 "AFTER DELETE ON research_documents BEGIN "
                 "DELETE FROM research_methodology WHERE document_id = OLD.id; END"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS research_methodology_reviews "
+                "(document_id TEXT PRIMARY KEY, project_id TEXT NOT NULL, "
+                "version INTEGER NOT NULL, payload TEXT NOT NULL)"
+            )
+            connection.execute(
+                "CREATE TRIGGER IF NOT EXISTS research_methodology_reviews_cleanup "
+                "AFTER DELETE ON research_documents BEGIN "
+                "DELETE FROM research_methodology_reviews WHERE document_id = OLD.id; END"
             )
 
     def _connect(self):
@@ -86,3 +96,47 @@ class SQLiteMethodologyRepository:
             if row and MethodologyState.model_validate_json(row[0]).attempts != result.attempts:
                 raise AIError("busy")
             self._write(connection, result)
+
+    def get_review(self, project_id: UUID, document_id: UUID) -> MethodologyReview | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                "SELECT payload FROM research_methodology_reviews "
+                "WHERE project_id=? AND document_id=?",
+                (str(project_id), str(document_id)),
+            ).fetchone()
+        return MethodologyReview.model_validate_json(row[0]) if row else None
+
+    def save_review(self, review: MethodologyReview, expected_version: int | None) -> bool:
+        with closing(self._connect()) as connection, connection:
+            connection.execute("BEGIN IMMEDIATE")
+            if expected_version is None:
+                cursor = connection.execute(
+                    "INSERT OR IGNORE INTO research_methodology_reviews "
+                    "(document_id, project_id, version, payload) "
+                    "SELECT ?, ?, ?, ? WHERE EXISTS "
+                    "(SELECT 1 FROM research_documents WHERE id=? AND project_id=?)",
+                    (
+                        str(review.document_id),
+                        str(review.project_id),
+                        review.version,
+                        review.model_dump_json(),
+                        str(review.document_id),
+                        str(review.project_id),
+                    ),
+                )
+            else:
+                cursor = connection.execute(
+                    "UPDATE research_methodology_reviews SET version=?, payload=? "
+                    "WHERE document_id=? AND project_id=? AND version=? "
+                    "AND EXISTS (SELECT 1 FROM research_documents WHERE id=? AND project_id=?)",
+                    (
+                        review.version,
+                        review.model_dump_json(),
+                        str(review.document_id),
+                        str(review.project_id),
+                        expected_version,
+                        str(review.document_id),
+                        str(review.project_id),
+                    ),
+                )
+            return cursor.rowcount == 1
