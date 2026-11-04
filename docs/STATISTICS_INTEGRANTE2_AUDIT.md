@@ -1,6 +1,6 @@
 # Auditoría del plan de trabajo — Integrante 2
 
-Actualizada contra `develop` después del merge del PR #37.
+Actualizada contra `develop` después del merge del PR #38.
 
 | Sesión | Estado | Evidencia / pendiente principal |
 | --- | --- | --- |
@@ -9,7 +9,7 @@ Actualizada contra `develop` después del merge del PR #37.
 | 17B — Catálogo restante | Completada | Las 19 técnicas del catálogo tienen adaptadores de entrada, incluyendo Cronbach, no paramétricas, post-hoc, regresiones y ANCOVA. Los post-hoc conservan la advertencia de que la significancia requiere su distribución crítica. |
 | 18B — Gráficos e interpretación | Parcial | La demo Statistics tiene histogramas, cajas, barras y dispersión para datasets de demostración. `ProjectAnalysis` ahora visualiza métricas persistidas: barras de frecuencias categóricas, escalas de asociación/efecto acotado e intervalos de confianza. Faltan gráficos que requieran observaciones crudas (por ejemplo, dispersión o residuos) y contexto interpretativo más rico. |
 | 19B — Informes académicos | Parcial | Las exportaciones TXT/DOCX/PDF incluyen metadatos reproducibles, contexto metodológico explícito y tablas numeradas de métricas y supuestos. Faltan figuras derivadas de datos reales y revisión visual sistemática. |
-| 20B — Datos reales y pruebas integrales | En progreso | Los datasets no sintéticos siguen denegados por defecto. La API y la vista local incorporan una autorización simulada, efímera y explícita, ligada a proyecto, paquete, dataset y versión de fuentes; se prueba acceso denegado, autorizado y revocado ante cambios. Falta completar la matriz E2E documentada de las 19 técnicas. |
+| 20B — Datos reales y pruebas integrales | En progreso | Los datasets no sintéticos siguen denegados por defecto. La API y la vista local incorporan una autorización simulada, efímera y explícita, ligada a proyecto, paquete, dataset y versión de fuentes; se prueba acceso denegado, autorizado y revocado ante cambios. La matriz E2E documenta las 19 técnicas y completa Wilcoxon pareada; falta ejecutar la suite integral en CI sin el límite local de tiempo. |
 
 ## Decisiones de seguridad y calidad
 

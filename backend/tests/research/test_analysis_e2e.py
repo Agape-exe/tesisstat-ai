@@ -305,6 +305,24 @@ def test_real_paired_t_columns_with_paired_observations(tmp_path):
     assert metrics["degrees_of_freedom"] == 3
 
 
+def test_real_wilcoxon_columns_with_paired_ordinal_observations(tmp_path):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        observations="paired",
+        scales=("ordinal", "ordinal"),
+        data=b"horas_estudio,rendimiento\n1,2\n2,4\n3,6\n4,8\n5,10\n",
+    )
+    record, result = executed(case)
+
+    assert record["plan"]["technique"] == "wilcoxon"
+    metrics = {item.name: item.value for item in result.metrics}
+    assert metrics["n"] == 5
+    assert metrics["w_positive"] == pytest.approx(0)
+    assert metrics["w_negative"] == pytest.approx(15)
+    assert metrics["p_value"] < 0.05
+
+
 def test_real_independent_t_columns_with_two_groups(tmp_path, monkeypatch):
     case = research_case(
         tmp_path,
