@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from itertools import combinations, product
 
 from .distributions import chi_square_survival, normal_two_sided
 from .inferential import (
@@ -39,6 +40,42 @@ def _rank(values: Sequence[float]) -> list[float]:
     return ranks
 
 
+def _has_ties(values: Sequence[float]) -> bool:
+    """Return whether a rank calculation needs averaged ranks."""
+
+    return len(set(values)) != len(values)
+
+
+def _exact_mann_whitney_p_value(n_left: int, n_right: int, observed_u: float) -> float:
+    """Return the two-sided exact probability for the smaller U statistic."""
+
+    total = n_left + n_right
+    total_assignments = 0
+    as_or_more_extreme = 0
+    for selected in combinations(range(1, total + 1), n_left):
+        u_left = sum(selected) - n_left * (n_left + 1) / 2
+        smaller_u = min(u_left, n_left * n_right - u_left)
+        total_assignments += 1
+        if smaller_u <= observed_u:
+            as_or_more_extreme += 1
+    return as_or_more_extreme / total_assignments
+
+
+def _exact_wilcoxon_p_value(ranks: Sequence[float], observed_w: float) -> float:
+    """Return the two-sided exact probability for the smaller signed-rank sum."""
+
+    total_rank = sum(ranks)
+    total_assignments = 0
+    as_or_more_extreme = 0
+    for signs in product((False, True), repeat=len(ranks)):
+        positive = sum(rank for rank, is_positive in zip(ranks, signs, strict=True) if is_positive)
+        smaller_w = min(positive, total_rank - positive)
+        total_assignments += 1
+        if smaller_w <= observed_w:
+            as_or_more_extreme += 1
+    return as_or_more_extreme / total_assignments
+
+
 def mann_whitney(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
     """Calculate the smaller Mann–Whitney U statistic, with average ties."""
 
@@ -55,9 +92,19 @@ def mann_whitney(left: Sequence[object], right: Sequence[object]) -> TechniqueRe
         tie_counts[value] = tie_counts.get(value, 0) + 1
     tie_adjustment = sum(count**3 - count for count in tie_counts.values())
     variance = len(x) * len(y) / 12 * ((total + 1) - tie_adjustment / (total * (total - 1)))
+    if variance <= 0:
+        raise StatisticalCalculationError(
+            "Mann–Whitney no está definido cuando todos los rangos empatan."
+        )
     z_statistic = max(0.0, abs(u - len(x) * len(y) / 2) - 0.5) / variance**0.5
-    warnings = ()
-    if total < 20:
+    exact = total <= 20 and not _has_ties(x + y)
+    warnings: tuple[str, ...] = ()
+    if exact:
+        p_value = _exact_mann_whitney_p_value(len(x), len(y), u)
+        warnings = ("El p-valor es exacto por enumeración de permutaciones sin empates.",)
+    else:
+        p_value = normal_two_sided(z_statistic)
+    if not exact and total < 20:
         warnings = (
             "El p-valor usa aproximación normal; interprétalo con cautela en muestras pequeñas.",
         )
@@ -68,7 +115,7 @@ def mann_whitney(left: Sequence[object], right: Sequence[object]) -> TechniqueRe
             "n_right": float(len(y)),
             "u": u,
             "z_statistic": z_statistic,
-            "p_value": normal_two_sided(z_statistic),
+            "p_value": p_value,
             "rank_biserial_effect": 1 - 2 * u / (len(x) * len(y)),
         },
         warnings,
@@ -99,8 +146,15 @@ def wilcoxon(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
         - sum(size * (size + 1) * (2 * size + 1) / 2 for size in tie_counts.values())
     ) / 24
     z_statistic = max(0.0, abs(statistic - count * (count + 1) / 4) - 0.5) / variance**0.5
-    warnings = ()
-    if count < 20:
+    absolute_differences = [abs(item) for item in differences]
+    exact = count <= 20 and not _has_ties(absolute_differences)
+    warnings: tuple[str, ...] = ()
+    if exact:
+        p_value = _exact_wilcoxon_p_value(ranks, statistic)
+        warnings = ("El p-valor es exacto por enumeración de signos sin empates absolutos.",)
+    else:
+        p_value = normal_two_sided(z_statistic)
+    if not exact and count < 20:
         warnings = (
             "El p-valor usa aproximación normal; interprétalo con cautela en muestras pequeñas.",
         )
@@ -112,7 +166,7 @@ def wilcoxon(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
             "w_negative": negative,
             "w": statistic,
             "z_statistic": z_statistic,
-            "p_value": normal_two_sided(z_statistic),
+            "p_value": p_value,
             "rank_effect": z_statistic / count**0.5,
         },
         warnings,

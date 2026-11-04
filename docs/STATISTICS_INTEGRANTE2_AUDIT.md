@@ -1,6 +1,7 @@
 # Auditoría del plan de trabajo — Integrante 2
 
-Actualizada contra `develop` después del merge del PR #39.
+Actualizada contra `develop` después del merge del PR #41. El avance exacto de Mann–Whitney y
+Wilcoxon de esta rama queda pendiente de su PR.
 
 | Sesión | Estado | Evidencia / pendiente principal |
 | --- | --- | --- |

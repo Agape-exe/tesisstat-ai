@@ -11,8 +11,17 @@ def test_mann_whitney_returns_zero_for_separated_groups():
 
     assert result.metrics["u"] == 0
     assert result.metrics["n_left"] == 3
-    assert isclose(result.metrics["p_value"], 0.08085559837005228)
+    assert isclose(result.metrics["p_value"], 0.1)
     assert result.metrics["rank_biserial_effect"] == 1
+    assert "exacto" in result.warnings[0]
+
+
+def test_wilcoxon_uses_exact_probability_without_tied_absolute_differences():
+    result = wilcoxon([1, 2, 3], [0, 0, 0])
+
+    assert result.metrics["w"] == 0
+    assert isclose(result.metrics["p_value"], 0.25)
+    assert "exacto" in result.warnings[0]
 
 
 def test_wilcoxon_uses_average_ranks_for_tied_absolute_differences():
@@ -23,6 +32,7 @@ def test_wilcoxon_uses_average_ranks_for_tied_absolute_differences():
     assert result.metrics["w_negative"] == 3
     assert result.metrics["w"] == 0
     assert isclose(result.metrics["p_value"], 0.2059032107320683)
+    assert "aproximación normal" in result.warnings[0]
 
 
 def test_kruskal_wallis_returns_reference_statistic():
@@ -51,3 +61,8 @@ def test_nonparametric_functions_reject_invalid_group_counts():
         kruskal_wallis([[1, 2], [3, 4]])
     with raises(StatisticalCalculationError, match="dos diferencias"):
         wilcoxon([1, 2], [1, 2])
+
+
+def test_mann_whitney_rejects_completely_tied_ranks():
+    with raises(StatisticalCalculationError, match="todos los rangos empatan"):
+        mann_whitney([1, 1], [1, 1])
