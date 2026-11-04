@@ -69,6 +69,21 @@ def _pearson(left: Sequence[float], right: Sequence[float]) -> float:
     return numerator / denominator
 
 
+def _fisher_interval(correlation: float, count: int) -> tuple[float, float] | None:
+    """Return the approximate 95 % Fisher-z interval when it is estimable.
+
+    The same large-sample transformation is used for Pearson's r and, with an
+    explicit warning, for Spearman's rho.  It is deliberately not returned for
+    perfect correlations because atanh(±1) is undefined.
+    """
+
+    if count <= 3 or abs(correlation) >= 1:
+        return None
+    transformed = math.atanh(correlation)
+    margin = normal_critical_two_sided(0.05) / math.sqrt(count - 3)
+    return math.tanh(transformed - margin), math.tanh(transformed + margin)
+
+
 def pearson(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
     """Calculate Pearson's r over complete finite pairs."""
 
@@ -92,15 +107,13 @@ def pearson(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
         else student_t_two_sided(statistic, float(degrees_of_freedom)),
     }
     warnings = ()
-    if len(x) > 3 and abs(correlation) < 1:
-        transformed = math.atanh(correlation)
-        margin = normal_critical_two_sided(0.05) / math.sqrt(len(x) - 3)
-        metrics["r_ci_95_low"] = math.tanh(transformed - margin)
-        metrics["r_ci_95_high"] = math.tanh(transformed + margin)
-    else:
+    interval = _fisher_interval(correlation, len(x))
+    if interval is None:
         warnings = (
             "El IC 95 % de Pearson requiere más de tres pares y una correlación no perfecta.",
         )
+    else:
+        metrics["r_ci_95_low"], metrics["r_ci_95_high"] = interval
     return TechniqueResult("pearson", metrics, warnings)
 
 
@@ -132,19 +145,30 @@ def spearman(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
         if abs(rho) == 1
         else rho * math.sqrt(degrees_of_freedom / (1 - rho**2))
     )
-    return TechniqueResult(
-        "spearman",
-        {
-            "n": float(len(x)),
-            "rho": rho,
-            "t_statistic": statistic,
-            "degrees_of_freedom": float(degrees_of_freedom),
-            "p_value": 0.0
-            if abs(rho) == 1
-            else student_t_two_sided(statistic, float(degrees_of_freedom)),
-        },
-        ("El p-valor de Spearman usa la aproximación t; úsalo con cautela en muestras pequeñas.",),
-    )
+    metrics = {
+        "n": float(len(x)),
+        "rho": rho,
+        "t_statistic": statistic,
+        "degrees_of_freedom": float(degrees_of_freedom),
+        "p_value": 0.0
+        if abs(rho) == 1
+        else student_t_two_sided(statistic, float(degrees_of_freedom)),
+    }
+    warnings = [
+        "El p-valor de Spearman usa la aproximación t; úsalo con cautela en muestras pequeñas."
+    ]
+    interval = _fisher_interval(rho, len(x))
+    if interval is None:
+        warnings.append(
+            "El IC 95 % de Spearman requiere más de tres pares y una correlación no perfecta."
+        )
+    else:
+        metrics["rho_ci_95_low"], metrics["rho_ci_95_high"] = interval
+        warnings.append(
+            "El IC 95 % de Spearman usa una transformación Fisher-z asintótica sobre rho; "
+            "es aproximado, especialmente con empates o muestras pequeñas."
+        )
+    return TechniqueResult("spearman", metrics, tuple(warnings))
 
 
 def _paired_categories(left: Sequence[object], right: Sequence[object]) -> list[tuple[str, str]]:
