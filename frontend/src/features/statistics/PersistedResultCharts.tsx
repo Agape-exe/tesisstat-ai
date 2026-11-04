@@ -1,77 +1,15 @@
 import type { Metric } from '../../shared/contracts/generated/AnalysisResult';
 import './persisted-result-charts.css';
-
-type CategoryBar = { label: string; count: number; percentage: number | null };
-type Interval = { label: string; low: number; high: number };
-type Estimate = { label: string; value: number };
-
-const boundedAssociationMetrics = new Set([
-  'r',
-  'rho',
-  'r_squared',
-  'eta_squared',
-  'omega_squared',
-  'cramers_v',
-  'rank_biserial_effect',
-  'rank_effect',
-  'epsilon_squared',
-]);
+import {
+  buildPersistedResultChartData,
+  type CategoryBar,
+  type Completeness,
+  type ConfidenceInterval,
+  type Estimate,
+  type PValue,
+} from './resultChartData';
 
 const format = new Intl.NumberFormat('es-PE', { maximumFractionDigits: 3 });
-
-function categoryBars(metrics: Metric[]): CategoryBar[] {
-  const values = new Map<string, CategoryBar>();
-  for (const metric of metrics) {
-    const match = /^(.*)\.category\.(.*)\.(count|percentage)$/.exec(
-      metric.name,
-    );
-    if (!match) continue;
-    const [, column, category, kind] = match;
-    const key = `${column}\u0000${category}`;
-    const current = values.get(key) ?? {
-      label: `${column}: ${category}`,
-      count: 0,
-      percentage: null,
-    };
-    if (kind === 'count') current.count = metric.value;
-    else current.percentage = metric.value;
-    values.set(key, current);
-  }
-  return [...values.values()].filter(
-    (item) => item.percentage !== null || item.count > 0,
-  );
-}
-
-function intervals(metrics: Metric[]): Interval[] {
-  const values = new Map<string, { low?: number; high?: number }>();
-  for (const metric of metrics) {
-    const match = /^(.*)_ci_95_(low|high)$/.exec(metric.name);
-    if (!match) continue;
-    const [, label, bound] = match;
-    values.set(label, { ...values.get(label), [bound]: metric.value });
-  }
-  return [...values.entries()]
-    .filter(
-      ([, interval]) =>
-        interval.low !== undefined && interval.high !== undefined,
-    )
-    .map(([label, interval]) => ({
-      label,
-      low: interval.low as number,
-      high: interval.high as number,
-    }));
-}
-
-function estimates(metrics: Metric[]): Estimate[] {
-  return metrics
-    .filter(
-      (metric) =>
-        metric.name.endsWith('.mean_difference') ||
-        /^group_.+_effect$/.test(metric.name) ||
-        /^(slope|beta_\d+|covariate_beta)$/.test(metric.name),
-    )
-    .map((metric) => ({ label: metric.name, value: metric.value }));
-}
 
 function CategoryChart({ items }: { items: CategoryBar[] }) {
   const maximum = Math.max(
@@ -103,10 +41,7 @@ function CategoryChart({ items }: { items: CategoryBar[] }) {
   );
 }
 
-function AssociationChart({ metrics }: { metrics: Metric[] }) {
-  const items = metrics.filter((metric) =>
-    boundedAssociationMetrics.has(metric.name),
-  );
+function AssociationChart({ items }: { items: Metric[] }) {
   if (!items.length) return null;
   return (
     <figure
@@ -130,7 +65,7 @@ function AssociationChart({ metrics }: { metrics: Metric[] }) {
   );
 }
 
-function IntervalChart({ items }: { items: Interval[] }) {
+function IntervalChart({ items }: { items: ConfidenceInterval[] }) {
   if (!items.length) return null;
   const bounds = items.flatMap((item) => [item.low, item.high]);
   const minimum = Math.min(...bounds);
@@ -164,6 +99,60 @@ function IntervalChart({ items }: { items: Interval[] }) {
   );
 }
 
+function PValueChart({ items }: { items: PValue[] }) {
+  if (!items.length) return null;
+  const alpha = 0.05;
+  return (
+    <figure className="persisted-chart" aria-label="P-valores persistidos">
+      <figcaption>P-valores reportados (referencia α = 0.05)</figcaption>
+      {items.map((item) => (
+        <div className="persisted-p-value" key={item.label}>
+          <span>{item.label}</span>
+          <div aria-label={`${item.label}: ${format.format(item.value)}`}>
+            <i style={{ left: `${item.value * 100}%` }} />
+            <b style={{ left: `${alpha * 100}%` }} title="alfa 0.05" />
+          </div>
+          <small>{format.format(item.value)}</small>
+        </div>
+      ))}
+      <p className="persisted-chart-note">
+        Referencia visual solamente; no determina significancia ni sustituye la
+        revisión metodológica.
+      </p>
+    </figure>
+  );
+}
+
+function CompletenessChart({ items }: { items: Completeness[] }) {
+  if (!items.length) return null;
+  return (
+    <figure
+      className="persisted-chart"
+      aria-label="Calidad de datos persistida"
+    >
+      <figcaption>Registros válidos y faltantes</figcaption>
+      {items.map((item) => {
+        const total = item.valid + item.missing;
+        const validWidth = total === 0 ? 0 : (item.valid / total) * 100;
+        return (
+          <div className="persisted-completeness" key={item.label}>
+            <span>{item.label}</span>
+            <div
+              aria-label={`${item.label}: ${item.valid} válidos, ${item.missing} faltantes`}
+            >
+              <i style={{ width: `${validWidth}%` }} />
+            </div>
+            <small>
+              {format.format(item.valid)} válidos ·{' '}
+              {format.format(item.missing)} faltantes
+            </small>
+          </div>
+        );
+      })}
+    </figure>
+  );
+}
+
 function EstimateChart({ items }: { items: Estimate[] }) {
   if (!items.length) return null;
   const maximum = Math.max(...items.map((item) => Math.abs(item.value)), 1);
@@ -191,17 +180,14 @@ function EstimateChart({ items }: { items: Estimate[] }) {
 }
 
 export function PersistedResultCharts({ metrics }: { metrics: Metric[] }) {
-  const categories = categoryBars(metrics);
-  const confidenceIntervals = intervals(metrics);
-  const associations = metrics.filter((metric) =>
-    boundedAssociationMetrics.has(metric.name),
-  );
-  const modelEstimates = estimates(metrics);
+  const data = buildPersistedResultChartData(metrics);
   if (
-    !categories.length &&
-    !confidenceIntervals.length &&
-    !associations.length &&
-    !modelEstimates.length
+    !data.categories.length &&
+    !data.confidenceIntervals.length &&
+    !data.associations.length &&
+    !data.estimates.length &&
+    !data.pValues.length &&
+    !data.completeness.length
   ) {
     return (
       <p className="persisted-chart-empty">
@@ -216,10 +202,12 @@ export function PersistedResultCharts({ metrics }: { metrics: Metric[] }) {
       aria-label="Gráficos de resultados persistidos"
     >
       <h5>Gráficos de resultados persistidos</h5>
-      {categories.length > 0 && <CategoryChart items={categories} />}
-      <AssociationChart metrics={metrics} />
-      <IntervalChart items={confidenceIntervals} />
-      <EstimateChart items={modelEstimates} />
+      {data.categories.length > 0 && <CategoryChart items={data.categories} />}
+      <AssociationChart items={data.associations} />
+      <IntervalChart items={data.confidenceIntervals} />
+      <EstimateChart items={data.estimates} />
+      <PValueChart items={data.pValues} />
+      <CompletenessChart items={data.completeness} />
     </section>
   );
 }

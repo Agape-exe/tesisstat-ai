@@ -141,7 +141,8 @@ gráficos y estados de carga/error sin modificar `frontend/src/app/App.tsx`.
 ## Gráficos de resultados persistidos (avance 18B)
 
 `PersistedResultCharts` recibe exclusivamente métricas almacenadas en un `AnalysisResult` dentro
-de `ProjectAnalysis`. Convierte frecuencias categóricas en barras, métricas de asociación acotadas
-en escalas y pares de IC 95 % en intervalos; si el resultado no contiene una representación válida,
-explica la limitación en lugar de reconstruir datos o inventar una figura. No vuelve a ejecutar el
-análisis ni accede al dataset del proyecto.
+de `ProjectAnalysis`. Su DTO interno convierte frecuencias categóricas, asociaciones acotadas,
+pares de IC 95 %, estimaciones, p-valores y conteos válidos/faltantes en gráficos. El p-valor usa
+alfa solo como referencia visual y no emite una decisión automática. Si el resultado no contiene
+una representación válida, explica la limitación en lugar de reconstruir datos o inventar una
+figura. No vuelve a ejecutar el análisis ni accede al dataset del proyecto.
