@@ -24,7 +24,9 @@
 .persisted-frequency,
 .persisted-scale,
 .persisted-interval,
-.persisted-estimate {
+.persisted-estimate,
+.persisted-p-value,
+.persisted-completeness {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) minmax(6rem, 2fr) auto;
   gap: 0.5rem;
@@ -53,6 +55,45 @@
     #d9e0dc 49.5% 50.5%,
     #587747 50.5% 100%
   );
+}
+
+.persisted-p-value > div,
+.persisted-completeness > div {
+  position: relative;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #d9e0dc;
+}
+
+.persisted-p-value i,
+.persisted-p-value b {
+  position: absolute;
+  top: -0.2rem;
+  display: block;
+  width: 0.2rem;
+  height: 1.1rem;
+  background: #193c36;
+  transform: translateX(-50%);
+}
+
+.persisted-p-value b {
+  top: -0.05rem;
+  height: 0.8rem;
+  background: #b04a34;
+}
+
+.persisted-completeness i {
+  display: block;
+  min-width: 2px;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #587747;
+}
+
+.persisted-chart-note {
+  margin: 0.5rem 0 0;
+  color: #536b65;
+  font-size: 0.85rem;
 }
 
 .persisted-scale i {
@@ -106,7 +147,9 @@
   .persisted-frequency,
   .persisted-scale,
   .persisted-interval,
-  .persisted-estimate {
+  .persisted-estimate,
+  .persisted-p-value,
+  .persisted-completeness {
     grid-template-columns: 1fr;
   }
 }
