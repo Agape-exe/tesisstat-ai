@@ -1,6 +1,9 @@
 name: Validation checks
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
 
 permissions:
   contents: read
