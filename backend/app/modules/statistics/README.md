@@ -85,6 +85,10 @@ código basado en nombres recibidos y los planes sin entradas suficientes termin
 Fisher exacto para tablas 2×2 y alfa de Cronbach. Cada función valida tamaño, tipos, faltantes,
 constantes y dimensiones, y devuelve métricas deterministas con pruebas de referencia.
 Chi-cuadrado informa V de Cramér y advierte cuando hay frecuencias esperadas menores que 5.
+Pearson informa IC 95 % de *r* y Spearman informa IC 95 % aproximado de *rho* mediante
+transformación Fisher-z cuando hay más de tres pares y la correlación no es perfecta; el de
+Spearman advierte explícitamente su carácter asintótico, en especial ante empates o muestras
+pequeñas.
 Estas
 funciones todavía requieren un adaptador de columnas del `AnalysisPlan` para incorporarse al
 motor de ejecución completo.

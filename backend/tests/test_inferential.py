@@ -37,6 +37,22 @@ def test_spearman_uses_ranks_and_ignores_missing_pairs():
     assert isclose(result.metrics["rho"], -1.0)
 
 
+def test_spearman_reports_documented_approximate_fisher_confidence_interval():
+    result = spearman([1, 2, 3, 4, 5], [1, 2, 4, 3, 5])
+
+    assert isclose(result.metrics["rho"], 0.9)
+    assert isclose(result.metrics["rho_ci_95_low"], 0.08610194023847766)
+    assert isclose(result.metrics["rho_ci_95_high"], 0.9934375159687521)
+    assert any("Fisher-z" in warning for warning in result.warnings)
+
+
+def test_spearman_omits_confidence_interval_when_not_estimable():
+    result = spearman([1, 2, 3, 4], [4, 3, 2, 1])
+
+    assert "rho_ci_95_low" not in result.metrics
+    assert any("IC 95 %" in warning for warning in result.warnings)
+
+
 def test_chi_square_returns_reference_statistic():
     result = chi_square(["A", "A", "A", "B", "B", "B"], ["X", "X", "Y", "X", "Y", "Y"])
 
