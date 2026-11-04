@@ -3,6 +3,7 @@ import './persisted-result-charts.css';
 
 type CategoryBar = { label: string; count: number; percentage: number | null };
 type Interval = { label: string; low: number; high: number };
+type Estimate = { label: string; value: number };
 
 const boundedAssociationMetrics = new Set([
   'r',
@@ -59,6 +60,17 @@ function intervals(metrics: Metric[]): Interval[] {
       low: interval.low as number,
       high: interval.high as number,
     }));
+}
+
+function estimates(metrics: Metric[]): Estimate[] {
+  return metrics
+    .filter(
+      (metric) =>
+        metric.name.endsWith('.mean_difference') ||
+        /^group_.+_effect$/.test(metric.name) ||
+        /^(slope|beta_\d+|covariate_beta)$/.test(metric.name),
+    )
+    .map((metric) => ({ label: metric.name, value: metric.value }));
 }
 
 function CategoryChart({ items }: { items: CategoryBar[] }) {
@@ -152,16 +164,44 @@ function IntervalChart({ items }: { items: Interval[] }) {
   );
 }
 
+function EstimateChart({ items }: { items: Estimate[] }) {
+  if (!items.length) return null;
+  const maximum = Math.max(...items.map((item) => Math.abs(item.value)), 1);
+  return (
+    <figure
+      className="persisted-chart"
+      aria-label="Estimaciones persistidas de modelos y comparaciones"
+    >
+      <figcaption>Estimaciones de modelo y diferencias entre grupos</figcaption>
+      {items.map((item) => {
+        const width = (Math.abs(item.value) / maximum) * 50;
+        const left = item.value < 0 ? 50 - width : 50;
+        return (
+          <div className="persisted-estimate" key={item.label}>
+            <span>{item.label}</span>
+            <div aria-label={`${item.label}: ${format.format(item.value)}`}>
+              <i style={{ left: `${left}%`, width: `${width}%` }} />
+            </div>
+            <small>{format.format(item.value)}</small>
+          </div>
+        );
+      })}
+    </figure>
+  );
+}
+
 export function PersistedResultCharts({ metrics }: { metrics: Metric[] }) {
   const categories = categoryBars(metrics);
   const confidenceIntervals = intervals(metrics);
   const associations = metrics.filter((metric) =>
     boundedAssociationMetrics.has(metric.name),
   );
+  const modelEstimates = estimates(metrics);
   if (
     !categories.length &&
     !confidenceIntervals.length &&
-    !associations.length
+    !associations.length &&
+    !modelEstimates.length
   ) {
     return (
       <p className="persisted-chart-empty">
@@ -179,6 +219,7 @@ export function PersistedResultCharts({ metrics }: { metrics: Metric[] }) {
       {categories.length > 0 && <CategoryChart items={categories} />}
       <AssociationChart metrics={metrics} />
       <IntervalChart items={confidenceIntervals} />
+      <EstimateChart items={modelEstimates} />
     </section>
   );
 }

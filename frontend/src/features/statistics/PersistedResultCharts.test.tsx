@@ -41,6 +41,28 @@ it('renders effect and confidence interval charts from persisted metrics', () =>
   expect(screen.getByLabelText('r: 0.2 a 0.95')).toBeInTheDocument();
 });
 
+it('renders persisted model and group-comparison estimates around zero', () => {
+  render(
+    <PersistedResultCharts
+      metrics={[
+        { name: 'A_vs_B.mean_difference', value: -3 },
+        { name: 'slope', value: 2 },
+        { name: 'beta_2', value: 1.5 },
+      ]}
+    />,
+  );
+
+  expect(
+    screen.getByLabelText(
+      'Estimaciones persistidas de modelos y comparaciones',
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByLabelText('A_vs_B.mean_difference: -3'),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText('slope: 2')).toBeInTheDocument();
+});
+
 it('does not fabricate a chart for unsupported persisted metrics', () => {
   render(<PersistedResultCharts metrics={[{ name: 'n', value: 12 }]} />);
 
