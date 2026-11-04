@@ -214,6 +214,55 @@ it('shows API errors and disables actions while state cannot be recovered', asyn
   expect(screen.getByText('Proponer análisis')).toBeDisabled();
 });
 
+it('requires an explicit local authorization action for a non-synthetic dataset', async () => {
+  const realPackage: ResearchPackageSummary = {
+    ...researchPackage,
+    dataset: { ...researchPackage.dataset, synthetic: false },
+  };
+  const requests: { url: string; body?: string }[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, options?: RequestInit) => {
+      requests.push({ url, body: options?.body as string | undefined });
+      if (url.endsWith('/authorization/real-dataset')) {
+        return {
+          ok: true,
+          json: async () => ({
+            package_id: 'package',
+            dataset_id: 'dataset',
+            source_version: 'source',
+            status: 'authorized',
+          }),
+        };
+      }
+      return { ok: true, json: async () => [] };
+    }),
+  );
+  render(<ProjectAnalysis projectId="project" researchPackage={realPackage} />);
+  const button = await screen.findByRole('button', {
+    name: 'Autorizar datos reales para esta sesión',
+  });
+  expect(
+    screen.getByText(/la autorización se revoca al reiniciar el servidor/i),
+  ).toBeInTheDocument();
+  fireEvent.click(button);
+  await waitFor(() =>
+    expect(
+      requests.some((item) => item.url.endsWith('/authorization/real-dataset')),
+    ).toBe(true),
+  );
+  expect(
+    requests.find((item) => item.url.endsWith('/authorization/real-dataset'))
+      ?.body,
+  ).toBe(
+    JSON.stringify({
+      package_id: 'package',
+      dataset_id: 'dataset',
+      confirm: true,
+    }),
+  );
+});
+
 it('shows persisted historical results when there is no current package', async () => {
   const record = proposal();
   record.invalidated_at = '2026-11-02';

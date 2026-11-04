@@ -1,4 +1,4 @@
-"""Loopback-only synthetic integration API, mounted only in Research's dev app."""
+"""Loopback-only local integration API, mounted only in Research's dev app."""
 
 from typing import Literal
 from uuid import UUID
@@ -7,7 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 
 from app.modules.statistics.reports import render_docx, render_pdf
-from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
+from app.orchestration.analysis_models import (
+    AnalysisRecord,
+    ApprovalRequest,
+    PlanRequest,
+    RealDataAuthorizationReceipt,
+    RealDataAuthorizationRequest,
+)
 from app.orchestration.analysis_service import ResearchAnalysisService
 from app.shared.contracts import AnalysisResult
 
@@ -24,9 +30,23 @@ def local_only(request: Request) -> None:
 def create_router(service: ResearchAnalysisService) -> APIRouter:
     router = APIRouter(
         prefix="/api/research/projects/{project_id}/analysis",
-        tags=["Research analysis (local synthetic development)"],
+        tags=["Research analysis (local development)"],
         dependencies=[Depends(local_only)],
     )
+
+    @router.post("/authorization/real-dataset", response_model=RealDataAuthorizationReceipt)
+    def authorize_real_dataset(
+        project_id: UUID, body: RealDataAuthorizationRequest
+    ) -> RealDataAuthorizationReceipt:
+        package_id, dataset_id, source_version = service.authorize_real_dataset(
+            project_id, body.package_id, body.dataset_id
+        )
+        return RealDataAuthorizationReceipt(
+            package_id=package_id,
+            dataset_id=dataset_id,
+            source_version=source_version,
+            status="authorized",
+        )
 
     @router.post("/plan", response_model=AnalysisRecord, status_code=201)
     def propose(project_id: UUID, body: PlanRequest) -> AnalysisRecord:
@@ -62,7 +82,12 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
             f"Técnica: {record.plan.technique}",
             f"Justificación: {record.plan.rationale}",
             f"Aprobación explícita: {record.approved_at.isoformat()}",
-            "Demostración local con datos sintéticos. No implica significancia estadística.",
+            (
+                "Demostración local con datos sintéticos. No implica significancia estadística."
+                if record.package.dataset.synthetic
+                else "Datos no sintéticos autorizados explícitamente solo para esta sesión local. "
+                "No implica significancia estadística."
+            ),
         )
         renderer = render_docx if format == "docx" else render_pdf
         media = (

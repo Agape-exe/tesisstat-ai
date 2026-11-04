@@ -10,12 +10,19 @@ export function ProjectAnalysis({
   researchPackage,
 }: {
   projectId: string;
-  researchPackage: Pick<ResearchPackageSummary, 'id' | 'hypotheses'> | null;
+  researchPackage:
+    | (Pick<ResearchPackageSummary, 'id' | 'hypotheses'> &
+        Partial<Pick<ResearchPackageSummary, 'dataset'>>)
+    | null;
 }) {
   const [records, setRecords] = useState<AnalysisRecord[]>([]);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const realDataset =
+    researchPackage?.dataset && !researchPackage.dataset.synthetic
+      ? researchPackage.dataset
+      : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +71,9 @@ export function ProjectAnalysis({
       <h3>Análisis estadístico</h3>
       <p>
         Revisa la técnica, su justificación y los supuestos antes de aprobar.
-        Solo se admiten datos sintéticos en esta demo local.
+        Los datos sintéticos están disponibles de inmediato. Los datos reales
+        requieren una autorización explícita, temporal y vinculada a este
+        paquete vigente.
       </p>
       <p>
         Integración disponible: resumen descriptivo, Pearson y Spearman. Las
@@ -83,6 +92,29 @@ export function ProjectAnalysis({
       >
         Recargar análisis
       </button>
+      {researchPackage && realDataset && (
+        <aside className="rp-analysis-authorization">
+          <p>
+            Este dataset no es sintético. Autorízalo solo si confirmas que es
+            adecuado para esta sesión local; la autorización se revoca al
+            reiniciar el servidor o cambiar sus fuentes.
+          </p>
+          <button
+            disabled={busy}
+            onClick={() =>
+              void work(() =>
+                api.authorizeRealDataset(
+                  projectId,
+                  researchPackage.id,
+                  realDataset.id,
+                ),
+              )
+            }
+          >
+            Autorizar datos reales para esta sesión
+          </button>
+        </aside>
+      )}
       {!researchPackage && (
         <p>
           Genera un paquete vigente para proponer análisis. Los resultados
