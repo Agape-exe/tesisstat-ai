@@ -320,7 +320,7 @@ def test_real_wilcoxon_columns_with_paired_ordinal_observations(tmp_path):
     assert metrics["n"] == 5
     assert metrics["w_positive"] == pytest.approx(0)
     assert metrics["w_negative"] == pytest.approx(15)
-    assert metrics["p_value"] < 0.05
+    assert metrics["p_value"] == pytest.approx(0.05333685282913985)
 
 
 def test_real_independent_t_columns_with_two_groups(tmp_path, monkeypatch):
