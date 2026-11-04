@@ -11,6 +11,56 @@ from textwrap import wrap
 
 from app.shared.contracts import AnalysisResult
 
+_BOUNDED_EFFECTS = frozenset(
+    {
+        "r",
+        "rho",
+        "r_squared",
+        "eta_squared",
+        "omega_squared",
+        "cramers_v",
+        "rank_biserial_effect",
+        "rank_effect",
+        "epsilon_squared",
+    }
+)
+
+
+def _bar(value: float, *, minimum: float, maximum: float, width: int = 20) -> str:
+    """Render a deterministic ASCII marker on a documented numeric scale."""
+
+    bounded = max(minimum, min(maximum, value))
+    position = round((bounded - minimum) / (maximum - minimum) * (width - 1))
+    return "[" + "".join("*" if index == position else "-" for index in range(width)) + "]"
+
+
+def _figure_lines(result: AnalysisResult) -> tuple[str, ...]:
+    """Build a figure from persisted metrics only; never read dataset observations."""
+
+    effects = [metric for metric in result.metrics if metric.name in _BOUNDED_EFFECTS]
+    p_values = [
+        metric
+        for metric in result.metrics
+        if metric.name in {"p_value", "model_p_value"} and 0 <= metric.value <= 1
+    ]
+    if not effects and not p_values:
+        return ()
+    lines = ["Figura 1. Resumen gráfico de métricas persistidas"]
+    if effects:
+        lines.append("Asociaciones y efectos (escala -1 a 1)")
+        lines.extend(
+            f"- {metric.name}: {_bar(metric.value, minimum=-1, maximum=1)} {metric.value:.6g}"
+            for metric in effects
+        )
+    if p_values:
+        lines.append("P-valores (escala 0 a 1; referencia alfa=0.05)")
+        lines.extend(
+            f"- {metric.name}: {_bar(metric.value, minimum=0, maximum=1)} {metric.value:.6g}"
+            for metric in p_values
+        )
+    lines.append("Nota: referencia visual; no determina significancia automáticamente.")
+    return tuple(lines)
+
 
 def _metadata_lines(result: AnalysisResult) -> tuple[str, ...]:
     """Keep the minimum reproducibility metadata with every export."""
@@ -50,6 +100,9 @@ def render_text(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> str
         lines.extend(f"- {metric.name}: {metric.value:.6g}" for metric in result.metrics)
     else:
         lines.append("- No hay métricas disponibles.")
+    figure = _figure_lines(result)
+    if figure:
+        lines.extend(["", *figure])
     lines.extend(["", "Tabla 2. Verificación de supuestos"])
     if result.assumptions:
         lines.extend(
@@ -91,6 +144,11 @@ def render_docx(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> byt
         cells = table.add_row().cells
         cells[0].text = metric.name
         cells[1].text = f"{metric.value:.6g}"
+    figure = _figure_lines(result)
+    if figure:
+        document.add_heading(figure[0], level=2)
+        for line in figure[1:]:
+            document.add_paragraph(line)
     document.add_heading("Tabla 2. Verificación de supuestos", level=2)
     assumptions = document.add_table(rows=1, cols=3)
     assumptions.style = "Light Shading Accent 1"

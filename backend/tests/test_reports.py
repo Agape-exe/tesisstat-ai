@@ -9,7 +9,11 @@ def result() -> AnalysisResult:
         analysis_plan_id="plan-demo",
         dataset_id="dataset-demo",
         status="completed",
-        metrics=[Metric(name="x.mean", value=2.5)],
+        metrics=[
+            Metric(name="x.mean", value=2.5),
+            Metric(name="r", value=0.8),
+            Metric(name="p_value", value=0.032),
+        ],
         assumptions=[AssumptionCheck(name="normality", status="passed", details="OK")],
         warnings=["Advertencia de prueba"],
         engine_version="statistics-engine-v1",
@@ -24,6 +28,10 @@ def test_text_report_contains_result_sections() -> None:
     assert "Tabla 1. Métricas calculadas" in rendered
     assert "Tabla 2. Verificación de supuestos" in rendered
     assert "x.mean: 2.5" in rendered
+    assert "Figura 1. Resumen gráfico de métricas persistidas" in rendered
+    assert "Asociaciones y efectos (escala -1 a 1)" in rendered
+    assert "P-valores (escala 0 a 1; referencia alfa=0.05)" in rendered
+    assert "no determina significancia automáticamente" in rendered
     assert "Advertencia de prueba" in rendered
 
 
@@ -41,15 +49,35 @@ def test_docx_report_has_numbered_tables_and_methodological_context() -> None:
     assert "Metadatos de reproducibilidad" in text
     assert "Contexto metodológico" in text
     assert "Tabla 1. Métricas calculadas" in text
+    assert "Figura 1. Resumen gráfico de métricas persistidas" in text
     assert "Tabla 2. Verificación de supuestos" in text
     assert len(document.tables) == 2
     assert document.tables[1].rows[0].cells[1].text == "Estado"
+
+
+def test_reports_omit_figure_when_metrics_have_no_supported_scale():
+    report = result()
+    report.metrics = [Metric(name="x.mean", value=2.5)]
+
+    assert "Figura 1." not in render_text(report)
 
 
 def test_pdf_report_has_pdf_signature_and_eof() -> None:
     rendered = render_pdf(result())
     assert rendered.startswith(b"%PDF-1.4")
     assert rendered.rstrip().endswith(b"%%EOF")
+
+
+def test_pdf_report_preserves_persisted_metric_figure():
+    from io import BytesIO
+
+    from pypdf import PdfReader
+
+    text = "\n".join(page.extract_text() for page in PdfReader(BytesIO(render_pdf(result()))).pages)
+
+    assert "Figura 1. Resumen gráfico de métricas persistidas" in text
+    assert "referencia alfa=0.05" in text
+    assert "no determina significancia automáticamente" in text
 
 
 def test_reports_preserve_spanish_long_content_and_pdf_literals():

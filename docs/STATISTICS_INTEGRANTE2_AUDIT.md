@@ -1,6 +1,7 @@
 # Auditoría del plan de trabajo — Integrante 2
 
-Actualizada contra `develop` después del merge del PR #42.
+Actualizada contra `develop` después del merge del PR #43. Las figuras reproducibles de informes
+de esta rama quedan pendientes de su PR.
 
 | Sesión | Estado | Evidencia / pendiente principal |
 | --- | --- | --- |
@@ -8,7 +9,7 @@ Actualizada contra `develop` después del merge del PR #42.
 | 16B — Técnicas fundamentales | Completada | Spearman, chi-cuadrado, Fisher, t independiente/pareada/Welch y ANOVA/ANOVA Welch recorren Research → propuesta → aprobación → ejecución. |
 | 17B — Catálogo restante | Completada | Las 19 técnicas del catálogo tienen adaptadores de entrada, incluyendo Cronbach, no paramétricas, post-hoc, regresiones y ANCOVA. Los post-hoc conservan la advertencia de que la significancia requiere su distribución crítica. |
 | 18B — Gráficos e interpretación | En progreso | La demo Statistics tiene histogramas, cajas, barras y dispersión para datasets de demostración. `ProjectAnalysis` visualiza métricas persistidas mediante un DTO interno: frecuencias categóricas, escalas de asociación/efecto acotado, intervalos de confianza, estimaciones divergentes, p-valores con alfa de referencia y registros válidos/faltantes. No se reconstruyen observaciones ni se expone el dataset. Faltan gráficos que requieran observaciones crudas autorizadas (por ejemplo, dispersión o residuos). |
-| 19B — Informes académicos | Parcial | Las exportaciones TXT/DOCX/PDF incluyen metadatos reproducibles, contexto metodológico explícito y tablas numeradas de métricas y supuestos. Faltan figuras derivadas de datos reales y revisión visual sistemática. |
+| 19B — Informes académicos | En progreso | Las exportaciones TXT/DOCX/PDF incluyen metadatos reproducibles, contexto metodológico explícito y tablas numeradas de métricas y supuestos. Cuando existen métricas comparables, agregan una figura textual reproducible de asociaciones/efectos y p-valores con escala explícita y alfa solo como referencia. Faltan figuras basadas en observaciones crudas autorizadas y revisión visual sistemática. |
 | 20B — Datos reales y pruebas integrales | En progreso | Los datasets no sintéticos siguen denegados por defecto. La API y la vista local incorporan una autorización simulada, efímera y explícita, ligada a proyecto, paquete, dataset y versión de fuentes; se prueba acceso denegado, autorizado y revocado ante cambios. La matriz E2E documenta las 19 técnicas y completa Wilcoxon pareada; falta ejecutar la suite integral en CI sin el límite local de tiempo. |
 
 ## Decisiones de seguridad y calidad

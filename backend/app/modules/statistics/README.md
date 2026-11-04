@@ -126,10 +126,10 @@ sobre el diseño.
 
 `reports.py` mantiene el cálculo separado de la presentación y exporta TXT, DOCX y PDF. Cada
 informe conserva identificadores de resultado, plan y dataset, versión de esquema y motor para
-reproducibilidad; además presenta métricas y supuestos como tablas académicas numeradas. El
-contexto metodológico se recibe de forma explícita, nunca se inventa. Las figuras requieren un
-contrato de datos gráficos del flujo Research y por ello no se fabrican a partir de métricas
-incompletas.
+reproducibilidad; además presenta métricas y supuestos como tablas académicas numeradas. Cuando
+existen asociaciones/efectos acotados o p-valores persistidos, agrega una figura textual
+reproducible con su escala explícita y alfa solo como referencia visual. El contexto metodológico
+se recibe de forma explícita, nunca se inventa; no se leen ni exponen observaciones crudas.
 
 ## Demo integrada (ST-10)
 
