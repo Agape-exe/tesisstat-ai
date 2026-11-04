@@ -23,7 +23,8 @@
 
 .persisted-frequency,
 .persisted-scale,
-.persisted-interval {
+.persisted-interval,
+.persisted-estimate {
   display: grid;
   grid-template-columns: minmax(8rem, 1fr) minmax(6rem, 2fr) auto;
   gap: 0.5rem;
@@ -41,7 +42,8 @@
 }
 
 .persisted-scale > div,
-.persisted-interval > div {
+.persisted-interval > div,
+.persisted-estimate > div {
   position: relative;
   height: 0.7rem;
   border-radius: 0.35rem;
@@ -72,6 +74,25 @@
   top: 0;
 }
 
+.persisted-estimate > div {
+  background: linear-gradient(
+    90deg,
+    #f5e1db 0 49.5%,
+    #536b65 49.5% 50.5%,
+    #dce8d6 50.5% 100%
+  );
+}
+
+.persisted-estimate i {
+  position: absolute;
+  top: 0;
+  display: block;
+  min-width: 2px;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #193c36;
+}
+
 .persisted-chart small {
   white-space: nowrap;
 }
@@ -84,7 +105,8 @@
 @media (max-width: 38rem) {
   .persisted-frequency,
   .persisted-scale,
-  .persisted-interval {
+  .persisted-interval,
+  .persisted-estimate {
     grid-template-columns: 1fr;
   }
 }
