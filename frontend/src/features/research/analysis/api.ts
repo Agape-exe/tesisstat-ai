@@ -15,6 +15,13 @@ export interface AnalysisRecord {
   result: AnalysisResult | null;
 }
 
+export interface RealDataAuthorizationReceipt {
+  package_id: string;
+  dataset_id: string;
+  source_version: string;
+  status: 'authorized';
+}
+
 export function createAnalysisApi(
   baseUrl = import.meta.env.VITE_RESEARCH_API_BASE_URL ??
     'http://127.0.0.1:8001',
@@ -87,6 +94,16 @@ export function createAnalysisApi(
     plans: (project: string) => request<AnalysisRecord[]>(project, '/plans'),
     results: (project: string) =>
       request<AnalysisRecord[]>(project, '/results'),
+    authorizeRealDataset: (
+      project: string,
+      packageId: string,
+      datasetId: string,
+    ) =>
+      request<RealDataAuthorizationReceipt>(
+        project,
+        '/authorization/real-dataset',
+        { package_id: packageId, dataset_id: datasetId, confirm: true },
+      ),
     propose: (project: string, packageId: string, hypothesisId: string) =>
       request<AnalysisRecord>(project, '/plan', {
         package_id: packageId,

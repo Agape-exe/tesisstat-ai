@@ -1,4 +1,4 @@
-"""Research → planner → explicit approval → real engine, local synthetic data only."""
+"""Research → planner → explicit approval → engine, local synthetic-first data."""
 
 import hashlib
 import json
@@ -30,6 +30,7 @@ from app.orchestration.analysis_inputs import (
 )
 from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
 from app.orchestration.analysis_repository import SQLiteAnalysisRepository
+from app.orchestration.data_authorization import LocalRealDataAuthorization
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
 from app.shared.contracts import AnalysisPlan, AnalysisResult, ResearchPackage
 
@@ -42,11 +43,13 @@ class ResearchAnalysisService:
         bridge: ResearchStatisticsBridge,
         repository: SQLiteAnalysisRepository,
         documents: DocumentRepository,
+        real_data_authorization: LocalRealDataAuthorization | None = None,
     ):
         self.bridge = bridge
         self.repository = repository
         self.documents = documents
         self.planner = DeterministicStatisticalPlanner()
+        self.real_data_authorization = real_data_authorization or LocalRealDataAuthorization()
 
     def _version(self, project_id: UUID) -> str:
         # Public configuration includes review/configuration versions and source hashes.
@@ -67,24 +70,51 @@ class ResearchAnalysisService:
         proposal = json.dumps(plan.model_dump(exclude={"status"}), sort_keys=True)
         return hashlib.sha256((proposal + package.model_dump_json() + version).encode()).hexdigest()
 
-    @staticmethod
-    def _synthetic(package: ResearchPackage) -> None:
-        if not package.dataset.synthetic:
-            raise HTTPException(403, "Esta integración de desarrollo solo admite datos sintéticos.")
+    def _require_authorized_dataset(
+        self, project_id: UUID, package: ResearchPackage, source_version: str
+    ) -> None:
+        if package.dataset.synthetic:
+            return
+        if not self.real_data_authorization.allows(
+            project_id, package.id, package.dataset.id, source_version
+        ):
+            raise HTTPException(
+                403,
+                "Los datos no sintéticos requieren autorización explícita "
+                "para este paquete vigente.",
+            )
 
-    def _current(self, record: AnalysisRecord) -> ResearchPackage:
+    def authorize_real_dataset(
+        self, project_id: UUID, package_id: str, dataset_id: str
+    ) -> tuple[str, str, str]:
+        """Grant local-only access after validating the current opaque package reference."""
+
+        package = self.bridge.get_package(project_id, package_id)
+        version = self._version(project_id)
+        if package.dataset.synthetic:
+            raise HTTPException(409, "El dataset sintético no requiere autorización adicional.")
+        if package.dataset.id != dataset_id:
+            raise HTTPException(409, "El dataset no coincide con el paquete vigente.")
+        self.real_data_authorization.grant(project_id, package.id, package.dataset.id, version)
+        return package.id, package.dataset.id, version
+
+    def _current(
+        self, record: AnalysisRecord, *, require_authorization: bool = True
+    ) -> ResearchPackage:
         if record.invalidated_at:
             raise ResearchInputError("plan_stale", record.stale_reason or "El plan está obsoleto.")
         package = self.bridge.get_package(record.project_id, record.plan.research_package_id)
+        current_version = self._version(record.project_id)
         if (
             package != record.package
-            or self._version(record.project_id) != record.source_version
+            or current_version != record.source_version
             or record.plan.hypothesis_id not in {item.id for item in package.hypotheses}
             or record.plan.dataset_id != package.dataset.id
             or record.proposal_token != self._token(record.plan, package, record.source_version)
         ):
             raise ResearchInputError("plan_stale", "Las fuentes o la propuesta del plan cambiaron.")
-        self._synthetic(package)
+        if require_authorization:
+            self._require_authorized_dataset(record.project_id, package, current_version)
         return package
 
     def _invalidate(self, project_id: UUID, plan_id: str, detail: str) -> None:
@@ -110,8 +140,8 @@ class ResearchAnalysisService:
 
     def propose(self, project_id: UUID, request: PlanRequest) -> AnalysisRecord:
         package = self.bridge.get_package(project_id, request.package_id)
-        self._synthetic(package)
         version = self._version(project_id)
+        self._require_authorized_dataset(project_id, package, version)
         try:
             plan = self.planner.propose(package, request.hypothesis_id)
         except UnknownHypothesis as exc:
@@ -193,7 +223,9 @@ class ResearchAnalysisService:
         records = self.repository.list(project_id)
         for record in records:
             try:
-                self._current(record)
+                # Listing preserves historical records after a local grant expires;
+                # approval, execution and export still re-check authorization.
+                self._current(record, require_authorization=False)
             except ResearchInputError as exc:
                 self._invalidate(project_id, record.plan.id, str(exc))
         return self.repository.list(project_id)

@@ -24,6 +24,21 @@ class ApprovalRequest(IntegrationModel):
     proposal_token: str = Field(min_length=1)
 
 
+class RealDataAuthorizationRequest(IntegrationModel):
+    """A local, explicit acknowledgement for one exact real-data package."""
+
+    package_id: str = Field(min_length=1)
+    dataset_id: str = Field(min_length=1)
+    confirm: Literal[True]
+
+
+class RealDataAuthorizationReceipt(IntegrationModel):
+    package_id: str
+    dataset_id: str
+    source_version: str
+    status: Literal["authorized"]
+
+
 class AnalysisRecord(IntegrationModel):
     project_id: UUID
     package: ResearchPackage = Field(exclude=True)

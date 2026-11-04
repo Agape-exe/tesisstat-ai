@@ -791,6 +791,64 @@ def test_loopback_and_synthetic_only(tmp_path):
     assert case.propose().status_code == 403
 
 
+def test_real_dataset_requires_explicit_current_authorization(tmp_path):
+    case = research_case(tmp_path)
+    assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200
+    config = case.client.get(case.package_root + "/configuration").json()
+    assert case.client.put(case.package_root + "/configuration", json=config).status_code == 200
+    case.package = case.client.post(case.package_root + "/build").json()
+
+    assert case.propose().status_code == 403
+    authorization = case.root + "/authorization/real-dataset"
+    assert (
+        case.client.post(
+            authorization,
+            json={
+                "package_id": case.package["id"],
+                "dataset_id": case.package["dataset"]["id"],
+                "confirm": False,
+            },
+        ).status_code
+        == 422
+    )
+    response = case.client.post(
+        authorization,
+        json={
+            "package_id": case.package["id"],
+            "dataset_id": case.package["dataset"]["id"],
+            "confirm": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "authorized"
+
+    record, result = executed(case)
+    assert record["plan"]["dataset_id"] == case.package["dataset"]["id"]
+    assert result.status == "completed"
+
+
+def test_real_dataset_authorization_is_bound_to_current_package_source(tmp_path):
+    case = research_case(tmp_path)
+    assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200
+    config = case.client.get(case.package_root + "/configuration").json()
+    assert case.client.put(case.package_root + "/configuration", json=config).status_code == 200
+    case.package = case.client.post(case.package_root + "/build").json()
+    authorization = case.root + "/authorization/real-dataset"
+    body = {
+        "package_id": case.package["id"],
+        "dataset_id": case.package["dataset"]["id"],
+        "confirm": True,
+    }
+    assert case.client.post(authorization, json=body).status_code == 200
+    assert case.propose().status_code == 201
+
+    config = case.client.get(case.package_root + "/configuration").json()
+    config["sampling_notes"] = "Fuentes modificadas tras la autorización"
+    assert case.client.put(case.package_root + "/configuration", json=config).status_code == 200
+    case.package = case.client.post(case.package_root + "/build").json()
+    assert case.propose().status_code == 403
+
+
 def test_concurrent_retry_calculates_once(tmp_path, monkeypatch):
     """Real engine, instrumented only to count calls during concurrent HTTP retries."""
     case = research_case(tmp_path)
