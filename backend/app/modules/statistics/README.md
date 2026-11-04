@@ -59,8 +59,10 @@ para pares. No realizan decisiones automáticas de significancia.
 
 `nonparametric.py` implementa Mann–Whitney, Wilcoxon de rangos con signo y Kruskal–Wallis,
 incluyendo rangos promedio para empates, eliminación explícita de diferencias cero y
-validación de tamaños mínimos. Mann–Whitney y Wilcoxon incluyen tamaño de efecto y advierten
-cuando su p-valor de aproximación normal se usa con menos de 20 observaciones; Kruskal–Wallis
+validación de tamaños mínimos. Mann–Whitney y Wilcoxon incluyen tamaño de efecto. Para muestras
+de hasta 20 observaciones sin empates, calculan un p-valor bilateral exacto por enumeración; con
+empates o muestras mayores conservan la aproximación normal y la advierten cuando la muestra es
+pequeña. Kruskal–Wallis
 reporta epsilon cuadrado. Sus estadísticas se verifican con fixtures numéricos pequeños.
 
 ## Planner determinista (ST-02)
