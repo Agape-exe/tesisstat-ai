@@ -143,6 +143,38 @@
   color: #536b65;
 }
 
+.authorized-scatter {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border: 1px solid #d9e0dc;
+  border-radius: 0.4rem;
+  background: #f8fbf8;
+}
+
+.authorized-scatter svg {
+  display: block;
+  width: min(100%, 32rem);
+  margin: 0.75rem auto;
+  overflow: visible;
+}
+
+.authorized-scatter line {
+  stroke: #536b65;
+}
+.authorized-scatter circle {
+  fill: #193c36;
+  opacity: 0.75;
+}
+.authorized-scatter text {
+  fill: #193c36;
+  font-size: 0.75rem;
+}
+.authorized-scatter p {
+  margin: 0.5rem 0 0;
+  color: #536b65;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 38rem) {
   .persisted-frequency,
   .persisted-scale,

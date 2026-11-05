@@ -1,5 +1,6 @@
 import type { AnalysisPlan } from '../../../shared/contracts/generated/AnalysisPlan';
 import type { AnalysisResult } from '../../../shared/contracts/generated/AnalysisResult';
+import type { AuthorizedScatterData } from '../../statistics/AuthorizedScatterPlot';
 
 export interface AnalysisRecord {
   project_id: string;
@@ -121,5 +122,13 @@ export function createAnalysisApi(
         `/plans/${encodeURIComponent(planId)}/execute`,
         {},
       ),
+    scatter: (project: string, record: AnalysisRecord) => {
+      if (!record.result)
+        throw new Error('No existe un resultado para visualizar.');
+      return request<AuthorizedScatterData>(
+        project,
+        `/plans/${encodeURIComponent(record.plan.id)}/results/${encodeURIComponent(record.result.id)}/observations/scatter`,
+      );
+    },
   };
 }

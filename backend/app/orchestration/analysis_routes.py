@@ -10,6 +10,7 @@ from app.modules.statistics.reports import render_docx, render_pdf
 from app.orchestration.analysis_models import (
     AnalysisRecord,
     ApprovalRequest,
+    AuthorizedScatterPlot,
     PlanRequest,
     RealDataAuthorizationReceipt,
     RealDataAuthorizationRequest,
@@ -67,6 +68,15 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
     @router.get("/results", response_model=list[AnalysisRecord])
     def results(project_id: UUID) -> list[AnalysisRecord]:
         return [record for record in service.list(project_id) if record.result is not None]
+
+    @router.get(
+        "/plans/{plan_id}/results/{result_id}/observations/scatter",
+        response_model=AuthorizedScatterPlot,
+    )
+    def authorized_scatter(
+        project_id: UUID, plan_id: UUID, result_id: str
+    ) -> AuthorizedScatterPlot:
+        return service.authorized_scatter(project_id, str(plan_id), result_id)
 
     @router.get("/plans/{plan_id}/results/{result_id}/report.{format}")
     def report(
