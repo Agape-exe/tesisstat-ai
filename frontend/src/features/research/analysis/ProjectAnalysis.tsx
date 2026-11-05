@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PersistedResultCharts } from '../../statistics/PersistedResultCharts';
 import { AuthorizedScatterPlot } from '../../statistics/AuthorizedScatterPlot';
+import { AuthorizedResidualPlot } from '../../statistics/AuthorizedResidualPlot';
 import type { ResearchPackageSummary } from '../packages/api';
 import { createAnalysisApi, type AnalysisRecord } from './api';
 
@@ -263,6 +264,16 @@ export function ProjectAnalysis({
                             ) && (
                               <AuthorizedScatterPlot
                                 load={() => api.scatter(projectId, record)}
+                              />
+                            )}
+                          {!stale &&
+                            [
+                              'linear_regression_simple',
+                              'linear_regression_multiple',
+                              'ancova',
+                            ].includes(record.plan.technique ?? '') && (
+                              <AuthorizedResidualPlot
+                                load={() => api.residuals(projectId, record)}
                               />
                             )}
                         </>

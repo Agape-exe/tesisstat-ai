@@ -56,6 +56,22 @@ class AuthorizedScatterPlot(IntegrationModel):
     sampled: bool
 
 
+class AuthorizedResidualPoint(IntegrationModel):
+    """One residual diagnostic observation released by an approved model plan."""
+
+    fitted: float
+    residual: float
+
+
+class AuthorizedResidualPlot(IntegrationModel):
+    """Bounded fitted/residual observations for an approved linear model."""
+
+    outcome_label: str
+    points: list[AuthorizedResidualPoint]
+    complete_observation_count: int
+    sampled: bool
+
+
 class AnalysisRecord(IntegrationModel):
     project_id: UUID
     package: ResearchPackage = Field(exclude=True)
