@@ -471,6 +471,13 @@ def test_real_welch_t_columns_with_two_groups(tmp_path, monkeypatch):
             4.571428571428569,
         ),
         (
+            "kruskal_wallis",
+            "ordinal",
+            b"horas_estudio,rendimiento\nA,1\nA,2\nB,3\nB,4\nC,5\nC,6\n",
+            "p_value",
+            1 / 15,
+        ),
+        (
             "tukey",
             "ratio",
             b"horas_estudio,rendimiento\nA,1\nA,2\nA,3\nB,4\nB,5\nB,6\nC,7\nC,8\nC,9\n",

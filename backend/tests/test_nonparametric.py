@@ -40,6 +40,9 @@ def test_kruskal_wallis_returns_reference_statistic():
 
     assert result.metrics["degrees_of_freedom"] == 2
     assert isclose(result.metrics["h"], 4.571428571428569)
+    # Exact conditional enumeration: 6 allocations at least this extreme / 90.
+    assert isclose(result.metrics["p_value"], 1 / 15)
+    assert "exacto" in result.warnings[0]
 
 
 def test_kruskal_wallis_applies_tie_correction_and_reports_p_value():
@@ -47,7 +50,16 @@ def test_kruskal_wallis_applies_tie_correction_and_reports_p_value():
 
     assert isclose(result.metrics["tie_correction"], 0.925)
     assert isclose(result.metrics["h"], 3.0510510510510516)
-    assert isclose(result.metrics["p_value"], 0.21750672149066907)
+    # With nine observations the exact conditional distribution is still tractable.
+    assert isclose(result.metrics["p_value"], 0.28214285714285714)
+    assert "exacto" in result.warnings[0]
+
+
+def test_kruskal_wallis_uses_chi_square_when_exact_enumeration_is_too_large():
+    result = kruskal_wallis([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]])
+
+    assert isclose(result.metrics["p_value"], 0.06828984590243155)
+    assert "chi-cuadrado" in result.warnings[0]
 
 
 def test_kruskal_wallis_reports_epsilon_squared_reference_effect():

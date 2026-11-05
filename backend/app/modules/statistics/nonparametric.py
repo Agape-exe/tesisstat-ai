@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from itertools import combinations, product
 
@@ -74,6 +75,69 @@ def _exact_wilcoxon_p_value(ranks: Sequence[float], observed_w: float) -> float:
         if smaller_w <= observed_w:
             as_or_more_extreme += 1
     return as_or_more_extreme / total_assignments
+
+
+def _kruskal_wallis_statistic(
+    rank_sums: Sequence[float], group_sizes: Sequence[int], total: int, tie_correction: float
+) -> float:
+    """Calculate a tie-corrected Kruskal–Wallis H from rank sums."""
+
+    statistic = 12 / (total * (total + 1)) * sum(
+        rank_sum**2 / group_size
+        for rank_sum, group_size in zip(rank_sums, group_sizes, strict=True)
+    ) - 3 * (total + 1)
+    return statistic / tie_correction
+
+
+def _assignment_count(group_sizes: Sequence[int]) -> int:
+    """Return the number of labelled rank assignments for fixed group sizes."""
+
+    total = sum(group_sizes)
+    count = math.factorial(total)
+    for size in group_sizes:
+        count //= math.factorial(size)
+    return count
+
+
+def _exact_kruskal_wallis_p_value(
+    ranks: Sequence[float],
+    group_sizes: Sequence[int],
+    tie_correction: float,
+    observed_h: float,
+) -> float:
+    """Return the right-tailed conditional permutation probability for H.
+
+    Group sizes and the observed ranks stay fixed. This is practical only for
+    the deliberately small assignment space selected by ``kruskal_wallis``.
+    Equal ranks remain separate observations during enumeration, which gives
+    each labelled allocation its appropriate probability.
+    """
+
+    total = len(ranks)
+    assignments = 0
+    as_or_more_extreme = 0
+
+    def enumerate_groups(available: tuple[int, ...], rank_sums: tuple[float, ...]) -> None:
+        nonlocal assignments, as_or_more_extreme
+        group_index = len(rank_sums)
+        if group_index == len(group_sizes) - 1:
+            final_sums = (*rank_sums, sum(ranks[index] for index in available))
+            statistic = _kruskal_wallis_statistic(final_sums, group_sizes, total, tie_correction)
+            assignments += 1
+            if statistic >= observed_h - 1e-12:
+                as_or_more_extreme += 1
+            return
+
+        for selected in combinations(available, group_sizes[group_index]):
+            selected_indices = set(selected)
+            remaining = tuple(index for index in available if index not in selected_indices)
+            enumerate_groups(
+                remaining,
+                (*rank_sums, sum(ranks[index] for index in selected)),
+            )
+
+    enumerate_groups(tuple(range(total)), ())
+    return as_or_more_extreme / assignments
 
 
 def mann_whitney(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
@@ -187,9 +251,6 @@ def kruskal_wallis(groups: Sequence[Sequence[object]]) -> TechniqueResult:
         rank_sums.append(sum(ranks[offset : offset + len(group)]))
         offset += len(group)
     total = len(values)
-    h = 12 / (total * (total + 1)) * sum(
-        rank_sum**2 / len(group) for rank_sum, group in zip(rank_sums, numeric_groups, strict=True)
-    ) - 3 * (total + 1)
     tie_counts: dict[float, int] = {}
     for value in values:
         tie_counts[value] = tie_counts.get(value, 0) + 1
@@ -198,16 +259,33 @@ def kruskal_wallis(groups: Sequence[Sequence[object]]) -> TechniqueResult:
         raise StatisticalCalculationError(
             "Kruskal–Wallis no está definido cuando todos los rangos empatan."
         )
-    h /= correction
+    group_sizes = [len(group) for group in numeric_groups]
+    h = _kruskal_wallis_statistic(rank_sums, group_sizes, total, correction)
     degrees_of_freedom = len(groups) - 1
+    assignment_count = _assignment_count(group_sizes)
+    exact = total <= 10 and assignment_count <= 50_000
+    warnings: tuple[str, ...] = ()
+    if exact:
+        p_value = _exact_kruskal_wallis_p_value(ranks, group_sizes, correction, h)
+        warnings = (
+            "El p-valor es exacto por enumeración de asignaciones condicionales de rangos.",
+        )
+    else:
+        p_value = chi_square_survival(h, float(degrees_of_freedom))
+        if total <= 10:
+            warnings = (
+                "El p-valor usa aproximación chi-cuadrado porque el espacio exacto de "
+                "asignaciones excede el límite determinista de 50 000.",
+            )
     return TechniqueResult(
         "kruskal_wallis",
         {
             "n": float(total),
             "h": h,
             "degrees_of_freedom": float(degrees_of_freedom),
-            "p_value": chi_square_survival(h, float(degrees_of_freedom)),
+            "p_value": p_value,
             "tie_correction": correction,
             "epsilon_squared": max(0.0, (h - len(groups) + 1) / (total - len(groups))),
         },
+        warnings,
     )
