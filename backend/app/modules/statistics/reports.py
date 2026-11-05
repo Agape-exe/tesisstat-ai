@@ -7,6 +7,7 @@ free text report suitable for the development/demo flow.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from textwrap import wrap
 
 from app.shared.contracts import AnalysisResult
@@ -62,6 +63,55 @@ def _figure_lines(result: AnalysisResult) -> tuple[str, ...]:
     return tuple(lines)
 
 
+def authorized_scatter_figure(
+    x_label: str,
+    y_label: str,
+    points: Sequence[tuple[float, float]],
+    *,
+    complete_pair_count: int,
+    sampled: bool,
+) -> tuple[str, ...]:
+    """Render a compact, deterministic scatter figure from authorized pairs.
+
+    The caller is responsible for obtaining these values through the scoped
+    authorization flow. Rendering deliberately receives only released pairs,
+    never a dataset reference or an arbitrary query expression.
+    """
+
+    if not points:
+        return ()
+    width, height = 31, 11
+    xs = [point[0] for point in points]
+    ys = [point[1] for point in points]
+    minimum_x, maximum_x = min(xs), max(xs)
+    minimum_y, maximum_y = min(ys), max(ys)
+    span_x = maximum_x - minimum_x or 1.0
+    span_y = maximum_y - minimum_y or 1.0
+    grid = [[" " for _ in range(width)] for _ in range(height)]
+    for x, y in points:
+        column = min(width - 1, max(0, round((x - minimum_x) / span_x * (width - 1))))
+        row = min(height - 1, max(0, round((maximum_y - y) / span_y * (height - 1))))
+        grid[row][column] = "x"
+    shown = len(points)
+    return (
+        f"Dispersión autorizada: {x_label} y {y_label}",
+        *["|" + "".join(row) + "|" for row in grid],
+        "+" + "-" * width + "+",
+        f"Eje X: {x_label} ({minimum_x:.6g} a {maximum_x:.6g})",
+        f"Eje Y: {y_label} ({minimum_y:.6g} a {maximum_y:.6g})",
+        (
+            f"{complete_pair_count} pares completos; se representan {shown} "
+            "pares mediante posiciones agrupadas."
+        ),
+        (
+            "Muestra determinista limitada a la respuesta autorizada."
+            if sampled
+            else "Se representaron todos los pares autorizados."
+        ),
+        "Nota: figura descriptiva; no determina significancia automáticamente.",
+    )
+
+
 def _metadata_lines(result: AnalysisResult) -> tuple[str, ...]:
     """Keep the minimum reproducibility metadata with every export."""
 
@@ -75,7 +125,12 @@ def _metadata_lines(result: AnalysisResult) -> tuple[str, ...]:
     )
 
 
-def render_text(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> str:
+def render_text(
+    result: AnalysisResult,
+    *,
+    context: tuple[str, ...] = (),
+    observation_figures: tuple[tuple[str, ...], ...] = (),
+) -> str:
     lines = [
         "TesisStat AI — Informe estadístico",
         "",
@@ -103,6 +158,17 @@ def render_text(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> str
     figure = _figure_lines(result)
     if figure:
         lines.extend(["", *figure])
+    figure_number = 2 if figure else 1
+    for observation_figure in observation_figures:
+        if observation_figure:
+            lines.extend(
+                [
+                    "",
+                    f"Figura {figure_number}. {observation_figure[0]}",
+                    *observation_figure[1:],
+                ]
+            )
+            figure_number += 1
     lines.extend(["", "Tabla 2. Verificación de supuestos"])
     if result.assumptions:
         lines.extend(
@@ -118,7 +184,12 @@ def render_text(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> str
     return "\n".join(lines) + "\n"
 
 
-def render_docx(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> bytes:
+def render_docx(
+    result: AnalysisResult,
+    *,
+    context: tuple[str, ...] = (),
+    observation_figures: tuple[tuple[str, ...], ...] = (),
+) -> bytes:
     from io import BytesIO
 
     from docx import Document
@@ -149,6 +220,13 @@ def render_docx(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> byt
         document.add_heading(figure[0], level=2)
         for line in figure[1:]:
             document.add_paragraph(line)
+    figure_number = 2 if figure else 1
+    for observation_figure in observation_figures:
+        if observation_figure:
+            document.add_heading(f"Figura {figure_number}. {observation_figure[0]}", level=2)
+            for line in observation_figure[1:]:
+                document.add_paragraph(line)
+            figure_number += 1
     document.add_heading("Tabla 2. Verificación de supuestos", level=2)
     assumptions = document.add_table(rows=1, cols=3)
     assumptions.style = "Light Shading Accent 1"
@@ -172,13 +250,18 @@ def render_docx(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> byt
     return output.getvalue()
 
 
-def render_pdf(result: AnalysisResult, *, context: tuple[str, ...] = ()) -> bytes:
+def render_pdf(
+    result: AnalysisResult,
+    *,
+    context: tuple[str, ...] = (),
+    observation_figures: tuple[tuple[str, ...], ...] = (),
+) -> bytes:
     """Paginated plain-text PDF. WinAnsi supports Spanish, but not full Unicode.
 
     Unsupported glyphs are explicitly disclosed and replaced; DOCX retains Unicode.
     Keep byte offsets exact, wrap long tokens and never truncate report content.
     """
-    report = render_text(result, context=context)
+    report = render_text(result, context=context, observation_figures=observation_figures)
     try:
         report.encode("cp1252")
     except UnicodeEncodeError:

@@ -1,4 +1,9 @@
-from app.modules.statistics.reports import render_docx, render_pdf, render_text
+from app.modules.statistics.reports import (
+    authorized_scatter_figure,
+    render_docx,
+    render_pdf,
+    render_text,
+)
 from app.shared.contracts import AnalysisResult, AssumptionCheck, Metric
 
 
@@ -60,6 +65,21 @@ def test_reports_omit_figure_when_metrics_have_no_supported_scale():
     report.metrics = [Metric(name="x.mean", value=2.5)]
 
     assert "Figura 1." not in render_text(report)
+
+
+def test_reports_render_authorized_observation_figure_after_persisted_metrics():
+    figure = authorized_scatter_figure(
+        "horas",
+        "nota",
+        [(1.0, 2.0), (2.0, 4.0), (3.0, 6.0)],
+        complete_pair_count=3,
+        sampled=False,
+    )
+    text = render_text(result(), observation_figures=(figure,))
+    assert "Figura 2. Dispersión autorizada: horas y nota" in text
+    assert "Eje X: horas (1 a 3)" in text
+    assert "3 pares completos; se representan 3 pares" in text
+    assert "figura descriptiva; no determina significancia automáticamente" in text
 
 
 def test_pdf_report_has_pdf_signature_and_eof() -> None:

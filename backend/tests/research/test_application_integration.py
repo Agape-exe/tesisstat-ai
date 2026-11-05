@@ -82,6 +82,9 @@ def test_full_preparation_analysis_export_restart(tmp_path, monkeypatch, kind):
             assert f"{metric.value:.6g}" in text
         for warning in result.warnings:
             assert " ".join(warning.split()) in " ".join(text.split())
+        if kind == "association":
+            assert "Dispersión autorizada: horas_estudio y rendimiento" in text
+            assert "pares completos; se representan" in text
     assert case.client.get(case.root + "/results").json()[0]["result"] == record["result"]
 
 
