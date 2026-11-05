@@ -98,10 +98,12 @@ motor de ejecución completo.
 ## ANOVA y comparaciones posteriores (ST-07)
 
 `anova.py` implementa ANOVA de un factor, ANOVA de Welch, Tukey HSD y Games–Howell. Devuelve
-estadísticos globales, grados de libertad y métricas por pares; deja explícito que la decisión
-de significancia requiere el valor crítico de la distribución correspondiente. El adaptador
-Research→Statistics conecta Tukey y Games–Howell para datasets con tres o más grupos válidos;
-la selección del test global previo queda como responsabilidad metodológica del plan.
+estadísticos globales, grados de libertad y métricas por pares. Para cada par, informa el
+p-valor bilateral t/Welch y el p-valor ajustado Bonferroni; este último controla de forma
+conservadora las comparaciones múltiples, pero no sustituye el valor crítico de rango
+studentizado propio de Tukey/Games–Howell. El adaptador Research→Statistics conecta Tukey y
+Games–Howell para datasets con tres o más grupos válidos; la selección del test global previo
+queda como responsabilidad metodológica del plan.
 
 ## Regresión y ANCOVA (ST-08)
 
