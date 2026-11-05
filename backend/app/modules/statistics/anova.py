@@ -6,7 +6,7 @@ import math
 from collections.abc import Sequence
 from itertools import combinations
 
-from .distributions import f_survival
+from .distributions import f_survival, student_t_two_sided
 from .inferential import StatisticalCalculationError, TechniqueResult, _number, _sample_variance
 
 
@@ -122,15 +122,26 @@ def _pairwise_result(
     labels: Sequence[str],
     standard_error,
     degrees_of_freedom,
+    t_standard_error,
     warning: str,
 ) -> TechniqueResult:
     means = _means(groups)
-    metrics: dict[str, float] = {"pair_count": float(len(groups) * (len(groups) - 1) // 2)}
+    pair_count = len(groups) * (len(groups) - 1) // 2
+    metrics: dict[str, float] = {"pair_count": float(pair_count)}
     for left_index, right_index in combinations(range(len(groups)), 2):
         prefix = f"{labels[left_index]}_vs_{labels[right_index]}"
-        metrics[f"{prefix}.mean_difference"] = means[left_index] - means[right_index]
-        metrics[f"{prefix}.standard_error"] = standard_error(left_index, right_index)
-        metrics[f"{prefix}.degrees_of_freedom"] = degrees_of_freedom(left_index, right_index)
+        difference = means[left_index] - means[right_index]
+        reported_standard_error = standard_error(left_index, right_index)
+        inferential_standard_error = t_standard_error(left_index, right_index)
+        pair_degrees_of_freedom = degrees_of_freedom(left_index, right_index)
+        unadjusted_p_value = student_t_two_sided(
+            abs(difference) / inferential_standard_error, pair_degrees_of_freedom
+        )
+        metrics[f"{prefix}.mean_difference"] = difference
+        metrics[f"{prefix}.standard_error"] = reported_standard_error
+        metrics[f"{prefix}.degrees_of_freedom"] = pair_degrees_of_freedom
+        metrics[f"{prefix}.p_value"] = unadjusted_p_value
+        metrics[f"{prefix}.p_value_bonferroni"] = min(1.0, unadjusted_p_value * pair_count)
     return TechniqueResult(technique, metrics, (warning,))
 
 
@@ -154,13 +165,18 @@ def tukey(
     def degrees_of_freedom(_left: int, _right: int) -> float:
         return float(df_within)
 
+    def t_standard_error(left: int, right: int) -> float:
+        return math.sqrt(mean_square_within * (1 / len(parsed[left]) + 1 / len(parsed[right])))
+
     return _pairwise_result(
         "tukey",
         parsed,
         names,
         standard_error,
         degrees_of_freedom,
-        "Se requiere un valor crítico de rango studentizado para decidir significancia.",
+        t_standard_error,
+        "Se informan p-valores t por par y ajuste Bonferroni conservador; "
+        "no sustituyen el valor crítico de rango studentizado de Tukey.",
     )
 
 
@@ -194,5 +210,7 @@ def games_howell(
         names,
         standard_error,
         degrees_of_freedom,
-        "Se requiere un valor crítico studentizado para decidir significancia.",
+        standard_error,
+        "Se informan p-valores Welch por par y ajuste Bonferroni conservador; "
+        "no sustituyen la distribución studentizada de Games–Howell.",
     )

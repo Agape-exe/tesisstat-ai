@@ -29,6 +29,9 @@ def test_tukey_returns_pairwise_pooled_standard_errors():
     assert result.metrics["pair_count"] == 3
     assert isclose(result.metrics["A_vs_B.mean_difference"], -3)
     assert isclose(result.metrics["A_vs_B.standard_error"], 1 / 3**0.5)
+    assert isclose(result.metrics["A_vs_B.p_value"], 0.010401720935464015)
+    assert isclose(result.metrics["A_vs_B.p_value_bonferroni"], 0.031205162806392044)
+    assert "Bonferroni conservador" in result.warnings[0]
 
 
 def test_games_howell_returns_pairwise_welch_degrees_of_freedom():
@@ -36,7 +39,8 @@ def test_games_howell_returns_pairwise_welch_degrees_of_freedom():
 
     assert result.metrics["pair_count"] == 3
     assert result.metrics["A_vs_B.degrees_of_freedom"] > 2
-    assert result.warnings
+    assert 0 <= result.metrics["A_vs_B.p_value_bonferroni"] <= 1
+    assert "Bonferroni conservador" in result.warnings[0]
 
 
 def test_anova_family_rejects_insufficient_groups_or_zero_variance():
