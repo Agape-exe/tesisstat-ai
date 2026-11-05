@@ -5,6 +5,13 @@ vigente, propone, aprueba explícitamente y ejecuta el motor Statistics con un d
 controlado. No se ejecuta código indicado por el cliente: la técnica llega al motor mediante el
 catálogo permitido y las entradas validadas del adaptador.
 
+## Ejecución integral en CI
+
+El job **Backend quality and tests** de `.github/workflows/ci.yml` ejecuta `uv run pytest` en
+Ubuntu para cada PR y cada push a `develop`. Por tanto cubre esta matriz completa y los casos de
+autorización explícita, denegación y revocación de datasets no sintéticos, sin depender del
+límite temporal del entorno local de Windows.
+
 | Técnica del catálogo | Caso E2E de referencia |
 | --- | --- |
 | `descriptive_summary` | `test_real_descriptive_metrics_and_reload` |
