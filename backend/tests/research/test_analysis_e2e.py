@@ -899,6 +899,30 @@ def test_authorized_scatter_rejects_non_association_results(tmp_path):
     assert response.status_code == 409
 
 
+def test_authorized_residuals_release_only_current_model_diagnostics(tmp_path):
+    case = research_case(tmp_path, kind="prediction")
+    record, result = executed(case)
+    response = case.client.get(
+        case.root + f"/plans/{record['plan']['id']}/results/{result.id}/observations/residuals"
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["outcome_label"] == "rendimiento"
+    assert payload["complete_observation_count"] == 4
+    assert payload["sampled"] is False
+    assert [point["fitted"] for point in payload["points"]] == pytest.approx([2, 4, 6, 8])
+    assert [point["residual"] for point in payload["points"]] == pytest.approx([0, 0, 0, 0])
+
+
+def test_authorized_residuals_reject_non_model_results(tmp_path):
+    case = research_case(tmp_path, kind="association")
+    record, result = executed(case)
+    response = case.client.get(
+        case.root + f"/plans/{record['plan']['id']}/results/{result.id}/observations/residuals"
+    )
+    assert response.status_code == 409
+
+
 def test_real_dataset_authorization_is_bound_to_current_package_source(tmp_path):
     case = research_case(tmp_path)
     assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200

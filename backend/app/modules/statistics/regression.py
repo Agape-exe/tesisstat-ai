@@ -88,6 +88,24 @@ def _fit_linear(
     return coefficients, r_squared, residual_standard_error, standard_errors
 
 
+def linear_fitted_values(
+    features: Sequence[Sequence[float]], outcomes: Sequence[float]
+) -> list[float]:
+    """Return fitted values with the exact deterministic model used by regressions.
+
+    This small public diagnostic helper intentionally reuses the same pivoted
+    fit as the inference functions; callers can derive residual plots without
+    reimplementing or executing an arbitrary model.
+    """
+
+    coefficients, _, _, _ = _fit_linear(features, outcomes)
+    return [
+        coefficients[0]
+        + sum(coefficient * value for coefficient, value in zip(coefficients[1:], row, strict=True))
+        for row in features
+    ]
+
+
 def _coefficient_interval_metrics(
     names: Sequence[str],
     coefficients: Sequence[float],

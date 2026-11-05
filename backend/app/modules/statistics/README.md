@@ -148,3 +148,10 @@ pares de IC 95 %, estimaciones, p-valores y conteos válidos/faltantes en gráfi
 alfa solo como referencia visual y no emite una decisión automática. Si el resultado no contiene
 una representación válida, explica la limitación en lugar de reconstruir datos o inventar una
 figura. No vuelve a ejecutar el análisis ni accede al dataset del proyecto.
+
+Para modelos de regresión y ANCOVA, la integración local ofrece bajo solicitud
+explícita una dispersión de residuos frente a valores ajustados. El endpoint
+reconstruye exclusivamente la codificación determinista de las variables
+aprobadas, exige resultado vigente/completado y autorización vigente para datos
+no sintéticos, y limita la respuesta a 2 000 observaciones. No existe una ruta
+genérica que exponga filas del dataset.

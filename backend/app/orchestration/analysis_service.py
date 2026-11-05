@@ -15,6 +15,7 @@ from app.modules.research.documents.sqlite_repository import DocumentStorageErro
 from app.modules.statistics.composition import build_engine_from_research_bridge
 from app.modules.statistics.engine import DeterministicStatisticalEngine
 from app.modules.statistics.planner import DeterministicStatisticalPlanner, UnknownHypothesis
+from app.modules.statistics.regression import linear_fitted_values
 from app.modules.statistics.research_bridge import BytesDatasetReader
 from app.orchestration.analysis_inputs import (
     CONNECTED,
@@ -32,6 +33,8 @@ from app.orchestration.analysis_inputs import (
 from app.orchestration.analysis_models import (
     AnalysisRecord,
     ApprovalRequest,
+    AuthorizedResidualPlot,
+    AuthorizedResidualPoint,
     AuthorizedScatterPlot,
     AuthorizedScatterPoint,
     PlanRequest,
@@ -284,6 +287,14 @@ class ResearchAnalysisService:
             result = record.result
             if result is None or result.id != result_id or result.status != "completed":
                 raise HTTPException(404, "No se encontró un resultado completado para el gráfico.")
+            if (
+                record.plan.status != "approved"
+                or record.approved_at is None
+                or not record.executable
+                or result.analysis_plan_id != plan_id
+                or result.dataset_id != package.dataset.id
+            ):
+                raise HTTPException(409, "Solo se visualizan análisis aprobados y vigentes.")
             if record.plan.technique not in {"pearson", "spearman"}:
                 raise HTTPException(
                     409, "El gráfico de dispersión solo está disponible para Pearson o Spearman."
@@ -326,6 +337,140 @@ class ResearchAnalysisService:
                 y_label=right_column,
                 points=pairs[::step],
                 complete_pair_count=len(pairs),
+                sampled=step > 1,
+            )
+
+    def authorized_residuals(
+        self, project_id: UUID, plan_id: str, result_id: str
+    ) -> AuthorizedResidualPlot:
+        """Return a bounded residual diagnostic for one approved linear model.
+
+        There is deliberately no generic data route: feature construction is
+        restricted to the plan's approved variables and matches the engine's
+        deterministic regression/ANCOVA encoding.
+        """
+
+        with self._edit_current(project_id, plan_id) as (record, package):
+            result = record.result
+            if result is None or result.id != result_id or result.status != "completed":
+                raise HTTPException(404, "No se encontró un resultado completado para el gráfico.")
+            if (
+                record.plan.status != "approved"
+                or record.approved_at is None
+                or not record.executable
+                or result.analysis_plan_id != plan_id
+                or result.dataset_id != package.dataset.id
+            ):
+                raise HTTPException(409, "Solo se visualizan análisis aprobados y vigentes.")
+            if record.plan.technique not in {
+                "linear_regression_simple",
+                "linear_regression_multiple",
+                "ancova",
+            }:
+                raise HTTPException(
+                    409,
+                    "El gráfico de residuos solo está disponible para regresiones o ANCOVA.",
+                )
+            hypothesis = next(
+                (item for item in package.hypotheses if item.id == record.plan.hypothesis_id),
+                None,
+            )
+            variables = {item.id: item for item in package.variables}
+            if hypothesis is None:
+                raise HTTPException(
+                    409, "Las variables aprobadas ya no permiten un gráfico válido."
+                )
+            try:
+                selected = [variables[item_id] for item_id in hypothesis.variable_ids]
+                outcome_variable = next(item for item in selected if item.role == "dependent")
+                outcome_column = outcome_variable.columns[0]
+                table = BytesDatasetReader(
+                    lambda reference: self.bridge.read_dataset(project_id, package, reference)
+                ).read(package.dataset)
+                outcome_index = table.columns.index(outcome_column)
+            except (KeyError, IndexError, StopIteration, ValueError) as exc:
+                raise HTTPException(409, "Las columnas aprobadas ya no están disponibles.") from exc
+
+            features: list[list[float]] = []
+            outcomes: list[float] = []
+            try:
+                if record.plan.technique == "ancova":
+                    group = next(item for item in selected if item.role == "independent")
+                    covariate = next(item for item in selected if item.role == "covariate")
+                    group_index = table.columns.index(group.columns[0])
+                    covariate_index = table.columns.index(covariate.columns[0])
+                    categories = sorted(
+                        {
+                            str(row[group_index]).strip()
+                            for row in table.rows
+                            if row[group_index] is not None and str(row[group_index]).strip()
+                        }
+                    )
+                    if len(categories) < 2:
+                        raise ValueError("insufficient groups")
+                    for row in table.rows:
+                        try:
+                            outcome = float(row[outcome_index])
+                            covariate_value = float(row[covariate_index])
+                        except (TypeError, ValueError):
+                            continue
+                        current_group = (
+                            "" if row[group_index] is None else str(row[group_index]).strip()
+                        )
+                        if (
+                            not current_group
+                            or not math.isfinite(outcome)
+                            or not math.isfinite(covariate_value)
+                        ):
+                            continue
+                        features.append(
+                            [
+                                *[
+                                    1.0 if current_group == category else 0.0
+                                    for category in categories[1:]
+                                ],
+                                covariate_value,
+                            ]
+                        )
+                        outcomes.append(outcome)
+                else:
+                    predictors = [
+                        item for item in selected if item.role in {"independent", "covariate"}
+                    ]
+                    predictor_indices = [
+                        table.columns.index(item.columns[0]) for item in predictors
+                    ]
+                    for row in table.rows:
+                        try:
+                            outcome = float(row[outcome_index])
+                            values = [float(row[index]) for index in predictor_indices]
+                        except (TypeError, ValueError):
+                            continue
+                        if math.isfinite(outcome) and all(math.isfinite(value) for value in values):
+                            features.append(values)
+                            outcomes.append(outcome)
+            except (IndexError, ValueError) as exc:
+                raise HTTPException(
+                    409, "Las columnas aprobadas ya no permiten un gráfico válido."
+                ) from exc
+
+            try:
+                fitted = linear_fitted_values(features, outcomes)
+            except Exception as exc:
+                raise HTTPException(
+                    409, "El modelo ya no permite calcular residuos válidos."
+                ) from exc
+            points = [
+                AuthorizedResidualPoint(fitted=value, residual=outcome - value)
+                for value, outcome in zip(fitted, outcomes, strict=True)
+            ]
+            if not points:
+                raise HTTPException(409, "No hay observaciones completas para visualizar.")
+            step = max(1, math.ceil(len(points) / self._MAX_SCATTER_POINTS))
+            return AuthorizedResidualPlot(
+                outcome_label=outcome_column,
+                points=points[::step],
+                complete_observation_count=len(points),
                 sampled=step > 1,
             )
 

@@ -143,7 +143,8 @@
   color: #536b65;
 }
 
-.authorized-scatter {
+.authorized-scatter,
+.authorized-residuals {
   margin: 1rem 0;
   padding: 0.75rem;
   border: 1px solid #d9e0dc;
@@ -151,25 +152,37 @@
   background: #f8fbf8;
 }
 
-.authorized-scatter svg {
+.authorized-scatter svg,
+.authorized-residuals svg {
   display: block;
   width: min(100%, 32rem);
   margin: 0.75rem auto;
   overflow: visible;
 }
 
-.authorized-scatter line {
+.authorized-scatter line,
+.authorized-residuals line {
   stroke: #536b65;
 }
 .authorized-scatter circle {
   fill: #193c36;
   opacity: 0.75;
 }
-.authorized-scatter text {
+.authorized-residuals circle {
+  fill: #193c36;
+  opacity: 0.75;
+}
+.authorized-residuals .authorized-residual-zero {
+  stroke: #b04a34;
+  stroke-dasharray: 4 3;
+}
+.authorized-scatter text,
+.authorized-residuals text {
   fill: #193c36;
   font-size: 0.75rem;
 }
-.authorized-scatter p {
+.authorized-scatter p,
+.authorized-residuals p {
   margin: 0.5rem 0 0;
   color: #536b65;
   font-size: 0.85rem;
