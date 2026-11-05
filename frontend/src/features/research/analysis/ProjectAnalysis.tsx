@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PersistedResultCharts } from '../../statistics/PersistedResultCharts';
+import { AuthorizedScatterPlot } from '../../statistics/AuthorizedScatterPlot';
 import type { ResearchPackageSummary } from '../packages/api';
 import { createAnalysisApi, type AnalysisRecord } from './api';
 
@@ -256,6 +257,14 @@ export function ProjectAnalysis({
                           <PersistedResultCharts
                             metrics={record.result.metrics}
                           />
+                          {!stale &&
+                            ['pearson', 'spearman'].includes(
+                              record.plan.technique ?? '',
+                            ) && (
+                              <AuthorizedScatterPlot
+                                load={() => api.scatter(projectId, record)}
+                              />
+                            )}
                         </>
                       )}
                       {record.result.assumptions?.map((item) => (

@@ -3,6 +3,7 @@
 import hashlib
 import json
 import logging
+import math
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -28,7 +29,13 @@ from app.orchestration.analysis_inputs import (
     simple_regression_questions,
     spearman_questions,
 )
-from app.orchestration.analysis_models import AnalysisRecord, ApprovalRequest, PlanRequest
+from app.orchestration.analysis_models import (
+    AnalysisRecord,
+    ApprovalRequest,
+    AuthorizedScatterPlot,
+    AuthorizedScatterPoint,
+    PlanRequest,
+)
 from app.orchestration.analysis_repository import SQLiteAnalysisRepository
 from app.orchestration.data_authorization import LocalRealDataAuthorization
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
@@ -38,6 +45,8 @@ logger = logging.getLogger(__name__)
 
 
 class ResearchAnalysisService:
+    _MAX_SCATTER_POINTS = 2_000
+
     def __init__(
         self,
         bridge: ResearchStatisticsBridge,
@@ -260,6 +269,65 @@ class ResearchAnalysisService:
                     409, "El resultado no corresponde al plan y dataset del proyecto."
                 )
             return record.model_copy(deep=True)
+
+    def authorized_scatter(
+        self, project_id: UUID, plan_id: str, result_id: str
+    ) -> AuthorizedScatterPlot:
+        """Return bounded raw pairs only for a current, authorized association result.
+
+        This intentionally does not expose a generic dataset endpoint. The data
+        is restricted to the two approved variables and remains protected by
+        the same local, package/version-bound authorization used for execution.
+        """
+
+        with self._edit_current(project_id, plan_id) as (record, package):
+            result = record.result
+            if result is None or result.id != result_id or result.status != "completed":
+                raise HTTPException(404, "No se encontró un resultado completado para el gráfico.")
+            if record.plan.technique not in {"pearson", "spearman"}:
+                raise HTTPException(
+                    409, "El gráfico de dispersión solo está disponible para Pearson o Spearman."
+                )
+            hypothesis = next(
+                (item for item in package.hypotheses if item.id == record.plan.hypothesis_id),
+                None,
+            )
+            variables = {item.id: item for item in package.variables}
+            if hypothesis is None or len(hypothesis.variable_ids) != 2:
+                raise HTTPException(
+                    409, "Las variables aprobadas ya no permiten un gráfico válido."
+                )
+            try:
+                left, right = [variables[item_id] for item_id in hypothesis.variable_ids]
+                left_column, right_column = left.columns[0], right.columns[0]
+                table = BytesDatasetReader(
+                    lambda reference: self.bridge.read_dataset(project_id, package, reference)
+                ).read(package.dataset)
+                left_index, right_index = (
+                    table.columns.index(left_column),
+                    table.columns.index(right_column),
+                )
+            except (KeyError, IndexError, ValueError) as exc:
+                raise HTTPException(409, "Las columnas aprobadas ya no están disponibles.") from exc
+
+            pairs: list[AuthorizedScatterPoint] = []
+            for row in table.rows:
+                try:
+                    x, y = float(row[left_index]), float(row[right_index])
+                except (TypeError, ValueError):
+                    continue
+                if math.isfinite(x) and math.isfinite(y):
+                    pairs.append(AuthorizedScatterPoint(x=x, y=y))
+            if not pairs:
+                raise HTTPException(409, "No hay pares numéricos completos para visualizar.")
+            step = max(1, math.ceil(len(pairs) / self._MAX_SCATTER_POINTS))
+            return AuthorizedScatterPlot(
+                x_label=left_column,
+                y_label=right_column,
+                points=pairs[::step],
+                complete_pair_count=len(pairs),
+                sampled=step > 1,
+            )
 
     def execute(self, project_id: UUID, plan_id: str) -> AnalysisResult:
         with self._edit_current(project_id, plan_id) as (record, package):

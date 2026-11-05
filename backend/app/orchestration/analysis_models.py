@@ -39,6 +39,23 @@ class RealDataAuthorizationReceipt(IntegrationModel):
     status: Literal["authorized"]
 
 
+class AuthorizedScatterPoint(IntegrationModel):
+    """One complete numeric pair released only by the local authorization flow."""
+
+    x: float
+    y: float
+
+
+class AuthorizedScatterPlot(IntegrationModel):
+    """Bounded, plan-scoped observations for an approved association result."""
+
+    x_label: str
+    y_label: str
+    points: list[AuthorizedScatterPoint]
+    complete_pair_count: int
+    sampled: bool
+
+
 class AnalysisRecord(IntegrationModel):
     project_id: UUID
     package: ResearchPackage = Field(exclude=True)

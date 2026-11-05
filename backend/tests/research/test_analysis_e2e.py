@@ -852,6 +852,53 @@ def test_real_dataset_requires_explicit_current_authorization(tmp_path):
     assert result.status == "completed"
 
 
+def test_authorized_scatter_releases_only_complete_pairs_for_current_association(tmp_path):
+    case = research_case(tmp_path, kind="association")
+    assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200
+    config = case.client.get(case.package_root + "/configuration").json()
+    assert case.client.put(case.package_root + "/configuration", json=config).status_code == 200
+    case.package = case.client.post(case.package_root + "/build").json()
+    authorization = case.root + "/authorization/real-dataset"
+    assert (
+        case.client.post(
+            authorization,
+            json={
+                "package_id": case.package["id"],
+                "dataset_id": case.package["dataset"]["id"],
+                "confirm": True,
+            },
+        ).status_code
+        == 200
+    )
+    record, result = executed(case)
+    assert record["plan"]["technique"] == "pearson"
+    response = case.client.get(
+        case.root + f"/plans/{record['plan']['id']}/results/{result.id}/observations/scatter"
+    )
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "x_label": "horas_estudio",
+        "y_label": "rendimiento",
+        "points": [
+            {"x": 1.0, "y": 2.0},
+            {"x": 2.0, "y": 4.0},
+            {"x": 3.0, "y": 6.0},
+            {"x": 4.0, "y": 8.0},
+        ],
+        "complete_pair_count": 4,
+        "sampled": False,
+    }
+
+
+def test_authorized_scatter_rejects_non_association_results(tmp_path):
+    case = research_case(tmp_path)
+    record, result = executed(case)
+    response = case.client.get(
+        case.root + f"/plans/{record['plan']['id']}/results/{result.id}/observations/scatter"
+    )
+    assert response.status_code == 409
+
+
 def test_real_dataset_authorization_is_bound_to_current_package_source(tmp_path):
     case = research_case(tmp_path)
     assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200
