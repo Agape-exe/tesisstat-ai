@@ -216,6 +216,37 @@ def authorized_group_figure(
     return tuple(lines)
 
 
+def authorized_paired_figure(
+    before_label: str,
+    after_label: str,
+    points: Sequence[tuple[float, float]],
+    *,
+    complete_pair_count: int,
+    sampled: bool,
+) -> tuple[str, ...]:
+    """Render paired changes without accepting a dataset or arbitrary columns."""
+
+    if not points:
+        return ()
+    changes = [after - before for before, after in points]
+    increased = sum(change > 0 for change in changes)
+    decreased = sum(change < 0 for change in changes)
+    unchanged = len(changes) - increased - decreased
+    return (
+        f"Pares autorizados: {before_label} y {after_label}",
+        f"Cambios: aumentan={increased}; disminuyen={decreased}; sin cambio={unchanged}.",
+        (
+            f"Cambio mínimo={min(changes):.6g}; "
+            f"mediana={sorted(changes)[len(changes) // 2]:.6g}; máximo={max(changes):.6g}."
+        ),
+        f"{complete_pair_count} pares completos; se representan {len(points)} pares.",
+        "Muestra determinista limitada a la respuesta autorizada."
+        if sampled
+        else "Se representaron todos los pares autorizados.",
+        "Nota: figura descriptiva; no determina significancia automáticamente.",
+    )
+
+
 def _metadata_lines(result: AnalysisResult) -> tuple[str, ...]:
     """Keep the minimum reproducibility metadata with every export."""
 

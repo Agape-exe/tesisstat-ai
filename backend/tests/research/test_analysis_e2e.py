@@ -970,6 +970,26 @@ def test_authorized_groups_reject_non_comparison_results(tmp_path):
     assert response.status_code == 409
 
 
+def test_authorized_pairs_release_only_complete_pairs_for_paired_test(tmp_path):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        observations="paired",
+        data=b"horas_estudio,rendimiento\n1,2\n2,4\n3,\n4,8\n",
+    )
+    record, result = executed(case)
+    response = case.client.get(
+        case.root + f"/plans/{record['plan']['id']}/results/{result.id}/observations/pairs"
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["complete_pair_count"] == 3
+    assert response.json()["points"] == [
+        {"before": 1.0, "after": 2.0},
+        {"before": 2.0, "after": 4.0},
+        {"before": 4.0, "after": 8.0},
+    ]
+
+
 def test_real_dataset_authorization_is_bound_to_current_package_source(tmp_path):
     case = research_case(tmp_path)
     assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200

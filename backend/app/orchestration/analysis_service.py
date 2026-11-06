@@ -36,6 +36,8 @@ from app.orchestration.analysis_models import (
     ApprovalRequest,
     AuthorizedGroupPlot,
     AuthorizedGroupPoint,
+    AuthorizedPairedPlot,
+    AuthorizedPairedPoint,
     AuthorizedResidualPlot,
     AuthorizedResidualPoint,
     AuthorizedScatterPlot,
@@ -566,6 +568,66 @@ class ResearchAnalysisService:
                 points=points,
                 complete_observation_count=complete_count,
                 sampled=sampled,
+            )
+
+    def authorized_pairs(
+        self, project_id: UUID, plan_id: str, result_id: str
+    ) -> AuthorizedPairedPlot:
+        """Return only complete pairs from the two variables approved for a paired test."""
+
+        with self._edit_current(project_id, plan_id) as (record, package):
+            result = record.result
+            if result is None or result.id != result_id or result.status != "completed":
+                raise HTTPException(404, "No se encontró un resultado completado para el gráfico.")
+            if (
+                record.plan.status != "approved"
+                or record.approved_at is None
+                or not record.executable
+                or result.analysis_plan_id != plan_id
+                or result.dataset_id != package.dataset.id
+            ):
+                raise HTTPException(409, "Solo se visualizan análisis aprobados y vigentes.")
+            if record.plan.technique not in {"t_paired", "wilcoxon"}:
+                raise HTTPException(
+                    409, "El gráfico de pares solo está disponible para pruebas pareadas."
+                )
+            hypothesis = next(
+                (item for item in package.hypotheses if item.id == record.plan.hypothesis_id), None
+            )
+            variables = {item.id: item for item in package.variables}
+            if hypothesis is None or len(hypothesis.variable_ids) != 2:
+                raise HTTPException(
+                    409, "Las variables aprobadas ya no permiten un gráfico válido."
+                )
+            try:
+                left, right = [variables[item_id] for item_id in hypothesis.variable_ids]
+                before_label, after_label = left.columns[0], right.columns[0]
+                table = BytesDatasetReader(
+                    lambda reference: self.bridge.read_dataset(project_id, package, reference)
+                ).read(package.dataset)
+                before_index, after_index = (
+                    table.columns.index(before_label),
+                    table.columns.index(after_label),
+                )
+            except (KeyError, IndexError, ValueError) as exc:
+                raise HTTPException(409, "Las columnas aprobadas ya no están disponibles.") from exc
+            pairs = []
+            for row in table.rows:
+                try:
+                    before, after = float(row[before_index]), float(row[after_index])
+                except (TypeError, ValueError):
+                    continue
+                if math.isfinite(before) and math.isfinite(after):
+                    pairs.append(AuthorizedPairedPoint(before=before, after=after))
+            if not pairs:
+                raise HTTPException(409, "No hay pares numéricos completos para visualizar.")
+            step = max(1, math.ceil(len(pairs) / self._MAX_SCATTER_POINTS))
+            return AuthorizedPairedPlot(
+                before_label=before_label,
+                after_label=after_label,
+                points=pairs[::step],
+                complete_pair_count=len(pairs),
+                sampled=step > 1,
             )
 
     def execute(self, project_id: UUID, plan_id: str) -> AnalysisResult:

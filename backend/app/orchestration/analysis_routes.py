@@ -8,6 +8,7 @@ from fastapi.responses import Response
 
 from app.modules.statistics.reports import (
     authorized_group_figure,
+    authorized_paired_figure,
     authorized_residual_figure,
     authorized_scatter_figure,
     render_docx,
@@ -17,6 +18,7 @@ from app.orchestration.analysis_models import (
     AnalysisRecord,
     ApprovalRequest,
     AuthorizedGroupPlot,
+    AuthorizedPairedPlot,
     AuthorizedResidualPlot,
     AuthorizedScatterPlot,
     PlanRequest,
@@ -104,6 +106,13 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
     ) -> AuthorizedGroupPlot:
         return service.authorized_group_distribution(project_id, str(plan_id), result_id)
 
+    @router.get(
+        "/plans/{plan_id}/results/{result_id}/observations/pairs",
+        response_model=AuthorizedPairedPlot,
+    )
+    def authorized_pairs(project_id: UUID, plan_id: UUID, result_id: str) -> AuthorizedPairedPlot:
+        return service.authorized_pairs(project_id, str(plan_id), result_id)
+
     @router.get("/plans/{plan_id}/results/{result_id}/report.{format}")
     def report(
         project_id: UUID, plan_id: UUID, result_id: str, format: Literal["docx", "pdf"]
@@ -149,6 +158,17 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
                     [(point.fitted, point.residual) for point in residuals.points],
                     complete_observation_count=residuals.complete_observation_count,
                     sampled=residuals.sampled,
+                ),
+            )
+        if record.plan.technique in {"t_paired", "wilcoxon"}:
+            pairs = service.authorized_pairs(project_id, str(plan_id), result_id)
+            observation_figures = (
+                authorized_paired_figure(
+                    pairs.before_label,
+                    pairs.after_label,
+                    [(point.before, point.after) for point in pairs.points],
+                    complete_pair_count=pairs.complete_pair_count,
+                    sampled=pairs.sampled,
                 ),
             )
         if record.plan.technique in {

@@ -89,6 +89,23 @@ class AuthorizedGroupPlot(IntegrationModel):
     sampled: bool
 
 
+class AuthorizedPairedPoint(IntegrationModel):
+    """One approved complete pair, preserved in its original row relationship."""
+
+    before: float
+    after: float
+
+
+class AuthorizedPairedPlot(IntegrationModel):
+    """Bounded paired observations for an approved repeated-measures result."""
+
+    before_label: str
+    after_label: str
+    points: list[AuthorizedPairedPoint]
+    complete_pair_count: int
+    sampled: bool
+
+
 class AnalysisRecord(IntegrationModel):
     project_id: UUID
     package: ResearchPackage = Field(exclude=True)

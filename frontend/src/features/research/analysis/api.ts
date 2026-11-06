@@ -3,6 +3,7 @@ import type { AnalysisResult } from '../../../shared/contracts/generated/Analysi
 import type { AuthorizedScatterData } from '../../statistics/AuthorizedScatterPlot';
 import type { AuthorizedResidualData } from '../../statistics/AuthorizedResidualPlot';
 import type { AuthorizedGroupData } from '../../statistics/AuthorizedGroupPlot';
+import type { AuthorizedPairedData } from '../../statistics/AuthorizedPairedPlot';
 
 export interface AnalysisRecord {
   project_id: string;
@@ -146,6 +147,14 @@ export function createAnalysisApi(
       return request<AuthorizedGroupData>(
         project,
         `/plans/${encodeURIComponent(record.plan.id)}/results/${encodeURIComponent(record.result.id)}/observations/groups`,
+      );
+    },
+    pairs: (project: string, record: AnalysisRecord) => {
+      if (!record.result)
+        throw new Error('No existe un resultado para visualizar.');
+      return request<AuthorizedPairedData>(
+        project,
+        `/plans/${encodeURIComponent(record.plan.id)}/results/${encodeURIComponent(record.result.id)}/observations/pairs`,
       );
     },
   };

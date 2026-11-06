@@ -3,6 +3,7 @@ import { PersistedResultCharts } from '../../statistics/PersistedResultCharts';
 import { AuthorizedScatterPlot } from '../../statistics/AuthorizedScatterPlot';
 import { AuthorizedResidualPlot } from '../../statistics/AuthorizedResidualPlot';
 import { AuthorizedGroupPlot } from '../../statistics/AuthorizedGroupPlot';
+import { AuthorizedPairedPlot } from '../../statistics/AuthorizedPairedPlot';
 import type { ResearchPackageSummary } from '../packages/api';
 import { createAnalysisApi, type AnalysisRecord } from './api';
 
@@ -265,6 +266,14 @@ export function ProjectAnalysis({
                             ) && (
                               <AuthorizedScatterPlot
                                 load={() => api.scatter(projectId, record)}
+                              />
+                            )}
+                          {!stale &&
+                            ['t_paired', 'wilcoxon'].includes(
+                              record.plan.technique ?? '',
+                            ) && (
+                              <AuthorizedPairedPlot
+                                load={() => api.pairs(projectId, record)}
                               />
                             )}
                           {!stale &&
