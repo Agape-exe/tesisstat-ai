@@ -72,6 +72,23 @@ class AuthorizedResidualPlot(IntegrationModel):
     sampled: bool
 
 
+class AuthorizedGroupPoint(IntegrationModel):
+    """One numeric outcome associated with an approved grouping variable."""
+
+    group: str = Field(min_length=1)
+    value: float
+
+
+class AuthorizedGroupPlot(IntegrationModel):
+    """Bounded grouped observations for an approved comparison result."""
+
+    group_label: str
+    outcome_label: str
+    points: list[AuthorizedGroupPoint]
+    complete_observation_count: int
+    sampled: bool
+
+
 class AnalysisRecord(IntegrationModel):
     project_id: UUID
     package: ResearchPackage = Field(exclude=True)

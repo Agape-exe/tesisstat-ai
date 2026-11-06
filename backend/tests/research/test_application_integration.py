@@ -157,6 +157,42 @@ def test_model_report_includes_authorized_residual_figure(tmp_path, fmt):
     assert "observaciones completas; se representan" in text
 
 
+@pytest.mark.parametrize("fmt", ["docx", "pdf"])
+def test_comparison_report_includes_authorized_group_figure(tmp_path, monkeypatch, fmt):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", "ratio"),
+        data=b"horas_estudio,rendimiento\nA,1\nA,2\nB,4\nB,6\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def independent_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "t_independent"
+        plan.rationale = "t de Student para dos grupos independientes."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", independent_plan)
+    record, result = executed(case)
+    response = case.client.get(report_url(case, record, result.id, fmt))
+    assert response.status_code == 200, response.text
+    if fmt == "docx":
+        text = "\n".join(
+            paragraph.text for paragraph in Document(BytesIO(response.content)).paragraphs
+        )
+    else:
+        text = "\n".join(
+            page.extract_text() for page in PdfReader(BytesIO(response.content), strict=True).pages
+        )
+    assert "Distribución autorizada de rendimiento por horas_estudio" in text
+    assert "Escala común de rendimiento: 1 a 6; * = mediana." in text
+    assert "observaciones completas; se representan" in text
+
+
 def test_local_demo_cors_and_environment(tmp_path):
     settings = ResearchDevSettings(
         _env_file=None,

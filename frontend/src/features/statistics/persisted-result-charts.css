@@ -144,7 +144,8 @@
 }
 
 .authorized-scatter,
-.authorized-residuals {
+.authorized-residuals,
+.authorized-groups {
   margin: 1rem 0;
   padding: 0.75rem;
   border: 1px solid #d9e0dc;
@@ -153,7 +154,8 @@
 }
 
 .authorized-scatter svg,
-.authorized-residuals svg {
+.authorized-residuals svg,
+.authorized-groups svg {
   display: block;
   width: min(100%, 32rem);
   margin: 0.75rem auto;
@@ -161,7 +163,8 @@
 }
 
 .authorized-scatter line,
-.authorized-residuals line {
+.authorized-residuals line,
+.authorized-groups line {
   stroke: #536b65;
 }
 .authorized-scatter circle {
@@ -172,17 +175,23 @@
   fill: #193c36;
   opacity: 0.75;
 }
+.authorized-groups circle {
+  fill: #193c36;
+  opacity: 0.75;
+}
 .authorized-residuals .authorized-residual-zero {
   stroke: #b04a34;
   stroke-dasharray: 4 3;
 }
 .authorized-scatter text,
-.authorized-residuals text {
+.authorized-residuals text,
+.authorized-groups text {
   fill: #193c36;
   font-size: 0.75rem;
 }
 .authorized-scatter p,
-.authorized-residuals p {
+.authorized-residuals p,
+.authorized-groups p {
   margin: 0.5rem 0 0;
   color: #536b65;
   font-size: 0.85rem;

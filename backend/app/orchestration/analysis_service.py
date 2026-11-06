@@ -19,6 +19,7 @@ from app.modules.statistics.regression import linear_fitted_values
 from app.modules.statistics.research_bridge import BytesDatasetReader
 from app.orchestration.analysis_inputs import (
     CONNECTED,
+    GROUP_TECHNIQUES,
     analysis_input,
     ancova_questions,
     categorical_association_questions,
@@ -33,6 +34,8 @@ from app.orchestration.analysis_inputs import (
 from app.orchestration.analysis_models import (
     AnalysisRecord,
     ApprovalRequest,
+    AuthorizedGroupPlot,
+    AuthorizedGroupPoint,
     AuthorizedResidualPlot,
     AuthorizedResidualPoint,
     AuthorizedScatterPlot,
@@ -472,6 +475,97 @@ class ResearchAnalysisService:
                 points=points[::step],
                 complete_observation_count=len(points),
                 sampled=step > 1,
+            )
+
+    def authorized_group_distribution(
+        self, project_id: UUID, plan_id: str, result_id: str
+    ) -> AuthorizedGroupPlot:
+        """Return a bounded, stratified group/outcome diagnostic for one plan.
+
+        This is intentionally not a dataset endpoint.  It can only release the
+        approved grouping and outcome columns for a current comparison result,
+        after the same authorization checks required to execute that result.
+        """
+
+        with self._edit_current(project_id, plan_id) as (record, package):
+            result = record.result
+            if result is None or result.id != result_id or result.status != "completed":
+                raise HTTPException(404, "No se encontró un resultado completado para el gráfico.")
+            if (
+                record.plan.status != "approved"
+                or record.approved_at is None
+                or not record.executable
+                or result.analysis_plan_id != plan_id
+                or result.dataset_id != package.dataset.id
+            ):
+                raise HTTPException(409, "Solo se visualizan análisis aprobados y vigentes.")
+            if record.plan.technique not in GROUP_TECHNIQUES:
+                raise HTTPException(
+                    409,
+                    "La distribución por grupo solo está disponible para comparaciones aprobadas.",
+                )
+            hypothesis = next(
+                (item for item in package.hypotheses if item.id == record.plan.hypothesis_id),
+                None,
+            )
+            variables = {item.id: item for item in package.variables}
+            if hypothesis is None:
+                raise HTTPException(
+                    409, "Las variables aprobadas ya no permiten un gráfico válido."
+                )
+            try:
+                selected = [variables[item_id] for item_id in hypothesis.variable_ids]
+                group_variable = next(item for item in selected if item.role == "independent")
+                outcome_variable = next(item for item in selected if item.role == "dependent")
+                group_column, outcome_column = (
+                    group_variable.columns[0],
+                    outcome_variable.columns[0],
+                )
+                table = BytesDatasetReader(
+                    lambda reference: self.bridge.read_dataset(project_id, package, reference)
+                ).read(package.dataset)
+                group_index, outcome_index = (
+                    table.columns.index(group_column),
+                    table.columns.index(outcome_column),
+                )
+            except (KeyError, IndexError, StopIteration, ValueError) as exc:
+                raise HTTPException(409, "Las columnas aprobadas ya no están disponibles.") from exc
+
+            grouped: dict[str, list[AuthorizedGroupPoint]] = {}
+            for row in table.rows:
+                label = "" if row[group_index] is None else str(row[group_index]).strip()
+                try:
+                    value = float(row[outcome_index])
+                except (TypeError, ValueError):
+                    continue
+                if label and math.isfinite(value):
+                    grouped.setdefault(label, []).append(
+                        AuthorizedGroupPoint(group=label, value=value)
+                    )
+            complete_count = sum(len(values) for values in grouped.values())
+            if not complete_count:
+                raise HTTPException(409, "No hay observaciones completas para visualizar.")
+            if len(grouped) > self._MAX_SCATTER_POINTS:
+                raise HTTPException(409, "Hay demasiados grupos para un gráfico acotado.")
+
+            if complete_count <= self._MAX_SCATTER_POINTS:
+                points = [point for values in grouped.values() for point in values]
+                sampled = False
+            else:
+                # Keep every group represented.  Equal per-group quotas avoid a
+                # large group suppressing a small approved comparison group.
+                quota = max(1, self._MAX_SCATTER_POINTS // len(grouped))
+                points = []
+                for values in grouped.values():
+                    step = max(1, math.ceil(len(values) / quota))
+                    points.extend(values[::step][:quota])
+                sampled = True
+            return AuthorizedGroupPlot(
+                group_label=group_column,
+                outcome_label=outcome_column,
+                points=points,
+                complete_observation_count=complete_count,
+                sampled=sampled,
             )
 
     def execute(self, project_id: UUID, plan_id: str) -> AnalysisResult:

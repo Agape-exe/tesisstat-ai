@@ -1,4 +1,5 @@
 from app.modules.statistics.reports import (
+    authorized_group_figure,
     authorized_residual_figure,
     authorized_scatter_figure,
     render_docx,
@@ -96,6 +97,23 @@ def test_reports_render_authorized_residual_figure_with_zero_reference():
     assert "línea horizontal = 0" in text
     assert "3 observaciones completas; se representan 3" in text
     assert "diagnóstico descriptivo; no determina significancia automáticamente" in text
+
+
+def test_reports_render_authorized_group_figure_with_shared_scale():
+    figure = authorized_group_figure(
+        "tratamiento",
+        "nota",
+        [("A", 1.0), ("A", 3.0), ("B", 4.0), ("B", 6.0)],
+        complete_observation_count=4,
+        sampled=False,
+    )
+    text = render_text(result(), observation_figures=(figure,))
+    assert "Figura 2. Distribución autorizada de nota por tratamiento" in text
+    assert "A: [" in text
+    assert "B: [" in text
+    assert "Escala común de nota: 1 a 6; * = mediana." in text
+    assert "4 observaciones completas; se representan 4" in text
+    assert "figura descriptiva; no determina significancia automáticamente" in text
 
 
 def test_pdf_report_has_pdf_signature_and_eof() -> None:
