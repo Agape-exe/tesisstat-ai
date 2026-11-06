@@ -5,8 +5,11 @@ análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 c
 
 La aplicación principal permite recorrer **Proyecto → Documento → Metodología → Dataset →
 EDA → Preparación → ResearchPackage → Propuesta → Aprobación → Ejecución → Resultados**,
-con descarga DOCX/PDF de resultados completados y vigentes. Los cálculos integrados son
-resumen descriptivo y Pearson. Las demás técnicas del catálogo tienen adaptadores pendientes.
+con descarga TXT/DOCX/PDF de resultados completados y vigentes. El motor cubre descriptiva,
+asociación, comparaciones paramétricas y no paramétricas, regresión/ANCOVA y sus métricas,
+supuestos y advertencias reproducibles. Las 19 técnicas del catálogo están conectadas al flujo
+de propuesta, aprobación y ejecución; las conclusiones se limitan explícitamente cuando una
+distribución o condición no permite determinar significancia.
 
 Esta es una demostración sin autenticación, exclusivamente local y con información ficticia.
 No es un servicio de producción. El recorrido manual completo, las descargas y su revisión
@@ -101,14 +104,18 @@ sin cambios. [Guía de contratos](contracts/README.md), [fixtures](fixtures/READ
 ## Límites actuales
 
 Sin autenticación, Supabase ni despliegue público. La API de demo rechaza clientes/hosts
-externos y entornos distintos de desarrollo. Pearson puede devolver `r`, `n`, `p_value`,
-`t_statistic` y `degrees_of_freedom`; el chat solo utiliza las métricas persistidas.
-Un p-valor representado como cero no debe describirse como probabilidad exactamente nula.
+externos y entornos distintos de desarrollo. Los resultados y visualizaciones requieren plan
+aprobado, resultado vigente y, para datos no sintéticos, autorización explícita enlazada a
+proyecto, paquete, dataset y versión. Las figuras de asociación, residuos, grupos y pares se
+limitan a 2 000 observaciones mediante muestreo determinista y no existe un endpoint genérico
+para exponer datasets. Un p-valor representado como cero no debe describirse como probabilidad
+exactamente nula.
 El PDF es un informe textual paginado con WinAnsi; los
 caracteres fuera de esa codificación se sustituyen con aviso, y DOCX conserva Unicode.
 Los resultados históricos se pueden consultar, pero no exportar ni volver a ejecutar con
-fuentes desactualizadas. Las sesiones anteriores están documentadas en `docs/` como
-antecedentes; los comandos vigentes de demostración están en esta guía y en la sesión 14.
+fuentes desactualizadas. Las sesiones anteriores están documentadas en `docs/` como antecedentes;
+los comandos vigentes de demostración y validación están en esta guía. La matriz de cierre y sus
+limitaciones se encuentran en [STATISTICS_INTEGRANTE2_AUDIT.md](docs/STATISTICS_INTEGRANTE2_AUDIT.md).
 
 El detalle de investigación incluye **4. Asistente IA**, con conversaciones e historial SQLite.
 El envío requiere Cloudflare configurado y consentimiento explícito. Consulta configuración,
