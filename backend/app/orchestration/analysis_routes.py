@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 
-from app.modules.statistics.reports import render_docx, render_pdf
+from app.modules.statistics.reports import authorized_scatter_figure, render_docx, render_pdf
 from app.orchestration.analysis_models import (
     AnalysisRecord,
     ApprovalRequest,
@@ -109,6 +109,18 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
                 "No implica significancia estadística."
             ),
         )
+        observation_figures: tuple[tuple[str, ...], ...] = ()
+        if record.plan.technique in {"pearson", "spearman"}:
+            scatter = service.authorized_scatter(project_id, str(plan_id), result_id)
+            observation_figures = (
+                authorized_scatter_figure(
+                    scatter.x_label,
+                    scatter.y_label,
+                    [(point.x, point.y) for point in scatter.points],
+                    complete_pair_count=scatter.complete_pair_count,
+                    sampled=scatter.sampled,
+                ),
+            )
         renderer = render_docx if format == "docx" else render_pdf
         media = (
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -116,7 +128,7 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
             else "application/pdf"
         )
         return Response(
-            renderer(record.result, context=context),
+            renderer(record.result, context=context, observation_figures=observation_figures),
             media_type=media,
             headers={
                 "Content-Disposition": f'attachment; filename="analysis-{plan_id}.{format}"',
