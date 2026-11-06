@@ -145,7 +145,8 @@
 
 .authorized-scatter,
 .authorized-residuals,
-.authorized-groups {
+.authorized-groups,
+.authorized-pairs {
   margin: 1rem 0;
   padding: 0.75rem;
   border: 1px solid #d9e0dc;
@@ -155,7 +156,8 @@
 
 .authorized-scatter svg,
 .authorized-residuals svg,
-.authorized-groups svg {
+.authorized-groups svg,
+.authorized-pairs svg {
   display: block;
   width: min(100%, 32rem);
   margin: 0.75rem auto;
@@ -164,7 +166,8 @@
 
 .authorized-scatter line,
 .authorized-residuals line,
-.authorized-groups line {
+.authorized-groups line,
+.authorized-pairs line {
   stroke: #536b65;
 }
 .authorized-scatter circle {
@@ -185,13 +188,15 @@
 }
 .authorized-scatter text,
 .authorized-residuals text,
-.authorized-groups text {
+.authorized-groups text,
+.authorized-pairs text {
   fill: #193c36;
   font-size: 0.75rem;
 }
 .authorized-scatter p,
 .authorized-residuals p,
-.authorized-groups p {
+.authorized-groups p,
+.authorized-pairs p {
   margin: 0.5rem 0 0;
   color: #536b65;
   font-size: 0.85rem;
