@@ -439,6 +439,20 @@ class ResearchContextBuilder:
                 self.analyses._current(record)
             except ResearchInputError:
                 invalid_current = True
+            except HTTPException as exc:
+                if exc.status_code != 403:
+                    raise
+                # Dataset authorization can expire on restart. Keep unrelated verified
+                # sources, but never expose this analysis or change its authorization.
+                add("plan", plan.id, "unverified", record.source_version)
+                if (
+                    result
+                    and result.analysis_plan_id == plan.id
+                    and result.dataset_id == plan.dataset_id
+                ):
+                    add("result", result.id, "unverified", version(result.model_dump()))
+                    sources[-1].links = {"plan_id": plan.id, "dataset_id": result.dataset_id}
+                continue
             historical = bool(
                 invalid_current
                 or record.invalidated_at
