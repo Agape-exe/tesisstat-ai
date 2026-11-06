@@ -58,19 +58,13 @@ export function DatasetEDA({
 
   return (
     <div className="rp-dataset-preview" aria-busy={busy}>
-      <button
-        className="rp-secondary"
-        disabled={busy}
-        onClick={() => void analyze()}
-      >
-        Analizar calidad de datos
-      </button>
+      {!report && (
+        <button disabled={busy} onClick={() => void analyze()}>
+          Analizar calidad de datos
+        </button>
+      )}
       {report && (
-        <button
-          className="rp-secondary"
-          disabled={busy}
-          onClick={() => void analyze(true)}
-        >
+        <button disabled={busy} onClick={() => void analyze(true)}>
           Repetir análisis
         </button>
       )}
@@ -91,10 +85,13 @@ export function DatasetEDA({
             {report.summary.duplicates} duplicados ·{' '}
             {report.summary.problem_columns} columnas problemáticas
           </p>
-          <small>
-            Procesado: {new Date(report.processed_at).toLocaleString()} ·
-            Reglas: {report.rule_version}
-          </small>
+          <details className="rp-technical">
+            <summary>Procedencia del perfil</summary>
+            <small>
+              Procesado: {new Date(report.processed_at).toLocaleString()} ·
+              Reglas: {report.rule_version}
+            </small>
+          </details>
           <h4>Perfil de columnas</h4>
           <div className="rp-dataset-scroll">
             <table>

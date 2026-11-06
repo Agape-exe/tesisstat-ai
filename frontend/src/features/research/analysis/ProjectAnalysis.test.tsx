@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { ResearchPackageSummary } from '../packages/api';
+import { ProjectResults } from './ProjectResults';
+import { ProjectReports } from './ProjectReports';
+import { ExecutionStage } from './ExecutionStage';
+import { AnalysisWorkspace } from '../packages/AnalysisWorkspace';
 import { ProjectAnalysis } from './ProjectAnalysis';
 import type { AnalysisRecord } from './api';
 
@@ -50,6 +54,64 @@ function proposal(): AnalysisRecord {
   };
 }
 
+const status = {
+  state: 'generated',
+  package_id: 'package',
+  errors: [],
+  warnings: [],
+  documents: [],
+  dataset: null,
+  review: null,
+  configuration: {
+    version: 1,
+    variables: [],
+    hypotheses: [],
+    document_id: null,
+    dataset_id: null,
+  },
+};
+function result(record = proposal()): AnalysisRecord {
+  return {
+    ...record,
+    plan: { ...record.plan, status: 'approved' },
+    approved_at: '2026-11-02T10:01:00Z',
+    result: {
+      schema_version: '1.0.0',
+      id: 'result',
+      analysis_plan_id: record.plan.id,
+      dataset_id: 'dataset',
+      status: 'completed',
+      engine_version: 'v1',
+      metrics: [
+        { name: 'horas.mean', value: 2.5 },
+        { name: 'horas.category.Alto.count', value: 2 },
+        { name: 'horas.category.Alto.percentage', value: 50 },
+      ],
+      assumptions: [],
+      warnings: ['Datos sintéticos; revisar calidad'],
+      interpretation: 'Resumen del resultado persistido.',
+    },
+  };
+}
+function mockHistory(
+  records: AnalysisRecord[],
+  sourceStatus: unknown = status,
+) {
+  const requests: { url: string; options?: RequestInit }[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, options?: RequestInit) => {
+      requests.push({ url, options });
+      return {
+        ok: true,
+        json: async () =>
+          url.endsWith('/package/status') ? sourceStatus : records,
+      };
+    }),
+  );
+  return requests;
+}
+
 it('proposes, explicitly approves, executes and reloads metrics with separate requests', async () => {
   let records: AnalysisRecord[] = [];
   const requests: { url: string; body?: string }[] = [];
@@ -58,76 +120,76 @@ it('proposes, explicitly approves, executes and reloads metrics with separate re
     vi.fn(async (url: string, options?: RequestInit) => {
       requests.push({ url, body: options?.body as string | undefined });
       let value: unknown = records;
+      if (url.endsWith('/package/status')) value = status;
       if (url.endsWith('/plan')) {
         records = [proposal()];
         value = records[0];
       }
       if (url.endsWith('/approve')) {
-        records[0].plan.status = 'approved';
-        records[0].approved_at = '2026-11-02T10:01:00Z';
+        records = [
+          {
+            ...records[0],
+            plan: { ...records[0].plan, status: 'approved' },
+            approved_at: '2026-11-02T10:01:00Z',
+          },
+        ];
         value = records[0];
       }
       if (url.endsWith('/execute')) {
-        records[0].result = {
-          schema_version: '1.0.0',
-          id: 'result',
-          analysis_plan_id: 'plan',
-          dataset_id: 'dataset',
-          status: 'completed',
-          engine_version: 'statistics-engine-v1',
-          metrics: [
-            { name: 'horas.mean', value: 2.5 },
-            { name: 'horas.category.Alto.count', value: 2 },
-            { name: 'horas.category.Alto.percentage', value: 50 },
-          ],
-          assumptions: [],
-          warnings: ['Datos sintéticos; revisar supuestos.'],
-        };
+        records = [result(records[0])];
         value = records[0].result;
       }
-      return { ok: true, json: async () => structuredClone(value) };
+      return { ok: true, json: async () => value };
     }),
   );
   const view = render(
     <ProjectAnalysis projectId="project" researchPackage={researchPackage} />,
   );
   await waitFor(() =>
-    expect(screen.getByText('Proponer análisis')).toBeEnabled(),
+    expect(
+      screen.getByRole('button', { name: 'Proponer análisis' }),
+    ).toBeEnabled(),
   );
-  fireEvent.click(screen.getByText('Proponer análisis'));
+  fireEvent.click(screen.getByRole('button', { name: 'Proponer análisis' }));
   expect(
-    await screen.findByText('Técnica recomendada: descriptive_summary'),
-  ).toBeTruthy();
-  expect(screen.getByText(/Justificación: Resume valores reales/)).toBeTruthy();
-  expect(screen.getByText('Verificar calidad de datos')).toBeTruthy();
-  expect(screen.queryByText('Ejecutar análisis')).toBeNull();
-  expect(requests.filter((item) => item.url.endsWith('/approve'))).toHaveLength(
-    0,
+    await screen.findByRole('heading', { name: 'Resumen descriptivo' }),
+  ).toBeInTheDocument();
+  expect(screen.getByText('Verificar calidad de datos')).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Ejecutar análisis' }),
+  ).not.toBeInTheDocument();
+  expect(requests.filter((r) => r.url.endsWith('/execute'))).toHaveLength(0);
+  fireEvent.click(screen.getByRole('button', { name: 'Aprobar análisis' }));
+  await screen.findByRole('button', { name: 'Continuar a ejecución' });
+  expect(
+    JSON.parse(requests.find((r) => r.url.endsWith('/approve'))!.body!),
+  ).toEqual({ confirm: true, proposal_token: 'exact-proposal' });
+  view.rerender(
+    <ExecutionStage
+      projectId="project"
+      researchPackage={researchPackage}
+      authorized
+      onRejected={() => {}}
+    />,
   );
-  fireEvent.click(screen.getByText('Aprobar análisis'));
-  const execute = await screen.findByText('Ejecutar análisis');
-  expect(requests.find((item) => item.url.endsWith('/approve'))?.body).toBe(
-    JSON.stringify({ confirm: true, proposal_token: 'exact-proposal' }),
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Ejecutar análisis' }),
   );
-  expect(requests.filter((item) => item.url.endsWith('/execute'))).toHaveLength(
-    0,
-  );
-  fireEvent.click(execute);
-  expect(await screen.findByText('horas.mean')).toBeTruthy();
+  await waitFor(() => expect(records[0].result).not.toBeNull());
+  view.rerender(<ProjectResults projectId="project" />);
+  expect(await screen.findByText('horas.mean')).toBeInTheDocument();
   expect(
     screen.getByLabelText('Frecuencias categóricas persistidas'),
   ).toBeInTheDocument();
-  expect(screen.getByText('2.5')).toBeTruthy();
-  expect(screen.getByText(/Advertencia: Datos sintéticos/)).toBeTruthy();
-  expect(screen.queryByText('Ejecutar análisis')).toBeNull();
+  expect(screen.getByText('2.5')).toBeInTheDocument();
+  expect(screen.getByText(/Advertencia: Datos sintéticos/)).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Ejecutar análisis' }),
+  ).not.toBeInTheDocument();
   view.unmount();
-  render(
-    <ProjectAnalysis projectId="project" researchPackage={researchPackage} />,
-  );
-  expect(await screen.findByText('horas.mean')).toBeTruthy();
-  expect(requests.filter((item) => item.url.endsWith('/execute'))).toHaveLength(
-    1,
-  );
+  render(<ProjectResults projectId="project" />);
+  expect(await screen.findByText('horas.mean')).toBeInTheDocument();
+  expect(requests.filter((r) => r.url.endsWith('/execute'))).toHaveLength(1);
 });
 
 it.each(['clarification', 'stale', 'unsupported'] as const)(
@@ -148,53 +210,48 @@ it.each(['clarification', 'stale', 'unsupported'] as const)(
       record.limitation =
         'Statistics implementa Spearman; adaptador pendiente.';
     }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ ok: true, json: async () => [record] })),
-    );
+    mockHistory([record]);
     render(
       <ProjectAnalysis projectId="project" researchPackage={researchPackage} />,
     );
-    expect(await screen.findByText(/Plan: plan/)).toBeTruthy();
-    expect(screen.queryByText('Aprobar análisis')).toBeNull();
-    expect(screen.queryByText('Ejecutar análisis')).toBeNull();
+    await screen.findByText(/Plan: plan/);
+    expect(
+      screen.queryByRole('button', { name: 'Aprobar análisis' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Ejecutar análisis' }),
+    ).not.toBeInTheDocument();
     if (state === 'clarification')
-      expect(screen.getByText('Aclaración: Confirma escala')).toBeTruthy();
+      expect(
+        screen.getByText('Aclaración: Confirma escala'),
+      ).toBeInTheDocument();
     if (state === 'stale')
       expect(
         screen.getByText(/Plan desactualizado: El dataset cambió/),
-      ).toBeTruthy();
+      ).toBeInTheDocument();
     if (state === 'unsupported')
-      expect(screen.getByText(/adaptador pendiente/)).toBeTruthy();
+      expect(screen.getByText(/adaptador pendiente/)).toBeInTheDocument();
   },
 );
 
-it('shows controlled execution failures and warnings', async () => {
-  const record = proposal();
-  record.plan.status = 'approved';
-  record.approved_at = '2026-11-02';
-  record.result = {
-    schema_version: '1.0.0',
-    id: 'result',
-    analysis_plan_id: 'plan',
-    dataset_id: 'dataset',
+it('shows controlled execution failures and warnings in Results, not in planning', async () => {
+  const failed = result();
+  failed.result = {
+    ...failed.result!,
     status: 'failed',
-    engine_version: 'v1',
     metrics: [],
-    assumptions: [],
     warnings: ['Valor no numérico'],
   };
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({ ok: true, json: async () => [record] })),
-  );
-  render(
-    <ProjectAnalysis projectId="project" researchPackage={researchPackage} />,
-  );
-  expect(await screen.findByText('Resultado: failed')).toBeTruthy();
-  expect(screen.getByText('Advertencia: Valor no numérico')).toBeTruthy();
-  expect(screen.queryByRole('table')).toBeNull();
-  expect(screen.queryByText('Ejecutar análisis')).toBeNull();
+  mockHistory([failed]);
+  render(<ProjectResults projectId="project" />);
+  expect(await screen.findByText('Resultado: Fallido')).toBeInTheDocument();
+  expect(
+    screen.getByText('Advertencia: Valor no numérico'),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Ejecutar análisis' }),
+  ).not.toBeInTheDocument();
 });
 
 it('shows API errors and disables actions while state cannot be recovered', async () => {
@@ -211,105 +268,134 @@ it('shows API errors and disables actions while state cannot be recovered', asyn
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'El paquete ya no está vigente.',
   );
-  expect(screen.getByText('Proponer análisis')).toBeDisabled();
+  expect(
+    screen.getByRole('button', { name: 'Proponer análisis' }),
+  ).toBeDisabled();
 });
 
-it('requires an explicit local authorization action for a non-synthetic dataset', async () => {
-  const realPackage: ResearchPackageSummary = {
-    ...researchPackage,
-    dataset: { ...researchPackage.dataset, synthetic: false },
-  };
+it('requires explicit local authorization for a non-synthetic dataset before proposing', async () => {
   const requests: { url: string; body?: string }[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, options?: RequestInit) => {
       requests.push({ url, body: options?.body as string | undefined });
-      if (url.endsWith('/authorization/real-dataset')) {
-        return {
-          ok: true,
-          json: async () => ({
-            package_id: 'package',
-            dataset_id: 'dataset',
-            source_version: 'source',
-            status: 'authorized',
-          }),
-        };
-      }
-      return { ok: true, json: async () => [] };
+      return {
+        ok: true,
+        json: async () =>
+          url.endsWith('/package/status')
+            ? status
+            : url.endsWith('/package')
+              ? {
+                  ...researchPackage,
+                  dataset: { ...researchPackage.dataset, synthetic: false },
+                }
+              : url.endsWith('/real-dataset')
+                ? { status: 'authorized' }
+                : [],
+      };
     }),
   );
-  render(<ProjectAnalysis projectId="project" researchPackage={realPackage} />);
-  const button = await screen.findByRole('button', {
+  render(<AnalysisWorkspace projectId="project" view="plan" />);
+  const authorize = await screen.findByRole('button', {
     name: 'Autorizar datos reales para esta sesión',
   });
-  expect(
-    screen.getByText(/la autorización se revoca al reiniciar el servidor/i),
-  ).toBeInTheDocument();
-  fireEvent.click(button);
   await waitFor(() =>
     expect(
-      requests.some((item) => item.url.endsWith('/authorization/real-dataset')),
-    ).toBe(true),
+      screen.getByRole('button', { name: 'Proponer análisis' }),
+    ).toBeDisabled(),
+  );
+  expect(requests.some((r) => r.url.includes('/authorization/'))).toBe(false);
+  fireEvent.click(authorize);
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Proponer análisis' }),
+    ).toBeEnabled(),
   );
   expect(
-    requests.find((item) => item.url.endsWith('/authorization/real-dataset'))
-      ?.body,
-  ).toBe(
-    JSON.stringify({
-      package_id: 'package',
-      dataset_id: 'dataset',
-      confirm: true,
-    }),
-  );
+    JSON.parse(requests.find((r) => r.url.endsWith('/real-dataset'))!.body!),
+  ).toEqual({ package_id: 'package', dataset_id: 'dataset', confirm: true });
 });
 
-it('shows persisted historical results when there is no current package', async () => {
-  const record = proposal();
-  record.invalidated_at = '2026-11-02';
-  record.stale_reason = 'Fuentes modificadas';
-  record.result = {
-    schema_version: '1.0.0',
-    id: 'result',
-    analysis_plan_id: 'plan',
-    dataset_id: 'dataset',
-    status: 'completed',
-    engine_version: 'v1',
-    metrics: [{ name: 'horas.mean', value: 2.5 }],
-    warnings: [],
-    assumptions: [],
-  };
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({ ok: true, json: async () => [record] })),
-  );
-  render(<ProjectAnalysis projectId="project" researchPackage={null} />);
+it('keeps persisted historical results readable while export is disabled', async () => {
+  const historical = result();
+  historical.invalidated_at = '2026-11-02';
+  historical.executable = false;
+  historical.stale_reason = 'Cambió el dataset';
+  const requests = mockHistory([historical], { ...status, state: 'stale' });
+  const view = render(<ProjectResults projectId="project" />);
   expect(await screen.findByText('horas.mean')).toBeInTheDocument();
   expect(
-    screen.getByText(
-      'Resultado: completed · histórico, fuentes desactualizadas',
-    ),
+    screen.getByText(/histórico, fuentes desactualizadas/),
   ).toBeInTheDocument();
-  expect(screen.queryByText('Proponer análisis')).toBeNull();
-  expect(screen.getByRole('button', { name: 'Descargar DOCX' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Descargar PDF' })).toBeDisabled();
+  expect(
+    screen.queryByRole('button', { name: 'Proponer análisis' }),
+  ).not.toBeInTheDocument();
+  view.rerender(<ProjectReports projectId="project" />);
+  expect(
+    await screen.findByRole('button', { name: 'Descargar informe' }),
+  ).toBeDisabled();
+  expect(
+    requests.every(
+      (r) => !r.url.endsWith('/execute') && !r.url.endsWith('/plan'),
+    ),
+  ).toBe(true);
 });
 
-it('shows the newest current analysis before older historical plans', async () => {
+it('selects the newest plan first and lets the user inspect an older plan separately', async () => {
   const historical = proposal();
   historical.plan.id = 'old-plan';
   historical.invalidated_at = '2026-11-02';
   const current = proposal();
   current.plan.id = 'new-plan';
   current.plan.technique = 'pearson';
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({ ok: true, json: async () => [historical, current] })),
-  );
+  mockHistory([historical, current]);
   render(
     <ProjectAnalysis projectId="project" researchPackage={researchPackage} />,
   );
-  await screen.findByRole('article', { name: 'Plan new-plan' });
-  const plans = screen.getAllByRole('article');
-  expect(plans[0]).toHaveAccessibleName('Plan new-plan');
-  expect(plans[1]).toHaveAccessibleName('Plan old-plan');
+  const selection = await screen.findByRole('combobox', {
+    name: 'Propuesta a revisar',
+  });
+  expect(selection).toHaveValue('new-plan');
+  expect(
+    screen.getByRole('heading', { name: 'Correlación de Pearson' }),
+  ).toBeInTheDocument();
+  fireEvent.change(selection, { target: { value: 'old-plan' } });
+  expect(screen.getByText(/Plan desactualizado/)).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Aprobar análisis' }),
+  ).not.toBeInTheDocument();
+});
+
+it.each([
+  'proposed',
+  'missing-approval',
+  'invalidated',
+  'unsupported',
+] as const)('never offers execution for %s records', async (kind) => {
+  const record = proposal();
+  if (kind !== 'proposed') record.plan.status = 'approved';
+  if (kind === 'invalidated') {
+    record.approved_at = '2026-11-02';
+    record.invalidated_at = '2026-11-03';
+  }
+  if (kind === 'unsupported') {
+    record.approved_at = '2026-11-02';
+    record.executable = false;
+  }
+  const requests = mockHistory([record]);
+  render(
+    <ExecutionStage
+      projectId="project"
+      researchPackage={researchPackage}
+      authorized
+      onRejected={() => {}}
+    />,
+  );
+  expect(
+    await screen.findByText('No hay planes listos para ejecutar'),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Ejecutar análisis' }),
+  ).not.toBeInTheDocument();
+  expect(requests.every((r) => !r.url.endsWith('/execute'))).toBe(true);
 });

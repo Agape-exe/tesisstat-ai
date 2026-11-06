@@ -272,6 +272,8 @@ export function ResearchProjects({
             key={project.id}
             projectId={project.id}
             section={section}
+            view={route.view}
+            item={route.item}
           />
           <details className="rp-project-details">
             <summary>Información académica del proyecto</summary>

@@ -338,6 +338,7 @@ export function DatasetPreparation({
             })}
           </ol>
           <button
+            className={preview ? 'rp-secondary' : ''}
             disabled={busy || !operations.length}
             onClick={() => void showPreview()}
           >
@@ -408,11 +409,14 @@ export function DatasetPreparation({
             <ul>
               {history.map((record) => (
                 <li key={record.result_id}>
-                  {new Date(record.prepared_at).toLocaleString()} · Derivado{' '}
-                  {record.result_id} ·{' '}
+                  {new Date(record.prepared_at).toLocaleString()} ·{' '}
                   {record.plan.operations
                     .map((item) => labels[item.type])
                     .join(' → ')}
+                  <details className="rp-technical">
+                    <summary>Referencia del derivado</summary>
+                    {record.result_id}
+                  </details>
                 </li>
               ))}
             </ul>

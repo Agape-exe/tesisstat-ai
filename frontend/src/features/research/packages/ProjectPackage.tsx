@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ProjectAnalysis } from '../analysis/ProjectAnalysis';
 import { createDatasetApi, type ResearchDataset } from '../datasets/api';
 import {
   createPackageApi,
@@ -34,7 +33,13 @@ const designs = [
 ] as const;
 const observations = ['independent', 'paired', 'repeated', 'unknown'] as const;
 
-export function ProjectPackage({ projectId }: { projectId: string }) {
+export function ProjectPackage({
+  projectId,
+  onChanged,
+}: {
+  projectId: string;
+  onChanged?: () => void;
+}) {
   const [status, setStatus] = useState<PackageStatus | null>(null);
   const [config, setConfig] = useState<PackageConfiguration | null>(null);
   const [datasets, setDatasets] = useState<ResearchDataset[]>([]);
@@ -72,6 +77,7 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
     setNotice('');
     try {
       await action();
+      onChanged?.();
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -510,6 +516,7 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
               Validar investigación
             </button>
             <button
+              className="rp-secondary"
               disabled={busy || !!status?.errors.length}
               onClick={() =>
                 void work(async () => {
@@ -577,11 +584,6 @@ export function ProjectPackage({ projectId }: { projectId: string }) {
           )}
         </>
       )}
-      <ProjectAnalysis
-        key={`${projectId}-${status?.state}-${result?.id ?? 'history'}`}
-        projectId={projectId}
-        researchPackage={status?.state === 'generated' ? result : null}
-      />
     </section>
   );
 }

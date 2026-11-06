@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useReadResource } from '../projects/useReadResource';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createDatasetApi } from './api';
 import { DatasetEDA } from './DatasetEDA';
 import { DatasetPreparation } from './DatasetPreparation';
-import type { DatasetApi, DatasetPreview, ResearchDataset } from './api';
+import type { DatasetApi, ResearchDataset } from './api';
 
 const defaultApi = createDatasetApi();
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -10,9 +11,17 @@ const MAX_BYTES = 10 * 1024 * 1024;
 export function ProjectDatasets({
   projectId,
   api = defaultApi,
+  view: requestedView,
+  item,
+  onNavigate,
+  active = true,
 }: {
   projectId: string;
   api?: DatasetApi;
+  view?: string | null;
+  item?: string | null;
+  onNavigate?: (view: string, item?: string) => void;
+  active?: boolean;
 }) {
   const [datasets, setDatasets] = useState<ResearchDataset[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -21,12 +30,42 @@ export function ProjectDatasets({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [retry, setRetry] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [preview, setPreview] = useState<DatasetPreview | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [localSelected, setSelected] = useState<string | null>(null);
+  const selected = onNavigate ? (item ?? null) : (item ?? localSelected);
+  const [localStage, setLocalStage] = useState('preview');
+  const requestedStage = onNavigate
+    ? (requestedView ?? 'preview')
+    : (requestedView ?? localStage);
+  const stage = ['preview', 'quality', 'preparation'].includes(requestedStage)
+    ? requestedStage
+    : 'preview';
+  const chosen =
+    datasets.find((d) => d.id === selected) ??
+    datasets.find((d) => d.active) ??
+    datasets[0];
+  const [visited, setVisited] = useState<string[]>([]);
+  const pane = chosen && stage !== 'preview' ? `${chosen.id}:${stage}` : null;
+  if (pane && !visited.includes(pane)) setVisited([...visited, pane]);
+  function go(next: string, id?: string) {
+    setLocalStage(next);
+    setSelected(id ?? null);
+    onNavigate?.(next, id);
+  }
+  const loadPreview = useCallback(
+    () => (selected ? api.preview(projectId, selected) : Promise.resolve(null)),
+    [api, projectId, selected],
+  );
+  const previewResource = useReadResource(
+    loadPreview,
+    active && stage === 'preview' && !!selected,
+    String(retry),
+  );
+  const preview = previewResource.data;
+  const previewLoading = previewResource.loading;
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!active) return;
     const controller = new AbortController();
     api
       .list(projectId, controller.signal)
@@ -48,7 +87,7 @@ export function ProjectDatasets({
         }
       });
     return () => controller.abort();
-  }, [api, projectId, retry]);
+  }, [api, projectId, retry, active]);
 
   function choose(chosen: File | null) {
     setFile(chosen);
@@ -90,27 +129,13 @@ export function ProjectDatasets({
     }
   }
 
-  async function view(id: string, retry = false) {
-    if (selected === id && !retry) {
-      setSelected(null);
-      setPreview(null);
+  function view(id: string, retry = false) {
+    setError('');
+    if (retry) {
+      previewResource.reload();
       return;
     }
-    setSelected(id);
-    setPreview(null);
-    setPreviewLoading(true);
-    setError('');
-    try {
-      setPreview(await api.preview(projectId, id));
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : 'No se pudo cargar la vista previa.',
-      );
-    } finally {
-      setPreviewLoading(false);
-    }
+    go('preview', selected === id ? undefined : id);
   }
 
   async function activate(id: string) {
@@ -166,7 +191,6 @@ export function ProjectDatasets({
       setDatasets((items) => items.filter((item) => item.id !== dataset.id));
       if (selected === dataset.id) {
         setSelected(null);
-        setPreview(null);
       }
       setNotice('Dataset eliminado.');
     } catch (caught) {
@@ -186,28 +210,56 @@ export function ProjectDatasets({
       aria-label="Datasets de investigación"
       aria-busy={loading || busy}
     >
-      <h3>Datasets</h3>
+      <p className="rp-eyebrow">TUS DATOS, PASO A PASO</p>
+      <h2>Datos</h2>
+      <nav className="rp-stage-nav" aria-label="Vistas de datos">
+        {(
+          [
+            ['preview', 'Archivo y vista previa'],
+            ['quality', 'Calidad de datos'],
+            ['preparation', 'Preparación y transformaciones'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            className="rp-secondary"
+            aria-current={stage === id ? 'page' : undefined}
+            key={id}
+            onClick={() => go(id, chosen?.id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
       <p className="rp-hint">
         Adjunta CSV UTF-8 o XLSX de hasta 10 MiB. Usa solo datos ficticios en
         esta demo.
       </p>
-      <label htmlFor="research-dataset">Archivo</label>
-      <div className="rp-documents-upload">
-        <input
-          ref={input}
-          id="research-dataset"
-          type="file"
-          accept=".csv,.xlsx"
-          disabled={busy}
-          onChange={(event) => choose(event.target.files?.[0] ?? null)}
-        />
-        <button disabled={!file || busy} onClick={() => void upload()}>
-          {busy ? 'Subiendo…' : 'Subir dataset'}
-        </button>
-      </div>
+      {stage === 'preview' && (
+        <>
+          <label htmlFor="research-dataset">Archivo</label>
+          <div className="rp-documents-upload">
+            <input
+              ref={input}
+              id="research-dataset"
+              type="file"
+              accept=".csv,.xlsx"
+              disabled={busy}
+              onChange={(event) => choose(event.target.files?.[0] ?? null)}
+            />
+            <button disabled={!file || busy} onClick={() => void upload()}>
+              {busy ? 'Subiendo…' : 'Subir dataset'}
+            </button>
+          </div>
+        </>
+      )}
       {error && (
         <p role="alert" className="rp-error">
           {error}
+        </p>
+      )}
+      {previewResource.error && (
+        <p role="alert" className="rp-error">
+          {previewResource.error}
         </p>
       )}
       {notice && (
@@ -229,7 +281,7 @@ export function ProjectDatasets({
         </button>
       ) : !datasets.length ? (
         <p>Aún no hay datasets en esta investigación.</p>
-      ) : (
+      ) : stage === 'preview' ? (
         <ul className="rp-documents-list">
           {datasets.map((dataset) => (
             <li key={dataset.id}>
@@ -305,17 +357,6 @@ export function ProjectDatasets({
               >
                 Eliminar
               </button>
-              <DatasetEDA
-                projectId={projectId}
-                datasetId={dataset.id}
-                api={api}
-              />
-              <DatasetPreparation
-                projectId={projectId}
-                dataset={dataset}
-                api={api}
-                onCreated={() => setRetry((value) => value + 1)}
-              />
               {selected === dataset.id && (
                 <div className="rp-dataset-preview">
                   {previewLoading ? (
@@ -364,7 +405,52 @@ export function ProjectDatasets({
             </li>
           ))}
         </ul>
+      ) : null}
+      {stage !== 'preview' && chosen && (
+        <>
+          <label className="rp-field">
+            Dataset de trabajo
+            <select
+              value={chosen.id}
+              onChange={(event) => go(stage, event.target.value)}
+            >
+              {datasets.map((dataset) => (
+                <option key={dataset.id} value={dataset.id}>
+                  {dataset.name}
+                  {dataset.active ? ' · Activo' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="rp-hint">
+            {chosen.row_count} filas · {chosen.column_count} columnas ·{' '}
+            {chosen.synthetic == null
+              ? 'Procedencia sin declarar'
+              : chosen.synthetic
+                ? 'Sintético'
+                : 'No sintético'}
+            . Los tipos de columna no determinan escalas de medición.
+          </p>
+        </>
       )}
+      {visited.map((key) => {
+        const [id, kind] = key.split(':');
+        const dataset = datasets.find((d) => d.id === id);
+        return dataset ? (
+          <div key={key} hidden={pane !== key}>
+            {kind === 'quality' ? (
+              <DatasetEDA projectId={projectId} datasetId={id} api={api} />
+            ) : (
+              <DatasetPreparation
+                projectId={projectId}
+                dataset={dataset}
+                api={api}
+                onCreated={() => setRetry((n) => n + 1)}
+              />
+            )}
+          </div>
+        ) : null;
+      })}
     </section>
   );
 }

@@ -1,83 +1,120 @@
 import { useState } from 'react';
 import { ConversationChat } from '../../conversation/ConversationChat';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
+import { ProjectMethodology } from '../methodology/ProjectMethodology';
 import { ProjectDatasets } from '../datasets/ProjectDatasets';
-import { ProjectPackage } from '../packages/ProjectPackage';
-import { navigateProject, sections, type Section } from './navigation';
+import { AnalysisWorkspace } from '../packages/AnalysisWorkspace';
+import { ProjectResults } from '../analysis/ProjectResults';
+import { ProjectReports } from '../analysis/ProjectReports';
+import { navigateProject, navigateWorkspace, type Section } from './navigation';
 import { EmptyState } from './ProjectShell';
-
-function panelFor(section: Section) {
-  if (section === 'methodology') return 'documents';
-  if (['analysis', 'results', 'reports'].includes(section)) return 'package';
-  return section;
-}
-
+type WorkspaceRoute = { view: string | null; item: string | null };
 export function ProjectWorkspace({
   projectId,
   section,
+  view = null,
+  item = null,
 }: {
   projectId: string;
   section: Section;
+  view?: string | null;
+  item?: string | null;
 }) {
-  const panel = panelFor(section);
-  const [cache, setCache] = useState({ current: panel, visited: [panel] });
-  if (cache.current !== panel) {
+  const routeKey = JSON.stringify([section, view, item]);
+  const [cache, setCache] = useState<{
+    key: string;
+    routes: Partial<Record<Section, WorkspaceRoute>>;
+  }>({ key: routeKey, routes: { [section]: { view, item } } });
+  if (cache.key !== routeKey)
     setCache({
-      current: panel,
-      visited: cache.visited.includes(panel)
-        ? cache.visited
-        : [...cache.visited, panel],
+      key: routeKey,
+      routes: { ...cache.routes, [section]: { view, item } },
     });
-  }
   return (
     <div className="rp-workspace" aria-label="Sección del proyecto">
-      {['methodology', 'results', 'reports'].includes(section) && (
-        <h2>{sections.find(([id]) => id === section)?.[1]}</h2>
-      )}
-      {section === 'methodology' && (
-        <p className="rp-hint">
-          Selecciona un documento y abre su revisión metodológica. Conservamos
-          el flujo de documentos y metodología durante esta fase.
-        </p>
-      )}
-      {['analysis', 'results', 'reports'].includes(section) && (
-        <p className="rp-hint">
-          Estas secciones conservan el flujo integrado: prepara el paquete,
-          revisa y aprueba el análisis; luego consulta los resultados y descarga
-          sus informes. No es necesario volver a ejecutar un análisis para
-          consultar su historial.
-        </p>
-      )}
-      {section === 'instrument' && (
-        <EmptyState title="Instrumento: próximamente">
-          La extracción de ítems, validación y confiabilidad aún no están
-          disponibles. Puedes adjuntar documentos de tu investigación en
-          Documentos; esto no valida un instrumento.
-        </EmptyState>
-      )}
-      {cache.visited.includes('assistant') && (
-        <div hidden={panel !== 'assistant'}>
-          <ConversationChat
-            projectId={projectId}
-            onOpenResource={(resource) => navigateProject(projectId, resource)}
-          />
-        </div>
-      )}
-      {cache.visited.includes('documents') && (
-        <div hidden={panel !== 'documents'}>
-          <ProjectDocuments projectId={projectId} />
-        </div>
-      )}
-      {cache.visited.includes('datasets') && (
-        <div hidden={panel !== 'datasets'}>
-          <ProjectDatasets projectId={projectId} />
-        </div>
-      )}
-      {cache.visited.includes('package') && (
-        <div hidden={panel !== 'package'}>
-          <ProjectPackage projectId={projectId} />
-        </div>
+      {(Object.entries(cache.routes) as [Section, WorkspaceRoute][]).map(
+        ([id, route]) => (
+          <div key={id} hidden={id !== section}>
+            <SectionContent
+              projectId={projectId}
+              section={id}
+              view={route.view}
+              item={route.item}
+              active={id === section}
+            />
+          </div>
+        ),
       )}
     </div>
   );
+}
+function SectionContent({
+  projectId,
+  section,
+  view,
+  item,
+  active,
+}: {
+  projectId: string;
+  section: Section;
+  view: string | null;
+  item: string | null;
+  active: boolean;
+}) {
+  switch (section) {
+    case 'assistant':
+      return (
+        <ConversationChat
+          projectId={projectId}
+          onOpenResource={(resource) => navigateProject(projectId, resource)}
+        />
+      );
+    case 'documents':
+      return <ProjectDocuments projectId={projectId} />;
+    case 'methodology':
+      return (
+        <ProjectMethodology
+          projectId={projectId}
+          view={view}
+          item={item}
+          active={active}
+        />
+      );
+    case 'datasets':
+      return (
+        <ProjectDatasets
+          projectId={projectId}
+          view={view}
+          item={item}
+          active={active}
+          onNavigate={(next, selected) =>
+            navigateWorkspace(projectId, 'datasets', next, selected)
+          }
+        />
+      );
+    case 'analysis':
+      return (
+        <AnalysisWorkspace
+          projectId={projectId}
+          view={view}
+          item={item}
+          active={active}
+        />
+      );
+    case 'results':
+      return (
+        <ProjectResults projectId={projectId} item={item} active={active} />
+      );
+    case 'reports':
+      return (
+        <ProjectReports projectId={projectId} item={item} active={active} />
+      );
+    case 'instrument':
+      return (
+        <EmptyState title="Instrumento: próximamente">
+          La extracción de ítems, validación y confiabilidad aún no están
+          disponibles.
+        </EmptyState>
+      );
+  }
 }

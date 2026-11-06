@@ -15,6 +15,8 @@ export interface ProjectRoute {
   projectId: string | null;
   section: Section;
   form: 'create' | 'edit' | null;
+  view: string | null;
+  item: string | null;
 }
 
 function subscribe(callback: () => void) {
@@ -37,6 +39,8 @@ export function useProjectRoute(): ProjectRoute {
   const form = params.get('form');
   return {
     projectId: params.get('project') || null,
+    view: params.get('view'),
+    item: params.get('item'),
     section: sections.some(([id]) => id === section)
       ? (section as Section)
       : 'assistant',
@@ -49,6 +53,7 @@ export function navigateProject(
   section: Section = 'assistant',
   form: ProjectRoute['form'] = null,
   replace = false,
+  workspace?: { view?: string; item?: string },
 ) {
   const params = new URLSearchParams();
   if (projectId) {
@@ -56,6 +61,8 @@ export function navigateProject(
     params.set('section', section);
   }
   if (form) params.set('form', form);
+  if (workspace?.view) params.set('view', workspace.view);
+  if (workspace?.item) params.set('item', workspace.item);
   const url = `${window.location.pathname}${window.location.search}${params.size ? `#${params}` : ''}`;
   if (
     url !==
@@ -64,4 +71,13 @@ export function navigateProject(
     window.history[replace ? 'replaceState' : 'pushState'](null, '', url);
   }
   window.dispatchEvent(new Event('tesisstat:navigate'));
+}
+
+export function navigateWorkspace(
+  projectId: string,
+  section: Section,
+  view: string,
+  item?: string,
+) {
+  navigateProject(projectId, section, null, false, { view, item });
 }

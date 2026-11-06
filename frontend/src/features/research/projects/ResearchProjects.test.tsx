@@ -630,8 +630,11 @@ it('keeps methodology and the previous package URL accessible', async () => {
     expect(screen.getByRole('button', { name: label })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: 'Metodología' }));
   expect(
-    await screen.findByRole('region', { name: 'Documentos de investigación' }),
+    await screen.findByRole('region', { name: 'Metodología de investigación' }),
   ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('region', { name: 'Documentos de investigación' }),
+  ).not.toBeInTheDocument();
 });
 
 it('labels Instrumento as pending without invoking any extraction endpoint', async () => {

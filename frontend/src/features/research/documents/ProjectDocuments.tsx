@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createDocumentApi } from './api';
 import type { DocumentApi, ExtractionResult, ResearchDocument } from './api';
-import { DocumentMethodology } from '../methodology/DocumentMethodology';
+import { navigateWorkspace } from '../projects/navigation';
 
 const defaultApi = createDocumentApi();
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -222,6 +222,18 @@ export function ProjectDocuments({
                   {(document.size / 1024).toFixed(1)} KB ·{' '}
                   {new Date(document.uploaded_at).toLocaleString('es-PE')}
                 </small>
+                <small>
+                  Extracción:{' '}
+                  {selected === document.id && !extractionLoading
+                    ? extraction?.status === 'completed'
+                      ? 'Completada'
+                      : extraction?.status === 'failed'
+                        ? 'Fallida'
+                        : extraction?.status === 'no_text'
+                          ? 'Sin texto legible'
+                          : 'Sin extracción guardada'
+                    : 'Por consultar'}
+                </small>
               </div>
               <button
                 className="rp-secondary"
@@ -296,17 +308,19 @@ export function ProjectDocuments({
                       )}
                     </>
                   )}
-                  {!extractionLoading && (
-                    <DocumentMethodology
-                      key={document.id}
-                      projectId={projectId}
-                      documentId={document.id}
-                      hasText={
-                        extraction?.status === 'completed' &&
-                        !!extraction.text.trim()
-                      }
-                    />
-                  )}
+                  <button
+                    className="rp-secondary"
+                    onClick={() =>
+                      navigateWorkspace(
+                        projectId,
+                        'methodology',
+                        'summary',
+                        document.id,
+                      )
+                    }
+                  >
+                    Revisar metodología
+                  </button>
                 </div>
               )}
             </li>

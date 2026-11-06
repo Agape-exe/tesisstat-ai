@@ -69,11 +69,13 @@ export function DocumentMethodology({
   documentId,
   hasText,
   api = defaultApi,
+  reviewMode = 'inline',
 }: {
   projectId: string;
   documentId: string;
   hasText: boolean;
   api?: MethodologyApi;
+  reviewMode?: 'inline' | 'external';
 }) {
   const [state, setState] = useState<MethodologyState | null>(null);
   const [review, setReview] = useState<MethodologyReview | null>(null);
@@ -353,7 +355,7 @@ export function DocumentMethodology({
               </details>
             </>
           )}
-          {!review && api.createReview && (
+          {reviewMode === 'inline' && !review && api.createReview && (
             <button
               type="button"
               disabled={busy || state?.status === 'processing'}
@@ -364,7 +366,7 @@ export function DocumentMethodology({
                 : 'Crear metodología manualmente'}
             </button>
           )}
-          {review && (
+          {reviewMode === 'inline' && review && (
             <ReviewEditor
               review={review}
               api={api}

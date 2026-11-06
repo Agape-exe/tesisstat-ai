@@ -1,5 +1,7 @@
 # UX/UI fase 1 — registro de validación
 
+> Registro histórico de la primera entrega. Su composición de secciones fue rechazada en la revisión visual. La [corrección estructural y evidencia vigente](../uxui-correccion/VALIDACION.md) sustituye esas decisiones; la aceptación final del usuario sigue pendiente.
+
 Fecha de referencia: 6 de noviembre de 2026 (America/Lima).
 
 ## Base anterior a cambios de código
