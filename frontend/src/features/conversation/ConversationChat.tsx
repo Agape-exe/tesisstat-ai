@@ -55,9 +55,11 @@ const sourceStates: Record<string, string> = {
 export function ConversationChat({
   projectId,
   api = defaultApi,
+  onOpenResource,
 }: {
   projectId: string;
   api?: ConversationApi;
+  onOpenResource?: (section: 'documents' | 'datasets' | 'instrument') => void;
 }) {
   // The parent keys this component by project: no state or requests cross projects.
   const [items, setItems] = useState<Conversation[]>([]);
@@ -77,7 +79,7 @@ export function ConversationChat({
   const locked = useRef(false);
   const active = useRef(true);
   const selection = useRef(0);
-  const listEnd = useRef<HTMLDivElement>(null);
+  const messagesViewport = useRef<HTMLDivElement>(null);
   const deleteDialog = useRef<HTMLDialogElement>(null);
   const deleteButton = useRef<HTMLButtonElement>(null);
   const selectedKey = `tesisstat:conversation:v1:${projectId}`;
@@ -183,7 +185,10 @@ export function ConversationChat({
   }, [api, projectId]);
 
   useEffect(() => {
-    listEnd.current?.scrollIntoView?.({ block: 'nearest' });
+    // Scroll the history pane only; opening a project must not move the page
+    // past its heading or the mobile navigation.
+    const viewport = messagesViewport.current;
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
   }, [detail?.messages.length, sending]);
   useEffect(() => {
     if (deleting) deleteDialog.current?.showModal();
@@ -367,7 +372,7 @@ export function ConversationChat({
       <header className="chat-header">
         <div>
           <p className="rp-eyebrow">ORIENTACIÓN ACADÉMICA</p>
-          <h3>Asistente IA</h3>
+          <h2>Asistente IA</h2>
           <p>Una pregunta a la vez, avanza con tu investigación.</p>
         </div>
         <span className="rp-badge">
@@ -382,44 +387,59 @@ export function ConversationChat({
         Demostración local sin autenticación: usa únicamente información
         ficticia.
       </p>
-      <section className="chat-context" aria-label="Contexto de investigación">
-        <div className="chat-toolbar">
-          <h4>Contexto de investigación</h4>
-          <button
-            className="rp-secondary"
-            disabled={sending || contextBusy}
-            onClick={() => void refreshContext()}
-          >
-            {contextBusy ? 'Actualizando contexto…' : 'Actualizar contexto'}
-          </button>
-        </div>
-        <p>
-          <strong>Proyecto activo:</strong> {status?.project_title ?? projectId}
-        </p>
-        {contextError && (
-          <p role="status" className="chat-warning">
-            {contextError}
+      <details className="chat-context-disclosure">
+        <summary>Fuentes y contexto de investigación</summary>
+        <section
+          className="chat-context"
+          aria-label="Contexto de investigación"
+        >
+          <div className="chat-toolbar">
+            <h3>Contexto de investigación</h3>
+            <button
+              className="rp-secondary"
+              disabled={sending || contextBusy}
+              onClick={() => void refreshContext()}
+            >
+              {contextBusy ? 'Actualizando contexto…' : 'Actualizar contexto'}
+            </button>
+          </div>
+          <p>
+            <strong>Proyecto activo:</strong>{' '}
+            {status?.project_title ?? projectId}
           </p>
-        )}
-        {status?.research_context ? (
-          <dl className="chat-source-grid">
-            {status.research_context.sources
-              .filter((s) => s.kind !== 'project')
-              .map((s) => (
-                <div key={`${s.kind}:${s.id}`}>
-                  <dt>{sourceNames[s.kind] ?? s.kind}</dt>
-                  <dd>{sourceStates[s.status] ?? s.status}</dd>
-                </div>
-              ))}
-          </dl>
-        ) : (
-          <p>Los estados de las fuentes aún no se han verificado.</p>
-        )}
-        <small>
-          Un borrador no confirma la metodología. Generar un paquete y ejecutar
-          análisis requieren los pasos de revisión del sistema.
-        </small>
-      </section>
+          {status?.research_context ? (
+            <dl className="chat-source-grid">
+              {status.research_context.sources
+                .filter((s) => s.kind !== 'project')
+                .map((s) => (
+                  <div key={`${s.kind}:${s.id}`}>
+                    <dt>{sourceNames[s.kind] ?? s.kind}</dt>
+                    <dd>{sourceStates[s.status] ?? s.status}</dd>
+                  </div>
+                ))}
+            </dl>
+          ) : (
+            <p>Los estados de las fuentes aún no se han verificado.</p>
+          )}
+          <small>
+            Un borrador no confirma la metodología. Generar un paquete y
+            ejecutar análisis requieren los pasos de revisión del sistema.
+          </small>
+        </section>
+      </details>
+      {contextError && (
+        <p role="status" className="chat-warning">
+          {contextError}
+        </p>
+      )}
+      {status?.research_context?.sources.some((source) =>
+        ['stale', 'unverified'].includes(source.status),
+      ) && (
+        <p className="chat-warning" role="status">
+          Hay fuentes desactualizadas o sin verificar. Revisa «Fuentes y
+          contexto de investigación» antes de interpretar las respuestas.
+        </p>
+      )}
       {loading && <p role="status">Cargando conversaciones…</p>}
       {error && (
         <div role="alert" className="rp-error">
@@ -507,17 +527,19 @@ export function ConversationChat({
               )}
               <div
                 className="chat-messages"
+                ref={messagesViewport}
                 role="log"
                 aria-label="Historial de mensajes"
                 aria-live="polite"
               >
                 {detail.messages.length === 0 && (
                   <div className="chat-empty">
-                    <h4>¿Qué te gustaría comprender?</h4>
+                    <h3>¿Qué te gustaría comprender?</h3>
                     <p>
                       Puedes preguntar sobre conceptos, hipótesis o métodos
                       estadísticos. Este chat no ejecuta análisis.
                     </p>
+                    <ResourceWelcome onOpenResource={onOpenResource} />
                   </div>
                 )}
                 {detail.messages.map((m) => (
@@ -594,7 +616,6 @@ export function ConversationChat({
                     Generando respuesta…
                   </p>
                 )}
-                <div ref={listEnd} />
               </div>
               <div className="chat-consent">
                 <label>
@@ -662,8 +683,9 @@ export function ConversationChat({
             </>
           ) : (
             <div className="chat-empty">
-              <h4>Tu espacio de consulta</h4>
+              <h3>Tu espacio de consulta</h3>
               <p>Crea o selecciona una conversación de esta investigación.</p>
+              <ResourceWelcome onOpenResource={onOpenResource} />
             </div>
           )}
         </div>
@@ -705,5 +727,41 @@ export function ConversationChat({
         </dialog>
       )}
     </section>
+  );
+}
+
+function ResourceWelcome({
+  onOpenResource,
+}: {
+  onOpenResource?: (section: 'documents' | 'datasets' | 'instrument') => void;
+}) {
+  if (!onOpenResource) return null;
+  return (
+    <div className="chat-resource-welcome">
+      <p>
+        Puedes empezar con una pregunta general. Cuando lo necesites, añade
+        documentos y datos para aportar contexto verificado.
+      </p>
+      <div className="chat-resource-links">
+        <button
+          className="rp-secondary"
+          onClick={() => onOpenResource('documents')}
+        >
+          Cargar documentos<small>PDF o DOCX</small>
+        </button>
+        <button
+          className="rp-secondary"
+          onClick={() => onOpenResource('datasets')}
+        >
+          Cargar datos<small>CSV o XLSX</small>
+        </button>
+        <button
+          className="rp-secondary"
+          onClick={() => onOpenResource('instrument')}
+        >
+          Instrumento<small>Funcionalidad pendiente</small>
+        </button>
+      </div>
+    </div>
   );
 }

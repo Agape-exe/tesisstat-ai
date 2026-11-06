@@ -1,26 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { ConversationChat } from '../../conversation/ConversationChat';
-import { ProjectDocuments } from '../documents/ProjectDocuments';
-import { ProjectDatasets } from '../datasets/ProjectDatasets';
-import { ProjectPackage } from '../packages/ProjectPackage';
 import { createProjectApi, ProjectApiError } from './api';
 import { DeleteProjectDialog } from './DeleteProjectDialog';
 import { ProjectForm } from './ProjectForm';
-import { degreeLabels } from './types';
+import { ProjectList } from './ProjectList';
+import { ProjectHeader, ProjectShell } from './ProjectShell';
+import { ProjectWorkspace } from './ProjectWorkspace';
+import { navigateProject, useProjectRoute } from './navigation';
 import type { Project, ProjectDraft, ProjectService } from './types';
+import { degreeLabels } from './types';
 import './projects.css';
+import './redesign.css';
 
-type View =
-  | { kind: 'list' | 'create' }
-  | { kind: 'detail' | 'edit'; project: Project }
-  | { kind: 'loading'; id: string }
-  | { kind: 'detail-error'; id: string; message: string };
 const defaultService = createProjectApi();
-const dateLabel = (value: string) =>
-  new Date(value).toLocaleString('es-PE', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+const errorText = (error: unknown, fallback: string) =>
+  error instanceof ProjectApiError ? error.message : fallback;
 
 export function ResearchProjects({
   service = defaultService,
@@ -31,19 +24,33 @@ export function ResearchProjects({
   homeHref?: string;
   integrated?: boolean;
 }) {
+  const route = useProjectRoute();
+  const { projectId, section, form } = route;
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
-  const [view, setView] = useState<View>({ kind: 'list' });
+  const [selected, setSelected] = useState<Project | null>(null);
+  const [detailError, setDetailError] = useState('');
   const [notice, setNotice] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [step, setStep] = useState<
-    'documents' | 'datasets' | 'package' | 'assistant'
-  >('documents');
-  const [visited, setVisited] = useState<string[]>(['documents']);
-  const detailRequest = useRef<AbortController | null>(null);
   const deleteButton = useRef<HTMLButtonElement>(null);
+  const activeRoute = useRef(route);
+  useEffect(() => {
+    activeRoute.current = route;
+  });
+  useEffect(() => {
+    const closeDialog = () => setDeleting(false);
+    window.addEventListener('popstate', closeDialog);
+    window.addEventListener('hashchange', closeDialog);
+    window.addEventListener('tesisstat:navigate', closeDialog);
+    return () => {
+      window.removeEventListener('popstate', closeDialog);
+      window.removeEventListener('hashchange', closeDialog);
+      window.removeEventListener('tesisstat:navigate', closeDialog);
+    };
+  }, []);
+  const project = selected?.id === projectId ? selected : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,9 +66,7 @@ export function ResearchProjects({
       .catch((caught) => {
         if (!controller.signal.aborted) {
           setError(
-            caught instanceof ProjectApiError
-              ? caught.message
-              : 'No se pudieron cargar las investigaciones.',
+            errorText(caught, 'No se pudieron cargar las investigaciones.'),
           );
           setLoading(false);
         }
@@ -69,147 +74,74 @@ export function ResearchProjects({
     return () => controller.abort();
   }, [service, refresh]);
 
-  useEffect(() => () => detailRequest.current?.abort(), []);
-
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    const id = params.get('project');
-    if (!id) return;
+    if (!projectId) return;
     const controller = new AbortController();
     service
-      .get(id, controller.signal)
-      .then((project) => {
-        if (controller.signal.aborted) return;
-        const selected =
-          params.get('section') === 'assistant' ? 'assistant' : 'documents';
-        setStep(selected);
-        setVisited([selected]);
-        setView({ kind: 'detail', project });
+      .get(projectId, controller.signal)
+      .then((item) => {
+        if (!controller.signal.aborted) {
+          setSelected(item);
+          setDetailError('');
+        }
       })
       .catch((caught) => {
         if (!controller.signal.aborted)
-          setView({
-            kind: 'detail-error',
-            id,
-            message:
-              caught instanceof ProjectApiError
-                ? caught.message
-                : 'No se pudo cargar la investigación.',
-          });
+          setDetailError(
+            errorText(caught, 'No se pudo cargar la investigación.'),
+          );
       });
     return () => controller.abort();
-  }, [service]);
+  }, [service, projectId, refresh]);
 
   function goList() {
-    window.history.replaceState(
-      null,
-      '',
-      window.location.pathname + window.location.search,
-    );
-    detailRequest.current?.abort();
-    setView({ kind: 'list' });
     setNotice('');
+    setDetailError('');
+    setSelected(null);
+    setDeleting(false);
     setLoading(true);
-    setRefresh((value) => value + 1);
+    setRefresh((n) => n + 1);
+    navigateProject();
   }
-
-  async function showDetail(id: string) {
-    setStep('documents');
-    setVisited(['documents']);
-    window.history.replaceState(null, '', `#project=${encodeURIComponent(id)}`);
-    detailRequest.current?.abort();
-    const controller = new AbortController();
-    detailRequest.current = controller;
+  function open(id: string) {
     setNotice('');
-    setView({ kind: 'loading', id });
-    try {
-      const project = await service.get(id, controller.signal);
-      if (!controller.signal.aborted) setView({ kind: 'detail', project });
-    } catch (caught) {
-      if (!controller.signal.aborted)
-        setView({
-          kind: 'detail-error',
-          id,
-          message:
-            caught instanceof ProjectApiError
-              ? caught.message
-              : 'No se pudo cargar la investigación.',
-        });
-    }
+    setDetailError('');
+    navigateProject(id);
   }
-
   async function save(draft: ProjectDraft) {
-    const edited = view.kind === 'edit';
-    const project = edited
-      ? await service.update(view.project.id, draft)
+    const edited = form === 'edit' && project;
+    const savedRoute = activeRoute.current;
+    const saved = edited
+      ? await service.update(edited.id, draft)
       : await service.create(draft);
-    if (!edited) {
-      setStep('documents');
-      setVisited(['documents']);
-    }
-    window.history.replaceState(
-      null,
-      '',
-      `#project=${encodeURIComponent(project.id)}`,
-    );
-    setProjects((items) => [
-      project,
-      ...items.filter((item) => item.id !== project.id),
-    ]);
-    setView({ kind: 'detail', project });
+    setProjects((items) => [saved, ...items.filter((p) => p.id !== saved.id)]);
+    if (
+      activeRoute.current.projectId !== savedRoute.projectId ||
+      activeRoute.current.form !== savedRoute.form
+    )
+      return;
+    setSelected(saved);
+    setDetailError('');
     setError('');
     setNotice(edited ? 'Investigación actualizada.' : 'Investigación creada.');
+    navigateProject(saved.id, edited ? section : 'assistant', null, true);
   }
-
   async function remove() {
-    if (view.kind !== 'detail') return;
-    await service.delete(view.project.id);
-    setProjects((items) => items.filter((item) => item.id !== view.project.id));
+    if (!project) return;
+    await service.delete(project.id);
+    setProjects((items) => items.filter((p) => p.id !== project.id));
+    if (activeRoute.current.projectId !== project.id) return;
     setDeleting(false);
-    setView({ kind: 'list' });
+    setSelected(null);
+    setDetailError('');
     setNotice('Investigación eliminada.');
+    navigateProject(null, 'assistant', null, true);
   }
 
-  const title =
-    view.kind === 'list'
-      ? 'Mis investigaciones'
-      : view.kind === 'create'
-        ? 'Nueva investigación'
-        : view.kind === 'edit'
-          ? 'Editar investigación'
-          : 'Detalle de investigación';
   return (
-    <main className="rp-shell">
-      <header className="rp-header">
-        <a href={homeHref} aria-label="TesisStat AI, investigaciones">
-          TesisStat <strong>AI</strong>
-        </a>
-        <span>
-          {integrated
-            ? 'Research + Statistics · Demostración local'
-            : 'Research · Entorno de desarrollo'}
-        </span>
-      </header>
-      <p className="rp-eyebrow">TU ESPACIO DE INVESTIGACIÓN</p>
-      <div className="rp-heading">
-        <div>
-          <h1>{title}</h1>
-          <p>Organiza el punto de partida de tu tesis.</p>
-        </div>
-        {view.kind === 'list' && (
-          <button
-            disabled={loading}
-            onClick={() => {
-              setNotice('');
-              setView({ kind: 'create' });
-            }}
-          >
-            Nueva investigación
-          </button>
-        )}
-      </div>
+    <ProjectShell project={project} section={section} homeHref={homeHref}>
       <p className="rp-dev-note">
-        Demostración local sin autenticación. Utiliza únicamente información
+        Entorno local sin autenticación. Utiliza únicamente información
         ficticia.
       </p>
       {notice && (
@@ -217,213 +149,116 @@ export function ResearchProjects({
           {notice}
         </p>
       )}
-      {view.kind === 'list' && (
-        <section aria-label="Listado de investigaciones" aria-busy={loading}>
-          {loading ? (
-            <p role="status" className="rp-state">
-              Cargando investigaciones…
-            </p>
-          ) : error ? (
-            <div className="rp-state">
-              <p role="alert" className="rp-error">
-                {error}
-              </p>
-              <button className="rp-secondary" onClick={goList}>
-                Reintentar
-              </button>
-            </div>
-          ) : projects.length === 0 ? (
-            <div className="rp-state">
-              <span className="rp-empty-icon" aria-hidden="true">
-                ＋
-              </span>
-              <h2>Tu próxima investigación empieza aquí</h2>
+      {form === 'create' ? (
+        <>
+          <p className="rp-eyebrow">UN NUEVO COMIENZO</p>
+          <div className="rp-heading">
+            <div>
+              <h1>Nueva investigación</h1>
               <p>
-                Aún no tienes proyectos. Crea uno y completa su información
-                académica.
+                Completa la información académica. Después abrirás tu asistente.
               </p>
             </div>
-          ) : (
-            <>
-              <p className="rp-count">
-                {projects.length}{' '}
-                {projects.length === 1 ? 'investigación' : 'investigaciones'} ·
-                Más recientes primero
+          </div>
+          <ProjectForm key="create" onSave={save} onCancel={goList} />
+        </>
+      ) : !projectId ? (
+        <>
+          <p className="rp-eyebrow">TU ESPACIO DE INVESTIGACIÓN</p>
+          <div className="rp-heading">
+            <div>
+              <h1>Mis investigaciones</h1>
+              <p>Organiza tu tesis y avanza, una pregunta a la vez.</p>
+            </div>
+          </div>
+          <div className="rp-entry-row">
+            <section className="rp-feature-card">
+              <h2>Da el siguiente paso en tu tesis</h2>
+              <p>
+                Reúne tus documentos y datos en un proyecto. Tu asistente te
+                acompaña para comprenderlos.
               </p>
-              <div className="rp-cards">
-                {projects.map((project) => (
-                  <article className="rp-card" key={project.id}>
-                    <span className="rp-badge">Borrador</span>
-                    <h2>{project.title}</h2>
-                    <p>{project.description || 'Sin descripción todavía.'}</p>
-                    <p className="rp-meta">
-                      {project.university} · {project.program}
-                    </p>
-                    <footer>
-                      <span>
-                        {degreeLabels[project.degree]}
-                        {project.academic_year
-                          ? ` · ${project.academic_year}`
-                          : ''}
-                      </span>
-                      <button
-                        className="rp-link"
-                        aria-label={`Ver investigación: ${project.title}`}
-                        onClick={() => void showDetail(project.id)}
-                      >
-                        Ver investigación →
-                      </button>
-                    </footer>
-                  </article>
-                ))}
+              <button
+                disabled={loading}
+                onClick={() => {
+                  setNotice('');
+                  navigateProject(null, 'assistant', 'create');
+                }}
+              >
+                Nueva investigación
+              </button>
+            </section>
+            <aside className="rp-info-card">
+              <h2>Una conversación con contexto</h2>
+              <p>
+                Cada investigación conserva sus propios materiales e historial.
+                Tú revisas y apruebas los análisis.
+              </p>
+            </aside>
+          </div>
+          <section aria-label="Listado de investigaciones" aria-busy={loading}>
+            {loading ? (
+              <p role="status" className="rp-state">
+                Cargando investigaciones…
+              </p>
+            ) : error ? (
+              <div className="rp-state">
+                <p role="alert" className="rp-error">
+                  {error}
+                </p>
+                <button className="rp-secondary" onClick={goList}>
+                  Reintentar
+                </button>
               </div>
-            </>
-          )}
-        </section>
-      )}
-      {view.kind === 'create' && (
-        <ProjectForm key="create" onSave={save} onCancel={goList} />
-      )}
-      {view.kind === 'edit' && (
-        <ProjectForm
-          key={view.project.id}
-          initial={view.project}
-          onSave={save}
-          onCancel={() => setView({ kind: 'detail', project: view.project })}
-        />
-      )}
-      {view.kind === 'loading' && (
+            ) : (
+              <ProjectList projects={projects} onOpen={open} />
+            )}
+          </section>
+        </>
+      ) : !project ? (
         <section className="rp-state">
-          <p role="status">Cargando detalle…</p>
+          {detailError ? (
+            <>
+              <p role="alert" className="rp-error">
+                {detailError}
+              </p>
+              <button
+                onClick={() => {
+                  setDetailError('');
+                  setRefresh((n) => n + 1);
+                }}
+              >
+                Reintentar detalle
+              </button>
+            </>
+          ) : (
+            <p role="status">Cargando detalle…</p>
+          )}
           <button className="rp-secondary" onClick={goList}>
             Volver al listado
           </button>
         </section>
-      )}
-      {view.kind === 'detail-error' && (
-        <section className="rp-state">
-          <p role="alert" className="rp-error">
-            {view.message}
-          </p>
-          <div className="rp-actions">
-            <button onClick={() => void showDetail(view.id)}>
-              Reintentar detalle
-            </button>
-            <button className="rp-secondary" onClick={goList}>
-              Volver al listado
-            </button>
-          </div>
-        </section>
-      )}
-      {view.kind === 'detail' && (
-        <section
-          className="rp-detail"
-          aria-label="Información de la investigación"
-        >
-          <span className="rp-badge">Borrador</span>
-          <h2>{view.project.title}</h2>
-          <p className="rp-description">
-            {view.project.description || 'Sin descripción todavía.'}
-          </p>
-          <dl>
-            <div>
-              <dt>Universidad</dt>
-              <dd>{view.project.university}</dd>
-            </div>
-            <div>
-              <dt>Facultad</dt>
-              <dd>{view.project.faculty || 'Sin especificar'}</dd>
-            </div>
-            <div>
-              <dt>Carrera o programa</dt>
-              <dd>{view.project.program}</dd>
-            </div>
-            <div>
-              <dt>Grado académico</dt>
-              <dd>{degreeLabels[view.project.degree]}</dd>
-            </div>
-            <div>
-              <dt>Año académico</dt>
-              <dd>{view.project.academic_year ?? 'Sin especificar'}</dd>
-            </div>
-            <div>
-              <dt>Creada</dt>
-              <dd>{dateLabel(view.project.created_at)}</dd>
-            </div>
-            <div>
-              <dt>Última actualización</dt>
-              <dd>{dateLabel(view.project.updated_at)}</dd>
-            </div>
-          </dl>
-          <nav
-            className="rp-actions rp-steps"
-            aria-label="Recorrido de la investigación"
-          >
-            {(
-              [
-                ['documents', '1. Documento y metodología'],
-                ['datasets', '2. Dataset, EDA y preparación'],
-                ['package', '3. Paquete, análisis y resultados'],
-                ['assistant', '4. Asistente IA'],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                className={step === id ? '' : 'rp-secondary'}
-                aria-pressed={step === id}
-                onClick={() => {
-                  setStep(id);
-                  setVisited((old) => (old.includes(id) ? old : [...old, id]));
-                  window.history.replaceState(
-                    null,
-                    '',
-                    `#project=${encodeURIComponent(view.project.id)}&section=${id}`,
-                  );
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-          <p className="rp-hint">
-            Completa las fuentes, confirma la metodología y activa un dataset
-            antes de generar el paquete. Revisa y aprueba cada propuesta antes
-            de ejecutarla.
-          </p>
-          {visited.includes('documents') && (
-            <div hidden={step !== 'documents'}>
-              <ProjectDocuments projectId={view.project.id} />
-            </div>
-          )}
-          {visited.includes('datasets') && (
-            <div hidden={step !== 'datasets'}>
-              <ProjectDatasets projectId={view.project.id} />
-            </div>
-          )}
-          {visited.includes('package') && (
-            <div hidden={step !== 'package'}>
-              <ProjectPackage projectId={view.project.id} />
-            </div>
-          )}
-          {visited.includes('assistant') && (
-            <div hidden={step !== 'assistant'}>
-              <ConversationChat
-                key={view.project.id}
-                projectId={view.project.id}
-              />
-            </div>
-          )}
-          <div className="rp-actions">
+      ) : form === 'edit' ? (
+        <>
+          <h1>Editar investigación</h1>
+          <ProjectForm
+            key={project.id}
+            initial={project}
+            onSave={save}
+            onCancel={() => navigateProject(project.id, section)}
+          />
+        </>
+      ) : (
+        <section aria-label="Información de la investigación" key={project.id}>
+          <ProjectHeader project={project} section={section}>
             <button
+              className="rp-secondary"
               onClick={() => {
                 setNotice('');
-                setView({ kind: 'edit', project: view.project });
+                navigateProject(project.id, section, 'edit');
               }}
             >
               Editar investigación
-            </button>
-            <button className="rp-secondary" onClick={goList}>
-              Volver al listado
             </button>
             <button
               ref={deleteButton}
@@ -432,10 +267,51 @@ export function ResearchProjects({
             >
               Eliminar investigación
             </button>
-          </div>
+          </ProjectHeader>
+          <ProjectWorkspace
+            key={project.id}
+            projectId={project.id}
+            section={section}
+          />
+          <details className="rp-project-details">
+            <summary>Información académica del proyecto</summary>
+            <p className="rp-description">
+              {project.description || 'Sin descripción todavía.'}
+            </p>
+            <dl>
+              <div>
+                <dt>Universidad</dt>
+                <dd>{project.university}</dd>
+              </div>
+              <div>
+                <dt>Facultad</dt>
+                <dd>{project.faculty || 'Sin especificar'}</dd>
+              </div>
+              <div>
+                <dt>Programa</dt>
+                <dd>{project.program}</dd>
+              </div>
+              <div>
+                <dt>Año académico</dt>
+                <dd>{project.academic_year ?? 'Sin especificar'}</dd>
+              </div>
+              <div>
+                <dt>Grado académico</dt>
+                <dd>{degreeLabels[project.degree]}</dd>
+              </div>
+              <div>
+                <dt>Creada</dt>
+                <dd>{new Date(project.created_at).toLocaleString('es-PE')}</dd>
+              </div>
+              <div>
+                <dt>Última actualización</dt>
+                <dd>{new Date(project.updated_at).toLocaleString('es-PE')}</dd>
+              </div>
+            </dl>
+          </details>
           {deleting && (
             <DeleteProjectDialog
-              title={view.project.title}
+              title={project.title}
               onConfirm={remove}
               onCancel={() => {
                 setDeleting(false);
@@ -446,10 +322,9 @@ export function ResearchProjects({
         </section>
       )}
       <footer className="rp-footer">
-        Research Module · Persistencia SQLite local. Revisión metodológica y
-        análisis descriptivo/Pearson/Spearman con aprobación explícita, solo
-        para datos sintéticos en esta demo.
+        TesisStat AI · {integrated ? 'Research + Statistics' : 'Research'} ·
+        Revisa las fuentes y aprueba cada propuesta antes de ejecutarla.
       </footer>
-    </main>
+    </ProjectShell>
   );
 }

@@ -201,6 +201,7 @@ it('shows source states and explains historical results and incomplete sources',
   const api = service();
   vi.mocked(api.status).mockResolvedValue(researchStatus());
   await ready(api);
+  fireEvent.click(screen.getByText('Fuentes y contexto de investigación'));
   const panel = screen.getByRole('region', {
     name: 'Contexto de investigación',
   });
@@ -229,6 +230,7 @@ it('refreshes changed sources without losing history or consent', async () => {
     screen.getByText('Borrador: requiere confirmación'),
   ).toBeInTheDocument();
   authorize();
+  fireEvent.click(screen.getByText('Fuentes y contexto de investigación'));
   fireEvent.click(screen.getByRole('button', { name: 'Actualizar contexto' }));
   expect(await screen.findByText('Confirmada')).toBeInTheDocument();
   expect(screen.getByText(assistant.content)).toBeInTheDocument();

@@ -14,6 +14,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Bound jsdom contention on Windows without extending test timeouts.
+    maxWorkers: 4,
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     restoreMocks: true,
