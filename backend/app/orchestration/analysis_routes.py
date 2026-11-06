@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 
 from app.modules.statistics.reports import (
+    authorized_group_figure,
     authorized_residual_figure,
     authorized_scatter_figure,
     render_docx,
@@ -15,6 +16,7 @@ from app.modules.statistics.reports import (
 from app.orchestration.analysis_models import (
     AnalysisRecord,
     ApprovalRequest,
+    AuthorizedGroupPlot,
     AuthorizedResidualPlot,
     AuthorizedScatterPlot,
     PlanRequest,
@@ -93,6 +95,15 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
     ) -> AuthorizedResidualPlot:
         return service.authorized_residuals(project_id, str(plan_id), result_id)
 
+    @router.get(
+        "/plans/{plan_id}/results/{result_id}/observations/groups",
+        response_model=AuthorizedGroupPlot,
+    )
+    def authorized_group_distribution(
+        project_id: UUID, plan_id: UUID, result_id: str
+    ) -> AuthorizedGroupPlot:
+        return service.authorized_group_distribution(project_id, str(plan_id), result_id)
+
     @router.get("/plans/{plan_id}/results/{result_id}/report.{format}")
     def report(
         project_id: UUID, plan_id: UUID, result_id: str, format: Literal["docx", "pdf"]
@@ -138,6 +149,26 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
                     [(point.fitted, point.residual) for point in residuals.points],
                     complete_observation_count=residuals.complete_observation_count,
                     sampled=residuals.sampled,
+                ),
+            )
+        if record.plan.technique in {
+            "t_independent",
+            "t_welch",
+            "mann_whitney",
+            "anova",
+            "anova_welch",
+            "kruskal_wallis",
+            "tukey",
+            "games_howell",
+        }:
+            groups = service.authorized_group_distribution(project_id, str(plan_id), result_id)
+            observation_figures = (
+                authorized_group_figure(
+                    groups.group_label,
+                    groups.outcome_label,
+                    [(point.group, point.value) for point in groups.points],
+                    complete_observation_count=groups.complete_observation_count,
+                    sampled=groups.sampled,
                 ),
             )
         renderer = render_docx if format == "docx" else render_pdf

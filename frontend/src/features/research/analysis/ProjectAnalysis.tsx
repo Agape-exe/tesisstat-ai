@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { PersistedResultCharts } from '../../statistics/PersistedResultCharts';
 import { AuthorizedScatterPlot } from '../../statistics/AuthorizedScatterPlot';
 import { AuthorizedResidualPlot } from '../../statistics/AuthorizedResidualPlot';
+import { AuthorizedGroupPlot } from '../../statistics/AuthorizedGroupPlot';
 import type { ResearchPackageSummary } from '../packages/api';
 import { createAnalysisApi, type AnalysisRecord } from './api';
 
@@ -274,6 +275,21 @@ export function ProjectAnalysis({
                             ].includes(record.plan.technique ?? '') && (
                               <AuthorizedResidualPlot
                                 load={() => api.residuals(projectId, record)}
+                              />
+                            )}
+                          {!stale &&
+                            [
+                              't_independent',
+                              't_welch',
+                              'mann_whitney',
+                              'anova',
+                              'anova_welch',
+                              'kruskal_wallis',
+                              'tukey',
+                              'games_howell',
+                            ].includes(record.plan.technique ?? '') && (
+                              <AuthorizedGroupPlot
+                                load={() => api.groups(projectId, record)}
                               />
                             )}
                         </>

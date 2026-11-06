@@ -923,6 +923,53 @@ def test_authorized_residuals_reject_non_model_results(tmp_path):
     assert response.status_code == 409
 
 
+def test_authorized_groups_release_only_current_approved_comparison(tmp_path, monkeypatch):
+    case = research_case(
+        tmp_path,
+        kind="comparison",
+        scales=("nominal", "ratio"),
+        data=b"horas_estudio,rendimiento\nA,1\nA,2\nB,4\nB,6\n",
+    )
+    service = case.client.app.state.research_analysis
+    original = service.planner.propose
+
+    def independent_plan(package, hypothesis_id):
+        plan = original(package, hypothesis_id)
+        plan.technique = "t_independent"
+        plan.rationale = "t de Student para dos grupos independientes."
+        plan.pending_questions = []
+        plan.status = "proposed"
+        return plan
+
+    monkeypatch.setattr(service.planner, "propose", independent_plan)
+    record, result = executed(case)
+    response = case.client.get(
+        case.root + f"/plans/{record['plan']['id']}/results/{result.id}/observations/groups"
+    )
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "group_label": "horas_estudio",
+        "outcome_label": "rendimiento",
+        "points": [
+            {"group": "A", "value": 1.0},
+            {"group": "A", "value": 2.0},
+            {"group": "B", "value": 4.0},
+            {"group": "B", "value": 6.0},
+        ],
+        "complete_observation_count": 4,
+        "sampled": False,
+    }
+
+
+def test_authorized_groups_reject_non_comparison_results(tmp_path):
+    case = research_case(tmp_path, kind="association")
+    record, result = executed(case)
+    response = case.client.get(
+        case.root + f"/plans/{record['plan']['id']}/results/{result.id}/observations/groups"
+    )
+    assert response.status_code == 409
+
+
 def test_real_dataset_authorization_is_bound_to_current_package_source(tmp_path):
     case = research_case(tmp_path)
     assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200

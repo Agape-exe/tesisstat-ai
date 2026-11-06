@@ -162,6 +162,60 @@ def authorized_residual_figure(
     )
 
 
+def authorized_group_figure(
+    group_label: str,
+    outcome_label: str,
+    points: Sequence[tuple[str, float]],
+    *,
+    complete_observation_count: int,
+    sampled: bool,
+) -> tuple[str, ...]:
+    """Render a compact distribution summary from authorized group outcomes only."""
+
+    if not points:
+        return ()
+    grouped: dict[str, list[float]] = {}
+    for label, value in points:
+        grouped.setdefault(label, []).append(value)
+    minimum = min(value for _, value in points)
+    maximum = max(value for _, value in points)
+    span = maximum - minimum or 1.0
+    width = 25
+
+    def marker(value: float) -> int:
+        return min(width - 1, max(0, round((value - minimum) / span * (width - 1))))
+
+    lines = [f"Distribución autorizada de {outcome_label} por {group_label}"]
+    for label, values in grouped.items():
+        ordered = sorted(values)
+        middle = len(ordered) // 2
+        median = (ordered[(len(ordered) - 1) // 2] + ordered[middle]) / 2
+        row = [" " for _ in range(width)]
+        row[marker(ordered[0])] = "|"
+        row[marker(ordered[-1])] = "|"
+        row[marker(median)] = "*"
+        lines.append(
+            f"- {label}: [" + "".join(row) + f"] n={len(values)}; "
+            f"mín={ordered[0]:.6g}; mediana={median:.6g}; máx={ordered[-1]:.6g}"
+        )
+    lines.extend(
+        (
+            f"Escala común de {outcome_label}: {minimum:.6g} a {maximum:.6g}; * = mediana.",
+            (
+                f"{complete_observation_count} observaciones completas; se representan "
+                f"{len(points)} mediante resumen por grupo."
+            ),
+            (
+                "Muestra estratificada y determinista limitada a la respuesta autorizada."
+                if sampled
+                else "Se representaron todas las observaciones autorizadas."
+            ),
+            "Nota: figura descriptiva; no determina significancia automáticamente.",
+        )
+    )
+    return tuple(lines)
+
+
 def _metadata_lines(result: AnalysisResult) -> tuple[str, ...]:
     """Keep the minimum reproducibility metadata with every export."""
 

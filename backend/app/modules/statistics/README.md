@@ -155,3 +155,10 @@ reconstruye exclusivamente la codificación determinista de las variables
 aprobadas, exige resultado vigente/completado y autorización vigente para datos
 no sintéticos, y limita la respuesta a 2 000 observaciones. No existe una ruta
 genérica que exponga filas del dataset.
+
+Para comparaciones independientes aprobadas, la integración también ofrece una
+distribución de resultados por grupo. Solo libera las dos columnas ya incluidas
+en el plan para t/Welch/Mann–Whitney, ANOVA/Kruskal–Wallis y post-hoc; la
+respuesta se limita a 2 000 puntos mediante muestreo estratificado,
+determinista y con representación de cada grupo. No se habilita lectura libre
+del dataset.
