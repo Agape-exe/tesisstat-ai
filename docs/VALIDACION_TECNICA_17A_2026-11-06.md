@@ -210,3 +210,41 @@ visual. También falta observar el flujo React en un navegador controlable.
 Corresponde un PR de corrección hacia `develop`, sin fusionar. Su aprobación de
 merge requiere autorización de la usuaria. No se requiere autorizar gastos:
 siguen prohibidos. No se generan entregables para Notion ni se inicia 18A.
+
+## Ampliación por avance remoto durante la validación
+
+Una nueva consulta de Git detectó `origin/develop` en
+`916eff410187e3633a2315b520fcc123a0fb6040`. Se fusionaron también los PR #52
+(figuras de grupos), #54 (pares autorizados) y #55 (auditoría de entrega de
+Statistics). Son ocho commits adicionales respecto de la base inicial de este
+informe. No cambian `_current`, el planificador, el bridge ni el grafo; amplían
+las visualizaciones e informes autorizados y sus pruebas.
+
+Para respetar la prohibición de merges y rebases automáticos, no se integraron
+esos commits en la rama publicada. Se creó el worktree detached
+`C:\Users\Melissa\Desktop\tesisstat-ai\cierre17a-develop-916eff4` y se aplicó
+exclusivamente el parche de Conversation y sus dos regresiones. `git apply
+--check` pasó sin conflictos. El worktree conserva deliberadamente esas dos
+modificaciones de validación; no contiene credenciales ni datos de la usuaria.
+Statistics y contratos coinciden íntegramente con el nuevo `develop`.
+
+La nueva instalación con `uv sync --locked` y `npm ci` pasó. Ruff, formato Python
+(142 archivos), exportación de contratos y compilación Python: correctos.
+Frontend sobre esta base: **109 aprobadas, cero fallos, 24 archivos**; ESLint,
+Prettier, TypeScript, contratos y builds correctos (217 módulos principal,
+208 Research). Backend: **419 aprobadas, cero fallos u omisiones**, en 202.51 s,
+incluyendo las dos regresiones de esta corrección. OpenAPI del backend integrado
+en ese worktree responde 200 y expone 44 rutas; salud responde `research-dev`.
+
+La rama publicada contiene la corrección basada en `418496b`; los servicios
+locales siguen ejecutando esa copia con la corrección, no el worktree de
+compatibilidad. Ambos endpoints de salud y frontend se volvieron a comprobar
+con HTTP 200 después del avance remoto.
+
+PR de corrección: [#53, en borrador](https://github.com/Agape-exe/tesisstat-ai/pull/53).
+El conector GitHub rechazó la creación con 403; la CLI local autenticada como
+`Agape-exe` permitió publicarlo. CI de `b3dcaec`: ejecución
+[42238741347](https://github.com/Agape-exe/tesisstat-ai/actions/runs/42238741347),
+los tres jobs aprobados. Esa ejecución precede a las últimas fusiones; la
+compatibilidad con `916eff4` se comprueba separadamente y no se atribuye a esa CI.
+No se fusionó ningún PR ni se añadieron revisores, asignados o coautores.
