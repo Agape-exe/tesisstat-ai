@@ -10,6 +10,7 @@ import {
 import './descriptive-demo.css';
 
 const number = new Intl.NumberFormat('es-PE', { maximumFractionDigits: 3 });
+const defaultApi = createDescriptiveApi();
 
 function value(input: number | null) {
   return input === null ? '—' : number.format(input);
@@ -76,7 +77,7 @@ function CategoricalChart({ result }: { result: DescriptiveResult }) {
 }
 
 export function DescriptiveDemo({
-  api = createDescriptiveApi(),
+  api = defaultApi,
 }: {
   api?: DescriptiveApi;
 }) {
@@ -102,6 +103,7 @@ export function DescriptiveDemo({
       .then((items) => {
         setDatasets(items);
         setDatasetId(items[0]?.id ?? '');
+        setMessage('');
         setState('ready');
       })
       .catch((error: unknown) => {
@@ -123,6 +125,7 @@ export function DescriptiveDemo({
             .filter((item) => item.kind !== 'identifier')
             .map((item) => item.name),
         );
+        setMessage('');
         setState('ready');
       })
       .catch((error: unknown) => {
