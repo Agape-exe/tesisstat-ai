@@ -138,6 +138,25 @@ def test_export_guards_for_missing_foreign_failed_and_stale(tmp_path):
     assert failed.client.get(report_url(failed, record)).status_code == 409
 
 
+@pytest.mark.parametrize("fmt", ["docx", "pdf"])
+def test_model_report_includes_authorized_residual_figure(tmp_path, fmt):
+    case = research_case(tmp_path, kind="prediction")
+    record, result = executed(case)
+    response = case.client.get(report_url(case, record | {"result": result.model_dump()}, fmt=fmt))
+    assert response.status_code == 200, response.text
+    if fmt == "docx":
+        text = "\n".join(
+            paragraph.text for paragraph in Document(BytesIO(response.content)).paragraphs
+        )
+    else:
+        text = "\n".join(
+            page.extract_text() for page in PdfReader(BytesIO(response.content), strict=True).pages
+        )
+    assert "Residuos autorizados frente a valores ajustados: rendimiento" in text
+    assert "Eje X: valores ajustados" in text
+    assert "observaciones completas; se representan" in text
+
+
 def test_local_demo_cors_and_environment(tmp_path):
     settings = ResearchDevSettings(
         _env_file=None,

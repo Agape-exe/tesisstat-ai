@@ -112,6 +112,56 @@ def authorized_scatter_figure(
     )
 
 
+def authorized_residual_figure(
+    outcome_label: str,
+    points: Sequence[tuple[float, float]],
+    *,
+    complete_observation_count: int,
+    sampled: bool,
+) -> tuple[str, ...]:
+    """Render a bounded fitted-versus-residual plot from released diagnostics.
+
+    ``points`` must originate in the authorized residual diagnostic, so this
+    renderer cannot select columns or read arbitrary dataset rows on its own.
+    """
+
+    if not points:
+        return ()
+    width, height = 31, 11
+    fitted = [point[0] for point in points]
+    residuals = [point[1] for point in points]
+    minimum_x, maximum_x = min(fitted), max(fitted)
+    minimum_y, maximum_y = min(min(residuals), 0.0), max(max(residuals), 0.0)
+    span_x = maximum_x - minimum_x or 1.0
+    span_y = maximum_y - minimum_y or 1.0
+    grid = [[" " for _ in range(width)] for _ in range(height)]
+    for value, residual in points:
+        column = min(width - 1, max(0, round((value - minimum_x) / span_x * (width - 1))))
+        row = min(height - 1, max(0, round((maximum_y - residual) / span_y * (height - 1))))
+        grid[row][column] = "x"
+    zero_row = min(height - 1, max(0, round(maximum_y / span_y * (height - 1))))
+    for column in range(width):
+        if grid[zero_row][column] == " ":
+            grid[zero_row][column] = "-"
+    return (
+        f"Residuos autorizados frente a valores ajustados: {outcome_label}",
+        *["|" + "".join(row) + "|" for row in grid],
+        "+" + "-" * width + "+",
+        f"Eje X: valores ajustados ({minimum_x:.6g} a {maximum_x:.6g})",
+        f"Eje Y: residuos ({minimum_y:.6g} a {maximum_y:.6g}); línea horizontal = 0",
+        (
+            f"{complete_observation_count} observaciones completas; se representan "
+            f"{len(points)} mediante posiciones agrupadas."
+        ),
+        (
+            "Muestra determinista limitada a la respuesta autorizada."
+            if sampled
+            else "Se representaron todas las observaciones autorizadas."
+        ),
+        "Nota: diagnóstico descriptivo; no determina significancia automáticamente.",
+    )
+
+
 def _metadata_lines(result: AnalysisResult) -> tuple[str, ...]:
     """Keep the minimum reproducibility metadata with every export."""
 

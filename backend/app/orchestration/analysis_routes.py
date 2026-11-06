@@ -6,7 +6,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 
-from app.modules.statistics.reports import authorized_scatter_figure, render_docx, render_pdf
+from app.modules.statistics.reports import (
+    authorized_residual_figure,
+    authorized_scatter_figure,
+    render_docx,
+    render_pdf,
+)
 from app.orchestration.analysis_models import (
     AnalysisRecord,
     ApprovalRequest,
@@ -119,6 +124,20 @@ def create_router(service: ResearchAnalysisService) -> APIRouter:
                     [(point.x, point.y) for point in scatter.points],
                     complete_pair_count=scatter.complete_pair_count,
                     sampled=scatter.sampled,
+                ),
+            )
+        if record.plan.technique in {
+            "linear_regression_simple",
+            "linear_regression_multiple",
+            "ancova",
+        }:
+            residuals = service.authorized_residuals(project_id, str(plan_id), result_id)
+            observation_figures = (
+                authorized_residual_figure(
+                    residuals.outcome_label,
+                    [(point.fitted, point.residual) for point in residuals.points],
+                    complete_observation_count=residuals.complete_observation_count,
+                    sampled=residuals.sampled,
                 ),
             )
         renderer = render_docx if format == "docx" else render_pdf

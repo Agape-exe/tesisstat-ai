@@ -1,4 +1,5 @@
 from app.modules.statistics.reports import (
+    authorized_residual_figure,
     authorized_scatter_figure,
     render_docx,
     render_pdf,
@@ -80,6 +81,21 @@ def test_reports_render_authorized_observation_figure_after_persisted_metrics():
     assert "Eje X: horas (1 a 3)" in text
     assert "3 pares completos; se representan 3 pares" in text
     assert "figura descriptiva; no determina significancia automáticamente" in text
+
+
+def test_reports_render_authorized_residual_figure_with_zero_reference():
+    figure = authorized_residual_figure(
+        "nota",
+        [(2.0, -0.5), (4.0, 0.0), (6.0, 0.5)],
+        complete_observation_count=3,
+        sampled=False,
+    )
+    text = render_text(result(), observation_figures=(figure,))
+    assert "Figura 2. Residuos autorizados frente a valores ajustados: nota" in text
+    assert "Eje X: valores ajustados (2 a 6)" in text
+    assert "línea horizontal = 0" in text
+    assert "3 observaciones completas; se representan 3" in text
+    assert "diagnóstico descriptivo; no determina significancia automáticamente" in text
 
 
 def test_pdf_report_has_pdf_signature_and_eof() -> None:
