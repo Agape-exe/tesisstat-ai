@@ -1,5 +1,5 @@
 {
-  "fixture_status": "design_only_no_engine_execution",
+  "fixture_status": "pure_engine_validated_no_research_integration",
   "context_fixture": "satisfaction_confirmed.context.json",
   "rule": {
     "dimension_id": "77777777-7777-4777-8777-777777777777",

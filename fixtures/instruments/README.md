@@ -7,6 +7,8 @@ reales.
   un ítem invertido y mapeo confirmado hacia columnas sintéticas.
 - `invalid_unconfirmed_mapping.context.json`: mapeo marcado como confirmado sin confirmación
   humana; debe rechazarse.
+- `scoring_design_cases.json`: entradas y resultados sintéticos del núcleo puro de puntuaciones
+  y confiabilidad; no representa una integración con Research.
 
 Los casos límite que se derivan desde el fixture válido en
 `backend/tests/test_instrument_context.py` cubren inversión sin rango explícito y un mapeo
