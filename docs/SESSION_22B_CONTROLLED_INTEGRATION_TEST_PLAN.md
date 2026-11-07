@@ -1,5 +1,11 @@
 # Sesión 22B — plan de integración controlada
 
+## Estado
+
+Integración controlada implementada y fusionada a `develop` mediante el PR #60. La validación
+posterior al merge se ejecutó sobre `4a82e54` y aprobó 34 pruebas focalizadas del bridge,
+puntuaciones y conversión contractual, además del lint de los archivos involucrados.
+
 ## Alcance
 
 Este plan verifica el recorrido autorizado Research → Statistics para puntuaciones y
@@ -49,3 +55,7 @@ Si falla cualquier comprobación, no se invoca el motor y no se devuelve un resu
 
 La integración queda aceptada cuando el harness determinista supera toda la matriz, demuestra que
 Statistics no importa repositorios internos de Research y mantiene el dataset original sin cambios.
+
+Este criterio quedó satisfecho por `test_authorized_instrument_bridge.py`: el harness produce las
+puntuaciones `2, 4, 6, 8, 10`, alfa de Cronbach `1.0`, conserva los bytes originales y cubre los
+errores de frontera declarados en esta matriz.
