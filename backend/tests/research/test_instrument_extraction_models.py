@@ -33,6 +33,7 @@ from app.modules.research.instrument.extraction_models import (
     ExtractedScoringRule,
     ExtractedVariable,
     InstrumentSourceProvenance,
+    SourceReference,
     UnverifiableEvidenceError,
     validate_extraction_evidence,
 )
@@ -247,7 +248,7 @@ def test_4_alternatives_without_numeric_codes():
 
 
 def test_5_items_without_scoring_rules():
-    """5. Items sin reglas de puntuacion: scoring_rules vacio y registrado en pending_fields."""
+    """5. Items sin reglas: la ausencia de reglas no marca incompleto el instrumento."""
     item = ExtractedItem(
         item_number=1,
         text="Pregunta sin regla de calificacion declarada.",
@@ -265,8 +266,11 @@ def test_5_items_without_scoring_rules():
     )
 
     assert len(candidate.scoring_rules) == 0
-    assert "scoring_rules" in candidate.pending_fields
+    # Reglas opcionales: no se agrega 'scoring_rules' como pendiente
+    assert "scoring_rules" not in candidate.pending_fields
+    # Sigue incompleto por faltar variables, dimensiones, indicadores y asignacion del item
     assert candidate.is_complete is False
+    assert candidate.has_operational_scoring is False
 
 
 def test_6_inexistent_quote_in_text():
@@ -547,3 +551,252 @@ def test_12_deterministic_serialization_deserialization():
     dict_original = json.loads(json_str)
     dict_roundtrip = json.loads(deserialized.model_dump_json(indent=2))
     assert dict_original == dict_roundtrip
+
+
+def test_13_repeated_quote_with_disambiguating_offsets():
+    """13. Cita repetida: con offsets verificables, la desambiguacion es exitosa."""
+    doc_id = uuid4()
+    # "Totalmente de acuerdo" aparece dos veces en el texto
+    raw_text = (
+        "Item 1. Me gusta el trabajo en equipo. Totalmente de acuerdo.\n"
+        "Item 2. La comunicacion es asertiva. Totalmente de acuerdo."
+    )
+    first_start = raw_text.find("Totalmente de acuerdo")
+    first_end = first_start + len("Totalmente de acuerdo")
+    second_start = raw_text.rfind("Totalmente de acuerdo")
+    second_end = second_start + len("Totalmente de acuerdo")
+
+    item1 = ExtractedItem(
+        item_number=1,
+        text="Me gusta el trabajo en equipo.",
+        response_type="single_choice",
+        response_options=[
+            ExtractedResponseOption(
+                code="1",
+                label="Totalmente de acuerdo",
+                numeric_value=1.0,
+                evidence_quote="Totalmente de acuerdo",
+            )
+        ],
+    )
+    item2 = ExtractedItem(
+        item_number=2,
+        text="La comunicacion es asertiva.",
+        response_type="single_choice",
+        response_options=[
+            ExtractedResponseOption(
+                code="1",
+                label="Totalmente de acuerdo",
+                numeric_value=1.0,
+                evidence_quote="Totalmente de acuerdo",
+            )
+        ],
+    )
+
+    extraction = DocumentInstrumentExtraction(
+        project_id=uuid4(),
+        document_id=doc_id,
+        provenance=_sample_provenance(),
+        instruments=[CandidateInstrument(name="Test Repetido", items=[item1, item2])],
+        evidences=[
+            SourceReference(
+                field="instruments.0.items.0.options.0.evidence_quote",
+                document_id=doc_id,
+                quote="Totalmente de acuerdo",
+                start=first_start,
+                end=first_end,
+                verified=False,
+            ),
+            SourceReference(
+                field="instruments.0.items.1.options.0.evidence_quote",
+                document_id=doc_id,
+                quote="Totalmente de acuerdo",
+                start=second_start,
+                end=second_end,
+                verified=False,
+            ),
+        ],
+    )
+
+    result = validate_extraction_evidence(extraction, raw_text, strict=True)
+    assert result.verified_quotes_count == 2
+    assert result.unverified_quotes_count == 0
+    assert extraction.evidences[0].verified is True
+    assert extraction.evidences[0].start == first_start
+    assert extraction.evidences[0].end == first_end
+    assert extraction.evidences[1].verified is True
+    assert extraction.evidences[1].start == second_start
+    assert extraction.evidences[1].end == second_end
+
+
+def test_14_repeated_quote_without_offsets_detects_ambiguity():
+    """14. Cita repetida sin offsets: registra advertencia de ambigüedad y no asigna la primera."""
+    doc_id = uuid4()
+    raw_text = "Escala: Totalmente de acuerdo ... Mas adelante: Totalmente de acuerdo."
+
+    item = ExtractedItem(
+        item_number=1,
+        text="Item de prueba",
+        response_type="single_choice",
+        response_options=[
+            ExtractedResponseOption(
+                code="1",
+                label="Totalmente de acuerdo",
+                numeric_value=1.0,
+                evidence_quote="Totalmente de acuerdo",
+            )
+        ],
+    )
+
+    extraction = DocumentInstrumentExtraction(
+        project_id=uuid4(),
+        document_id=doc_id,
+        provenance=_sample_provenance(),
+        instruments=[CandidateInstrument(name="Test Ambiguedad", items=[item])],
+    )
+
+    # Modo estricto lanza excepcion tipada
+    with pytest.raises(UnverifiableEvidenceError) as exc_info:
+        validate_extraction_evidence(extraction, raw_text, strict=True)
+    assert "Cita ambigua" in str(exc_info.value)
+
+    # Modo no estricto: marca unverified, offsets None, y no asigna arbitrariamente la primera
+    result = validate_extraction_evidence(extraction, raw_text, strict=False)
+    assert result.verified_quotes_count == 0
+    assert result.unverified_quotes_count == 1
+    assert extraction.evidences[0].verified is False
+    assert extraction.evidences[0].start is None
+    assert extraction.evidences[0].end is None
+    assert any("Cita ambigua" in w for w in result.warnings)
+
+
+def test_15_quote_with_incorrect_offsets():
+    """15. Cita con offsets incorrectos: detecta discrepancia con texto original."""
+    doc_id = uuid4()
+    raw_text = "Texto base para verificacion de limites y cotas."
+
+    item = ExtractedItem(
+        item_number=1,
+        text="Item con offset desalineado",
+        source_quote="verificacion",
+    )
+
+    extraction = DocumentInstrumentExtraction(
+        project_id=uuid4(),
+        document_id=doc_id,
+        provenance=_sample_provenance(),
+        instruments=[CandidateInstrument(name="Offset incorrecto", items=[item])],
+        evidences=[
+            SourceReference(
+                field="instruments.0.items.0.source_quote",
+                document_id=doc_id,
+                quote="verificacion",
+                start=0,
+                end=12,  # raw_text[0:12] == "Texto base p" != "verificacion"
+                verified=False,
+            )
+        ],
+    )
+
+    with pytest.raises(UnverifiableEvidenceError) as exc_info:
+        validate_extraction_evidence(extraction, raw_text, strict=True)
+    assert "no corresponden al texto original de la cita" in str(exc_info.value)
+
+    result = validate_extraction_evidence(extraction, raw_text, strict=False)
+    assert result.verified_quotes_count == 0
+    assert result.unverified_quotes_count == 1
+    assert extraction.evidences[0].verified is False
+    assert extraction.evidences[0].start is None
+    assert any("no corresponden al texto original" in w for w in result.warnings)
+
+
+def test_16_structurally_complete_without_scoring_rules():
+    """16. Instrumento estructuralmente completo sin reglas de puntuacion."""
+    var_id = uuid4()
+    dim_id = uuid4()
+    ind_id = uuid4()
+    item_id = uuid4()
+
+    item = ExtractedItem(
+        item_id=item_id,
+        item_number=1,
+        text="El docente utiliza recursos tecnologicos en la clase.",
+        variable_id=var_id,
+        dimension_id=dim_id,
+        indicator_id=ind_id,
+        response_type="single_choice",
+        response_options=[
+            ExtractedResponseOption(code="1", label="No", numeric_value=0.0),
+            ExtractedResponseOption(code="2", label="Si", numeric_value=1.0),
+        ],
+        valid_min=0.0,
+        valid_max=1.0,
+    )
+
+    candidate = CandidateInstrument(
+        name="Cuestionario Didactico",
+        variables=[
+            ExtractedVariable(
+                variable_id=var_id, name="Didactica", role="independent", scale="ordinal"
+            )
+        ],
+        dimensions=[ExtractedDimension(dimension_id=dim_id, variable_id=var_id, name="Tecnologia")],
+        indicators=[
+            ExtractedIndicator(indicator_id=ind_id, dimension_id=dim_id, name="Uso de herramientas")
+        ],
+        items=[item],
+        scoring_rules=[],  # Sin reglas de puntuacion
+    )
+
+    # Debe ser estructuralmente completo sin reglas obligatorias
+    assert candidate.is_complete is True
+    assert candidate.is_structurally_complete is True
+    assert len(candidate.pending_fields) == 0
+    # No esta operativamente listo para calculo de puntuaciones compuestas
+    assert candidate.has_operational_scoring is False
+
+
+def test_17_instrument_with_incomplete_scoring_rule():
+    """17. Regla de puntuacion incompleta: conserva campos pendientes y no es completo."""
+    var_id = uuid4()
+    dim_id = uuid4()
+    ind_id = uuid4()
+    item_id = uuid4()
+
+    item = ExtractedItem(
+        item_id=item_id,
+        item_number=1,
+        text="Pregunta con regla incompleta.",
+        variable_id=var_id,
+        dimension_id=dim_id,
+        indicator_id=ind_id,
+        response_type="single_choice",
+        response_options=[
+            ExtractedResponseOption(code="1", label="Opcion 1", numeric_value=1.0),
+        ],
+        valid_min=1.0,
+        valid_max=2.0,
+    )
+
+    partial_rule = ExtractedScoringRule(
+        name="Regla sin alcance ni agregacion definida",
+        scope="unknown",  # Incompleto
+        aggregation="unknown",  # Incompleto
+        item_ids=[],  # Incompleto
+        confirmed=False,
+    )
+
+    candidate = CandidateInstrument(
+        name="Instrumento con Regla Parcial",
+        variables=[ExtractedVariable(variable_id=var_id, name="Var")],
+        dimensions=[ExtractedDimension(dimension_id=dim_id, variable_id=var_id, name="Dim")],
+        indicators=[ExtractedIndicator(indicator_id=ind_id, dimension_id=dim_id, name="Ind")],
+        items=[item],
+        scoring_rules=[partial_rule],
+    )
+
+    assert candidate.is_complete is False
+    assert "scoring_rules.0.scope" in candidate.pending_fields
+    assert "scoring_rules.0.aggregation" in candidate.pending_fields
+    assert "scoring_rules.0.item_ids" in candidate.pending_fields
+    assert candidate.has_operational_scoring is False

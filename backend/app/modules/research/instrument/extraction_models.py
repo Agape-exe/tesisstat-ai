@@ -280,31 +280,30 @@ class CandidateInstrument(BaseModel):
                 for p in item.pending_fields:
                     pending.append(f"items.{idx}.{p}")
 
-        if not self.scoring_rules:
-            pending.append("scoring_rules")
-        else:
-            for idx, rule in enumerate(self.scoring_rules):
-                if rule.scope == "unknown":
-                    pending.append(f"scoring_rules.{idx}.scope")
-                if rule.aggregation == "unknown":
-                    pending.append(f"scoring_rules.{idx}.aggregation")
-                if not rule.item_ids:
-                    pending.append(f"scoring_rules.{idx}.item_ids")
+        # Scoring rules are optional for structural completeness:
+        # Academic instruments may be reviewed and structurally valid without scoring rules.
+        # If rules exist, any incomplete rule preserves its pending fields.
+        for idx, rule in enumerate(self.scoring_rules):
+            if rule.scope == "unknown":
+                pending.append(f"scoring_rules.{idx}.scope")
+            if rule.aggregation == "unknown":
+                pending.append(f"scoring_rules.{idx}.aggregation")
+            if not rule.item_ids:
+                pending.append(f"scoring_rules.{idx}.item_ids")
 
         for p in pending:
             if p not in self.pending_fields:
                 self.pending_fields.append(p)
 
-        # Completeness check: is_complete is True only if:
-        # 1. At least 1 variable, dimension, indicator, item, scoring rule.
+        # Structural completeness check: is_complete is True only if:
+        # 1. At least 1 variable, dimension, indicator, and item exist.
         # 2. No pending fields on any item.
-        # 3. All rules have scope, aggregation, and items assigned.
-        # 4. All items have valid links to variable, dimension, and indicator.
+        # 3. If any scoring rule exists, it must not have pending fields.
+        # Note: Absence of scoring_rules does NOT mark instrument incomplete.
         has_items = len(self.items) > 0
         has_vars = len(self.variables) > 0
         has_dims = len(self.dimensions) > 0
         has_inds = len(self.indicators) > 0
-        has_rules = len(self.scoring_rules) > 0
 
         no_item_pending = all(len(it.pending_fields) == 0 for it in self.items)
         no_rule_pending = all(
@@ -313,15 +312,27 @@ class CandidateInstrument(BaseModel):
         )
 
         self.is_complete = bool(
-            has_items
-            and has_vars
-            and has_dims
-            and has_inds
-            and has_rules
-            and no_item_pending
-            and no_rule_pending
+            has_items and has_vars and has_dims and has_inds and no_item_pending and no_rule_pending
         )
         return self
+
+    @property
+    def is_structurally_complete(self) -> bool:
+        """Indica si el instrumento cumple con la estructura mínima válida."""
+        return self.is_complete
+
+    @property
+    def has_operational_scoring(self) -> bool:
+        """Indica si cuenta con reglas de puntuación completas para cálculo compuesto.
+
+        Distingue la preparación operacional de la completitud estructural.
+        Si una operación estadística requiere reglas compuestas, Statistics validará
+        esta precondición.
+        """
+        return len(self.scoring_rules) > 0 and all(
+            r.scope != "unknown" and r.aggregation != "unknown" and len(r.item_ids) > 0
+            for r in self.scoring_rules
+        )
 
 
 class InstrumentSourceProvenance(BaseModel):
@@ -402,13 +413,22 @@ def validate_extraction_evidence(
     """Verifies all textual quotes in an extraction against the raw source text.
 
     Calculates exact start and end offsets without fabricating fake values.
-    If a quote cannot be found verbatim:
-    - If strict=True, raises UnverifiableEvidenceError.
-    - If strict=False, marks the evidence as unverified and appends an actionable warning.
+    Supports secure disambiguation when quotes repeat across the document:
+    - If origin provides verified offsets, validates that source_text[start:end] == quote.
+    - If offsets are provided but do not match verbatim, marks evidence unverified.
+    - If no offsets are provided and the quote appears exactly once, assigns verified offsets.
+    - If no offsets are provided and multiple matches exist, flags ambiguity without
+      silently choosing the first occurrence.
+    - If strict=True, raises UnverifiableEvidenceError on missing, ambiguous, or mismatched quotes.
     """
     references: list[SourceReference] = []
     warnings: list[str] = []
     doc_id = extraction.document_id
+
+    # Index any pre-existing references by field path to check provided offsets
+    provided_refs: dict[str, SourceReference] = {
+        ref.field: ref for ref in extraction.evidences if ref.document_id == doc_id
+    }
 
     # Gather quote targets across candidate instruments
     targets: list[tuple[str, str]] = []  # (field_path, quote)
@@ -462,8 +482,78 @@ def validate_extraction_evidence(
         if not clean_quote:
             continue
 
-        start_pos = source_text.find(clean_quote)
-        if start_pos != -1:
+        # Check if the origin provided explicit offsets
+        provided = provided_refs.get(field_path)
+        if provided is not None and provided.start is not None and provided.end is not None:
+            p_start = provided.start
+            p_end = provided.end
+            if (
+                0 <= p_start < p_end <= len(source_text)
+                and source_text[p_start:p_end] == clean_quote
+            ):
+                # Verifiable location provided by origin
+                ref = SourceReference(
+                    field=field_path,
+                    document_id=doc_id,
+                    quote=clean_quote,
+                    start=p_start,
+                    end=p_end,
+                    verified=True,
+                    warning=None,
+                )
+                references.append(ref)
+                verified_count += 1
+                continue
+            else:
+                # Provided offsets do not correspond to original text
+                unverified_count += 1
+                msg = (
+                    f"Los offsets [{p_start}:{p_end}] proporcionados para '{field_path}' "
+                    "no corresponden al texto original de la cita."
+                )
+                if strict:
+                    raise UnverifiableEvidenceError(msg)
+                warnings.append(msg)
+                ref = SourceReference(
+                    field=field_path,
+                    document_id=doc_id,
+                    quote=clean_quote,
+                    start=None,
+                    end=None,
+                    verified=False,
+                    warning=msg,
+                )
+                references.append(ref)
+                continue
+
+        # Search for occurrences in source_text
+        occurrences: list[int] = []
+        pos = 0
+        while True:
+            pos = source_text.find(clean_quote, pos)
+            if pos == -1:
+                break
+            occurrences.append(pos)
+            pos += 1
+
+        if len(occurrences) == 0:
+            unverified_count += 1
+            msg = f"La cita para el campo '{field_path}' no se encuentra en el texto fuente."
+            if strict:
+                raise UnverifiableEvidenceError(msg)
+            warnings.append(msg)
+            ref = SourceReference(
+                field=field_path,
+                document_id=doc_id,
+                quote=clean_quote,
+                start=None,
+                end=None,
+                verified=False,
+                warning=msg,
+            )
+            references.append(ref)
+        elif len(occurrences) == 1:
+            start_pos = occurrences[0]
             end_pos = start_pos + len(clean_quote)
             ref = SourceReference(
                 field=field_path,
@@ -477,8 +567,12 @@ def validate_extraction_evidence(
             references.append(ref)
             verified_count += 1
         else:
+            # Multiple matches without disambiguating offsets: do NOT silently assign first
             unverified_count += 1
-            msg = f"La cita para el campo '{field_path}' no se encuentra en el texto fuente."
+            msg = (
+                f"Cita ambigua para el campo '{field_path}': se encontraron {len(occurrences)} "
+                "coincidencias en el texto fuente y no se proporcionaron offsets para desambiguar."
+            )
             if strict:
                 raise UnverifiableEvidenceError(msg)
             warnings.append(msg)
