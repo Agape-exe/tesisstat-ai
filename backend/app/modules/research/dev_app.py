@@ -380,7 +380,9 @@ def create_app(
     app.state.instrument_service = instruments
     app.state.instrument_reader = instrument_reader
     app.include_router(create_instrument_router(instruments))
-    app.state.research_statistics_bridge = ResearchStatisticsBridge(projects, packages, datasets)
+    app.state.research_statistics_bridge = ResearchStatisticsBridge(
+        projects, packages, datasets, instruments=instruments, instrument_reader=instrument_reader
+    )
     app.state.research_analysis = ResearchAnalysisService(
         app.state.research_statistics_bridge,
         SQLiteAnalysisRepository(settings.research_db_path),
