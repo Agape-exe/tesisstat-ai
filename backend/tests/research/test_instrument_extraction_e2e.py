@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import io
+import secrets
 import sqlite3
 from typing import Any
 from uuid import UUID, uuid4
@@ -111,12 +112,14 @@ def _setup_test_environment(
     tmp_path,
     provider: Any | None = None,
     extraction_service: InstrumentExtractionService | None = None,
+    settings: ResearchDevSettings | None = None,
 ):
-    settings = ResearchDevSettings(
-        research_db_path=tmp_path / "research_e2e.sqlite3",
-        research_documents_path=tmp_path / "docs_e2e",
-        research_datasets_path=tmp_path / "datasets_e2e",
-    )
+    if settings is None:
+        settings = ResearchDevSettings(
+            research_db_path=tmp_path / "research_e2e.sqlite3",
+            research_documents_path=tmp_path / "docs_e2e",
+            research_datasets_path=tmp_path / "datasets_e2e",
+        )
     v_id = uuid4()
     d_id = uuid4()
     ind_id = uuid4()
@@ -1498,6 +1501,312 @@ def test_candidate_integrity_omitted_document_hash_rejected(tmp_path):
     )
     assert resp.status_code == 422
     assert "expected_document_hash" in resp.json()["detail"].lower()
+
+
+def test_candidate_integrity_altered_candidate_id_rejected(tmp_path):
+    """Fase 3: Modificación de candidate_id manteniendo token y semántica es rechazada."""
+    client, _, _ = _setup_test_environment(tmp_path)
+    proj_id = _create_project(client)
+
+    pdf_bytes = _build_synthetic_pdf(
+        "Escala de Clima Organizacional\n"
+        "Clima Organizacional, Liderazgo, Comunicacion\n"
+        "1 = Nunca, 2 = Siempre\n"
+        "Mi jefe me escucha activamente.\n"
+    )
+    doc_id = _upload_pdf(client, proj_id, "clima.pdf", pdf_bytes)
+
+    cand = client.post(
+        f"/api/research/projects/{proj_id}/instruments/extract",
+        json={"document_id": doc_id},
+    ).json()["instruments"][0]
+
+    # 1. Crear el borrador legítimo original
+    orig_resp = client.post(
+        f"/api/research/projects/{proj_id}/instruments/drafts/from-candidate",
+        json={"document_id": doc_id, "candidate": cand},
+    )
+    assert orig_resp.status_code == 201
+    orig_inst_id = orig_resp.json()["instrument_id"]
+
+    # 2. Modificar ÚNICAMENTE candidate_id, manteniendo campos semánticos y token
+    cand_altered_id = dict(cand)
+    cand_altered_id["candidate_id"] = str(uuid4())
+
+    tampered_resp = client.post(
+        f"/api/research/projects/{proj_id}/instruments/drafts/from-candidate",
+        json={"document_id": doc_id, "candidate": cand_altered_id},
+    )
+    # Debe ser rechazado por violación de integridad criptográfica
+    assert tampered_resp.status_code == 422
+    assert "integridad" in tampered_resp.json()["detail"].lower()
+
+    # 3. Comprobar que NO se creó un segundo borrador
+    list_resp = client.get(f"/api/research/projects/{proj_id}/instruments")
+    assert list_resp.status_code == 200
+    instruments = list_resp.json()
+    assert len(instruments) == 1
+    assert instruments[0]["instrument_id"] == orig_inst_id
+
+
+def test_candidate_integrity_hmac_ephemeral_restart_fails_closed(tmp_path):
+    """Fase 3: Sin clave persistente configurada, reinicio de servidor invalida tokens."""
+    settings_1 = ResearchDevSettings(
+        research_db_path=tmp_path / "shared.sqlite3",
+        research_documents_path=tmp_path / "docs",
+        research_datasets_path=tmp_path / "datasets",
+    )
+    client_1, _, _ = _setup_test_environment(tmp_path, settings=settings_1)
+    proj_id = _create_project(client_1)
+
+    pdf_bytes = _build_synthetic_pdf(
+        "Escala de Clima Organizacional\n"
+        "Clima Organizacional, Liderazgo, Comunicacion\n"
+        "1 = Nunca, 2 = Siempre\n"
+        "Mi jefe me escucha activamente.\n"
+    )
+    doc_id = _upload_pdf(client_1, proj_id, "clima.pdf", pdf_bytes)
+
+    # Extraer con instancia 1 (clave efímera 1)
+    cand = client_1.post(
+        f"/api/research/projects/{proj_id}/instruments/extract",
+        json={"document_id": doc_id},
+    ).json()["instruments"][0]
+
+    # Simular reinicio de servidor con clave efímera distinta
+    app_2 = create_app(settings=settings_1)
+    app_2.state.instrument_extraction_service.integrity_secret = secrets.token_bytes(32)
+    client_2 = TestClient(app_2)
+
+    # Intentar crear borrador en instancia 2 con el token de instancia 1
+    resp = client_2.post(
+        f"/api/research/projects/{proj_id}/instruments/drafts/from-candidate",
+        json={"document_id": doc_id, "candidate": cand},
+    )
+    # Debe fallar cerrado por secreto no coincidente
+    assert resp.status_code == 422
+    assert "integridad" in resp.json()["detail"].lower()
+
+
+def test_candidate_integrity_hmac_configured_secret_persists_across_instances(tmp_path):
+    """Fase 3: Con clave secreta configurada, tokens persisten entre reinicios e instancias."""
+    shared_secret = "tesisstat-production-super-secret-key-32b!"
+    settings = ResearchDevSettings(
+        research_db_path=tmp_path / "shared_cfg.sqlite3",
+        research_documents_path=tmp_path / "docs_cfg",
+        research_datasets_path=tmp_path / "datasets_cfg",
+        research_integrity_secret=shared_secret,
+    )
+
+    # Instancia 1
+    client_1, _, _ = _setup_test_environment(tmp_path, settings=settings)
+    proj_id = _create_project(client_1)
+
+    pdf_bytes = _build_synthetic_pdf(
+        "Escala de Clima Organizacional\n"
+        "Clima Organizacional, Liderazgo, Comunicacion\n"
+        "1 = Nunca, 2 = Siempre\n"
+        "Mi jefe me escucha activamente.\n"
+    )
+    doc_id = _upload_pdf(client_1, proj_id, "clima.pdf", pdf_bytes)
+
+    # Extraer en Instancia 1
+    cand = client_1.post(
+        f"/api/research/projects/{proj_id}/instruments/extract",
+        json={"document_id": doc_id},
+    ).json()["instruments"][0]
+
+    # Instancia 2 (misma base de datos y misma clave configurada)
+    app_2 = create_app(settings=settings)
+    client_2 = TestClient(app_2)
+
+    # Crear borrador en Instancia 2 usando candidato extraído en Instancia 1
+    resp = client_2.post(
+        f"/api/research/projects/{proj_id}/instruments/drafts/from-candidate",
+        json={"document_id": doc_id, "candidate": cand},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["status"] == "draft"
+
+
+def test_independent_creation_of_two_different_instruments_in_same_document(tmp_path):
+    """Fase 3: Dos instrumentos genuinamente diferentes en el mismo doc se crean solos."""
+    v1_id = uuid4()
+    d1_id = uuid4()
+    ind1_id = uuid4()
+    v2_id = uuid4()
+    d2_id = uuid4()
+    ind2_id = uuid4()
+
+    fixture_resp = {
+        "instruments": [
+            {
+                "name": "Escala de Clima Laboral",
+                "variables": [
+                    {
+                        "variable_id": str(v1_id),
+                        "name": "Clima",
+                        "role": "independent",
+                        "scale": "interval",
+                        "evidence_quote": "Variable Clima",
+                    }
+                ],
+                "dimensions": [
+                    {
+                        "dimension_id": str(d1_id),
+                        "variable_id": str(v1_id),
+                        "name": "Liderazgo",
+                        "evidence_quote": "Dimension Liderazgo",
+                    }
+                ],
+                "indicators": [
+                    {
+                        "indicator_id": str(ind1_id),
+                        "dimension_id": str(d1_id),
+                        "name": "Apoyo",
+                        "evidence_quote": "Indicador Apoyo",
+                    }
+                ],
+                "items": [
+                    {
+                        "item_number": 1,
+                        "text": "Mi jefe me apoya en mis tareas.",
+                        "variable_name": "Clima",
+                        "dimension_name": "Liderazgo",
+                        "indicator_name": "Apoyo",
+                        "response_type": "single_choice",
+                        "response_options": [
+                            {
+                                "code": "1",
+                                "label": "Nunca",
+                                "numeric_value": 1.0,
+                                "evidence_quote": "1 = Nunca",
+                            },
+                            {
+                                "code": "5",
+                                "label": "Siempre",
+                                "numeric_value": 5.0,
+                                "evidence_quote": "5 = Siempre",
+                            },
+                        ],
+                        "valid_min": 1.0,
+                        "valid_max": 5.0,
+                        "reverse_scored": False,
+                        "source_quote": "1. Mi jefe me apoya en mis tareas.",
+                    }
+                ],
+                "scoring_rules": [],
+                "warnings": [],
+            },
+            {
+                "name": "Escala de Desempeno",
+                "variables": [
+                    {
+                        "variable_id": str(v2_id),
+                        "name": "Desempeno",
+                        "role": "dependent",
+                        "scale": "interval",
+                        "evidence_quote": "Variable Desempeno",
+                    }
+                ],
+                "dimensions": [
+                    {
+                        "dimension_id": str(d2_id),
+                        "variable_id": str(v2_id),
+                        "name": "Eficacia",
+                        "evidence_quote": "Dimension Eficacia",
+                    }
+                ],
+                "indicators": [
+                    {
+                        "indicator_id": str(ind2_id),
+                        "dimension_id": str(d2_id),
+                        "name": "Resultados",
+                        "evidence_quote": "Indicador Resultados",
+                    }
+                ],
+                "items": [
+                    {
+                        "item_number": 1,
+                        "text": "Cumplo mis metas laborales.",
+                        "variable_name": "Desempeno",
+                        "dimension_name": "Eficacia",
+                        "indicator_name": "Resultados",
+                        "response_type": "single_choice",
+                        "response_options": [
+                            {
+                                "code": "1",
+                                "label": "Nunca",
+                                "numeric_value": 1.0,
+                                "evidence_quote": "1 = Nunca",
+                            },
+                            {
+                                "code": "5",
+                                "label": "Siempre",
+                                "numeric_value": 5.0,
+                                "evidence_quote": "5 = Siempre",
+                            },
+                        ],
+                        "valid_min": 1.0,
+                        "valid_max": 5.0,
+                        "reverse_scored": False,
+                        "source_quote": "1. Cumplo mis metas laborales.",
+                    }
+                ],
+                "scoring_rules": [],
+                "warnings": [],
+            },
+        ],
+        "warnings": [],
+    }
+
+    client, _, _ = _setup_test_environment(
+        tmp_path, provider=FixtureInstrumentProvider(default_response=fixture_resp)
+    )
+    proj_id = _create_project(client)
+
+    pdf_text = (
+        "INSTRUMENTOS DE INVESTIGACION\n"
+        "Variable Clima, Dimension Liderazgo, Indicador Apoyo\n"
+        "1. Mi jefe me apoya en mis tareas.\n"
+        "Variable Desempeno, Dimension Eficacia, Indicador Resultados\n"
+        "1. Cumplo mis metas laborales.\n"
+        "Escala: 1 = Nunca, 5 = Siempre\n"
+    )
+    doc_id = _upload_pdf(client, proj_id, "bateria.pdf", _build_synthetic_pdf(pdf_text))
+
+    ext_resp = client.post(
+        f"/api/research/projects/{proj_id}/instruments/extract",
+        json={"document_id": doc_id},
+    )
+    assert ext_resp.status_code == 200
+    cands = ext_resp.json()["instruments"]
+    assert len(cands) == 2
+
+    # Crear ambos borradores en el mismo proyecto y documento
+    r1 = client.post(
+        f"/api/research/projects/{proj_id}/instruments/drafts/from-candidate",
+        json={"document_id": doc_id, "candidate": cands[0]},
+    )
+    assert r1.status_code == 201
+    inst1_id = r1.json()["instrument_id"]
+
+    r2 = client.post(
+        f"/api/research/projects/{proj_id}/instruments/drafts/from-candidate",
+        json={"document_id": doc_id, "candidate": cands[1]},
+    )
+    assert r2.status_code == 201
+    inst2_id = r2.json()["instrument_id"]
+
+    # Identidades deben ser estrictamente diferentes
+    assert inst1_id != inst2_id
+
+    # Listar instrumentos y comprobar que ambos coexisten
+    list_resp = client.get(f"/api/research/projects/{proj_id}/instruments")
+    assert list_resp.status_code == 200
+    ids_in_db = {i["instrument_id"] for i in list_resp.json()}
+    assert inst1_id in ids_in_db
+    assert inst2_id in ids_in_db
 
 
 # ==============================================================================

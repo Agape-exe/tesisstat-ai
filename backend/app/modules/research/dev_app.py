@@ -114,6 +114,7 @@ class ResearchDevSettings(ConversationSettings):
     research_methodology_max_characters: int = 6000
     research_methodology_max_attempts: int = 3
     research_methodology_retry_seconds: int = 30
+    research_integrity_secret: str | None = None
 
 
 def create_app(
@@ -413,6 +414,11 @@ def create_app(
         extraction_service_inst = instrument_extraction_service
     else:
         inst_provider = instrument_provider or CloudflareLanguageModel(settings)
+        integrity_secret_bytes = (
+            settings.research_integrity_secret.encode("utf-8")
+            if settings.research_integrity_secret
+            else None
+        )
         extraction_service_inst = InstrumentExtractionService(
             projects=projects,
             documents=documents,
@@ -420,6 +426,7 @@ def create_app(
             provider=inst_provider,
             instrument_service=instruments,
             methodology=methodology_repository,
+            integrity_secret=integrity_secret_bytes,
         )
     app.state.instrument_extraction_service = extraction_service_inst
     app.include_router(create_instrument_router(instruments, extraction_service_inst))

@@ -51,15 +51,17 @@ Consumo Autorizado por Statistics 22B (Puntuaciones, Confiabilidad Alfa de Cronb
 ## 2. Decisiones de Arquitectura
 
 ### 2.1 Integridad de Candidatos (Anti-Tampering)
-- **Problema identificado:** Un cliente malicioso o un error en la interfaz podría enviar un `CandidateInstrument` manipulando nombres de variables, relaciones ítem-dimensión, escalas o puntuaciones inversas, reutilizando citas que casualmente existieran en el texto.
+- **Problema identificado:** Un cliente malicioso o un error en la interfaz podría enviar un `CandidateInstrument` manipulando nombres de variables, relaciones ítem-dimensión, escalas o puntuaciones inversas, reutilizando citas que casualmente existieran en el texto, o alterando `candidate_id` para intentar duplicar borradores.
 - **Solución implementada:**
   - El servidor calcula un `semantic_hash` determinista sobre la tupla canónica de campos del candidato: nombre, escala, variables, dimensiones, indicadores, ítems (número, texto, tipo, opciones, mínimo, máximo, inverso, regla de inversión) y reglas de puntuación.
-  - El servidor genera un `integrity_token` mediante `HMAC-SHA256(secret, f"{project_id}:{document_id}:{doc_hash}:{semantic_hash}")`.
+  - El servidor vincula criptográficamente la identidad determinista `candidate_id` (`UUIDv5` del candidato) dentro del payload del token:
+    $$\text{token} = \text{HMAC-SHA256}(secret,\, \text{project\_id} \mathbin{\Vert} \text{document\_id} \mathbin{\Vert} \text{doc\_hash} \mathbin{\Vert} \text{candidate\_id} \mathbin{\Vert} \text{semantic\_hash})$$
   - En la creación de borrador (`create_draft_from_candidate`), el servidor valida:
     1. Que `expected_document_hash` coincida exactamente con el hash actual del documento almacenado.
-    2. Que el `integrity_token` sea válido e inalterable, emitido por el propio servidor para ese documento y proyecto.
-    3. Que las citas de evidencia existan literalmente (*verbatim*) en el texto del documento.
-  - Si cualquier campo semántico es modificado por el cliente o si el token falta o es inválido, la solicitud es rechazada inmediatamente con HTTP 422 (`CandidateIntegrityError`).
+    2. Que si el cliente envía `candidate_id`, este coincida estrictamente con el UUIDv5 determinista derivado por el servidor; si fue sustituido, la verificación falla de inmediato.
+    3. Que el `integrity_token` sea válido e inalterable, emitido por el propio servidor para esa combinación exacta de proyecto, documento, hash y candidato.
+    4. Que las citas de evidencia existan literalmente (*verbatim*) en el texto del documento.
+  - Si cualquier campo semántico o la identidad `candidate_id` es alterada por el cliente, la solicitud es rechazada inmediatamente con HTTP 422 (`CandidateIntegrityError`).
 
 ### 2.2 Idempotencia Real y Concurrencia Atómica
 - **Problema identificado:** Consultas previas de lectura (`list()`) para comprobar borradores existentes son vulnerables a condiciones de carrera (*race conditions*) bajo solicitudes concurrentes simultáneas.
@@ -71,7 +73,15 @@ Consumo Autorizado por Statistics 22B (Puntuaciones, Confiabilidad Alfa de Cronb
     - Se incrementó el `timeout` de conexión SQLite a 15.0 segundos en el repositorio para evitar `database is locked` bajo contención de hilos.
   - Validación: Comprobado formalmente con 2 solicitudes idénticas y 10 trabajadores concurrentes simultáneos en `ThreadPoolExecutor`.
 
-### 2.3 Clasificación de Proveedores y Consentimiento (*Fail-Closed*)
+### 2.3 Estabilidad del Secreto HMAC y Despliegue Multi-Instancia
+- **Entorno de desarrollo local:** Por defecto, el backend genera una clave secreta criptográfica efímera en memoria (`_SERVER_INTEGRITY_SECRET = secrets.token_bytes(32)`).
+  - Al reiniciar el servidor en modo desarrollo, los tokens de candidatos obtenidos con la instancia previa quedan invalidados de forma cerrada (*fail-closed*), exigiendo una nueva extracción.
+- **Entorno persistente / Producción multi-instancia:**
+  - Se añadió soporte en `ResearchDevSettings` para la variable `research_integrity_secret` (`RESEARCH_INTEGRITY_SECRET`).
+  - Al configurar esta clave secreta, múltiples instancias del backend o procesos tras un balanceador de carga pueden validar y verificar los mismos candidatos e integridades sin estado centralizado ni tokens de un solo uso en base de datos.
+  - No se almacena ninguna clave por defecto en el repositorio para evitar secretos predecibles.
+
+### 2.4 Clasificación de Proveedores y Consentimiento (*Fail-Closed*)
 - **Adaptador Cloudflare:** Se declaró explícitamente `is_external = True` e `is_local = False` en `CloudflareLanguageModel`.
 - **Adaptador Offline/Fixture:** Se declaró `is_external = False` e `is_local = True`.
 - **Principio Fail-Closed:** Si un proveedor personalizado no implementa o declara falsamente `is_local = True`, el servicio lo trata automáticamente como externo y bloquea la operación antes de cualquier invocación si `external_ai_consent` no es `True`.
@@ -113,6 +123,10 @@ Se implementaron y aprobaron 24 pruebas integrales en `backend/tests/research/te
 | **Integridad 3** | Alteración de bandera `reverse_scored` rechazada con HTTP 422. | **PASSED** |
 | **Integridad 4** | Token de integridad omitido o falsificado rechazado con HTTP 422. | **PASSED** |
 | **Integridad 5** | Hash documental omitido o alterado rechazado con HTTP 422. | **PASSED** |
+| **Integridad 6** | Alteración de `candidate_id` con semántica idéntica rechazada con HTTP 422 sin duplicar borrador. | **PASSED** |
+| **Integridad 7** | Reinicio con clave efímera falla cerrado invalidando tokens previos (fail-closed). | **PASSED** |
+| **Integridad 8** | Clave secreta configurada persiste tokens válidos entre reinicios e instancias. | **PASSED** |
+| **Integridad 9** | Dos instrumentos genuinamente diferentes en el mismo documento se crean independientemente. | **PASSED** |
 | **Proveedor 1** | CloudflareLanguageModel sin consentimiento explícito bloqueado con HTTP 403 (*fail-closed*). | **PASSED** |
 | **Proveedor 2** | Proveedor personalizado sin clasificación confiable bloqueado con HTTP 403 (*fail-closed*). | **PASSED** |
 | **Proveedor 3** | Error de cuota mapeado a HTTP 429. | **PASSED** |

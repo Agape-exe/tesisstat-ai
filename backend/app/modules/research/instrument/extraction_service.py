@@ -120,7 +120,13 @@ def generate_candidate_integrity_token(
 ) -> str:
     """Produces an HMAC-SHA256 authenticated integrity token binding candidate to document."""
     semantic_hash = compute_candidate_semantic_hash(candidate)
-    msg = f"{project_id}:{document_id}:{doc_hash}:{semantic_hash}".encode()
+    cand_id = candidate.candidate_id or compute_stable_candidate_id(
+        project_id=project_id,
+        document_id=document_id,
+        doc_hash=doc_hash,
+        candidate=candidate,
+    )
+    msg = f"{project_id}:{document_id}:{doc_hash}:{cand_id}:{semantic_hash}".encode()
     return hmac.new(secret, msg, hashlib.sha256).hexdigest()
 
 
@@ -134,6 +140,14 @@ def verify_candidate_integrity_token(
 ) -> bool:
     """Verifies that the candidate matches the authentic extraction produced by the server."""
     if not token or not isinstance(token, str):
+        return False
+    expected_cand_id = compute_stable_candidate_id(
+        project_id=project_id,
+        document_id=document_id,
+        doc_hash=doc_hash,
+        candidate=candidate,
+    )
+    if candidate.candidate_id is not None and candidate.candidate_id != expected_cand_id:
         return False
     expected = generate_candidate_integrity_token(
         project_id=project_id,
@@ -161,6 +175,7 @@ class InstrumentExtractionService:
         instrument_service: InstrumentService | None = None,
         methodology: MethodologyRepository | None = None,
         fragment_limits: FragmentSelectionLimits | None = None,
+        integrity_secret: bytes | None = None,
     ) -> None:
         self.projects = projects
         self.documents = documents
@@ -172,6 +187,41 @@ class InstrumentExtractionService:
         self.instrument_service = instrument_service
         self.methodology = methodology
         self.fragment_limits = fragment_limits or FragmentSelectionLimits()
+        self.integrity_secret = integrity_secret or _SERVER_INTEGRITY_SECRET
+
+    def generate_candidate_integrity(
+        self,
+        project_id: UUID,
+        document_id: UUID,
+        doc_hash: str,
+        candidate: CandidateInstrument,
+    ) -> str:
+        """Generates an HMAC-SHA256 integrity token using the service's configured secret."""
+        return generate_candidate_integrity_token(
+            project_id=project_id,
+            document_id=document_id,
+            doc_hash=doc_hash,
+            candidate=candidate,
+            secret=self.integrity_secret,
+        )
+
+    def verify_candidate_integrity(
+        self,
+        project_id: UUID,
+        document_id: UUID,
+        doc_hash: str,
+        candidate: CandidateInstrument,
+        token: str | None,
+    ) -> bool:
+        """Verifies candidate integrity using the service's configured secret."""
+        return verify_candidate_integrity_token(
+            project_id=project_id,
+            document_id=document_id,
+            doc_hash=doc_hash,
+            candidate=candidate,
+            token=token,
+            secret=self.integrity_secret,
+        )
 
     def _require_project(self, project_id: UUID) -> None:
         self.projects.get(project_id)
@@ -347,7 +397,7 @@ class InstrumentExtractionService:
             cand.document_hash = doc_hash
             stable_id = compute_stable_candidate_id(project_id, document_id, doc_hash, cand)
             cand.candidate_id = stable_id
-            cand.integrity_token = generate_candidate_integrity_token(
+            cand.integrity_token = self.generate_candidate_integrity(
                 project_id=project_id,
                 document_id=document_id,
                 doc_hash=doc_hash,
@@ -513,7 +563,7 @@ class InstrumentExtractionService:
         # 3. Candidate integrity verification
         token = integrity_token or candidate.integrity_token
         if strict_integrity:
-            if not token or not verify_candidate_integrity_token(
+            if not token or not self.verify_candidate_integrity(
                 project_id=project_id,
                 document_id=document_id,
                 doc_hash=source_doc_hash,
@@ -525,7 +575,7 @@ class InstrumentExtractionService:
                     "semántico fue sustituido respecto a la extracción original."
                 )
         elif token is not None:
-            if not verify_candidate_integrity_token(
+            if not self.verify_candidate_integrity(
                 project_id=project_id,
                 document_id=document_id,
                 doc_hash=source_doc_hash,

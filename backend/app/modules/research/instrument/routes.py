@@ -260,10 +260,6 @@ def create_router(
                 )
 
         # 5. Validación de prueba de integridad del candidato (HMAC del servidor)
-        from app.modules.research.instrument.extraction_service import (
-            verify_candidate_integrity_token,
-        )
-
         token = payload.integrity_token or payload.candidate.integrity_token
         if not token:
             raise HTTPException(
@@ -271,7 +267,7 @@ def create_router(
                 "Se requiere una prueba de integridad autenticada por el servidor "
                 "('integrity_token' o 'candidate.integrity_token').",
             )
-        if not verify_candidate_integrity_token(
+        if not extraction_service.verify_candidate_integrity(
             project_id=project_id,
             document_id=payload.document_id,
             doc_hash=current_doc_hash,
