@@ -399,6 +399,7 @@
 }
 .rp-main:has(.rp-section-header) .rp-stage-nav {
   flex-wrap: nowrap;
+  flex-direction: row;
   justify-content: space-between;
   gap: 12px;
   border: 0;
