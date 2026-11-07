@@ -1,25 +1,17 @@
 """Authorized read adapter for Statistics to consume InstrumentContext v1.0.0."""
 
-from typing import Protocol
 from uuid import UUID
 
-from app.modules.research.instrument.contracts import InstrumentContext
 from app.modules.research.instrument.repository import (
     InstrumentNotConfirmedError,
     InstrumentNotFound,
     InstrumentStaleError,
 )
 from app.modules.research.instrument.service import InstrumentService
+from app.shared.instrument_contracts import InstrumentContext
+from app.shared.ports import InstrumentContextReader
 
-
-class InstrumentContextReader(Protocol):
-    """Statistics consumes this port, never Research's internal storage implementation."""
-
-    def get_confirmed_context(
-        self,
-        project_id: str,
-        instrument_id: str,
-    ) -> InstrumentContext: ...
+__all__ = ["InstrumentContextReader", "ResearchInstrumentContextReader"]
 
 
 class ResearchInstrumentContextReader:

@@ -11,17 +11,24 @@ El contrato canónico independiente `InstrumentContext v1.0.0` está formalmente
 5. `dataset_mapping.status`: Admite exclusivamente `"draft"`, `"confirmed"` y `"stale"`.
 
 ### Principios de Integración y Separación de Dominios
+- **Ubicación Canónica Neutral:** El contrato público independiente y sus submodelos residen en `backend/app/shared/instrument_contracts.py`, libre de dependencias de persistencia o servicios de Research.
 - **Propiedad Canónica:** Research es el único propietario de la persistencia y ciclo de vida de `InstrumentContext`.
 - **Independencia Total de Contratos:** No se modifica `ResearchPackage v1.0.0` ni los contratos existentes de `backend/app/shared/contracts.py`.
-- **Puerto de Lectura para Statistics:** Statistics accederá mediante un puerto de solo lectura desacoplado:
+- **Puerto de Lectura para Statistics:** Statistics accederá mediante el puerto formal en `backend/app/shared/ports.py`:
   ```python
+  from app.shared.instrument_contracts import InstrumentContext
+
+
   class InstrumentContextReader(Protocol):
+
       def get_confirmed_context(
           self,
           project_id: str,
           instrument_id: str,
-      ) -> InstrumentContext: ...
-  ```
+      ) -> InstrumentContext:
+          ...
+```
+  La implementación `ResearchInstrumentContextReader` reside en `app.modules.research.instrument.reader`.
 
 ---
 
@@ -92,7 +99,7 @@ El contrato canónico independiente `InstrumentContext v1.0.0` está formalmente
 Para que el Integrante 2 (Statistics) pueda generar o validar el esquema JSON del contrato sin depender de bases de datos internas:
 
 ```python
-from app.modules.research.instrument.contracts import InstrumentContext
+from app.shared.instrument_contracts import InstrumentContext
 
 # Generación programática del JSON Schema estándar
 schema = InstrumentContext.model_json_schema()

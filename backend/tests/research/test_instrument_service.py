@@ -981,3 +981,43 @@ class TestSQLiteIntegrityAndCascades:
         assert len(history_final) == len(history_before) + 1
         assert history_final[-2].status == "reviewed"
         assert history_final[-1].status == "stale"
+
+    def test_public_fixture_examples_lifecycle_coherence(self, tmp_path):
+        """Tarea 4: Demuestra que ejemplos publicados reflejan estados de InstrumentService."""
+        from pathlib import Path
+
+        from app.shared.instrument_contracts import InstrumentContext
+
+        root = Path(__file__).resolve().parents[3]
+        ex1_path = (
+            root / "docs" / "contracts" / "examples" / "instrument_confirmed_with_mapping.json"
+        )
+        ex2_path = (
+            root / "docs" / "contracts" / "examples" / "instrument_reviewed_without_mapping.json"
+        )
+
+        inst1 = InstrumentContext.model_validate_json(ex1_path.read_text(encoding="utf-8"))
+        inst2 = InstrumentContext.model_validate_json(ex2_path.read_text(encoding="utf-8"))
+
+        # Verificación de ciclo de vida real:
+        # 1. Ambos son reviewed y tienen versión >= 1 (nunca versión 0)
+        assert inst1.version >= 1
+        assert inst1.status == "reviewed"
+        assert inst2.version >= 1
+        assert inst2.status == "reviewed"
+
+        # 2. Ambos tienen correspondencia metodológica no nula (requerida por confirm_instrument)
+        assert inst1.variables[0].methodology_variable_id is not None
+        assert inst2.variables[0].methodology_variable_id is not None
+
+        # 3. Marcas temporales coherentes: updated_at coincide con confirmed_at
+        assert inst1.updated_at == inst1.confirmation.confirmed_at
+        assert inst2.updated_at == inst2.confirmation.confirmed_at
+
+        # 4. El fixture 1 tiene dataset mapping confirmado al 100%
+        assert inst1.dataset_mapping is not None
+        assert inst1.dataset_mapping.status == "confirmed"
+        assert len(inst1.dataset_mapping.item_columns) == len(inst1.items)
+
+        # 5. El fixture 2 representa un instrumento revisado SIN dataset (no apto para datos aún)
+        assert inst2.dataset_mapping is None

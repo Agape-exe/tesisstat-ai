@@ -6,7 +6,7 @@
   "version": 1,
   "status": "reviewed",
   "created_at": "2026-11-01T10:00:00Z",
-  "updated_at": "2026-11-02T12:00:00Z",
+  "updated_at": "2026-11-02T12:30:00Z",
   "provenance": {
     "source_kind": "document",
     "source_document_id": "796ee0bd-22b0-48d2-8271-5245dfa1e808",
@@ -25,7 +25,7 @@
       "variable_id": "48f41762-b112-4d33-aa4b-595ac056adf7",
       "name": "Clima Laboral",
       "scale": "ordinal",
-      "methodology_variable_id": null
+      "methodology_variable_id": "22ec2b35-b0ef-4cd2-bae5-bdddfa299a51"
     }
   ],
   "dimensions": [

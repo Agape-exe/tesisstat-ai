@@ -410,3 +410,138 @@ class TestInstrumentContextModels:
         assert AnalysisResult.__name__ == "AnalysisResult"
         assert ResearchVariable.__name__ == "ResearchVariable"
         assert ResearchHypothesis.__name__ == "ResearchHypothesis"
+
+    def test_shared_instrument_contracts_canonical_location(self):
+        """Verifica que la definición canónica resida en app.shared.instrument_contracts."""
+        from pydantic import BaseModel
+
+        from app.shared.instrument_contracts import (
+            InstrumentContext as SharedInstrumentContext,
+        )
+        from app.shared.ports import InstrumentContextReader as SharedReaderProtocol
+
+        assert SharedInstrumentContext is InstrumentContext
+        assert issubclass(SharedInstrumentContext, BaseModel)
+        assert SharedReaderProtocol is not None
+
+    def test_range_validation_numeric_value_respects_declared_bounds(self):
+        """B3: Las opciones de respuesta deben estar dentro de límites declarados."""
+        opts_valid = [
+            ResponseOption(code="1", label="Uno", numeric_value=1.0),
+            ResponseOption(code="2", label="Dos", numeric_value=5.0),
+        ]
+        item = InstrumentItem(
+            item_id=uuid4(),
+            variable_id=uuid4(),
+            dimension_id=uuid4(),
+            indicator_id=uuid4(),
+            text="Texto",
+            response_type="single_choice",
+            response_options=opts_valid,
+            valid_min=1.0,
+            valid_max=5.0,
+        )
+        assert item.valid_min == 1.0
+
+        # Valor numérico menor que valid_min
+        opts_below = [
+            ResponseOption(code="0", label="Cero", numeric_value=0.5),
+            ResponseOption(code="2", label="Dos", numeric_value=5.0),
+        ]
+        with pytest.raises(ValidationError) as exc:
+            InstrumentItem(
+                item_id=uuid4(),
+                variable_id=uuid4(),
+                dimension_id=uuid4(),
+                indicator_id=uuid4(),
+                text="Texto",
+                response_type="single_choice",
+                response_options=opts_below,
+                valid_min=1.0,
+                valid_max=5.0,
+            )
+        assert "inferior al límite valid_min" in str(exc.value)
+
+        # Valor numérico mayor que valid_max
+        opts_above = [
+            ResponseOption(code="1", label="Uno", numeric_value=1.0),
+            ResponseOption(code="6", label="Seis", numeric_value=6.0),
+        ]
+        with pytest.raises(ValidationError) as exc:
+            InstrumentItem(
+                item_id=uuid4(),
+                variable_id=uuid4(),
+                dimension_id=uuid4(),
+                indicator_id=uuid4(),
+                text="Texto",
+                response_type="single_choice",
+                response_options=opts_above,
+                valid_min=1.0,
+                valid_max=5.0,
+            )
+        assert "supera el límite valid_max" in str(exc.value)
+
+    def test_range_semi_bounded_remains_admitted_pending_ratification(self):
+        """B3: Rangos semiacotados siguen admitidos hasta ratificación formal."""
+        item_min = InstrumentItem(
+            item_id=uuid4(),
+            variable_id=uuid4(),
+            dimension_id=uuid4(),
+            indicator_id=uuid4(),
+            text="Tiempo en minutos (no acotado superiormente)",
+            response_type="numeric",
+            valid_min=0.0,
+            valid_max=None,
+        )
+        assert item_min.valid_min == 0.0 and item_min.valid_max is None
+
+        item_max = InstrumentItem(
+            item_id=uuid4(),
+            variable_id=uuid4(),
+            dimension_id=uuid4(),
+            indicator_id=uuid4(),
+            text="Puntaje acotado superiormente",
+            response_type="numeric",
+            valid_min=None,
+            valid_max=100.0,
+        )
+        assert item_max.valid_min is None and item_max.valid_max == 100.0
+
+    def test_public_contract_examples_coherence_and_json_schema(self):
+        """Tarea 2 y 4: Verifica ejemplos publicados según JSON Schema y Pydantic."""
+        import json
+        from pathlib import Path
+
+        from jsonschema import Draft202012Validator
+
+        root = Path(__file__).resolve().parents[3]
+        schema_path = root / "docs" / "contracts" / "instrument_context_v1.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        validator = Draft202012Validator(schema)
+
+        ex1_path = (
+            root / "docs" / "contracts" / "examples" / "instrument_confirmed_with_mapping.json"
+        )
+        ex1_raw = ex1_path.read_text(encoding="utf-8")
+        ex1_json = json.loads(ex1_raw)
+        validator.validate(ex1_json)
+        inst1 = InstrumentContext.model_validate_json(ex1_raw)
+        assert inst1.version >= 1
+        assert inst1.status == "reviewed"
+        assert inst1.variables[0].methodology_variable_id is not None
+        assert inst1.updated_at == inst1.confirmation.confirmed_at
+        assert inst1.dataset_mapping is not None
+        assert inst1.dataset_mapping.status == "confirmed"
+
+        ex2_path = (
+            root / "docs" / "contracts" / "examples" / "instrument_reviewed_without_mapping.json"
+        )
+        ex2_raw = ex2_path.read_text(encoding="utf-8")
+        ex2_json = json.loads(ex2_raw)
+        validator.validate(ex2_json)
+        inst2 = InstrumentContext.model_validate_json(ex2_raw)
+        assert inst2.version >= 1
+        assert inst2.status == "reviewed"
+        assert inst2.variables[0].methodology_variable_id is not None
+        assert inst2.updated_at == inst2.confirmation.confirmed_at
+        assert inst2.dataset_mapping is None

@@ -39,8 +39,8 @@ def make_valid_confirmed_instrument() -> InstrumentContext:
     inst_id = uuid4()
     dataset_id = uuid4()
     created = datetime(2026, 11, 1, 10, 0, tzinfo=UTC)
-    updated = datetime(2026, 11, 2, 12, 0, tzinfo=UTC)
     confirmed_dt = datetime(2026, 11, 2, 12, 30, tzinfo=UTC)
+    updated = confirmed_dt
 
     return InstrumentContext(
         schema_version="1.0.0",
@@ -68,6 +68,7 @@ def make_valid_confirmed_instrument() -> InstrumentContext:
                 variable_id=var_id,
                 name="Clima Laboral",
                 scale="ordinal",
+                methodology_variable_id=uuid4(),
             )
         ],
         dimensions=[
@@ -300,22 +301,22 @@ def make_valid_reviewed_without_dataset() -> InstrumentContext:
     item_id = uuid4()
     rule_id = uuid4()
     created = datetime(2026, 11, 3, 8, 0, tzinfo=UTC)
-    updated = datetime(2026, 11, 3, 9, 0, tzinfo=UTC)
     confirmed_dt = datetime(2026, 11, 3, 9, 15, tzinfo=UTC)
+    updated = confirmed_dt
 
     return InstrumentContext(
         schema_version="1.0.0",
         instrument_id=uuid4(),
         project_id=uuid4(),
-        version=0,
+        version=1,
         status="reviewed",
         created_at=created,
         updated_at=updated,
         provenance=InstrumentProvenance(
             source_kind="manual",
             methodology_review_id=uuid4(),
-            methodology_review_version=0,
-            methodology_review_hash="0" * 64,
+            methodology_review_version=1,
+            methodology_review_hash="d" * 64,
         ),
         confirmation=InstrumentConfirmation(
             state="confirmed",
@@ -327,6 +328,7 @@ def make_valid_reviewed_without_dataset() -> InstrumentContext:
                 variable_id=var_id,
                 name="Autoeficacia",
                 scale="interval",
+                methodology_variable_id=uuid4(),
             )
         ],
         dimensions=[

@@ -1,4 +1,7 @@
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from app.shared.instrument_contracts import InstrumentContext
 
 
 class LanguageModel(Protocol):
@@ -15,3 +18,13 @@ class IdentityProvider(Protocol):
 
 class ResearchRepository(Protocol):
     async def get(self, package_id: str, *, owner_id: str) -> dict[str, object]: ...
+
+
+class InstrumentContextReader(Protocol):
+    """Authorized read port for Statistics to consume InstrumentContext v1.0.0."""
+
+    def get_confirmed_context(
+        self,
+        project_id: str,
+        instrument_id: str,
+    ) -> "InstrumentContext": ...
