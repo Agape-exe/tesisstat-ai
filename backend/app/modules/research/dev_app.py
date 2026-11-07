@@ -39,6 +39,17 @@ from app.modules.research.eda.analyzer import ExploratoryAnalyzer
 from app.modules.research.eda.routes import create_router as create_eda_router
 from app.modules.research.eda.sqlite_repository import EDAStorageError, SQLiteEDARepository
 from app.modules.research.eda.use_cases import EDANotFound, EDAService
+from app.modules.research.instrument.reader import ResearchInstrumentContextReader
+from app.modules.research.instrument.repository import (
+    InstrumentConflict,
+    InstrumentNotConfirmedError,
+    InstrumentNotFound,
+    InstrumentStaleError,
+    InstrumentValidationError,
+)
+from app.modules.research.instrument.routes import create_router as create_instrument_router
+from app.modules.research.instrument.service import InstrumentService
+from app.modules.research.instrument.sqlite_repository import SQLiteInstrumentRepository
 from app.modules.research.methodology.review import ReviewService
 from app.modules.research.methodology.routes import create_router as create_methodology_router
 from app.modules.research.methodology.service import (
@@ -262,6 +273,33 @@ def create_app(
             status_code=503, content={"detail": "El reporte EDA no está disponible."}
         )
 
+    @app.exception_handler(InstrumentNotFound)
+    async def instrument_not_found(request: Request, exc: InstrumentNotFound) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(InstrumentConflict)
+    async def instrument_conflict(request: Request, exc: InstrumentConflict) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+    @app.exception_handler(InstrumentValidationError)
+    async def instrument_validation_error(
+        request: Request, exc: InstrumentValidationError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(InstrumentStaleError)
+    async def instrument_stale_error(request: Request, exc: InstrumentStaleError) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={"detail": str(exc), "reasons": exc.reasons},
+        )
+
+    @app.exception_handler(InstrumentNotConfirmedError)
+    async def instrument_not_confirmed(
+        request: Request, exc: InstrumentNotConfirmedError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
+
     projects = ProjectService(repository)
     document_repository = SQLiteDocumentRepository(
         settings.research_db_path, settings.research_documents_path
@@ -330,6 +368,18 @@ def create_app(
         SQLitePackageRepository(settings.research_db_path),
     )
     app.include_router(create_package_router(packages))
+    instrument_repository = SQLiteInstrumentRepository(settings.research_db_path)
+    instruments = InstrumentService(
+        instrument_repository,
+        projects,
+        documents,
+        methodology_repository,
+        datasets,
+    )
+    instrument_reader = ResearchInstrumentContextReader(instruments)
+    app.state.instrument_service = instruments
+    app.state.instrument_reader = instrument_reader
+    app.include_router(create_instrument_router(instruments))
     app.state.research_statistics_bridge = ResearchStatisticsBridge(projects, packages, datasets)
     app.state.research_analysis = ResearchAnalysisService(
         app.state.research_statistics_bridge,

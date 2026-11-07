@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0.0",
+  "instrument_id": "d2e863b7-eed0-498c-8a0e-43462dce2324",
+  "project_id": "dc9ed615-157a-4352-91bf-f750a47d8d58",
+  "research_package_id": null,
+  "version": 0,
+  "status": "reviewed",
+  "created_at": "2026-11-03T08:00:00Z",
+  "updated_at": "2026-11-03T09:00:00Z",
+  "provenance": {
+    "source_kind": "manual",
+    "source_document_id": null,
+    "source_document_hash": null,
+    "methodology_review_id": "5b398a33-ae68-4c91-a3e1-e622cd304fcd",
+    "methodology_review_version": 0,
+    "methodology_review_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "confirmation": {
+    "state": "confirmed",
+    "confirmed_at": "2026-11-03T09:15:00Z",
+    "confirmer_ref": "auditor_investigacion"
+  },
+  "variables": [
+    {
+      "variable_id": "4da4a82a-4d5d-49d9-af7a-84099498b837",
+      "name": "Autoeficacia",
+      "scale": "interval",
+      "methodology_variable_id": null
+    }
+  ],
+  "dimensions": [
+    {
+      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
+      "variable_id": "4da4a82a-4d5d-49d9-af7a-84099498b837",
+      "name": "Confianza en Tareas Complejas"
+    }
+  ],
+  "indicators": [
+    {
+      "indicator_id": "fc64c118-acd4-413a-bd73-df636620b736",
+      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
+      "name": "Persistencia"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "183600f1-3211-4a60-ad67-c3890352d9de",
+      "variable_id": "4da4a82a-4d5d-49d9-af7a-84099498b837",
+      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
+      "indicator_id": "fc64c118-acd4-413a-bd73-df636620b736",
+      "text": "Puedo resolver problemas difíciles si me esfuerzo lo suficiente.",
+      "response_type": "single_choice",
+      "response_options": [
+        {
+          "code": "1",
+          "label": "Totalmente en desacuerdo",
+          "numeric_value": 1.0
+        },
+        {
+          "code": "2",
+          "label": "En desacuerdo",
+          "numeric_value": 2.0
+        },
+        {
+          "code": "3",
+          "label": "Neutral",
+          "numeric_value": 3.0
+        },
+        {
+          "code": "4",
+          "label": "De acuerdo",
+          "numeric_value": 4.0
+        },
+        {
+          "code": "5",
+          "label": "Totalmente de acuerdo",
+          "numeric_value": 5.0
+        }
+      ],
+      "valid_min": 1.0,
+      "valid_max": 5.0,
+      "reverse_scored": false,
+      "reverse_rule": null,
+      "source_quote": null
+    }
+  ],
+  "scoring_rules": [
+    {
+      "scoring_rule_id": "3489cf95-943f-4024-acf9-0ab82c19e85d",
+      "scope": "dimension",
+      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
+      "item_ids": [
+        "183600f1-3211-4a60-ad67-c3890352d9de"
+      ],
+      "aggregation": "mean",
+      "missing_policy": "all_required",
+      "confirmed": true
+    }
+  ],
+  "dataset_mapping": null
+}
