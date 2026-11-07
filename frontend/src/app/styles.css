@@ -1,7 +1,8 @@
 :root {
   font-family: 'Segoe UI', system-ui, sans-serif;
-  color: #193c36;
-  background: #f6f7f2;
+  color: #25233b;
+  background: #fafafd;
+  color-scheme: light;
   font-synthesis: none;
 }
 body {

@@ -156,19 +156,14 @@ it('shows reviewed links, validates and builds an explicitly configured package'
     ),
   ).toBeTruthy();
   expect(
-    screen.getByText(
-      /Integración disponible: resumen descriptivo, Pearson y Spearman/,
-    ),
-  ).toBeTruthy();
-  expect(
-    screen.getAllByRole('region', { name: 'Análisis estadístico Research' }),
-  ).toHaveLength(1);
+    screen.queryByRole('region', { name: 'Análisis estadístico Research' }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole('region', { name: 'Statistics sobre paquete Research' }),
   ).toBeNull();
   expect(
-    screen.getAllByRole('button', { name: 'Proponer análisis' }),
-  ).toHaveLength(1);
+    screen.queryByRole('button', { name: 'Proponer análisis' }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: 'Ejecutar descriptivos' }),
   ).toBeNull();
@@ -217,8 +212,8 @@ it('shows stale history without allowing new proposals', async () => {
     ),
   ).toBeNull();
   expect(
-    screen.getByRole('region', { name: 'Análisis estadístico Research' }),
-  ).toBeInTheDocument();
+    screen.queryByRole('region', { name: 'Análisis estadístico Research' }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: 'Proponer análisis' }),
   ).toBeNull();
@@ -281,8 +276,8 @@ it('loads an existing current package when the project is reopened', async () =>
   ).toBeTruthy();
   expect(calls.some((url) => url.endsWith('/package'))).toBe(true);
   expect(
-    screen.getAllByRole('region', { name: 'Análisis estadístico Research' }),
-  ).toHaveLength(1);
+    screen.queryByRole('region', { name: 'Análisis estadístico Research' }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole('region', { name: 'Statistics sobre paquete Research' }),
   ).toBeNull();

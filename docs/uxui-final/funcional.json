@@ -1,0 +1,886 @@
+{
+  "projectId": "9abdff2b-b0b7-40b0-a4f4-26c22f322ca1",
+  "checks": [
+    "Chat con proveedor simulado local: una solicitud consentida y cero ejecuciones",
+    "Mensaje persistido tras F5; el consentimiento no persiste",
+    "Carga DOCX, extracción real y documento persistido tras F5",
+    "Editor metodológico explícito: guardado real y recuperación con F5",
+    "Confirmación humana y pestañas de metodología conectadas a la revisión guardada",
+    "Instrumento pendiente sin interpretación ni cálculos simulados",
+    "CSV sintético activo, tabla real y EDA con duplicados",
+    "Preparación: selección, previsualización, confirmación explícita, derivado e historial tras F5",
+    "Ejecución denegada por FastAPI para plan sin aprobación; cero resultados",
+    "Propuesta real → aprobación humana → F5 → ejecución explícita; un resultado",
+    "PDF y DOCX reales con firmas válidas; descargas sin recalcular",
+    "Cambio metodológico: historial y métricas idénticos, exportación bloqueada por vigencia",
+    "Proyecto vacío aislado: no muestra los resultados del proyecto de QA"
+  ],
+  "errors": [],
+  "external": [],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations?offset=0"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations?offset=0"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations/248229e3-53af-4600-aedd-86ebfa14817b/messages"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations?offset=0"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations?offset=0"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/conversations/248229e3-53af-4600-aedd-86ebfa14817b"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/extraction"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/extract"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/extraction"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review"
+    },
+    {
+      "method": "PUT",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/extraction"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/extraction"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/confirm"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/preview"
+    },
+    {
+      "method": "PUT",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/origin"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/activate"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/eda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/eda"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/eda"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/preparations"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/preparation/preview"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/preparation/apply"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets/c54a6acb-d88f-4811-bb95-f956b9b772cd/preparations"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/datasets"
+    },
+    {
+      "method": "PUT",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/configuration"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/validate"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/build"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plan"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans/78344649-67f2-4ce6-af2b-08d06e332ad6/approve"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans/78344649-67f2-4ce6-af2b-08d06e332ad6/execute"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans/78344649-67f2-4ce6-af2b-08d06e332ad6/results/result-78344649-67f2-4ce6-af2b-08d06e332ad6/report.pdf"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/plans/78344649-67f2-4ce6-af2b-08d06e332ad6/results/result-78344649-67f2-4ce6-af2b-08d06e332ad6/report.docx"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/extraction"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/status"
+    },
+    {
+      "method": "PUT",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/documents/3d8bff33-564b-4cc7-8a19-3688b0556381/methodology/review/confirm"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/9abdff2b-b0b7-40b0-a4f4-26c22f322ca1/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/683c2599-7861-4329-8267-59fe8272e62f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/683c2599-7861-4329-8267-59fe8272e62f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/683c2599-7861-4329-8267-59fe8272e62f"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/683c2599-7861-4329-8267-59fe8272e62f/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/683c2599-7861-4329-8267-59fe8272e62f/package/status"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/683c2599-7861-4329-8267-59fe8272e62f/analysis/results"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8022/api/research/projects/683c2599-7861-4329-8267-59fe8272e62f/package/status"
+    }
+  ]
+}

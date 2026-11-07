@@ -1,0 +1,4 @@
+
+> tesisstat-frontend@0.1.0 contracts:generate
+> node scripts/generate-contracts.mjs
+

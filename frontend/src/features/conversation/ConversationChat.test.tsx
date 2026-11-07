@@ -96,6 +96,9 @@ function researchStatus(states: Record<string, string> = {}): ProviderStatus {
 }
 
 beforeAll(() => {
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open');
+  };
   HTMLDialogElement.prototype.showModal = function () {
     this.setAttribute('open', '');
   };
@@ -201,7 +204,8 @@ it('shows source states and explains historical results and incomplete sources',
   const api = service();
   vi.mocked(api.status).mockResolvedValue(researchStatus());
   await ready(api);
-  const panel = screen.getByRole('region', {
+  fireEvent.click(screen.getByRole('button', { name: 'Fuentes y contexto' }));
+  const panel = screen.getByRole('complementary', {
     name: 'Contexto de investigación',
   });
   expect(
@@ -225,6 +229,7 @@ it('refreshes changed sources without losing history or consent', async () => {
     .mockResolvedValue(researchStatus());
   vi.mocked(api.get).mockResolvedValue(detail([user, assistant]));
   await ready(api);
+  fireEvent.click(screen.getByRole('button', { name: 'Fuentes y contexto' }));
   expect(
     screen.getByText('Borrador: requiere confirmación'),
   ).toBeInTheDocument();
@@ -232,7 +237,8 @@ it('refreshes changed sources without losing history or consent', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Actualizar contexto' }));
   expect(await screen.findByText('Confirmada')).toBeInTheDocument();
   expect(screen.getByText(assistant.content)).toBeInTheDocument();
-  expect(screen.getByRole('checkbox')).toBeChecked();
+  expect(screen.getByRole('button', { name: 'Revocar permiso' })).toBeEnabled();
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   expect(api.send).not.toHaveBeenCalled();
 });
 
@@ -254,13 +260,13 @@ it('describes the expanded consent scope without reusing old session storage', a
   await ready();
   const checkbox = screen.getByRole('checkbox');
   expect(checkbox).not.toBeChecked();
-  expect(checkbox).toHaveAccessibleName(
+  expect(checkbox).toHaveAccessibleDescription(
     /información metodológica seleccionada/,
   );
-  expect(checkbox).toHaveAccessibleName(
+  expect(checkbox).toHaveAccessibleDescription(
     /metadatos del dataset y métricas estadísticas verificadas/,
   );
-  expect(checkbox).toHaveAccessibleName(
+  expect(checkbox).toHaveAccessibleDescription(
     /No se envían documentos completos ni datos individuales/,
   );
 });
@@ -312,9 +318,10 @@ it('rechecks sources when returning focus to the chat', async () => {
     .mockResolvedValueOnce(researchStatus())
     .mockResolvedValue(researchStatus({ dataset: 'missing' }));
   await ready(api);
+  fireEvent.click(screen.getByRole('button', { name: 'Fuentes y contexto' }));
   fireEvent(window, new Event('focus'));
   await waitFor(() => expect(api.status).toHaveBeenCalledTimes(2));
-  const panel = screen.getByRole('region', {
+  const panel = screen.getByRole('complementary', {
     name: 'Contexto de investigación',
   });
   await waitFor(() =>
@@ -395,7 +402,7 @@ it('shows processing and blocks repeated clicks and Enter submissions', async ()
   fireEvent.keyDown(screen.getByLabelText('Tu mensaje'), { key: 'Enter' });
   expect(api.send).toHaveBeenCalledTimes(1);
   expect(
-    screen.getByRole('button', { name: '＋ Nueva conversación' }),
+    screen.getByRole('button', { name: 'Nueva conversación' }),
   ).toBeDisabled();
   await act(async () => finish({ messages: [user, assistant] }));
   expect(screen.queryByText('Generando respuesta…')).not.toBeInTheDocument();
@@ -481,15 +488,16 @@ it('restores selected history after remount and requests consent again', async (
 
 it('creates a second conversation and switches back to stored history', async () => {
   const { api } = await ready();
-  fireEvent.click(
-    screen.getByRole('button', { name: '＋ Nueva conversación' }),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Nueva conversación' }));
   await waitFor(() => expect(api.create).toHaveBeenCalledWith('p1'));
-  expect(
-    await screen.findByText('Nueva conversación', { selector: 'strong' }),
-  ).toBeInTheDocument();
+  await waitFor(() =>
+    expect(
+      document.querySelector('.chat-select[aria-pressed="true"]'),
+    ).toHaveTextContent('Nueva conversación'),
+  );
+  expect(sessionStorage.getItem('tesisstat:conversation:v1:p1')).toBe('c2');
   vi.mocked(api.get).mockResolvedValue(detail([user, assistant]));
-  fireEvent.click(screen.getByRole('button', { name: /Consulta de prueba/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Consulta de prueba/ }));
   await screen.findByText(assistant.content);
   expect(sessionStorage.getItem('tesisstat:conversation:v1:p1')).toBe('c1');
 });
@@ -497,12 +505,22 @@ it('creates a second conversation and switches back to stored history', async ()
 it('confirms deletion, supports cancellation and removes the conversation', async () => {
   const { api } = await ready();
   fireEvent.click(
-    screen.getByRole('button', { name: 'Eliminar conversación' }),
+    screen.getByRole('button', {
+      name: 'Opciones de conversación: Consulta de prueba',
+    }),
+  );
+  fireEvent.click(
+    screen.getByRole('menuitem', { name: 'Eliminar conversación' }),
   );
   fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
   expect(api.delete).not.toHaveBeenCalled();
   fireEvent.click(
-    screen.getByRole('button', { name: 'Eliminar conversación' }),
+    screen.getByRole('button', {
+      name: 'Opciones de conversación: Consulta de prueba',
+    }),
+  );
+  fireEvent.click(
+    screen.getByRole('menuitem', { name: 'Eliminar conversación' }),
   );
   fireEvent.click(
     within(screen.getByRole('dialog')).getByRole('button', {
@@ -520,7 +538,12 @@ it('keeps history if deletion fails', async () => {
   );
   await ready(api);
   fireEvent.click(
-    screen.getByRole('button', { name: 'Eliminar conversación' }),
+    screen.getByRole('button', {
+      name: 'Opciones de conversación: Consulta de prueba',
+    }),
+  );
+  fireEvent.click(
+    screen.getByRole('menuitem', { name: 'Eliminar conversación' }),
   );
   fireEvent.click(
     screen.getByRole('button', { name: 'Confirmar eliminación' }),
@@ -549,7 +572,7 @@ it('unconfigured provider still allows reading and creating conversations', asyn
   expect(screen.getByText(assistant.content)).toBeInTheDocument();
   expect(screen.getByLabelText('Tu mensaje')).toBeDisabled();
   expect(
-    screen.getByRole('button', { name: '＋ Nueva conversación' }),
+    screen.getByRole('button', { name: 'Nueva conversación' }),
   ).toBeEnabled();
   expect(api.send).not.toHaveBeenCalled();
 });
@@ -564,9 +587,7 @@ it('handles a missing project without enabling send', async () => {
     'No se encontró el proyecto.',
   );
   expect(api.list).toHaveBeenCalledWith('missing', 0, expect.any(AbortSignal));
-  expect(
-    screen.queryByRole('button', { name: 'Enviar mensaje' }),
-  ).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toBeDisabled();
 });
 
 it('handles a deleted saved conversation', async () => {
@@ -635,4 +656,163 @@ it('discards a late response after leaving the project', async () => {
   render(<ConversationChat key="p2" projectId="p2" api={service()} />);
   await act(async () => finish({ messages: [user, assistant] }));
   expect(screen.queryByText(assistant.content)).not.toBeInTheDocument();
+});
+
+it('hides consent after accepting and blocks again immediately on revocation', async () => {
+  const { api } = await ready();
+  authorize();
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/No se envían documentos completos/),
+  ).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Tu mensaje')).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Consultar permiso' }));
+  expect(screen.getByText(/No se envían documentos completos/)).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Revocar permiso' }));
+  expect(screen.getByRole('checkbox')).not.toBeChecked();
+  expect(screen.getByLabelText('Tu mensaje')).toBeDisabled();
+  write();
+  send();
+  expect(api.send).not.toHaveBeenCalled();
+});
+
+it('rejecting consent leaves persisted history readable and cannot send', async () => {
+  const api = service();
+  vi.mocked(api.get).mockResolvedValue(detail([user, assistant]));
+  await ready(api);
+  fireEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+  expect(screen.getByText(assistant.content)).toBeVisible();
+  expect(screen.getByLabelText('Tu mensaje')).toBeDisabled();
+  write();
+  send();
+  expect(api.send).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Revisar consentimiento' }),
+  );
+  expect(screen.getByRole('checkbox')).not.toBeChecked();
+});
+
+it('labels the local provider without claiming Cloudflare transmission', async () => {
+  const api = service();
+  vi.mocked(api.status).mockResolvedValue({
+    ...researchStatus(),
+    model: 'simulado-local-sin-red',
+  });
+  await ready(api);
+  expect(
+    screen.getByText(
+      /Esta demo no transmite información a Cloudflare ni realiza inferencia Qwen3 real/,
+    ),
+  ).toBeVisible();
+  expect(screen.queryByText(/Se enviarán tu mensaje/)).not.toBeInTheDocument();
+  authorize();
+  expect(screen.getByText('Demo local autorizada')).toBeVisible();
+});
+
+it('does not carry authorization to a second project', async () => {
+  const first = await ready();
+  authorize();
+  first.unmount();
+  const api = service();
+  render(<ConversationChat key="p2" projectId="p2" api={api} />);
+  await screen.findByRole('checkbox');
+  expect(screen.getByRole('checkbox')).not.toBeChecked();
+  expect(screen.getByLabelText('Tu mensaje')).toBeDisabled();
+  expect(api.send).not.toHaveBeenCalled();
+  expect(api.list).toHaveBeenCalledWith('p2', 0, expect.any(AbortSignal));
+});
+
+it('renders backend Markdown tables as semantic tables', async () => {
+  const api = service();
+  vi.mocked(api.get).mockResolvedValue(
+    detail([
+      {
+        ...assistant,
+        content: '| Variable | Escala |\n| --- | --- |\n| Edad | Razón |',
+      },
+    ]),
+  );
+  await ready(api);
+  expect(
+    screen.getByRole('columnheader', { name: 'Variable' }),
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByRole('table')).getByRole('cell', { name: 'Edad' }),
+  ).toBeInTheDocument();
+});
+
+it('deletes an unselected conversation without discarding the selected history', async () => {
+  const api = service();
+  vi.mocked(api.list).mockResolvedValue([
+    conversation,
+    { ...conversation, id: 'other', title: 'Otra consulta' },
+  ]);
+  vi.mocked(api.get).mockResolvedValue(detail([user, assistant]));
+  await ready(api);
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: 'Opciones de conversación: Otra consulta',
+    }),
+  );
+  fireEvent.click(
+    screen.getByRole('menuitem', { name: 'Eliminar conversación' }),
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Confirmar eliminación' }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+  expect(api.delete).toHaveBeenCalledWith('p1', 'other');
+  expect(screen.getByText(assistant.content)).toBeVisible();
+  expect(
+    screen.getByRole('button', { name: /^Consulta de prueba/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
+});
+
+it('creates the first conversation on send only after explicit consent', async () => {
+  const api = service();
+  vi.mocked(api.list).mockResolvedValue([]);
+  await ready(api);
+  expect(api.create).not.toHaveBeenCalled();
+  write();
+  send();
+  expect(api.create).not.toHaveBeenCalled();
+  expect(api.send).not.toHaveBeenCalled();
+  authorize();
+  write();
+  send();
+  await screen.findByText(assistant.content);
+  expect(api.create).toHaveBeenCalledTimes(1);
+  expect(api.send).toHaveBeenCalledWith(
+    'p1',
+    'c2',
+    user.content,
+    expect.any(String),
+  );
+  expect(sessionStorage.getItem('tesisstat:conversation:v1:p1')).toBe('c2');
+});
+
+it('waits for initial history before enabling the first send', async () => {
+  const api = service();
+  let finish!: (value: Conversation[]) => void;
+  vi.mocked(api.list).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  render(<ConversationChat projectId="p1" api={api} />);
+  await screen.findByRole('checkbox');
+  authorize();
+  expect(screen.getByLabelText('Tu mensaje')).toBeDisabled();
+  write();
+  fireEvent.keyDown(screen.getByLabelText('Tu mensaje'), { key: 'Enter' });
+  expect(api.create).not.toHaveBeenCalled();
+  expect(api.send).not.toHaveBeenCalled();
+  await act(async () => finish([]));
+  expect(screen.getByLabelText('Tu mensaje')).toBeEnabled();
+  write();
+  send();
+  await screen.findByText(assistant.content);
+  expect(api.create).toHaveBeenCalledTimes(1);
 });

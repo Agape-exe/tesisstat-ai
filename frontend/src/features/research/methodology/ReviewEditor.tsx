@@ -65,15 +65,17 @@ export function ReviewEditor({
   projectId,
   documentId,
   onChange,
+  initialEditing = false,
 }: {
   review: MethodologyReview;
   api: MethodologyApi;
   projectId: string;
   documentId: string;
   onChange: (review: MethodologyReview) => void;
+  initialEditing?: boolean;
 }) {
   const [content, setContent] = useState(() => clone(review.content));
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(initialEditing);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const dirty = JSON.stringify(content) !== JSON.stringify(review.content);

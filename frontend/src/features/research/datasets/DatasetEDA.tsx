@@ -58,19 +58,13 @@ export function DatasetEDA({
 
   return (
     <div className="rp-dataset-preview" aria-busy={busy}>
-      <button
-        className="rp-secondary"
-        disabled={busy}
-        onClick={() => void analyze()}
-      >
-        Analizar calidad de datos
-      </button>
+      {!report && (
+        <button disabled={busy} onClick={() => void analyze()}>
+          Analizar calidad de datos
+        </button>
+      )}
       {report && (
-        <button
-          className="rp-secondary"
-          disabled={busy}
-          onClick={() => void analyze(true)}
-        >
+        <button disabled={busy} onClick={() => void analyze(true)}>
           Repetir análisis
         </button>
       )}
@@ -84,17 +78,36 @@ export function DatasetEDA({
       {report && (
         <>
           <h4>Resumen general</h4>
+          <dl className="rp-metric-grid" aria-label="Resumen de calidad">
+            <div>
+              <dd>{report.summary.rows}</dd>
+              <dt>Filas</dt>
+            </div>
+            <div>
+              <dd>
+                {report.summary.missing_percentage.toLocaleString('es-PE', {
+                  maximumFractionDigits: 2,
+                })}
+                %
+              </dd>
+              <dt>Valores ausentes ({report.summary.missing})</dt>
+            </div>
+            <div>
+              <dd>{report.summary.duplicates}</dd>
+              <dt>Duplicados</dt>
+            </div>
+          </dl>
           <p>
             {report.summary.rows} filas · {report.summary.columns} columnas ·{' '}
-            {report.summary.missing} faltantes (
-            {report.summary.missing_percentage.toFixed(1)}%) ·{' '}
-            {report.summary.duplicates} duplicados ·{' '}
             {report.summary.problem_columns} columnas problemáticas
           </p>
-          <small>
-            Procesado: {new Date(report.processed_at).toLocaleString()} ·
-            Reglas: {report.rule_version}
-          </small>
+          <details className="rp-technical">
+            <summary>Procedencia del perfil</summary>
+            <small>
+              Procesado: {new Date(report.processed_at).toLocaleString()} ·
+              Reglas: {report.rule_version}
+            </small>
+          </details>
           <h4>Perfil de columnas</h4>
           <div className="rp-dataset-scroll">
             <table>

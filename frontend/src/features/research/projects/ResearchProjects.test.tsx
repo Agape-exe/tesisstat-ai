@@ -1,11 +1,20 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
   waitFor,
   within,
 } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { ProjectApiError } from './api';
 import { ResearchProjects } from './ResearchProjects';
 import type { Project, ProjectService } from './types';
@@ -24,7 +33,28 @@ const project: Project = {
   updated_at: '2026-10-31T12:00:00Z',
 };
 
-afterEach(() => window.history.replaceState(null, '', '/'));
+afterEach(() => {
+  window.history.replaceState(null, '', '/');
+  vi.unstubAllGlobals();
+});
+
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockImplementation(
+        async (url: string) =>
+          new Response(
+            JSON.stringify(
+              url.endsWith('/status')
+                ? { provider_configured: false, max_message_characters: 2000 }
+                : [],
+            ),
+          ),
+      ),
+  );
+});
 
 function mockService(): ProjectService {
   return {
@@ -62,6 +92,26 @@ function fillForm() {
   });
 }
 
+async function projectAction(label: string) {
+  if (
+    !screen.queryByRole('button', {
+      name: `Opciones de investigación: ${project.title}`,
+    })
+  ) {
+    fireEvent.click(
+      within(
+        screen.getByRole('navigation', { name: 'Navegación principal' }),
+      ).getByRole('button', { name: 'Mis investigaciones' }),
+    );
+  }
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: `Opciones de investigación: ${project.title}`,
+    }),
+  );
+  fireEvent.click(screen.getByRole('menuitem', { name: label }));
+}
+
 describe('Research projects UI', () => {
   it('shows loading and empty states', async () => {
     render(<ResearchProjects service={mockService()} />);
@@ -74,7 +124,7 @@ describe('Research projects UI', () => {
     ).toBeInTheDocument();
   });
 
-  it('creates, reads, edits, cancels deletion, and deletes after confirmation', async () => {
+  it('creates, reads, and edits through the project service', async () => {
     const service = mockService();
     render(<ResearchProjects service={service} />);
     await screen.findByText('Tu próxima investigación empieza aquí');
@@ -91,9 +141,8 @@ describe('Research projects UI', () => {
     expect(service.create).toHaveBeenCalledWith(
       expect.objectContaining({ title: project.title, academic_year: null }),
     );
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Editar investigación' }),
-    );
+    vi.mocked(service.list).mockResolvedValue([project]);
+    await projectAction('Editar investigación');
     fireEvent.change(screen.getByLabelText('Título de la investigación *'), {
       target: { value: 'Investigación ficticia editada' },
     });
@@ -104,9 +153,25 @@ describe('Research projects UI', () => {
     expect(
       screen.getByRole('heading', { name: 'Investigación ficticia editada' }),
     ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Eliminar investigación' }),
+    expect(service.update).toHaveBeenCalledWith(
+      project.id,
+      expect.objectContaining({ title: 'Investigación ficticia editada' }),
     );
+  });
+
+  it('restores focus on cancellation and deletes only after confirmation', async () => {
+    const service = mockService();
+    vi.mocked(service.list).mockResolvedValue([project]);
+    render(<ResearchProjects service={service} />);
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: `Ver investigación: ${project.title}`,
+      }),
+    );
+    await screen.findByRole('region', {
+      name: 'Información de la investigación',
+    });
+    await projectAction('Eliminar investigación');
     const dialog = screen.getByRole('dialog');
     expect(
       within(dialog).getByRole('button', { name: 'Cancelar' }),
@@ -116,11 +181,11 @@ describe('Research projects UI', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(service.delete).not.toHaveBeenCalled();
     expect(
-      screen.getByRole('button', { name: 'Eliminar investigación' }),
+      screen.getByRole('button', {
+        name: `Opciones de investigación: ${project.title}`,
+      }),
     ).toHaveFocus();
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Eliminar investigación' }),
-    );
+    await projectAction('Eliminar investigación');
     fireEvent.click(
       screen.getByRole('button', { name: 'Eliminar definitivamente' }),
     );
@@ -151,9 +216,7 @@ describe('Research projects UI', () => {
       project.id,
       expect.any(AbortSignal),
     );
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Editar investigación' }),
-    );
+    await projectAction('Editar investigación');
     expect(screen.getByLabelText('Título de la investigación *')).toHaveValue(
       project.title,
     );
@@ -162,7 +225,9 @@ describe('Research projects UI', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(
-      screen.getByRole('heading', { name: project.title }),
+      await screen.findByText(project.title, {
+        selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+      }),
     ).toBeInTheDocument();
     expect(service.update).not.toHaveBeenCalled();
   });
@@ -286,7 +351,7 @@ describe('Research projects UI', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar detalle' }));
     expect(
-      await screen.findByRole('button', { name: 'Editar investigación' }),
+      await screen.findByRole('region', { name: 'Asistente IA' }),
     ).toBeInTheDocument();
   });
 
@@ -302,9 +367,7 @@ describe('Research projects UI', () => {
         name: `Ver investigación: ${project.title}`,
       }),
     );
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Eliminar investigación' }),
-    );
+    await projectAction('Eliminar investigación');
     fireEvent.click(
       screen.getByRole('button', { name: 'Eliminar definitivamente' }),
     );
@@ -312,7 +375,9 @@ describe('Research projects UI', () => {
       await within(screen.getByRole('dialog')).findByRole('alert'),
     ).toHaveTextContent('No se pudo eliminar.');
     expect(
-      screen.getByRole('heading', { name: project.title }),
+      screen.getByText(project.title, {
+        selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+      }),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('button', { name: 'Eliminar definitivamente' }),
@@ -364,21 +429,20 @@ it('navigates between document and dataset steps', async () => {
       name: `Ver investigación: ${project.title}`,
     }),
   );
+  await screen.findByRole('region', { name: 'Asistente IA' });
+  fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   expect(
     await screen.findByRole('region', { name: 'Documentos de investigación' }),
   ).toBeInTheDocument();
-  fireEvent.click(
-    screen.getByRole('button', { name: '2. Dataset, EDA y preparación' }),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Datos' }));
   expect(
     screen.queryByRole('region', { name: 'Documentos de investigación' }),
   ).not.toBeInTheDocument();
-  expect(
-    screen.getByRole('button', { name: '2. Dataset, EDA y preparación' }),
-  ).toHaveAttribute('aria-pressed', 'true');
-  fireEvent.click(
-    screen.getByRole('button', { name: '1. Documento y metodología' }),
+  expect(screen.getByRole('button', { name: 'Datos' })).toHaveAttribute(
+    'aria-current',
+    'page',
   );
+  fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   expect(
     screen.getByRole('region', { name: 'Documentos de investigación' }),
   ).toBeInTheDocument();
@@ -407,10 +471,12 @@ it('opens Asistente IA, preserves document state and restores the project after 
       name: `Ver investigación: ${project.title}`,
     }),
   );
+  await screen.findByRole('region', { name: 'Asistente IA' });
+  fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   const documents = await screen.findByRole('region', {
     name: 'Documentos de investigación',
   });
-  fireEvent.click(screen.getByRole('button', { name: '4. Asistente IA' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Asistente IA' }));
   expect(
     await screen.findByRole('region', { name: 'Asistente IA' }),
   ).toBeInTheDocument();
@@ -418,27 +484,23 @@ it('opens Asistente IA, preserves document state and restores the project after 
     await screen.findByText(/Cloudflare no está configurado/),
   ).toBeInTheDocument();
   expect(window.location.hash).toContain('section=assistant');
-  for (const name of [
-    '1. Documento y metodología',
-    '2. Dataset, EDA y preparación',
-    '3. Paquete, análisis y resultados',
-  ]) {
+  for (const name of ['Documentos', 'Datos', 'Análisis']) {
     expect(screen.getByRole('button', { name })).toBeEnabled();
   }
-  fireEvent.click(
-    screen.getByRole('button', { name: '1. Documento y metodología' }),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   expect(
     screen.getByRole('region', { name: 'Documentos de investigación' }),
   ).toBe(documents);
-  fireEvent.click(screen.getByRole('button', { name: '4. Asistente IA' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Asistente IA' }));
   first.unmount();
   render(<ResearchProjects service={service} integrated />);
   expect(
     await screen.findByRole('region', { name: 'Asistente IA' }),
   ).toBeInTheDocument();
   expect(
-    screen.getByRole('heading', { name: project.title }),
+    screen.getByText(project.title, {
+      selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+    }),
   ).toBeInTheDocument();
   vi.unstubAllGlobals();
 });
@@ -456,4 +518,361 @@ it('reports a missing project restored from the chat URL', async () => {
   expect(
     screen.queryByRole('region', { name: 'Asistente IA' }),
   ).not.toBeInTheDocument();
+});
+
+it('searches persisted projects and preserves CRUD after clearing the search', async () => {
+  const service = mockService();
+  vi.mocked(service.list).mockResolvedValue([project]);
+  render(<ResearchProjects service={service} />);
+  const search = await screen.findByRole('searchbox', {
+    name: 'Buscar investigaciones',
+  });
+  fireEvent.change(search, { target: { value: 'no coincide' } });
+  expect(screen.getByText('No hay coincidencias')).toBeInTheDocument();
+  expect(service.delete).not.toHaveBeenCalled();
+  fireEvent.change(search, { target: { value: 'UNIVERSIDAD FICTICIA' } });
+  expect(
+    screen.getByRole('button', { name: `Ver investigación: ${project.title}` }),
+  ).toBeEnabled();
+  expect(service.list).toHaveBeenCalledTimes(1);
+});
+
+it('creates through the project service and opens the real assistant without loading documents', async () => {
+  const service = mockService();
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockImplementation(
+        async (url: string) =>
+          new Response(
+            JSON.stringify(
+              url.endsWith('/status') ? { provider_configured: false } : [],
+            ),
+          ),
+      ),
+  );
+  render(<ResearchProjects service={service} />);
+  await screen.findByText('Tu próxima investigación empieza aquí');
+  fireEvent.click(screen.getByRole('button', { name: 'Nueva investigación' }));
+  fillForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Crear investigación' }));
+  expect(
+    await screen.findByRole('region', { name: 'Asistente IA' }),
+  ).toBeInTheDocument();
+  await screen.findByText('Aún no hay conversaciones.');
+  expect(window.location.hash).toContain('section=assistant');
+  expect(service.create).toHaveBeenCalledTimes(1);
+  expect(
+    screen.getByRole('button', { name: /Cargar documentos/ }),
+  ).toBeEnabled();
+  expect(screen.getByRole('button', { name: /Cargar datos/ })).toBeEnabled();
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.some(([url]) => String(url).endsWith('/documents')),
+  ).toBe(false);
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.some(([, options]) => options?.method === 'POST'),
+  ).toBe(false);
+});
+
+it('restores project and section with browser Back and Forward, then reloads Datos', async () => {
+  const service = mockService();
+  vi.mocked(service.list).mockResolvedValue([project]);
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockImplementation(
+        async (url: string) =>
+          new Response(
+            JSON.stringify(
+              url.endsWith('/status') ? { provider_configured: false } : [],
+            ),
+          ),
+      ),
+  );
+  const first = render(<ResearchProjects service={service} />);
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: `Ver investigación: ${project.title}`,
+    }),
+  );
+  await screen.findByRole('region', { name: 'Asistente IA' });
+  fireEvent.click(screen.getByRole('button', { name: 'Datos' }));
+  expect(window.location.hash).toContain('section=datasets');
+  act(() => window.history.back());
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Asistente IA' }),
+    ).toHaveAttribute('aria-current', 'page'),
+  );
+  expect(
+    screen.getByText(project.title, {
+      selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+    }),
+  ).toBeInTheDocument();
+  act(() => window.history.back());
+  await screen.findByRole('heading', { name: 'Mis investigaciones' });
+  act(() => window.history.forward());
+  await screen.findByRole('region', { name: 'Asistente IA' });
+  act(() => window.history.forward());
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Datos' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    ),
+  );
+  first.unmount();
+  render(<ResearchProjects service={service} />);
+  expect(await screen.findByRole('button', { name: 'Datos' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  expect(window.location.hash).toContain(`project=${project.id}`);
+});
+
+it('keeps methodology and the previous package URL accessible', async () => {
+  const service = mockService();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('[]')));
+  window.history.replaceState(
+    null,
+    '',
+    `#project=${project.id}&section=package`,
+  );
+  render(<ResearchProjects service={service} />);
+  expect(
+    await screen.findByRole('button', { name: 'Análisis' }),
+  ).toHaveAttribute('aria-current', 'page');
+  for (const label of ['Resultados', 'Informes', 'Metodología'])
+    expect(screen.getByRole('button', { name: label })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Metodología' }));
+  expect(
+    await screen.findByRole('region', { name: 'Metodología de investigación' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('region', { name: 'Documentos de investigación' }),
+  ).not.toBeInTheDocument();
+});
+
+it('labels Instrumento as pending without invoking any extraction endpoint', async () => {
+  const service = mockService();
+  vi.stubGlobal('fetch', vi.fn());
+  window.history.replaceState(
+    null,
+    '',
+    `#project=${project.id}&section=instrument`,
+  );
+  render(<ResearchProjects service={service} />);
+  expect(
+    await screen.findByRole('heading', { name: 'Instrumento: próximamente' }),
+  ).toBeInTheDocument();
+  expect(fetch).not.toHaveBeenCalled();
+  expect(
+    screen.queryByRole('button', { name: /extraer|validar|confiabilidad/i }),
+  ).not.toBeInTheDocument();
+});
+
+it('discards a late response for a different project when navigating browser history', async () => {
+  const service = mockService();
+  const second = { ...project, id: 'p2', title: 'Segundo proyecto ficticio' };
+  let finish!: (value: Project) => void;
+  vi.mocked(service.get).mockImplementation((id) =>
+    id === 'p2'
+      ? Promise.resolve(second)
+      : new Promise((resolve) => {
+          finish = resolve;
+        }),
+  );
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockImplementation(
+        async (url: string) =>
+          new Response(
+            JSON.stringify(
+              url.endsWith('/status') ? { provider_configured: false } : [],
+            ),
+          ),
+      ),
+  );
+  window.history.replaceState(null, '', `#project=${project.id}`);
+  render(<ResearchProjects service={service} />);
+  expect(screen.getByText('Cargando detalle…')).toBeInTheDocument();
+  act(() => {
+    window.history.pushState(null, '', '#project=p2');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await screen.findByText(second.title, {
+    selector: '.chat-breadcrumb > span',
+  });
+  await act(async () => finish(project));
+  expect(
+    screen.getByText(second.title, { selector: '.chat-breadcrumb > span' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText(project.title, {
+      selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+    }),
+  ).not.toBeInTheDocument();
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.every(([url]) => String(url).includes('/p2/conversations')),
+  ).toBe(true);
+});
+
+it('closes a project dialog when browser history changes and does not reopen it on Forward', async () => {
+  const service = mockService();
+  vi.mocked(service.list).mockResolvedValue([project]);
+  render(<ResearchProjects service={service} />);
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: `Ver investigación: ${project.title}`,
+    }),
+  );
+  await projectAction('Eliminar investigación');
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  act(() => window.history.back());
+  await screen.findByRole('region', { name: 'Asistente IA' });
+  act(() => window.history.forward());
+  await screen.findByRole('heading', { name: 'Mis investigaciones' });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(service.delete).not.toHaveBeenCalled();
+});
+
+it('supports project menu keyboard navigation and Escape', async () => {
+  const service = mockService();
+  vi.mocked(service.list).mockResolvedValue([project]);
+  render(<ResearchProjects service={service} />);
+  const trigger = await screen.findByRole('button', {
+    name: `Opciones de investigación: ${project.title}`,
+  });
+  trigger.focus();
+  fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+  expect(
+    screen.getByRole('menuitem', { name: 'Editar investigación' }),
+  ).toHaveFocus();
+  fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
+  expect(
+    screen.getByRole('menuitem', { name: 'Eliminar investigación' }),
+  ).toHaveFocus();
+  fireEvent.keyDown(document.activeElement!, { key: 'Home' });
+  expect(
+    screen.getByRole('menuitem', { name: 'Editar investigación' }),
+  ).toHaveFocus();
+  fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+  expect(trigger).toHaveFocus();
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('button', { name: `Ver investigación: ${project.title}` }),
+  );
+  await screen.findByRole('region', { name: 'Asistente IA' });
+  expect(service.delete).not.toHaveBeenCalled();
+  expect(service.update).not.toHaveBeenCalled();
+});
+
+it('opens and closes mobile navigation with Escape and restores focus', async () => {
+  render(<ResearchProjects service={mockService()} />);
+  await screen.findByText('Tu próxima investigación empieza aquí');
+  const toggle = screen.getByRole('button', { name: 'Abrir menú' });
+  fireEvent.click(toggle);
+  const close = screen.getByRole('button', {
+    name: 'Cerrar menú de navegación',
+  });
+  expect(close).toHaveFocus();
+  expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  fireEvent.keyDown(close, { key: 'Escape' });
+  expect(toggle).toHaveFocus();
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(toggle);
+  fireEvent.click(close);
+  expect(toggle).toHaveFocus();
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+});
+
+it.each(['synthetic-project', 'p2'])(
+  'keeps late project deletion isolated after navigating to %s',
+  async (destination) => {
+    const service = mockService();
+    const second = { ...project, id: 'p2', title: 'Otro proyecto ficticio' };
+    vi.mocked(service.list).mockResolvedValue([project, second]);
+    vi.mocked(service.get).mockImplementation(async (id) =>
+      id === 'p2' ? second : project,
+    );
+    let finish!: () => void;
+    vi.mocked(service.delete).mockReturnValue(
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+    );
+    render(<ResearchProjects service={service} />);
+    await projectAction('Eliminar investigación');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Eliminar definitivamente' }),
+    );
+    act(() => {
+      window.history.pushState(
+        null,
+        '',
+        `#project=${destination}&section=assistant`,
+      );
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await screen.findByRole('region', { name: 'Asistente IA' });
+    await act(async () => finish());
+    expect(service.delete).toHaveBeenCalledWith(project.id);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    if (destination === project.id) {
+      expect(
+        screen.getByRole('heading', { name: 'Mis investigaciones' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('region', { name: 'Asistente IA' }),
+      ).not.toBeInTheDocument();
+    } else {
+      expect(
+        screen.getByText(second.title, { selector: '.chat-breadcrumb>span' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText('Investigación eliminada.'),
+      ).not.toBeInTheDocument();
+    }
+  },
+);
+
+it.each([
+  'assistant',
+  'documents',
+  'methodology',
+  'datasets',
+  'analysis',
+  'results',
+  'reports',
+])('does not expose project CRUD in section %s', async (section) => {
+  const service = mockService();
+  window.history.replaceState(
+    null,
+    '',
+    `#project=${project.id}&section=${section}`,
+  );
+  render(<ResearchProjects service={service} />);
+  await screen.findByRole('region', {
+    name: 'Información de la investigación',
+  });
+  expect(
+    screen.queryByRole('button', { name: 'Editar investigación' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Eliminar investigación' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('menuitem', { name: 'Editar investigación' }),
+  ).not.toBeInTheDocument();
+  expect(service.delete).not.toHaveBeenCalled();
+  expect(service.update).not.toHaveBeenCalled();
 });

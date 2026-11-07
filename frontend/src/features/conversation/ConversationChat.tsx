@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 import { createConversationApi, ConversationApiError } from './api';
 import type {
   Conversation,
@@ -8,6 +9,9 @@ import type {
   ConversationDetail,
   ProviderStatus,
 } from './api';
+import { ActionMenu } from '../research/projects/ActionMenu';
+import { UiIcon } from '../research/projects/UiIcon';
+import { navigateProject } from '../research/projects/navigation';
 import './conversation.css';
 
 const defaultApi = createConversationApi();
@@ -54,10 +58,14 @@ const sourceStates: Record<string, string> = {
 
 export function ConversationChat({
   projectId,
+  projectTitle,
   api = defaultApi,
+  onOpenResource,
 }: {
   projectId: string;
+  projectTitle?: string;
   api?: ConversationApi;
+  onOpenResource?: (section: 'documents' | 'datasets' | 'instrument') => void;
 }) {
   // The parent keys this component by project: no state or requests cross projects.
   const [items, setItems] = useState<Conversation[]>([]);
@@ -69,7 +77,11 @@ export function ConversationChat({
   const [error, setError] = useState('');
   const [draft, setDraft] = useState('');
   const [consent, setConsent] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState<Conversation | null>(null);
+  const [contextOpen, setContextOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [consentInfo, setConsentInfo] = useState(true);
+  const simulated = status?.model === 'simulado-local-sin-red';
   const [more, setMore] = useState(true);
   const [refresh, setRefresh] = useState(0);
   const [contextError, setContextError] = useState('');
@@ -77,7 +89,7 @@ export function ConversationChat({
   const locked = useRef(false);
   const active = useRef(true);
   const selection = useRef(0);
-  const listEnd = useRef<HTMLDivElement>(null);
+  const messagesViewport = useRef<HTMLDivElement>(null);
   const deleteDialog = useRef<HTMLDialogElement>(null);
   const deleteButton = useRef<HTMLButtonElement>(null);
   const selectedKey = `tesisstat:conversation:v1:${projectId}`;
@@ -183,7 +195,10 @@ export function ConversationChat({
   }, [api, projectId]);
 
   useEffect(() => {
-    listEnd.current?.scrollIntoView?.({ block: 'nearest' });
+    // Scroll the history pane only; opening a project must not move the page
+    // past its heading or the mobile navigation.
+    const viewport = messagesViewport.current;
+    if (viewport) viewport.scrollTop = viewport.scrollHeight;
   }, [detail?.messages.length, sending]);
   useEffect(() => {
     if (deleting) deleteDialog.current?.showModal();
@@ -208,6 +223,7 @@ export function ConversationChat({
       const history = await api.get(projectId, id);
       if (active.current && version === selection.current) {
         setDetail(history);
+        setHistoryOpen(false);
         remember(id);
       }
     } catch (caught) {
@@ -230,6 +246,7 @@ export function ConversationChat({
       if (!active.current) return;
       setItems((old) => [conversation, ...old]);
       setDetail({ conversation, messages: [], has_more: false });
+      setHistoryOpen(false);
       setDraft('');
       remember(conversation.id);
     } catch (caught) {
@@ -243,8 +260,8 @@ export function ConversationChat({
   async function send() {
     if (
       locked.current ||
+      loading ||
       busy ||
-      !detail ||
       !consent ||
       !status?.provider_configured ||
       !draft.trim()
@@ -254,8 +271,16 @@ export function ConversationChat({
     setSending(true);
     setError('');
     const content = draft.trim();
-    const id = detail.conversation.id;
+    let id = detail?.conversation.id;
     try {
+      if (!id) {
+        const conversation = await api.create(projectId);
+        if (!active.current) return;
+        id = conversation.id;
+        setItems((old) => [conversation, ...old]);
+        setDetail({ conversation, messages: [], has_more: false });
+        remember(id);
+      }
       const result = await api.send(
         projectId,
         id,
@@ -282,9 +307,11 @@ export function ConversationChat({
       setError(errorText(caught));
       // A lost HTTP response may have committed. Reload before a deliberate new send.
       try {
+        if (!id) return;
         const history = await api.get(projectId, id);
         if (active.current) {
           setDetail(history);
+          setHistoryOpen(false);
           setDraft('');
         }
       } catch {
@@ -297,18 +324,20 @@ export function ConversationChat({
   }
 
   async function remove() {
-    if (!detail || locked.current) return;
+    if (!deleting || locked.current) return;
     locked.current = true;
     setBusy(true);
     setError('');
     try {
-      await api.delete(projectId, detail.conversation.id);
+      await api.delete(projectId, deleting.id);
       if (!active.current) return;
-      setItems((old) => old.filter((c) => c.id !== detail.conversation.id));
-      setDetail(null);
-      setDraft('');
-      remember(null);
-      setDeleting(false);
+      setItems((old) => old.filter((c) => c.id !== deleting.id));
+      if (detail?.conversation.id === deleting.id) {
+        setDetail(null);
+        setDraft('');
+        remember(null);
+      }
+      setDeleting(null);
     } catch (caught) {
       if (active.current) setError(errorText(caught));
     } finally {
@@ -364,111 +393,65 @@ export function ConversationChat({
 
   return (
     <section className="chat" aria-label="Asistente IA" aria-busy={loading}>
-      <header className="chat-header">
-        <div>
-          <p className="rp-eyebrow">ORIENTACIÓN ACADÉMICA</p>
-          <h3>Asistente IA</h3>
-          <p>Una pregunta a la vez, avanza con tu investigación.</p>
-        </div>
-        <span className="rp-badge">
-          {status?.model === 'simulado-local-sin-red'
-            ? 'Proveedor simulado · Sin red'
-            : 'Qwen3 · Cloudflare'}
-        </span>
-      </header>
-      <p className="rp-hint">
-        El contexto se verifica para cada pregunta. El historial puede referirse
-        a versiones anteriores. Revisa las respuestas con criterio académico.
-        Demostración local sin autenticación: usa únicamente información
-        ficticia.
-      </p>
-      <section className="chat-context" aria-label="Contexto de investigación">
-        <div className="chat-toolbar">
-          <h4>Contexto de investigación</h4>
-          <button
-            className="rp-secondary"
-            disabled={sending || contextBusy}
-            onClick={() => void refreshContext()}
-          >
-            {contextBusy ? 'Actualizando contexto…' : 'Actualizar contexto'}
-          </button>
-        </div>
-        <p>
-          <strong>Proyecto activo:</strong> {status?.project_title ?? projectId}
-        </p>
-        {contextError && (
-          <p role="status" className="chat-warning">
-            {contextError}
-          </p>
-        )}
-        {status?.research_context ? (
-          <dl className="chat-source-grid">
-            {status.research_context.sources
-              .filter((s) => s.kind !== 'project')
-              .map((s) => (
-                <div key={`${s.kind}:${s.id}`}>
-                  <dt>{sourceNames[s.kind] ?? s.kind}</dt>
-                  <dd>{sourceStates[s.status] ?? s.status}</dd>
-                </div>
-              ))}
-          </dl>
-        ) : (
-          <p>Los estados de las fuentes aún no se han verificado.</p>
-        )}
-        <small>
-          Un borrador no confirma la metodología. Generar un paquete y ejecutar
-          análisis requieren los pasos de revisión del sistema.
-        </small>
-      </section>
-      {loading && <p role="status">Cargando conversaciones…</p>}
-      {error && (
-        <div role="alert" className="rp-error">
-          <p>{error}</p>
-          <button
-            className="rp-secondary"
-            disabled={busy || sending}
-            onClick={() => {
-              setLoading(true);
-              setError('');
-              setRefresh((n) => n + 1);
-            }}
-          >
-            Actualizar historial y configuración
-          </button>
-        </div>
-      )}
-      {status && !status.provider_configured && (
-        <p role="status" className="chat-warning">
-          Cloudflare no está configurado. El envío está deshabilitado; puedes
-          consultar y organizar tu historial.
-        </p>
-      )}
       <div className="chat-layout">
         <aside
-          className="chat-sidebar"
+          id={`history-${projectId}`}
+          className={`chat-sidebar ${historyOpen ? 'chat-history-open' : ''}`}
           aria-label="Conversaciones del proyecto"
         >
+          <div className="chat-sidebar-heading">
+            <strong>Conversaciones</strong>
+            <button
+              className="rp-secondary chat-history-close"
+              aria-label="Cerrar historial"
+              onClick={() => setHistoryOpen(false)}
+            >
+              <UiIcon name="x" />
+            </button>
+          </div>
           <button
+            className="rp-secondary chat-new"
             onClick={() => void create()}
             disabled={loading || busy || sending}
           >
-            ＋ Nueva conversación
+            <UiIcon name="plus" /> Nueva conversación
           </button>
           {!loading && items.length === 0 && <p>Aún no hay conversaciones.</p>}
           <ul>
             {items.map((c) => (
               <li key={c.id}>
                 <button
-                  className="rp-secondary"
+                  className="chat-select"
                   aria-pressed={detail?.conversation.id === c.id}
                   disabled={busy || sending}
-                  onClick={() => void choose(c.id)}
+                  onClick={() => {
+                    void choose(c.id);
+                    setHistoryOpen(false);
+                  }}
                 >
-                  {c.title}
-                  <small>
-                    {new Date(c.created_at).toLocaleString('es-PE')}
-                  </small>
+                  <UiIcon name="message" />
+                  <span>
+                    {c.title}
+                    <small>
+                      {new Date(c.created_at).toLocaleDateString('es-PE')}
+                    </small>
+                  </span>
                 </button>
+                <ActionMenu
+                  label={`Opciones de conversación: ${c.title}`}
+                  disabled={busy || sending}
+                  actions={[
+                    {
+                      label: 'Eliminar conversación',
+                      danger: true,
+                      onSelect: () => {
+                        deleteButton.current =
+                          document.activeElement as HTMLButtonElement;
+                        setDeleting(c);
+                      },
+                    },
+                  ]}
+                />
               </li>
             ))}
           </ul>
@@ -481,191 +464,468 @@ export function ConversationChat({
               Más conversaciones
             </button>
           )}
+          <small className="chat-history-note">
+            Cada investigación conserva su propio historial.
+          </small>
         </aside>
-        <div className="chat-main">
-          {detail ? (
-            <>
-              <div className="chat-toolbar">
-                <strong>{detail.conversation.title}</strong>
+        <div className="chat-stage">
+          <header className="chat-header">
+            <div className="chat-breadcrumb">
+              <button className="rp-link" onClick={() => navigateProject()}>
+                Mis investigaciones
+              </button>
+              <UiIcon name="chevron" />
+              <span>
+                {projectTitle ?? status?.project_title ?? 'Investigación'}
+              </span>
+            </div>
+            <div className="chat-heading-row">
+              <div>
+                <h1>Asistente IA</h1>
+                <p>Conversación dentro del proyecto seleccionado</p>
+              </div>
+              <div className="chat-header-actions">
                 <button
-                  ref={deleteButton}
-                  className="rp-delete"
-                  disabled={busy || sending}
-                  onClick={() => setDeleting(true)}
+                  className="rp-secondary chat-history-toggle"
+                  aria-label="Abrir historial de conversaciones"
+                  aria-expanded={historyOpen}
+                  aria-controls={`history-${projectId}`}
+                  onClick={() => setHistoryOpen(!historyOpen)}
                 >
-                  Eliminar conversación
+                  <UiIcon name="message" />
+                  <span>Historial</span>
+                </button>
+                <button
+                  className="rp-secondary"
+                  aria-expanded={contextOpen}
+                  aria-controls={`context-${projectId}`}
+                  onClick={() => setContextOpen(!contextOpen)}
+                >
+                  <UiIcon name="panel" />
+                  <span>Fuentes y contexto</span>
                 </button>
               </div>
-              {detail.has_more && (
-                <button
-                  className="rp-link"
-                  disabled={busy || sending}
-                  onClick={() => void olderMessages()}
-                >
-                  Cargar mensajes anteriores
-                </button>
-              )}
+            </div>
+          </header>
+          <div
+            className={`chat-content ${contextOpen ? 'chat-with-context' : ''}`}
+          >
+            <div className="chat-main">
               <div
                 className="chat-messages"
+                ref={messagesViewport}
                 role="log"
                 aria-label="Historial de mensajes"
                 aria-live="polite"
               >
-                {detail.messages.length === 0 && (
-                  <div className="chat-empty">
-                    <h4>¿Qué te gustaría comprender?</h4>
-                    <p>
-                      Puedes preguntar sobre conceptos, hipótesis o métodos
-                      estadísticos. Este chat no ejecuta análisis.
+                <div className="chat-inner">
+                  {loading && <p role="status">Cargando conversaciones…</p>}
+                  {contextError && (
+                    <p role="status" className="chat-warning">
+                      {contextError}
                     </p>
-                  </div>
-                )}
-                {detail.messages.map((m) => (
-                  <article key={m.id} className={`chat-message chat-${m.role}`}>
-                    <strong>{m.role === 'user' ? 'Tú' : 'Asistente IA'}</strong>
-                    {m.role === 'assistant' ? (
-                      <div className="chat-markdown">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkBreaks]}
-                          components={{ img: ({ alt }) => <>{alt}</> }}
-                        >
-                          {m.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <p>{m.content}</p>
-                    )}
-                    {m.role === 'assistant' && m.context && (
-                      <details className="chat-provenance">
-                        <summary>
-                          Fuentes proporcionadas para esta respuesta
-                        </summary>
-                        {m.context.history_changed && (
-                          <p>
-                            El historial contiene referencias a fuentes
-                            anteriores o sin trazabilidad.
-                          </p>
-                        )}
-                        {m.context.snapshot !== null &&
-                          m.context.snapshot !==
-                            status?.research_context?.snapshot && (
-                            <p>
-                              Esta respuesta corresponde a una consulta
-                              anterior; comprueba las fuentes actuales.
-                            </p>
-                          )}
-                        {m.context.omitted_facts > 0 && (
-                          <p>
-                            Se omitieron {m.context.omitted_facts} datos
-                            completos por el límite de contexto. Haz una
-                            pregunta más específica.
-                          </p>
-                        )}
-                        {m.context.sources.map((s) => (
-                          <p key={`${s.kind}:${s.id}`}>
-                            {sourceNames[s.kind] ?? s.kind}:{' '}
-                            {sourceStates[s.status] ?? s.status}
-                            <small>
-                              Referencia: {s.id} · Versión: {s.version}
-                            </small>
-                          </p>
+                  )}
+                  {status?.research_context?.sources.some((source) =>
+                    ['stale', 'unverified'].includes(source.status),
+                  ) && (
+                    <p className="chat-warning" role="status">
+                      Hay fuentes desactualizadas o sin verificar. Revisa
+                      «Fuentes y contexto de investigación» antes de interpretar
+                      las respuestas.
+                    </p>
+                  )}
+                  {error && !deleting && (
+                    <div role="alert" className="rp-error">
+                      <p>{error}</p>
+                      <button
+                        className="rp-secondary"
+                        disabled={busy || sending}
+                        onClick={() => {
+                          setLoading(true);
+                          setError('');
+                          setRefresh((n) => n + 1);
+                        }}
+                      >
+                        Actualizar historial y configuración
+                      </button>
+                    </div>
+                  )}
+                  {status && !status.provider_configured && (
+                    <p role="status" className="chat-warning">
+                      Cloudflare no está configurado. El envío está
+                      deshabilitado; puedes consultar y organizar tu historial.
+                    </p>
+                  )}
+                  {detail?.has_more && (
+                    <button
+                      className="rp-link"
+                      disabled={busy || sending}
+                      onClick={() => void olderMessages()}
+                    >
+                      Cargar mensajes anteriores
+                    </button>
+                  )}
+                  {!loading && !detail?.messages.length && (
+                    <div className="chat-empty">
+                      <span className="chat-hello">
+                        <UiIcon name="spark" />
+                      </span>
+                      <h2>
+                        {status?.research_context?.sources.some(
+                          (source) =>
+                            source.kind !== 'project' &&
+                            ['current', 'confirmed', 'completed'].includes(
+                              source.status,
+                            ),
+                        )
+                          ? '¿En qué trabajamos hoy?'
+                          : 'Empecemos por tu investigación'}
+                      </h2>
+                      <p>
+                        Puedes comenzar conversando o añadir materiales para
+                        aportar contexto verificado.
+                      </p>
+                      <ResourceWelcome onOpenResource={onOpenResource} />
+                      <p className="chat-quick-title">
+                        También puedes hacer una pregunta
+                      </p>
+                      <div className="chat-suggestions">
+                        {[
+                          '¿Cómo comienzo mi análisis?',
+                          '¿Cómo identifico mis variables?',
+                          '¿Qué es la confiabilidad?',
+                        ].map((question) => (
+                          <button
+                            className="rp-secondary"
+                            key={question}
+                            onClick={() => {
+                              setDraft(question);
+                              document
+                                .getElementById(`chat-input-${projectId}`)
+                                ?.focus();
+                            }}
+                          >
+                            {question}
+                          </button>
                         ))}
-                      </details>
-                    )}
-                    {m.role === 'assistant' &&
-                      !!m.context?.multiagent?.agents.length && (
-                        <small className="chat-agents">
-                          Agentes utilizados:{' '}
-                          {m.context.multiagent.agents
-                            .map((agent) => agentNames[agent] ?? agent)
-                            .join(' → ')}
-                        </small>
+                      </div>
+                    </div>
+                  )}
+                  {detail?.messages.map((m) => (
+                    <article
+                      key={m.id}
+                      className={`chat-message chat-${m.role}`}
+                    >
+                      <span className="chat-message-icon">
+                        <UiIcon
+                          name={m.role === 'user' ? 'message' : 'spark'}
+                        />
+                      </span>
+                      <div className="chat-message-body">
+                        <strong>
+                          {m.role === 'user' ? 'Tú' : 'Asistente IA'}
+                        </strong>
+                        {m.role === 'assistant' ? (
+                          <div className="chat-markdown">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkBreaks]}
+                              components={{ img: ({ alt }) => <>{alt}</> }}
+                            >
+                              {m.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p>{m.content}</p>
+                        )}
+                        {m.role === 'assistant' && m.context && (
+                          <details className="chat-provenance">
+                            <summary>
+                              Fuentes proporcionadas para esta respuesta
+                            </summary>
+                            {m.context.history_changed && (
+                              <p>
+                                El historial contiene referencias a fuentes
+                                anteriores o sin trazabilidad.
+                              </p>
+                            )}
+                            {m.context.snapshot !== null &&
+                              m.context.snapshot !==
+                                status?.research_context?.snapshot && (
+                                <p>
+                                  Esta respuesta corresponde a una consulta
+                                  anterior; comprueba las fuentes actuales.
+                                </p>
+                              )}
+                            {m.context.omitted_facts > 0 && (
+                              <p>
+                                Se omitieron {m.context.omitted_facts} datos
+                                completos por el límite de contexto. Haz una
+                                pregunta más específica.
+                              </p>
+                            )}
+                            {m.context.sources.map((s) => (
+                              <p key={`${s.kind}:${s.id}`}>
+                                {sourceNames[s.kind] ?? s.kind}:{' '}
+                                {sourceStates[s.status] ?? s.status}
+                                <small>
+                                  Referencia: {s.id} · Versión: {s.version}
+                                </small>
+                              </p>
+                            ))}
+                          </details>
+                        )}
+                        {m.role === 'assistant' &&
+                          !!m.context?.multiagent?.agents.length && (
+                            <details className="chat-agents">
+                              <summary>Agentes utilizados</summary>
+                              <small>
+                                Agentes utilizados:{' '}
+                                {m.context.multiagent.agents
+                                  .map((agent) => agentNames[agent] ?? agent)
+                                  .join(' → ')}
+                              </small>
+                            </details>
+                          )}
+                        {m.role === 'assistant' &&
+                          m.content.includes('Simulación local:') && (
+                            <small className="chat-simulated">
+                              Simulación local · Sin Qwen3 ni transmisión
+                              externa
+                            </small>
+                          )}
+                        <time dateTime={m.created_at}>
+                          {new Date(m.created_at).toLocaleTimeString('es-PE', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </time>
+                      </div>
+                    </article>
+                  ))}
+
+                  {sending && (
+                    <p role="status" className="chat-thinking">
+                      Generando respuesta…
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="chat-composer-area">
+                <div className="chat-composer-inner">
+                  {status && (
+                    <div className="chat-permissions">
+                      {consent ? (
+                        <>
+                          <span className="chat-permission-state">
+                            <UiIcon name="lock" />
+                            {simulated
+                              ? 'Demo local autorizada'
+                              : 'Envío autorizado para este proyecto'}
+                          </span>
+                          <button
+                            className="rp-link"
+                            aria-expanded={consentInfo}
+                            onClick={() => setConsentInfo(!consentInfo)}
+                          >
+                            Consultar permiso
+                          </button>
+                          <button
+                            className="rp-link"
+                            disabled={sending}
+                            onClick={() => {
+                              setConsent(false);
+                              setConsentInfo(true);
+                            }}
+                          >
+                            Revocar permiso
+                          </button>
+                        </>
+                      ) : (
+                        !consentInfo && (
+                          <>
+                            <span>Envío bloqueado sin autorización</span>
+                            <button
+                              className="rp-link"
+                              onClick={() => setConsentInfo(true)}
+                            >
+                              Revisar consentimiento
+                            </button>
+                          </>
+                        )
                       )}
-                    <time dateTime={m.created_at}>
-                      {new Date(m.created_at).toLocaleTimeString('es-PE', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </time>
-                  </article>
-                ))}
-                {sending && (
-                  <p role="status" className="chat-thinking">
-                    Generando respuesta…
-                  </p>
-                )}
-                <div ref={listEnd} />
-              </div>
-              <div className="chat-consent">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                    disabled={sending}
-                  />{' '}
-                  Autorizo enviar mi mensaje, el título, el historial reciente,
-                  información metodológica seleccionada, metadatos del dataset y
-                  métricas estadísticas verificadas a Cloudflare Workers AI. No
-                  se envían documentos completos ni datos individuales del
-                  dataset. Usaré solo información ficticia. Sin aceptar puedo
-                  consultar mi historial local.
-                </label>
-              </div>
-              <form
-                className="chat-composer"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void send();
-                }}
-              >
-                <label htmlFor={`chat-input-${projectId}`}>Tu mensaje</label>
-                <textarea
-                  id={`chat-input-${projectId}`}
-                  rows={3}
-                  value={draft}
-                  maxLength={status?.max_message_characters ?? 2000}
-                  disabled={
-                    sending || busy || !status?.provider_configured || !consent
-                  }
-                  placeholder="Escribe tu pregunta académica…"
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === 'Enter' &&
-                      !e.shiftKey &&
-                      !e.nativeEvent.isComposing
-                    ) {
-                      e.preventDefault();
+                      {consentInfo && (
+                        <div className="chat-consent">
+                          <strong>
+                            {simulated
+                              ? 'Demo local · Sin transmisión externa'
+                              : 'Permiso para usar el proveedor externo'}
+                          </strong>
+                          <p id={`consent-scope-${projectId}`}>
+                            {simulated
+                              ? 'Esta demo no transmite información a Cloudflare ni realiza inferencia Qwen3 real. Procesa localmente tu mensaje, título, historial reciente, información metodológica seleccionada, metadatos del dataset y métricas estadísticas verificadas. Se exige autorización explícita en cada solicitud.'
+                              : 'Se enviarán tu mensaje, el título, el historial reciente, información metodológica seleccionada, metadatos del dataset y métricas estadísticas verificadas a Cloudflare Workers AI. No se envían documentos completos ni datos individuales del dataset.'}{' '}
+                            Usaré solo información ficticia. Sin aceptar puedo
+                            consultar mi historial local. El permiso se limita a
+                            este proyecto y sesión; se solicita de nuevo al
+                            recargar.
+                          </p>
+                          {!consent && (
+                            <div className="chat-consent-actions">
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  aria-describedby={`consent-scope-${projectId}`}
+                                  checked={consent}
+                                  disabled={sending}
+                                  onChange={(event) => {
+                                    setConsent(event.target.checked);
+                                    setConsentInfo(false);
+                                  }}
+                                />
+                                {simulated
+                                  ? 'Autorizo el procesamiento de la demo local'
+                                  : 'Autorizo el envío descrito a Cloudflare Workers AI'}
+                              </label>
+                              <button
+                                className="rp-link"
+                                onClick={() => setConsentInfo(false)}
+                              >
+                                Rechazar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <form
+                    className="chat-composer"
+                    onSubmit={(event) => {
+                      event.preventDefault();
                       void send();
-                    }
-                  }}
-                />
-                <div>
-                  <small>
-                    Enter para enviar · Shift+Enter para nueva línea ·{' '}
-                    {draft.length}/{status?.max_message_characters ?? 2000}
-                  </small>
-                  <button
-                    disabled={
-                      sending ||
-                      busy ||
-                      !consent ||
-                      !status?.provider_configured ||
-                      !draft.trim()
-                    }
+                    }}
                   >
-                    Enviar mensaje
+                    <label
+                      className="rp-sr-only"
+                      htmlFor={`chat-input-${projectId}`}
+                    >
+                      Tu mensaje
+                    </label>
+                    <textarea
+                      id={`chat-input-${projectId}`}
+                      rows={1}
+                      value={draft}
+                      maxLength={status?.max_message_characters ?? 2000}
+                      disabled={
+                        loading ||
+                        sending ||
+                        busy ||
+                        !status?.provider_configured ||
+                        !consent
+                      }
+                      placeholder="Escribe una pregunta sobre tu tesis..."
+                      onChange={(event) => setDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === 'Enter' &&
+                          !event.shiftKey &&
+                          !event.nativeEvent.isComposing
+                        ) {
+                          event.preventDefault();
+                          void send();
+                        }
+                      }}
+                    />
+                    <button
+                      aria-label="Enviar mensaje"
+                      disabled={
+                        loading ||
+                        sending ||
+                        busy ||
+                        !consent ||
+                        !status?.provider_configured ||
+                        !draft.trim()
+                      }
+                    >
+                      <UiIcon name="send" />
+                    </button>
+                  </form>
+                  <div className="chat-composer-meta">
+                    <span>
+                      Enter para enviar · Shift+Enter para nueva línea{' '}
+                      <span className="chat-character-count">
+                        · {draft.length}/
+                        {status?.max_message_characters ?? 2000}
+                      </span>
+                    </span>
+                    <span>
+                      {simulated
+                        ? 'Simulación local · Sin Qwen3 ni red'
+                        : status?.provider_configured
+                          ? 'Qwen3 · Cloudflare'
+                          : 'Proveedor no disponible'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {contextOpen && (
+              <aside
+                className="chat-context"
+                id={`context-${projectId}`}
+                aria-label="Contexto de investigación"
+              >
+                <div className="chat-context-heading">
+                  <h2>Fuentes y contexto</h2>
+                  <button
+                    className="rp-secondary"
+                    aria-label="Cerrar fuentes y contexto"
+                    onClick={() => setContextOpen(false)}
+                  >
+                    <UiIcon name="x" />
                   </button>
                 </div>
-              </form>
-            </>
-          ) : (
-            <div className="chat-empty">
-              <h4>Tu espacio de consulta</h4>
-              <p>Crea o selecciona una conversación de esta investigación.</p>
-            </div>
-          )}
+                <p>
+                  El contexto se verifica para cada pregunta. El historial puede
+                  referirse a versiones anteriores. Revisa las respuestas con
+                  criterio académico.
+                </p>
+                <p>
+                  <strong>Proyecto activo:</strong>{' '}
+                  {projectTitle ?? status?.project_title ?? 'Investigación'}
+                </p>
+                <button
+                  className="rp-secondary"
+                  disabled={sending || contextBusy}
+                  onClick={() => void refreshContext()}
+                >
+                  {contextBusy
+                    ? 'Actualizando contexto…'
+                    : 'Actualizar contexto'}
+                </button>
+                {status?.research_context ? (
+                  <dl className="chat-source-grid">
+                    {status.research_context.sources
+                      .filter((s) => s.kind !== 'project')
+                      .map((s) => (
+                        <div key={`${s.kind}:${s.id}`}>
+                          <dt>{sourceNames[s.kind] ?? s.kind}</dt>
+                          <dd>{sourceStates[s.status] ?? s.status}</dd>
+                        </div>
+                      ))}
+                  </dl>
+                ) : (
+                  <p>Los estados de las fuentes aún no se han verificado.</p>
+                )}
+                <small>
+                  Un borrador no confirma la metodología. Generar un paquete y
+                  ejecutar análisis requieren los pasos de revisión del sistema.
+                </small>
+
+                <ResourceWelcome onOpenResource={onOpenResource} />
+              </aside>
+            )}
+          </div>
         </div>
       </div>
       {deleting && (
@@ -673,22 +933,27 @@ export function ConversationChat({
           ref={deleteDialog}
           className="rp-dialog"
           aria-labelledby="delete-chat-title"
-          onCancel={(e) => {
-            e.preventDefault();
+          onCancel={(event) => {
+            event.preventDefault();
             if (!busy) {
-              setDeleting(false);
+              setDeleting(null);
               deleteButton.current?.focus();
             }
           }}
         >
           <h3 id="delete-chat-title">Eliminar conversación</h3>
-          <p>Se eliminarán todos sus mensajes de forma permanente.</p>
+          <p>
+            Se eliminará «{deleting.title}» y todos sus mensajes de forma
+            permanente.
+          </p>
+          {error && <p role="alert">{error}</p>}
           <div className="rp-actions">
             <button
               className="rp-secondary"
               disabled={busy}
               onClick={() => {
-                setDeleting(false);
+                deleteDialog.current?.close();
+                setDeleting(null);
                 deleteButton.current?.focus();
               }}
             >
@@ -705,5 +970,40 @@ export function ConversationChat({
         </dialog>
       )}
     </section>
+  );
+}
+
+function ResourceWelcome({
+  onOpenResource,
+}: {
+  onOpenResource?: (section: 'documents' | 'datasets' | 'instrument') => void;
+}) {
+  if (!onOpenResource) return null;
+  return (
+    <div className="chat-resource-welcome">
+      <div className="chat-resource-links">
+        <button
+          className="rp-secondary"
+          onClick={() => onOpenResource('documents')}
+        >
+          <UiIcon name="file" />
+          Cargar documentos<small>PDF o DOCX</small>
+        </button>
+        <button
+          className="rp-secondary"
+          onClick={() => onOpenResource('instrument')}
+        >
+          <UiIcon name="clipboard" />
+          Instrumento<small>Funcionalidad pendiente</small>
+        </button>
+        <button
+          className="rp-secondary"
+          onClick={() => onOpenResource('datasets')}
+        >
+          <UiIcon name="database" />
+          Cargar datos<small>CSV o XLSX</small>
+        </button>
+      </div>
+    </div>
   );
 }
