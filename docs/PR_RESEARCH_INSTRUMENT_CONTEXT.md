@@ -70,17 +70,17 @@ Mapeo de errores coherente: HTTP 200, 201, 404, 409, 422 y 503 sin divulgar deta
 
 Se incluyen en `docs/contracts/`:
 - `docs/contracts/instrument_context_v1.schema.json`: Esquema JSON estándar (Draft 2020-12) reproducible y compartible.
-- `docs/contracts/examples/instrument_confirmed_with_mapping.json`: Ejemplo sintético corregido (versión 1, vinculación metodológica no nula, marcas temporales coherentes, mapeo 100 %).
-- `docs/contracts/examples/instrument_reviewed_without_mapping.json`: Ejemplo sintético corregido (versión 1, vinculación metodológica no nula, marcas temporales coherentes, sin mapeo de dataset).
+- `docs/contracts/examples/instrument_confirmed_with_mapping.json`: Ejemplo sintético reproducible generado por `InstrumentService` (versión 5, vinculación metodológica real, hashes SHA-256 genuinos, marcas temporales coherentes, mapeo confirmado al 100 %).
+- `docs/contracts/examples/instrument_reviewed_without_mapping.json`: Ejemplo sintético reproducible generado por `InstrumentService` (versión 3, vinculación metodológica real, hashes SHA-256 genuinos, marcas temporales coherentes, sin mapeo de dataset).
 
 ---
 
 ## 6. Verificación de Calidad
 
 Ejecutado exhaustivamente desde `backend/`:
-- **Pruebas Totales:** **498 pruebas aprobadas** (100 % pass rate):
-  - `tests/research/test_instrument_models.py` (32 pruebas).
-  - `tests/research/test_instrument_service.py` (28 pruebas).
+- **Pruebas Totales:** **500 pruebas aprobadas** (100 % pass rate):
+  - `tests/research/test_instrument_models.py` (33 pruebas, incluyendo sincronización de JSON Schema).
+  - `tests/research/test_instrument_service.py` (29 pruebas, incluyendo ciclo de vida completo de 11 pasos).
   - `tests/research/test_instrument_api.py` (19 pruebas de integración HTTP).
 - **Ruff Linter:** `uv run ruff check .` $\to$ All checks passed!
 - **Ruff Formatter:** `uv run ruff format --check .` $\to$ All files formatted.

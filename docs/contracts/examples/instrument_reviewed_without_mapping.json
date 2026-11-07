@@ -1,23 +1,23 @@
 {
   "schema_version": "1.0.0",
-  "instrument_id": "d2e863b7-eed0-498c-8a0e-43462dce2324",
+  "instrument_id": "a47e5d1d-4225-46de-8672-a1e0452f687b",
   "project_id": "dc9ed615-157a-4352-91bf-f750a47d8d58",
   "research_package_id": null,
-  "version": 1,
+  "version": 3,
   "status": "reviewed",
-  "created_at": "2026-11-03T08:00:00Z",
-  "updated_at": "2026-11-03T09:15:00Z",
+  "created_at": "2026-11-07T07:18:55.835680Z",
+  "updated_at": "2026-11-07T07:18:55.878031Z",
   "provenance": {
-    "source_kind": "manual",
-    "source_document_id": null,
-    "source_document_hash": null,
-    "methodology_review_id": "5b398a33-ae68-4c91-a3e1-e622cd304fcd",
+    "source_kind": "document",
+    "source_document_id": "12a4b8cd-ef67-4890-a123-456789abcdef",
+    "source_document_hash": "86ec692bd6fe288672a223d34e5d883658147f6f200993e4009f7a360bcc0f72",
+    "methodology_review_id": "12a4b8cd-ef67-4890-a123-456789abcdef",
     "methodology_review_version": 1,
-    "methodology_review_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    "methodology_review_hash": "531c22288dfceaf997c777b1fd891674fdda83ccfec89e2a63c8d4894a52526a"
   },
   "confirmation": {
     "state": "confirmed",
-    "confirmed_at": "2026-11-03T09:15:00Z",
+    "confirmed_at": "2026-11-07T07:18:55.878031Z",
     "confirmer_ref": "auditor_investigacion"
   },
   "variables": [

@@ -43,6 +43,7 @@ from app.modules.research.methodology.sqlite_repository import SQLiteMethodology
 from app.modules.research.projects.models import ProjectDraft
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
 from app.modules.research.projects.use_cases import ProjectService
+from app.shared.instrument_contracts import InstrumentContext
 
 
 def _create_harness(tmp_path):
@@ -1000,10 +1001,10 @@ class TestSQLiteIntegrityAndCascades:
         inst2 = InstrumentContext.model_validate_json(ex2_path.read_text(encoding="utf-8"))
 
         # Verificación de ciclo de vida real:
-        # 1. Ambos son reviewed y tienen versión >= 1 (nunca versión 0)
-        assert inst1.version >= 1
+        # 1. Ambos son reviewed y tienen versiones exactas según el flujo
+        assert inst1.version == 5
         assert inst1.status == "reviewed"
-        assert inst2.version >= 1
+        assert inst2.version == 3
         assert inst2.status == "reviewed"
 
         # 2. Ambos tienen correspondencia metodológica no nula (requerida por confirm_instrument)
@@ -1014,10 +1015,150 @@ class TestSQLiteIntegrityAndCascades:
         assert inst1.updated_at == inst1.confirmation.confirmed_at
         assert inst2.updated_at == inst2.confirmation.confirmed_at
 
-        # 4. El fixture 1 tiene dataset mapping confirmado al 100%
+        # 4. El fixture 1 tiene dataset mapping confirmado al 100% y versión sincronizada
         assert inst1.dataset_mapping is not None
         assert inst1.dataset_mapping.status == "confirmed"
+        assert inst1.dataset_mapping.instrument_version == 5
         assert len(inst1.dataset_mapping.item_columns) == len(inst1.items)
 
         # 5. El fixture 2 representa un instrumento revisado SIN dataset (no apto para datos aún)
         assert inst2.dataset_mapping is None
+
+        # 6. Hashes reales calculados a partir de contenido sintético (no artificiales ni repetidos)
+        assert inst1.provenance.source_document_hash != "a" * 64
+        assert inst1.provenance.methodology_review_hash != "b" * 64
+        assert inst1.dataset_mapping.dataset_hash != "c" * 64
+
+    def test_synthetic_fixture_reproducibility_full_lifecycle(self, tmp_path):
+        """Demuestra el ciclo de vida completo de 11 pasos para generar contextos reproducibles."""
+        h = _create_harness(tmp_path)
+        proj = _seed_project(h)
+
+        # 1-3. Documento y revisión metodológica confirmada
+        doc_content = b"%PDF-1.4\nCuestionario Clima Laboral y Autoeficacia 2026\n%%EOF"
+        doc = _seed_document(h, proj.id, content=doc_content)
+        meth_var_id = uuid4()
+        review = _seed_methodology_review(h, proj.id, doc.id, meth_var_id)
+        assert review.review_status == "reviewed"
+
+        # Dataset sintético
+        ds_data = b"p1_comunicacion_directa,p2_info_contradictoria\n1,5\n2,4\n3,3\n"
+        ds = h["datasets"].add(proj.id, "clima_dataset.csv", ds_data)
+
+        # 4. Crear borrador de instrumento (v0)
+        var_id = uuid4()
+        dim_id = uuid4()
+        ind_id = uuid4()
+        item1_id = uuid4()
+        item2_id = uuid4()
+        rule_id = uuid4()
+
+        opts = standard_likert_options()
+        items = [
+            InstrumentItem(
+                item_id=item1_id,
+                variable_id=var_id,
+                dimension_id=dim_id,
+                indicator_id=ind_id,
+                text="La comunicación de la dirección es oportuna y clara.",
+                response_type="single_choice",
+                response_options=opts,
+                valid_min=1.0,
+                valid_max=5.0,
+                reverse_scored=False,
+            ),
+            InstrumentItem(
+                item_id=item2_id,
+                variable_id=var_id,
+                dimension_id=dim_id,
+                indicator_id=ind_id,
+                text="Frecuentemente recibo información contradictoria de mis superiores.",
+                response_type="single_choice",
+                response_options=opts,
+                valid_min=1.0,
+                valid_max=5.0,
+                reverse_scored=True,
+                reverse_rule="min_plus_max_minus_value",
+            ),
+        ]
+        rules = [
+            ScoringRule(
+                scoring_rule_id=rule_id,
+                scope="dimension",
+                dimension_id=dim_id,
+                item_ids=[item1_id, item2_id],
+                aggregation="sum",
+                missing_policy="all_required",
+                confirmed=False,
+            )
+        ]
+
+        v0 = h["service"].create_draft(
+            proj.id,
+            variables=[
+                InstrumentVariable(variable_id=var_id, name="Clima Laboral", scale="ordinal")
+            ],
+            dimensions=[
+                InstrumentDimension(
+                    dimension_id=dim_id, variable_id=var_id, name="Comunicación Interna"
+                )
+            ],
+            indicators=[
+                InstrumentIndicator(
+                    indicator_id=ind_id, dimension_id=dim_id, name="Claridad de Información"
+                )
+            ],
+            items=items,
+            scoring_rules=rules,
+        )
+        assert v0.version == 0
+        assert v0.status == "draft"
+
+        # 5. Vincular variables metodológicas (v1)
+        v1 = h["service"].link_methodology(
+            proj.id, v0.instrument_id, 0, doc.id, {var_id: meth_var_id}
+        )
+        assert v1.version == 1
+        assert v1.provenance is not None
+        assert v1.variables[0].methodology_variable_id == meth_var_id
+
+        # 6. Confirmar reglas de puntuación (v2)
+        v2 = h["service"].confirm_scoring_rules(proj.id, v0.instrument_id, 1)
+        assert v2.version == 2
+        assert all(r.confirmed for r in v2.scoring_rules)
+
+        # 7. Configurar mapeo (v3) y confirmarlo (v4)
+        v3 = h["service"].set_mapping(
+            proj.id,
+            v0.instrument_id,
+            2,
+            ds.id,
+            [
+                ItemColumnMapping(item_id=item1_id, column_name="p1_comunicacion_directa"),
+                ItemColumnMapping(item_id=item2_id, column_name="p2_info_contradictoria"),
+            ],
+        )
+        assert v3.version == 3
+        assert v3.dataset_mapping.status == "draft"
+
+        v4 = h["service"].confirm_mapping(proj.id, v0.instrument_id, 3, "revisor_metodologico")
+        assert v4.version == 4
+        assert v4.dataset_mapping.status == "confirmed"
+
+        # 8. Confirmar instrumento (v5)
+        v5 = h["service"].confirm_instrument(proj.id, v0.instrument_id, 4, "revisor_metodologico")
+        assert v5.version == 5
+        assert v5.status == "reviewed"
+        assert v5.confirmation.state == "confirmed"
+        assert v5.dataset_mapping.instrument_version == 5
+
+        # 9. Obtener contexto mediante el lector autorizado
+        ctx = h["reader"].get_confirmed_context(str(proj.id), str(v0.instrument_id))
+        assert ctx.version == 5
+        assert ctx.status == "reviewed"
+
+        # 10-11. Serializar y verificar que re-valida con el contrato canónico
+        serialized = ctx.model_dump_json()
+        restored = InstrumentContext.model_validate_json(serialized)
+        assert restored.instrument_id == ctx.instrument_id
+        assert restored.version == 5

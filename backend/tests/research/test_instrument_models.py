@@ -526,12 +526,13 @@ class TestInstrumentContextModels:
         ex1_json = json.loads(ex1_raw)
         validator.validate(ex1_json)
         inst1 = InstrumentContext.model_validate_json(ex1_raw)
-        assert inst1.version >= 1
+        assert inst1.version == 5
         assert inst1.status == "reviewed"
         assert inst1.variables[0].methodology_variable_id is not None
         assert inst1.updated_at == inst1.confirmation.confirmed_at
         assert inst1.dataset_mapping is not None
         assert inst1.dataset_mapping.status == "confirmed"
+        assert inst1.dataset_mapping.instrument_version == 5
 
         ex2_path = (
             root / "docs" / "contracts" / "examples" / "instrument_reviewed_without_mapping.json"
@@ -540,8 +541,27 @@ class TestInstrumentContextModels:
         ex2_json = json.loads(ex2_raw)
         validator.validate(ex2_json)
         inst2 = InstrumentContext.model_validate_json(ex2_raw)
-        assert inst2.version >= 1
+        assert inst2.version == 3
         assert inst2.status == "reviewed"
         assert inst2.variables[0].methodology_variable_id is not None
         assert inst2.updated_at == inst2.confirmation.confirmed_at
         assert inst2.dataset_mapping is None
+
+    def test_json_schema_synchronization(self):
+        """Tarea 3: Comprueba que schema.json esté sincronizado con el modelo."""
+        import json
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[3]
+        schema_path = root / "docs" / "contracts" / "instrument_context_v1.schema.json"
+
+        expected = InstrumentContext.model_json_schema()
+        expected["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+        expected["$id"] = "https://tesisstat.local/contracts/v1/InstrumentContext.schema.json"
+
+        expected_text = json.dumps(expected, ensure_ascii=False, indent=2) + "\n"
+        actual_text = schema_path.read_text(encoding="utf-8")
+
+        assert actual_text == expected_text, (
+            "El esquema en docs/contracts/instrument_context_v1.schema.json está desactualizado."
+        )
