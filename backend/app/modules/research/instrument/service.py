@@ -136,10 +136,16 @@ class InstrumentService:
         self._require_project(project_id)
         current = self.get(project_id, instrument_id)
 
-        # Si el instrumento ya está confirmado y revisado, no se sobrescribe destructivamente
-        # El cambio genera una nueva versión en estado 'draft'
+        if current.status != "draft":
+            raise InstrumentConflict(
+                "Solo se pueden modificar instrumentos en estado 'draft'. "
+                f"El estado actual es '{current.status}'."
+            )
+
+        new_version = expected_version + 1
         now = datetime.now(UTC)
         updates = {
+            "version": new_version,
             "updated_at": now,
             "status": "draft",
             "confirmation": InstrumentConfirmation(state="pending"),
@@ -155,17 +161,22 @@ class InstrumentService:
         if scoring_rules is not None:
             updates["scoring_rules"] = scoring_rules
 
-        # Si había mapeo de dataset y cambiaron ítems, el mapeo debe pasar a stale o actualizarse
-        if current.dataset_mapping is not None and items is not None:
-            new_item_ids = {it.item_id for it in items}
-            mapped_item_ids = {m.item_id for m in current.dataset_mapping.item_columns}
-            if new_item_ids != mapped_item_ids:
-                updates["dataset_mapping"] = current.dataset_mapping.model_copy(
-                    update={
-                        "status": "stale",
-                        "confirmation": InstrumentConfirmation(state="pending"),
-                    }
-                )
+        # Si había mapeo de dataset, cualquier actualización estructural (ítems,
+        # codificaciones, reglas) invalida la confirmación previa. El mapeo pasa a 'draft'.
+        if current.dataset_mapping is not None:
+            active_items = items if items is not None else current.items
+            active_item_ids = {it.item_id for it in active_items}
+            remaining_cols = [
+                c for c in current.dataset_mapping.item_columns if c.item_id in active_item_ids
+            ]
+            updates["dataset_mapping"] = current.dataset_mapping.model_copy(
+                update={
+                    "status": "draft",
+                    "confirmation": InstrumentConfirmation(state="pending"),
+                    "instrument_version": new_version,
+                    "item_columns": remaining_cols,
+                }
+            )
 
         updated_context = InstrumentContext.model_validate(current.model_dump() | updates)
         return self.repository.update(updated_context, expected_version)
@@ -176,6 +187,7 @@ class InstrumentService:
         instrument_id: UUID,
         expected_version: int,
         document_id: UUID,
+        variable_links: dict[UUID, UUID] | None = None,
         source_kind: str = "document",
     ) -> InstrumentContext:
         self._require_project(project_id)
@@ -200,17 +212,29 @@ class InstrumentService:
             doc_bytes = self.documents.repository.read(project_id, document_id)
             source_doc_hash = _digest(doc_bytes)
 
-        # Validar variables vinculadas si declaran methodology_variable_id
-        methodology_var_ids = {v.id for v in review.content.variables}
+        # Validar y vincular variables con las variables de la revisión metodológica
+        methodology_vars = {v.id: v for v in review.content.variables}
+        new_version = expected_version + 1
+
+        updated_variables = []
         for var in current.variables:
-            if (
-                var.methodology_variable_id
-                and var.methodology_variable_id not in methodology_var_ids
-            ):
+            target_m_id = var.methodology_variable_id
+            if variable_links and var.variable_id in variable_links:
+                target_m_id = variable_links[var.variable_id]
+
+            if target_m_id is None:
+                raise InstrumentValidationError(
+                    f"La variable '{var.name}' ({var.variable_id}) no tiene una correspondencia "
+                    f"metodológica asignada."
+                )
+            if target_m_id not in methodology_vars:
                 raise InstrumentValidationError(
                     f"La variable '{var.name}' referencia un methodology_variable_id "
-                    f"({var.methodology_variable_id}) inexistente en la metodología confirmada."
+                    f"({target_m_id}) inexistente en la metodología confirmada."
                 )
+            updated_variables.append(
+                var.model_copy(update={"methodology_variable_id": target_m_id})
+            )
 
         provenance = InstrumentProvenance(
             source_kind=source_kind,
@@ -222,12 +246,17 @@ class InstrumentService:
         )
 
         now = datetime.now(UTC)
-        updated_inst = current.model_copy(
-            update={
-                "provenance": provenance,
-                "updated_at": now,
-            }
-        )
+        inst_updates = {
+            "variables": updated_variables,
+            "provenance": provenance,
+            "updated_at": now,
+        }
+        if current.dataset_mapping is not None:
+            inst_updates["dataset_mapping"] = current.dataset_mapping.model_copy(
+                update={"instrument_version": new_version}
+            )
+
+        updated_inst = current.model_copy(update=inst_updates)
         return self.repository.update(updated_inst, expected_version)
 
     def set_mapping(
@@ -266,10 +295,11 @@ class InstrumentService:
 
         dataset_hash = self._dataset_hash(project_id, dataset)
 
+        new_version = expected_version + 1
         mapping = DatasetMapping(
             dataset_id=dataset_id,
             dataset_hash=dataset_hash,
-            instrument_version=expected_version,
+            instrument_version=new_version,
             item_columns=item_columns,
             status="draft",
             confirmation=InstrumentConfirmation(state="pending"),
@@ -316,6 +346,7 @@ class InstrumentService:
                 "El dataset ha cambiado desde que se configuró el mapeo. Recalcula el mapeo."
             )
 
+        new_version = expected_version + 1
         now = datetime.now(UTC)
         confirmed_confirmation = InstrumentConfirmation(
             state="confirmed",
@@ -326,6 +357,7 @@ class InstrumentService:
             update={
                 "status": "confirmed",
                 "confirmation": confirmed_confirmation,
+                "instrument_version": new_version,
             }
         )
 
@@ -336,6 +368,50 @@ class InstrumentService:
             }
         )
         return self.repository.update(updated_inst, expected_version)
+
+    def confirm_scoring_rules(
+        self,
+        project_id: UUID,
+        instrument_id: UUID,
+        expected_version: int,
+        rule_ids: list[UUID] | None = None,
+    ) -> InstrumentContext:
+        self._require_project(project_id)
+        current = self.get(project_id, instrument_id)
+
+        target_rule_ids = (
+            set(rule_ids)
+            if rule_ids is not None
+            else {r.scoring_rule_id for r in current.scoring_rules}
+        )
+        all_rule_ids = {r.scoring_rule_id for r in current.scoring_rules}
+        missing_ids = target_rule_ids - all_rule_ids
+        if missing_ids:
+            raise InstrumentValidationError(
+                f"Las siguientes reglas de puntuación no existen en el instrumento: "
+                f"{', '.join(str(i) for i in missing_ids)}."
+            )
+
+        new_version = expected_version + 1
+        updated_rules = []
+        for r in current.scoring_rules:
+            if r.scoring_rule_id in target_rule_ids:
+                updated_rules.append(r.model_copy(update={"confirmed": True}))
+            else:
+                updated_rules.append(r)
+
+        now = datetime.now(UTC)
+        updates = {
+            "scoring_rules": updated_rules,
+            "updated_at": now,
+        }
+        if current.dataset_mapping is not None:
+            updates["dataset_mapping"] = current.dataset_mapping.model_copy(
+                update={"instrument_version": new_version}
+            )
+
+        updated_context = current.model_copy(update=updates)
+        return self.repository.update(updated_context, expected_version)
 
     def confirm_instrument(
         self,
@@ -353,18 +429,42 @@ class InstrumentService:
                 "de ser confirmado."
             )
 
-        # Validar vigencia de la metodología
+        # 1. Validar correspondencia estricta de variables metodológicas
+        review = self.methodology.get_review(project_id, current.provenance.methodology_review_id)
+        if review is None or review.review_status != "reviewed":
+            raise InstrumentValidationError(
+                "La metodología asociada debe estar confirmada antes de confirmar el instrumento."
+            )
+        methodology_var_ids = {v.id for v in review.content.variables}
+        for var in current.variables:
+            if var.methodology_variable_id is None:
+                raise InstrumentValidationError(
+                    f"La variable '{var.name}' ({var.variable_id}) no tiene una correspondencia "
+                    f"metodológica asignada."
+                )
+            if var.methodology_variable_id not in methodology_var_ids:
+                raise InstrumentValidationError(
+                    f"La variable '{var.name}' referencia un methodology_variable_id "
+                    f"({var.methodology_variable_id}) inexistente en la metodología confirmada."
+                )
+
+        # 2. Validar que TODAS las reglas de puntuación estén explícitamente confirmadas
+        unconfirmed_rules = [r for r in current.scoring_rules if not r.confirmed]
+        if unconfirmed_rules:
+            unconfirmed_ids = [str(r.scoring_rule_id) for r in unconfirmed_rules]
+            raise InstrumentValidationError(
+                "No se puede confirmar el instrumento porque existen reglas de puntuación "
+                f"pendientes de confirmación explícita: {', '.join(unconfirmed_ids)}."
+            )
+
+        # 3. Validar vigencia de las fuentes
         is_stale_flag, reasons = self.check_stale(project_id, instrument_id)
         if is_stale_flag:
             raise InstrumentConflict(
                 f"El instrumento está desactualizado respecto a sus fuentes: {', '.join(reasons)}"
             )
 
-        # Confirmar todas las reglas de puntuación si no lo estaban
-        confirmed_rules = [
-            rule.model_copy(update={"confirmed": True}) for rule in current.scoring_rules
-        ]
-
+        new_version = expected_version + 1
         now = datetime.now(UTC)
         confirmed_confirmation = InstrumentConfirmation(
             state="confirmed",
@@ -372,18 +472,51 @@ class InstrumentService:
             confirmer_ref=confirmer_ref,
         )
 
-        # Construir y validar el contexto confirmado
-        dumped = current.model_dump()
-        dumped.update(
-            {
-                "status": "reviewed",
-                "confirmation": confirmed_confirmation.model_dump(),
-                "scoring_rules": [r.model_dump() for r in confirmed_rules],
-                "updated_at": now.isoformat(),
-            }
-        )
-        confirmed_context = InstrumentContext.model_validate(dumped)
+        updates = {
+            "status": "reviewed",
+            "confirmation": confirmed_confirmation,
+            "updated_at": now,
+        }
+        if current.dataset_mapping is not None:
+            updates["dataset_mapping"] = current.dataset_mapping.model_copy(
+                update={"instrument_version": new_version}
+            )
+
+        confirmed_context = current.model_copy(update=updates)
         return self.repository.update(confirmed_context, expected_version)
+
+    def mark_stale(
+        self,
+        project_id: UUID,
+        instrument_id: UUID,
+        expected_version: int,
+        reasons: list[str] | None = None,
+    ) -> InstrumentContext:
+        self._require_project(project_id)
+        current = self.get(project_id, instrument_id)
+
+        is_stale, _ = self.check_stale(project_id, instrument_id)
+        if not is_stale and not reasons:
+            raise InstrumentValidationError(
+                "El instrumento no presenta obsolescencia ni inconsistencias con sus fuentes."
+            )
+
+        new_version = expected_version + 1
+        now = datetime.now(UTC)
+        updates = {
+            "status": "stale",
+            "updated_at": now,
+        }
+        if current.dataset_mapping is not None:
+            updates["dataset_mapping"] = current.dataset_mapping.model_copy(
+                update={
+                    "status": "stale",
+                    "instrument_version": new_version,
+                }
+            )
+
+        stale_context = current.model_copy(update=updates)
+        return self.repository.update(stale_context, expected_version)
 
     def check_stale(
         self,

@@ -36,15 +36,17 @@ Estructura acordada y formalmente ratificada entre Research (Integrante 1) y Sta
 
 ---
 
-## 3. API REST FastAPI (18A-3)
+## 3. API REST FastAPI (18A-3 y Ajustes de Integridad)
 
 Montada bajo el prefijo unificado `/api/research/projects/{project_id}/instruments` en `backend/app/modules/research/dev_app.py`:
 - `POST /` — Crea borrador inicial $v0$ (HTTP 201 + Header `Location`).
 - `GET /` — Lista instrumentos del proyecto (HTTP 200).
 - `GET /{instrument_id}` — Consulta el instrumento activo o versión histórica mediante `?version=N` (HTTP 200).
-- `PUT /{instrument_id}` — Actualiza borrador con control optimista `expected_version` (HTTP 200).
-- `POST /{instrument_id}/methodology` — Vincula revisión metodológica confirmada (HTTP 200).
-- `POST /{instrument_id}/confirm` — Confirmación humana explícita (HTTP 200).
+- `PUT /{instrument_id}` — Actualiza borrador con control optimista `expected_version` e invalidación automática de mapeos si hubo cambios estructurales (HTTP 200).
+- `POST /{instrument_id}/methodology` — Vincula revisión metodológica confirmada validando correspondencia estricta de variables (`variable_links`) (HTTP 200).
+- `POST /{instrument_id}/rules/confirm` — Confirma explícitamente reglas de puntuación específicas o todas (HTTP 200).
+- `POST /{instrument_id}/confirm` — Confirmación humana explícita tras verificar que todas las reglas estén previamente confirmadas (HTTP 200).
+- `POST /{instrument_id}/mark-stale` — Materializa explícitamente y de forma transaccional la obsolescencia respecto a fuentes (HTTP 200).
 - `POST /{instrument_id}/mapping` — Asocia columnas de dataset sin PII (HTTP 200).
 - `POST /{instrument_id}/mapping/confirm` — Confirma el mapeo tras validar cobertura al 100 % (HTTP 200).
 - `GET /{instrument_id}/history` — Retorna el historial de versiones (HTTP 200).
@@ -75,10 +77,10 @@ Se incluyen en `docs/contracts/`:
 ## 6. Verificación de Calidad
 
 Ejecutado exhaustivamente desde `backend/`:
-- **Pruebas Totales:** **483 pruebas aprobadas** (100 % pass rate):
-  - `tests/research/test_instrument_models.py` (26 pruebas).
-  - `tests/research/test_instrument_service.py` (23 pruebas, incluyendo 7 de integridad relacional SQLite y cascadas).
-  - `tests/research/test_instrument_api.py` (15 pruebas de integración HTTP).
+- **Pruebas Totales:** **493 pruebas aprobadas** (100 % pass rate):
+  - `tests/research/test_instrument_models.py` (28 pruebas).
+  - `tests/research/test_instrument_service.py` (27 pruebas, incluyendo 7 de integridad relacional SQLite y cascadas).
+  - `tests/research/test_instrument_api.py` (19 pruebas de integración HTTP).
 - **Ruff Linter:** `uv run ruff check .` $\to$ All checks passed!
 - **Ruff Formatter:** `uv run ruff format --check .` $\to$ 154 files already formatted.
 - **Contratos Canónicos:** `uv run python -m scripts.export_contracts --check` $\to$ Aprobado (0 discrepancias).

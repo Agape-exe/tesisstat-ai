@@ -357,14 +357,33 @@ class TestInstrumentServiceAndPersistence:
         assert linked.provenance is not None
         assert linked.provenance.methodology_review_id == doc.id
 
+        # Confirmar instrumento sin confirmar reglas debe fallar
+        with pytest.raises(InstrumentValidationError) as exc:
+            h["service"].confirm_instrument(
+                project_id=proj.id,
+                instrument_id=inst.instrument_id,
+                expected_version=1,
+                confirmer_ref="revisor_docente",
+            )
+        assert "pendientes de confirmación explícita" in str(exc.value)
+
+        # Confirmación explícita de reglas de puntuación
+        rules_conf = h["service"].confirm_scoring_rules(
+            project_id=proj.id,
+            instrument_id=inst.instrument_id,
+            expected_version=1,
+        )
+        assert rules_conf.version == 2
+        assert rules_conf.scoring_rules[0].confirmed is True
+
         # Confirmar instrumento
         confirmed = h["service"].confirm_instrument(
             project_id=proj.id,
             instrument_id=inst.instrument_id,
-            expected_version=1,
+            expected_version=2,
             confirmer_ref="revisor_docente",
         )
-        assert confirmed.version == 2
+        assert confirmed.version == 3
         assert confirmed.status == "reviewed"
         assert confirmed.confirmation.state == "confirmed"
         assert confirmed.scoring_rules[0].confirmed is True
@@ -377,8 +396,9 @@ class TestInstrumentServiceAndPersistence:
         _seed_methodology_review(h, proj.id, doc.id, vars_[0].variable_id)
         inst = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
         linked = h["service"].link_methodology(proj.id, inst.instrument_id, 0, doc.id)
+        rules_conf = h["service"].confirm_scoring_rules(proj.id, inst.instrument_id, linked.version)
         confirmed = h["service"].confirm_instrument(
-            proj.id, inst.instrument_id, linked.version, "rev"
+            proj.id, inst.instrument_id, rules_conf.version, "rev"
         )
 
         # Repetición idempotente
@@ -461,8 +481,9 @@ class TestInstrumentServiceAndPersistence:
 
         inst = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
         linked = h["service"].link_methodology(proj.id, inst.instrument_id, 0, doc.id)
+        rules_conf = h["service"].confirm_scoring_rules(proj.id, inst.instrument_id, linked.version)
         confirmed = h["service"].confirm_instrument(
-            proj.id, inst.instrument_id, linked.version, "rev"
+            proj.id, inst.instrument_id, rules_conf.version, "rev"
         )
 
         # Inicialmente no está stale
@@ -539,8 +560,11 @@ class TestInstrumentServiceAndPersistence:
         mapped_conf = h["service"].confirm_mapping(
             proj.id, draft.instrument_id, mapped.version, "rev"
         )
+        rules_conf = h["service"].confirm_scoring_rules(
+            proj.id, draft.instrument_id, mapped_conf.version
+        )
         confirmed = h["service"].confirm_instrument(
-            proj.id, draft.instrument_id, mapped_conf.version, "rev"
+            proj.id, draft.instrument_id, rules_conf.version, "rev"
         )
 
         # Lectura exitosa por el puerto autorizado
@@ -558,8 +582,9 @@ class TestInstrumentServiceAndPersistence:
 
         inst = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
         linked = h["service"].link_methodology(proj.id, inst.instrument_id, 0, doc.id)
+        rules_conf = h["service"].confirm_scoring_rules(proj.id, inst.instrument_id, linked.version)
         confirmed = h["service"].confirm_instrument(
-            proj.id, inst.instrument_id, linked.version, "rev"
+            proj.id, inst.instrument_id, rules_conf.version, "rev"
         )
 
         # Modificar metodología
@@ -602,14 +627,16 @@ class TestInstrumentServiceAndPersistence:
         v0 = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
         # v1: vincular metodología
         v1 = h["service"].link_methodology(proj.id, v0.instrument_id, 0, doc.id)
-        # v2: confirmación de instrumento
-        h["service"].confirm_instrument(proj.id, v0.instrument_id, v1.version, "rev")
+        # v2: confirmar reglas de puntuación
+        v2 = h["service"].confirm_scoring_rules(proj.id, v0.instrument_id, v1.version)
+        # v3: confirmación de instrumento
+        h["service"].confirm_instrument(proj.id, v0.instrument_id, v2.version, "rev")
 
         history = h["service"].get_history(proj.id, v0.instrument_id)
-        assert len(history) == 3
-        assert [item.version for item in history] == [0, 1, 2]
+        assert len(history) == 4
+        assert [item.version for item in history] == [0, 1, 2, 3]
         assert history[0].status == "draft"
-        assert history[2].status == "reviewed"
+        assert history[3].status == "reviewed"
 
         # Recuperar snapshot histórico específico v0
         historic_v0 = h["service"].get(proj.id, v0.instrument_id, version=0)
@@ -707,15 +734,16 @@ class TestSQLiteIntegrityAndCascades:
 
         v0 = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
         v1 = h["service"].link_methodology(proj.id, v0.instrument_id, 0, doc.id)
-        h["service"].confirm_instrument(proj.id, v0.instrument_id, v1.version, "rev")
+        v2 = h["service"].confirm_scoring_rules(proj.id, v0.instrument_id, v1.version)
+        h["service"].confirm_instrument(proj.id, v0.instrument_id, v2.version, "rev")
 
-        # Verificar que existen 3 registros históricos en BD
+        # Verificar que existen 4 registros históricos en BD
         with closing(h["instrument_repo"]._connect()) as conn:
             count = conn.execute(
                 "SELECT count(*) FROM research_instruments WHERE project_id = ?",
                 (str(proj.id),),
             ).fetchone()[0]
-            assert count == 3
+            assert count == 4
 
         # Eliminar el proyecto usando el ProjectService
         h["projects"].delete(proj.id)
@@ -743,11 +771,12 @@ class TestSQLiteIntegrityAndCascades:
 
         v0 = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
         v1 = h["service"].link_methodology(proj.id, v0.instrument_id, 0, doc.id)
-        h["service"].confirm_instrument(proj.id, v0.instrument_id, v1.version, "rev")
+        v2 = h["service"].confirm_scoring_rules(proj.id, v0.instrument_id, v1.version)
+        h["service"].confirm_instrument(proj.id, v0.instrument_id, v2.version, "rev")
 
         history = h["service"].get_history(proj.id, v0.instrument_id)
-        assert len(history) == 3
-        assert [h_item.version for h_item in history] == [0, 1, 2]
+        assert len(history) == 4
+        assert [h_item.version for h_item in history] == [0, 1, 2, 3]
 
         with closing(h["instrument_repo"]._connect()) as conn:
             rows = conn.execute(
@@ -755,7 +784,7 @@ class TestSQLiteIntegrityAndCascades:
                 "WHERE project_id = ? ORDER BY version",
                 (str(proj.id),),
             ).fetchall()
-            assert rows == [(0, 0), (1, 0), (2, 1)]
+            assert rows == [(0, 0), (1, 0), (2, 0), (3, 1)]
 
     def test_project_deletion_does_not_affect_other_projects(self, tmp_path):
         h = _create_harness(tmp_path)
@@ -802,3 +831,153 @@ class TestSQLiteIntegrityAndCascades:
         loaded = new_repo.get(proj.id, inst.instrument_id)
         assert loaded is not None
         assert loaded.instrument_id == inst.instrument_id
+
+    def test_confirm_instrument_rejects_unconfirmed_scoring_rules(self, tmp_path):
+        """Demuestra que confirm_instrument no auto-confirma reglas silenciosamente."""
+        h = _create_harness(tmp_path)
+        proj = _seed_project(h)
+        doc = _seed_document(h, proj.id)
+        vars_, dims, inds, items, rules = _sample_structure()
+        assert rules[0].confirmed is False
+        _seed_methodology_review(h, proj.id, doc.id, vars_[0].variable_id)
+
+        inst = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
+        linked = h["service"].link_methodology(proj.id, inst.instrument_id, 0, doc.id)
+
+        # Intento de confirmar instrumento sin confirmar las reglas explícitamente
+        with pytest.raises(InstrumentValidationError) as exc:
+            h["service"].confirm_instrument(proj.id, inst.instrument_id, linked.version, "rev")
+        assert "pendientes de confirmación explícita" in str(exc.value)
+
+        # Confirmación explícita de la regla
+        rules_conf = h["service"].confirm_scoring_rules(
+            proj.id, inst.instrument_id, linked.version, [rules[0].scoring_rule_id]
+        )
+        assert rules_conf.scoring_rules[0].confirmed is True
+
+        # Ahora sí se puede confirmar el instrumento
+        confirmed = h["service"].confirm_instrument(
+            proj.id, inst.instrument_id, rules_conf.version, "rev"
+        )
+        assert confirmed.status == "reviewed"
+
+    def test_link_methodology_rejects_unlinked_or_invalid_variables(self, tmp_path):
+        """Demuestra que vincular metodología exige correspondencia metodológica en variables."""
+        h = _create_harness(tmp_path)
+        proj = _seed_project(h)
+        doc = _seed_document(h, proj.id)
+        vars_, dims, inds, items, rules = _sample_structure()
+        review = _seed_methodology_review(h, proj.id, doc.id, vars_[0].variable_id)
+
+        # 1. Variable sin methodology_variable_id
+        unlinked_var = vars_[0].model_copy(update={"methodology_variable_id": None})
+        inst1 = h["service"].create_draft(proj.id, [unlinked_var], dims, inds, items, rules)
+        with pytest.raises(InstrumentValidationError) as exc1:
+            h["service"].link_methodology(proj.id, inst1.instrument_id, 0, doc.id)
+        assert "no tiene una correspondencia metodológica asignada" in str(exc1.value)
+
+        # Vinculación explícita mediante variable_links
+        valid_linked = h["service"].link_methodology(
+            proj.id,
+            inst1.instrument_id,
+            0,
+            doc.id,
+            variable_links={unlinked_var.variable_id: review.content.variables[0].id},
+        )
+        assert valid_linked.variables[0].methodology_variable_id == review.content.variables[0].id
+
+        # 2. Variable con ID inexistente en la metodología confirmada
+        bad_var = vars_[0].model_copy(update={"methodology_variable_id": uuid4()})
+        inst2 = h["service"].create_draft(proj.id, [bad_var], dims, inds, items, rules)
+        with pytest.raises(InstrumentValidationError) as exc2:
+            h["service"].link_methodology(proj.id, inst2.instrument_id, 0, doc.id)
+        assert "inexistente en la metodología confirmada" in str(exc2.value)
+
+    def test_update_draft_invalidates_confirmed_dataset_mapping(self, tmp_path):
+        """Demuestra que actualizar el borrador invalida el mapeo confirmado previo."""
+        h = _create_harness(tmp_path)
+        proj = _seed_project(h)
+        doc = _seed_document(h, proj.id)
+        dataset = _seed_dataset(h, proj.id)
+        vars_, dims, inds, items, rules = _sample_structure()
+        _seed_methodology_review(h, proj.id, doc.id, vars_[0].variable_id)
+
+        inst = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
+        linked = h["service"].link_methodology(proj.id, inst.instrument_id, 0, doc.id)
+        mapping_cols = [
+            ItemColumnMapping(item_id=items[0].item_id, column_name="p1"),
+            ItemColumnMapping(item_id=items[1].item_id, column_name="p2"),
+        ]
+        mapped = h["service"].set_mapping(
+            proj.id, inst.instrument_id, linked.version, dataset.id, mapping_cols
+        )
+        conf_map = h["service"].confirm_mapping(
+            proj.id, inst.instrument_id, mapped.version, "rev_data"
+        )
+        assert conf_map.dataset_mapping.status == "confirmed"
+        assert conf_map.dataset_mapping.confirmation.state == "confirmed"
+        assert conf_map.version == 3
+
+        # Actualizar el borrador modificando un ítem
+        new_items = list(items)
+        new_items[0] = items[0].model_copy(update={"text": "Texto sustancialmente modificado"})
+        updated = h["service"].update_draft(
+            proj.id,
+            inst.instrument_id,
+            expected_version=3,
+            items=new_items,
+        )
+        assert updated.version == 4
+        # El mapeo no puede permanecer confirmed; se resetea a draft/pending
+        assert updated.dataset_mapping is not None
+        assert updated.dataset_mapping.status == "draft"
+        assert updated.dataset_mapping.confirmation.state == "pending"
+        assert updated.dataset_mapping.instrument_version == 4
+
+        # El snapshot histórico v3 en la base de datos conserva el mapeo confirmed intacto
+        historic_v3 = h["service"].get(proj.id, inst.instrument_id, version=3)
+        assert historic_v3.version == 3
+        assert historic_v3.dataset_mapping.status == "confirmed"
+        assert historic_v3.dataset_mapping.confirmation.state == "confirmed"
+
+    def test_mark_stale_explicit_transactional_versioning(self, tmp_path):
+        """Demuestra la materialización transaccional explícita de stale sin efectos en lectura."""
+        h = _create_harness(tmp_path)
+        proj = _seed_project(h)
+        doc = _seed_document(h, proj.id)
+        vars_, dims, inds, items, rules = _sample_structure()
+        review = _seed_methodology_review(h, proj.id, doc.id, vars_[0].variable_id)
+
+        inst = h["service"].create_draft(proj.id, vars_, dims, inds, items, rules)
+        linked = h["service"].link_methodology(proj.id, inst.instrument_id, 0, doc.id)
+        rules_conf = h["service"].confirm_scoring_rules(proj.id, inst.instrument_id, linked.version)
+        confirmed = h["service"].confirm_instrument(
+            proj.id, inst.instrument_id, rules_conf.version, "rev"
+        )
+
+        # Modificar metodología
+        updated_review = review.model_copy(
+            update={
+                "content": ReviewContent(title=ReviewFinding(value="Nuevo Titulo", kind="manual"))
+            }
+        )
+        h["methodology"].save_review(updated_review, expected_version=1)
+
+        # Lectura normal no escribe en base de datos
+        history_before = h["service"].get_history(proj.id, inst.instrument_id)
+        with pytest.raises(InstrumentStaleError):
+            h["reader"].get_confirmed_context(str(proj.id), str(inst.instrument_id))
+
+        history_after_read = h["service"].get_history(proj.id, inst.instrument_id)
+        assert len(history_after_read) == len(history_before)
+
+        # Materialización transaccional explícita mediante mark_stale
+        stale_inst = h["service"].mark_stale(proj.id, inst.instrument_id, confirmed.version)
+        assert stale_inst.version == confirmed.version + 1
+        assert stale_inst.status == "stale"
+
+        # Historial preserva el snapshot confirmed previo
+        history_final = h["service"].get_history(proj.id, inst.instrument_id)
+        assert len(history_final) == len(history_before) + 1
+        assert history_final[-2].status == "reviewed"
+        assert history_final[-1].status == "stale"

@@ -239,12 +239,14 @@ class SQLiteInstrumentRepository:
                 )
 
             new_version = expected_version + 1
-            updates = {"version": new_version}
             if instrument.dataset_mapping is not None:
-                updates["dataset_mapping"] = instrument.dataset_mapping.model_copy(
-                    update={"instrument_version": new_version}
-                )
-            persisted_inst = instrument.model_copy(update=updates)
+                if instrument.dataset_mapping.instrument_version != new_version:
+                    raise InstrumentConflict(
+                        "La versión del dataset_mapping "
+                        f"({instrument.dataset_mapping.instrument_version}) "
+                        f"no coincide con la nueva versión del instrumento ({new_version})."
+                    )
+            persisted_inst = instrument.model_copy(update={"version": new_version})
 
             # Archivar la versión activa anterior
             connection.execute(

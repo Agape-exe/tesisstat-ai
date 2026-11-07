@@ -248,8 +248,8 @@ class TestInstrumentAPIIntegration:
         vars_, dims, inds, items, rules = _sample_structure()
         doc_id = _upload_document_and_review(client, project_id, vars_[0].variable_id)
 
-        # Regla confirmada
-        rules[0].confirmed = True
+        # Regla NO confirmada al inicio
+        rules[0].confirmed = False
 
         create_resp = client.post(
             f"/api/research/projects/{project_id}/instruments",
@@ -272,14 +272,23 @@ class TestInstrumentAPIIntegration:
         assert link_resp.json()["version"] == 1
         assert link_resp.json()["provenance"] is not None
 
+        # Confirmar reglas explícitamente vía endpoint dedicado
+        rule_conf_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/rules/confirm",
+            json={"expected_version": 1},
+        )
+        assert rule_conf_resp.status_code == 200
+        assert rule_conf_resp.json()["version"] == 2
+        assert rule_conf_resp.json()["scoring_rules"][0]["confirmed"] is True
+
         # Confirmar instrumento
         conf_resp = client.post(
             f"/api/research/projects/{project_id}/instruments/{inst_id}/confirm",
-            json={"expected_version": 1, "confirmer_ref": "metodologo_senior"},
+            json={"expected_version": 2, "confirmer_ref": "metodologo_senior"},
         )
         assert conf_resp.status_code == 200
         confirmed = conf_resp.json()
-        assert confirmed["version"] == 2
+        assert confirmed["version"] == 3
         assert confirmed["status"] == "reviewed"
         assert confirmed["confirmation"]["state"] == "confirmed"
         assert confirmed["confirmation"]["confirmer_ref"] == "metodologo_senior"
@@ -426,13 +435,26 @@ class TestInstrumentAPIIntegration:
         )
         inst_id = create_resp.json()["instrument_id"]
 
-        # Confirmar sin haber vinculado metodología
+        # 1. Confirmar sin haber vinculado metodología
         conf_bad = client.post(
             f"/api/research/projects/{project_id}/instruments/{inst_id}/confirm",
             json={"expected_version": 0, "confirmer_ref": "metodologo"},
         )
         assert conf_bad.status_code == 422
         assert "procedencia metodológica" in conf_bad.json()["detail"]
+
+        # 2. Vincular metodología pero intentar confirmar con reglas pendientes
+        doc_id = _upload_document_and_review(client, project_id, vars_[0].variable_id)
+        client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/methodology",
+            json={"expected_version": 0, "document_id": doc_id},
+        )
+        conf_bad_rules = client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/confirm",
+            json={"expected_version": 1, "confirmer_ref": "metodologo"},
+        )
+        assert conf_bad_rules.status_code == 422
+        assert "pendientes de confirmación explícita" in conf_bad_rules.json()["detail"]
 
     def test_9_reject_instrument_cross_project(self, tmp_path):
         client, _, _ = _setup_api(tmp_path)
@@ -675,3 +697,178 @@ class TestInstrumentAPIIntegration:
         )
         assert resp.status_code == 422
         assert "extra_forbidden" in resp.text or "no está permitido" in resp.text
+
+    def test_16_confirm_scoring_rules_endpoint(self, tmp_path):
+        """Verifica el endpoint para confirmar explícitamente reglas de puntuación."""
+        client, _, _ = _setup_api(tmp_path)
+        project_id = _create_project(client)
+        vars_, dims, inds, items, rules = _sample_structure()
+        assert rules[0].confirmed is False
+
+        create_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments",
+            json={
+                "variables": [v.model_dump(mode="json") for v in vars_],
+                "dimensions": [d.model_dump(mode="json") for d in dims],
+                "indicators": [i.model_dump(mode="json") for i in inds],
+                "items": [it.model_dump(mode="json") for it in items],
+                "scoring_rules": [r.model_dump(mode="json") for r in rules],
+            },
+        )
+        inst_id = create_resp.json()["instrument_id"]
+
+        # Confirmar regla específica
+        conf_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/rules/confirm",
+            json={
+                "expected_version": 0,
+                "rule_ids": [str(rules[0].scoring_rule_id)],
+            },
+        )
+        assert conf_resp.status_code == 200
+        assert conf_resp.json()["version"] == 1
+        assert conf_resp.json()["scoring_rules"][0]["confirmed"] is True
+
+    def test_17_mark_stale_endpoint(self, tmp_path):
+        """Verifica la materialización transaccional de stale vía endpoint."""
+        client, _, _ = _setup_api(tmp_path)
+        project_id = _create_project(client)
+        vars_, dims, inds, items, rules = _sample_structure()
+        doc_id = _upload_document_and_review(client, project_id, vars_[0].variable_id)
+        rules[0].confirmed = True
+
+        create_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments",
+            json={
+                "variables": [v.model_dump(mode="json") for v in vars_],
+                "dimensions": [d.model_dump(mode="json") for d in dims],
+                "indicators": [i.model_dump(mode="json") for i in inds],
+                "items": [it.model_dump(mode="json") for it in items],
+                "scoring_rules": [r.model_dump(mode="json") for r in rules],
+            },
+        )
+        inst_id = create_resp.json()["instrument_id"]
+
+        client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/methodology",
+            json={"expected_version": 0, "document_id": doc_id},
+        )
+        client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/confirm",
+            json={"expected_version": 1, "confirmer_ref": "metodologo"},
+        )
+
+        # Modificar metodología
+        rev_url = f"/api/research/projects/{project_id}/documents/{doc_id}/methodology/review"
+        rev_data = client.get(rev_url).json()
+        rev_data["content"]["title"]["value"] = "Titulo Alterado"
+        client.put(rev_url, json={"version": 1, "content": rev_data["content"]})
+        client.post(rev_url + "/confirm", json={"version": 2})
+
+        # Materializar stale
+        stale_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/mark-stale",
+            json={"expected_version": 2},
+        )
+        assert stale_resp.status_code == 200
+        assert stale_resp.json()["version"] == 3
+        assert stale_resp.json()["status"] == "stale"
+
+    def test_18_link_methodology_with_variable_links(self, tmp_path):
+        """Verifica vinculación metodológica con correspondencia explícita variable_links."""
+        client, _, _ = _setup_api(tmp_path)
+        project_id = _create_project(client)
+        vars_, dims, inds, items, rules = _sample_structure()
+        # Variable no vinculada inicialmente
+        vars_[0].methodology_variable_id = None
+        doc_id = _upload_document_and_review(client, project_id, uuid4())
+
+        create_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments",
+            json={
+                "variables": [v.model_dump(mode="json") for v in vars_],
+                "dimensions": [d.model_dump(mode="json") for d in dims],
+                "indicators": [i.model_dump(mode="json") for i in inds],
+                "items": [it.model_dump(mode="json") for it in items],
+                "scoring_rules": [r.model_dump(mode="json") for r in rules],
+            },
+        )
+        inst_id = create_resp.json()["instrument_id"]
+
+        # Sin variable_links debe fallar porque methodology_variable_id es None
+        fail_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/methodology",
+            json={"expected_version": 0, "document_id": doc_id},
+        )
+        assert fail_resp.status_code == 422
+        assert "no tiene una correspondencia metodológica" in fail_resp.json()["detail"]
+
+        # Con variable_links debe tener éxito
+        rev_url = f"/api/research/projects/{project_id}/documents/{doc_id}/methodology/review"
+        rev_var_id = client.get(rev_url).json()["content"]["variables"][0]["id"]
+
+        succ_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/methodology",
+            json={
+                "expected_version": 0,
+                "document_id": doc_id,
+                "variable_links": {str(vars_[0].variable_id): rev_var_id},
+            },
+        )
+        assert succ_resp.status_code == 200
+        assert succ_resp.json()["variables"][0]["methodology_variable_id"] == rev_var_id
+
+    def test_19_update_draft_invalidates_mapping_endpoint(self, tmp_path):
+        """Verifica que actualizar borrador invalida el mapeo confirmado a nivel de API."""
+        client, _, _ = _setup_api(tmp_path)
+        project_id = _create_project(client)
+        vars_, dims, inds, items, rules = _sample_structure()
+        dataset_id = _upload_dataset(client, project_id)
+
+        create_resp = client.post(
+            f"/api/research/projects/{project_id}/instruments",
+            json={
+                "variables": [v.model_dump(mode="json") for v in vars_],
+                "dimensions": [d.model_dump(mode="json") for d in dims],
+                "indicators": [i.model_dump(mode="json") for i in inds],
+                "items": [it.model_dump(mode="json") for it in items],
+                "scoring_rules": [r.model_dump(mode="json") for r in rules],
+            },
+        )
+        inst_id = create_resp.json()["instrument_id"]
+
+        client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/mapping",
+            json={
+                "expected_version": 0,
+                "dataset_id": dataset_id,
+                "item_columns": [
+                    {"item_id": str(items[0].item_id), "column_name": "p1"},
+                    {"item_id": str(items[1].item_id), "column_name": "p2"},
+                ],
+            },
+        )
+        client.post(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}/mapping/confirm",
+            json={"expected_version": 1, "confirmer_ref": "analista"},
+        )
+
+        # Actualizar borrador modificando el texto del ítem
+        items[0].text = "Texto modificado del ítem 1"
+        put_resp = client.put(
+            f"/api/research/projects/{project_id}/instruments/{inst_id}",
+            json={
+                "expected_version": 2,
+                "variables": [v.model_dump(mode="json") for v in vars_],
+                "dimensions": [d.model_dump(mode="json") for d in dims],
+                "indicators": [i.model_dump(mode="json") for i in inds],
+                "items": [it.model_dump(mode="json") for it in items],
+                "scoring_rules": [r.model_dump(mode="json") for r in rules],
+            },
+        )
+        assert put_resp.status_code == 200
+        data = put_resp.json()
+        assert data["version"] == 3
+        assert data["dataset_mapping"]["status"] == "draft"
+        assert data["dataset_mapping"]["confirmation"]["state"] == "pending"
+        assert data["dataset_mapping"]["instrument_version"] == 3

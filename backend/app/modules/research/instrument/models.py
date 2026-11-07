@@ -1,11 +1,19 @@
 """Domain models for research measurement instruments and psychometric scales."""
 
+import math
 import re
 from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 Sha256Hex = Annotated[
     str,
@@ -42,6 +50,13 @@ class ResponseOption(StrictDomainModel):
     label: str = Field(min_length=1, max_length=200)
     numeric_value: float
 
+    @field_validator("numeric_value")
+    @classmethod
+    def validate_numeric_finite(cls, v: float) -> float:
+        if not math.isfinite(v):
+            raise ValueError("numeric_value debe ser un número finito (no NaN ni infinito).")
+        return v
+
 
 class InstrumentItem(StrictDomainModel):
     item_id: UUID
@@ -56,6 +71,13 @@ class InstrumentItem(StrictDomainModel):
     reverse_scored: bool = False
     reverse_rule: Literal["min_plus_max_minus_value"] | None = None
     source_quote: str | None = Field(default=None, max_length=1000)
+
+    @field_validator("valid_min", "valid_max")
+    @classmethod
+    def validate_bounds_finite(cls, v: float | None) -> float | None:
+        if v is not None and not math.isfinite(v):
+            raise ValueError("Los límites válidos deben ser números finitos (no NaN ni infinito).")
+        return v
 
     @model_validator(mode="after")
     def validate_item_coherence(self) -> "InstrumentItem":

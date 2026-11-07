@@ -171,13 +171,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_research_instruments_current
 ### 7.3 Servicios de Ciclo de Vida (`InstrumentService`)
 El servicio `InstrumentService` orquesta:
 1. `create_draft(project_id, variables, dimensions, indicators, items, scoring_rules)`: Genera $v0$ con estado `draft` y `confirmation.state = "pending"`.
-2. `update_draft(project_id, instrument_id, expected_version, ...)`: Modifica estructura solo si `status == "draft"`, incrementando la versión y archivando la previa.
-3. `link_methodology(project_id, instrument_id, expected_version, document_id)`: Vincula a una revisión metodológica existente en estado `reviewed`, capturando su `version` y hash SHA-256.
-4. `set_mapping(project_id, instrument_id, expected_version, dataset_id, item_columns)`: Valida existencia del dataset, verifica 1:1 de columnas a ítems, prohíbe columnas PII y genera mapeo en estado `draft`.
-5. `confirm_mapping(project_id, instrument_id, expected_version, confirmer_ref)`: Confirma mapeo exigiendo cobertura del 100% de ítems y estado `state="confirmed"`.
-6. `confirm_instrument(project_id, instrument_id, expected_version, confirmer_ref)`: Realiza confirmación humana explícita, transición a `status = "reviewed"`, exige procedencia metodológica confirmada y reglas de puntuación confirmadas.
-7. `check_stale(project_id, instrument_id)`: Compara en tiempo real los hashes guardados de metodología y dataset contra los hashes vigentes. Si difieren, marca la entidad como `stale`.
-8. `get_history(project_id, instrument_id)`: Recupera la auditoría histórica completa ordenada cronológicamente por versión.
+2. `update_draft(project_id, instrument_id, expected_version, ...)`: Modifica estructura solo si `status == "draft"`, incrementando la versión y archivando la previa. Si existía un mapeo de dataset, cualquier actualización estructural invalida la confirmación previa, reseteándolo a `draft` con `pending`.
+3. `link_methodology(project_id, instrument_id, expected_version, document_id, variable_links)`: Vincula a una revisión metodológica existente en estado `reviewed`, capturando su `version` y hash SHA-256. Valida la correspondencia estricta de las variables del instrumento contra las variables de la revisión metodológica (`ReviewVariable.id`).
+4. `confirm_scoring_rules(project_id, instrument_id, expected_version, rule_ids)`: Confirma explícita e individualmente las reglas de puntuación sin confirmaciones automáticas implícitas.
+5. `set_mapping(project_id, instrument_id, expected_version, dataset_id, item_columns)`: Valida existencia del dataset, verifica 1:1 de columnas a ítems, prohíbe columnas PII y genera mapeo en estado `draft`.
+6. `confirm_mapping(project_id, instrument_id, expected_version, confirmer_ref)`: Confirma mapeo exigiendo cobertura del 100% de ítems y estado `state="confirmed"`.
+7. `confirm_instrument(project_id, instrument_id, expected_version, confirmer_ref)`: Realiza confirmación humana explícita, transición a `status = "reviewed"`, exige procedencia metodológica confirmada con correspondencia estricta de variables y que TODAS las reglas de puntuación hayan sido confirmadas explícitamente de antemano.
+8. `check_stale(project_id, instrument_id)`: Compara en tiempo real los hashes guardados de metodología y dataset contra los hashes vigentes.
+9. `mark_stale(project_id, instrument_id, expected_version, reasons)`: Materializa de forma explícita, versionada y transaccional el estado `stale` del instrumento y su mapeo.
+10. `get_history(project_id, instrument_id)`: Recupera la auditoría histórica completa ordenada cronológicamente por versión.
 
 ### 7.4 Puerto Autorizado para Statistics (`ResearchInstrumentContextReader`)
 Statistics consume los instrumentos a través del protocolo desacoplado:
@@ -188,7 +190,7 @@ class ResearchInstrumentContextReader:
 
     def get_confirmed_context(self, project_id: str, instrument_id: str) -> InstrumentContext:
         # 1. Recupera la versión actual
-        # 2. Verifica stale dinámico (rechaza si la metodología o dataset mutaron)
+        # 2. Verifica stale dinámico (rechaza si la metodología o dataset mutaron, SIN mutar base de datos en lecturas)
         # 3. Exige status == "reviewed" y confirmation.state == "confirmed"
         # 4. Si tiene dataset_mapping, exige status == "confirmed" y confirmation.state == "confirmed"
         # 5. Entrega el DTO canónico inmutable
@@ -197,7 +199,7 @@ Statistics nunca accede directamente a tablas o repositorios de Research. Se pre
 
 ---
 
-## 8. Rutas HTTP FastAPI (Sesión 18A-3)
+## 8. Rutas HTTP FastAPI (Sesión 18A-3 y Correcciones de Integridad)
 
 Integradas en el entorno local de desarrollo `backend/app/modules/research/dev_app.py`:
 
@@ -206,9 +208,11 @@ Integradas en el entorno local de desarrollo `backend/app/modules/research/dev_a
 | `POST` | `/api/research/projects/{project_id}/instruments` | `201 Created` | Crea borrador $v0$ (`status="draft"`). Retorna header `Location`. |
 | `GET` | `/api/research/projects/{project_id}/instruments` | `200 OK` | Lista todos los instrumentos activos del proyecto. |
 | `GET` | `/api/research/projects/{project_id}/instruments/{instrument_id}` | `200 OK` | Obtiene el instrumento activo o histórico vía `?version=N`. |
-| `PUT` | `/api/research/projects/{project_id}/instruments/{instrument_id}` | `200 OK` | Actualiza borrador exigiendo `expected_version` (concurrencia optimista). |
-| `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/methodology` | `200 OK` | Vincula a una revisión metodológica confirmada existente. |
-| `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/confirm` | `200 OK` | Confirma el instrumento (`status="reviewed"`, `state="confirmed"`). |
+| `PUT` | `/api/research/projects/{project_id}/instruments/{instrument_id}` | `200 OK` | Actualiza borrador exigiendo `expected_version` (concurrencia optimista e invalidación de mapeo si corresponde). |
+| `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/methodology` | `200 OK` | Vincula a una revisión metodológica confirmada validando correspondencia estricta de variables (`variable_links`). |
+| `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/rules/confirm` | `200 OK` | Confirma explícitamente reglas de puntuación específicas o todas. |
+| `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/confirm` | `200 OK` | Confirma el instrumento (`status="reviewed"`, `state="confirmed"`, exige reglas confirmadas). |
+| `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/mark-stale` | `200 OK` | Materializa explícitamente la transición transaccional a estado `stale`. |
 | `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/mapping` | `200 OK` | Establece u actualiza mapeo de dataset (`draft`, sin PII). |
 | `POST` | `/api/research/projects/{project_id}/instruments/{instrument_id}/mapping/confirm` | `200 OK` | Confirma el mapeo de dataset (cobertura 100 % de ítems). |
 | `GET` | `/api/research/projects/{project_id}/instruments/{instrument_id}/history` | `200 OK` | Consulta el historial completo ordenado cronológicamente por versión. |

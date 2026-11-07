@@ -47,6 +47,21 @@ class LinkMethodologyRequest(BaseModel):
 
     expected_version: int = Field(ge=0)
     document_id: UUID
+    variable_links: dict[UUID, UUID] | None = None
+
+
+class ConfirmScoringRulesRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_version: int = Field(ge=0)
+    rule_ids: list[UUID] | None = None
+
+
+class MarkStaleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_version: int = Field(ge=0)
+    reasons: list[str] | None = None
 
 
 class ConfirmInstrumentRequest(BaseModel):
@@ -145,6 +160,20 @@ def create_router(service: InstrumentService) -> APIRouter:
             instrument_id=instrument_id,
             expected_version=payload.expected_version,
             document_id=payload.document_id,
+            variable_links=payload.variable_links,
+        )
+
+    @router.post("/{instrument_id}/rules/confirm", response_model=InstrumentContext)
+    def confirm_scoring_rules(
+        project_id: UUID,
+        instrument_id: UUID,
+        payload: ConfirmScoringRulesRequest,
+    ) -> InstrumentContext:
+        return service.confirm_scoring_rules(
+            project_id=project_id,
+            instrument_id=instrument_id,
+            expected_version=payload.expected_version,
+            rule_ids=payload.rule_ids,
         )
 
     @router.post("/{instrument_id}/confirm", response_model=InstrumentContext)
@@ -158,6 +187,19 @@ def create_router(service: InstrumentService) -> APIRouter:
             instrument_id=instrument_id,
             expected_version=payload.expected_version,
             confirmer_ref=payload.confirmer_ref,
+        )
+
+    @router.post("/{instrument_id}/mark-stale", response_model=InstrumentContext)
+    def mark_stale(
+        project_id: UUID,
+        instrument_id: UUID,
+        payload: MarkStaleRequest,
+    ) -> InstrumentContext:
+        return service.mark_stale(
+            project_id=project_id,
+            instrument_id=instrument_id,
+            expected_version=payload.expected_version,
+            reasons=payload.reasons,
         )
 
     @router.post("/{instrument_id}/mapping", response_model=InstrumentContext)

@@ -357,6 +357,51 @@ class TestInstrumentContextModels:
             ItemColumnMapping(item_id=uuid4(), column_name="dni_sujeto")
         assert "identificador personal o PII" in str(exc.value)
 
+    def test_response_option_finite_numeric_value_validation(self):
+        """Valida que numeric_value rechace NaN e infinitos."""
+        with pytest.raises(ValidationError) as exc:
+            ResponseOption(code="A", label="Opción", numeric_value=float("nan"))
+        assert "número finito" in str(exc.value)
+
+        with pytest.raises(ValidationError) as exc:
+            ResponseOption(code="A", label="Opción", numeric_value=float("inf"))
+        assert "número finito" in str(exc.value)
+
+        with pytest.raises(ValidationError) as exc:
+            ResponseOption(code="A", label="Opción", numeric_value=float("-inf"))
+        assert "número finito" in str(exc.value)
+
+    def test_item_bounds_finite_validation(self):
+        """Valida que valid_min y valid_max rechacen NaN e infinitos."""
+        opts = standard_likert_options()
+        with pytest.raises(ValidationError) as exc:
+            InstrumentItem(
+                item_id=uuid4(),
+                variable_id=uuid4(),
+                dimension_id=uuid4(),
+                indicator_id=uuid4(),
+                text="Texto",
+                response_type="single_choice",
+                response_options=opts,
+                valid_min=float("nan"),
+                valid_max=5.0,
+            )
+        assert "números finitos" in str(exc.value)
+
+        with pytest.raises(ValidationError) as exc:
+            InstrumentItem(
+                item_id=uuid4(),
+                variable_id=uuid4(),
+                dimension_id=uuid4(),
+                indicator_id=uuid4(),
+                text="Texto",
+                response_type="single_choice",
+                response_options=opts,
+                valid_min=1.0,
+                valid_max=float("inf"),
+            )
+        assert "números finitos" in str(exc.value)
+
     def test_shared_contracts_remain_untouched(self):
         """Verifica que los contratos canónicos compartidos permanezcan 100% intactos."""
         assert ResearchPackage.__name__ == "ResearchPackage"
