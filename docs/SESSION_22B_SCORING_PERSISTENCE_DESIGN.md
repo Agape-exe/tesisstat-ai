@@ -2,8 +2,9 @@
 
 ## Estado
 
-Propuesta para revisión conjunta Research–Statistics. Este documento no modifica contratos
-públicos ni autoriza todavía implementación, endpoints o migraciones.
+Propuesta actualizada con las decisiones ratificadas por Research y Statistics, pendiente de
+aprobación documental final. Este documento no modifica contratos públicos ni autoriza todavía
+implementación, endpoints o migraciones.
 
 ## Objetivo
 
@@ -18,11 +19,12 @@ Statistics a repositorios de Research.
    `ScoringPreview`.
 3. La interfaz presenta únicamente resultados derivados, conteos, confiabilidad, advertencias y la
    huella de la previsualización.
-4. La confirmación recibe la identidad original, `preview_fingerprint`, una confirmación literal y
-   una referencia opaca del confirmante; nunca recibe puntuaciones como fuente de verdad.
+4. La confirmación recibe la identidad original, `preview_fingerprint` y una confirmación literal;
+   nunca recibe puntuaciones como fuente de verdad. La capa autenticada y autorizada incorpora
+   internamente la referencia opaca del confirmante.
 5. Orchestration vuelve a ejecutar autorización y cálculo. Si la nueva huella difiere, rechaza la
    confirmación como `stale`.
-6. Research persiste de forma atómica el registro y, si se acuerda, el dataset derivado. Los
+6. Research persiste el registro histórico y sus puntuaciones en una única transacción SQLite. Los
    reintentos de la misma confirmación devuelven el mismo resultado.
 
 ## DTO interno de confirmación
@@ -34,10 +36,11 @@ ScoringConfirmationRequest
   scoring_rule_id: UUID
   preview_fingerprint: sha256
   confirm: Literal[True]
-  confirmer_ref: string opaco
 ```
 
-`confirmer_ref` debe provenir de la capa autenticada; no prueba autorización por sí mismo.
+La capa de aplicación construye después un comando interno que añade `confirmer_ref`. Esta
+referencia debe provenir de la identidad autenticada y autorizada del servidor: no puede ser un
+valor libre del cliente y no prueba autorización por sí misma.
 
 ## Registro persistido propuesto
 
@@ -51,20 +54,19 @@ InstrumentScoringRecord
   dataset_hash: sha256
   scoring_rule_id: UUID
   preview_fingerprint: sha256
-  scoring_engine_version: string
+  scoring_engine_version: Literal["1.0.0"]
   status: Literal["persisted"]
-  scores: resultados derivados o referencia al dataset derivado
+  scores: puntuaciones almacenadas en una tabla relacionada
   score_cases: total, valid, missing
   reliability: alpha opcional, valid_rows, excluded_rows, reason opcional
   warnings: lista
   confirmed_at: datetime UTC
   confirmer_ref: string opaco
-  derived_dataset_id: UUID opcional
 ```
 
-El registro es histórico e inmutable. Un cambio posterior de fuentes no sobrescribe resultados
-anteriores; la vigencia actual se calcula contra instrumento, versión, dataset, hash, regla y
-versión del motor.
+El registro es histórico e inmutable y utiliza un `result_id` propio. Un cambio posterior de
+fuentes no sobrescribe resultados anteriores; la vigencia actual se calcula contra instrumento,
+versión, dataset, hash, regla y versión del motor.
 
 ## Estados
 
@@ -78,37 +80,59 @@ Para evitar estados intermedios huérfanos, `confirmed → persisted` debe ser u
 
 ## Idempotencia y concurrencia
 
-- `preview_fingerprint` debe tener una restricción única en el alcance acordado.
+- La clave idempotente es
+  `(project_id, instrument_id, scoring_rule_id, preview_fingerprint)` y tiene una restricción
+  única.
 - Repetir una confirmación ya aplicada devuelve el mismo `InstrumentScoringRecord`.
+- El reintento no modifica `confirmed_at`, `confirmer_ref` ni ningún otro dato de la confirmación
+  original.
 - Antes del cálculo, después de leer las filas y justo antes del commit se revalidan contexto,
   instrumento, mapeo, dataset, hash y regla.
 - Si cambia cualquier fuente o la versión del motor, la huella deja de coincidir y la operación se
   rechaza sin escritura parcial.
-- La escritura de metadatos y del dataset derivado debe seguir el patrón transaccional y de limpieza
-  segura utilizado por Research para datasets preparados.
+- En esta primera entrega, el registro y sus puntuaciones se escriben en una única transacción
+  SQLite. No se asume atomicidad entre SQLite y archivos externos.
 
 ## Huella reproducible
 
-Antes de habilitar persistencia, `ScoringPreview` debe incorporar `scoring_engine_version` a su
-contenido firmado. La huella cubre identidades, versiones, hashes, regla, puntuaciones,
-confiabilidad, conteos, advertencias y versión del motor; nunca filas originales ni rutas.
+Antes de habilitar persistencia, `ScoringPreview` debe incorporar
+`scoring_engine_version = "1.0.0"` a su contenido firmado. Esta versión evoluciona de forma
+independiente a la versión de la aplicación. La huella cubre identidades, versiones, hashes, regla,
+puntuaciones, confiabilidad, conteos, advertencias y versión del motor; nunca filas originales ni
+rutas.
 
 ## Dataset derivado
 
-Statistics entrega puntuaciones en el mismo orden de las filas autorizadas. Research decide y
-documenta la materialización. La propuesta es crear un dataset nuevo e inmutable con
-`source_dataset_id`, heredar la marca `synthetic` y añadir columnas de puntuación con nombres
-deterministas. El dataset fuente nunca se modifica.
+La materialización de un dataset derivado queda pospuesta hasta estabilizar el repositorio
+histórico. La primera entrega persiste únicamente el registro y sus puntuaciones dentro de SQLite.
 
-Debe ratificarse si el derivado conserva todas las columnas fuente o únicamente una clave interna
-no sensible más las puntuaciones. No se implementará esta parte hasta cerrar esa decisión de
-privacidad y trazabilidad.
+Cuando se implemente la materialización, se aplicará minimización de datos: el nuevo dataset será
+inmutable e incluirá únicamente un índice ordinal interno, las puntuaciones derivadas y los
+metadatos técnicos indispensables. No copiará columnas originales, identificadores personales ni
+rutas de almacenamiento. El dataset fuente nunca se modifica.
+
+La referencia a ese dataset se incorporará mediante una migración futura; no forma parte del
+esquema inicial de persistencia.
+
+Una futura operación que coordine SQLite y archivos necesitará un protocolo explícito de
+compensación o publicación; no se asumirá atomicidad entre ambos medios.
 
 ## Responsabilidades
 
 - **Statistics:** cálculo puro, versión del motor, resultado derivado y validaciones operativas.
-- **Research:** autorización, repositorio, transacción, historial, dataset derivado y auditoría.
+- **Research:** autorización, repositorio SQLite, transacción, historial y auditoría.
 - **Orchestration:** recomputación, comparación de huella, idempotencia y coordinación atómica.
+
+## Repositorio y retención
+
+- Research implementará un repositorio SQLite interno, sin dependencias desde el motor estadístico.
+- El esquema tendrá tablas separadas para registros históricos y sus puntuaciones, relacionadas por
+  el `result_id` inmutable.
+- Las previsualizaciones permanecerán exclusivamente en memoria.
+- Los resultados persistidos se conservarán según el ciclo de vida del proyecto y una política de
+  retención institucional configurable.
+- No se implementarán vencimientos ni eliminaciones automáticas hasta que exista una política
+  institucional definida.
 
 ## Casos de prueba mínimos
 
@@ -117,16 +141,23 @@ privacidad y trazabilidad.
 3. Huella incorrecta o vencida se rechaza sin persistencia.
 4. Cambio concurrente de instrumento, regla, dataset o hash se rechaza.
 5. Cambio de `scoring_engine_version` invalida la huella previa.
-6. Falla de almacenamiento no deja archivo ni registro parcial.
+6. Falla dentro de la transacción SQLite no deja registros ni puntuaciones parciales.
 7. El dataset fuente permanece byte a byte intacto.
 8. El registro histórico sigue legible aunque las fuentes actuales queden stale.
 9. Una confiabilidad no calculable se persiste como metadato explícito, no como `0`.
 10. No se exponen filas, rutas, bytes ni referencias internas mediante el DTO de confirmación.
+11. El cliente no puede elegir ni suplantar `confirmer_ref`.
+12. Un reintento conserva la referencia y la fecha de la confirmación original.
 
-## Decisiones que Research debe ratificar
+## Decisiones ratificadas
 
-1. Alcance exacto de la clave idempotente: huella global o huella más proyecto/instrumento/regla.
-2. Contenido permitido del dataset derivado y estrategia de columnas no sensibles.
-3. Ubicación y esquema del repositorio versionado.
-4. Política de retención de previsualizaciones y resultados históricos.
-5. Versión inicial y evolución de `scoring_engine_version`.
+1. La clave idempotente será
+   `(project_id, instrument_id, scoring_rule_id, preview_fingerprint)`.
+2. La materialización del dataset derivado se pospone; cuando exista, contendrá únicamente índice
+   ordinal, puntuaciones y metadatos técnicos no sensibles.
+3. Research será propietario de un repositorio SQLite interno con registros y puntuaciones en
+   tablas separadas.
+4. Las previsualizaciones serán efímeras; los históricos seguirán el ciclo del proyecto y una
+   política institucional configurable, sin eliminación automática inicial.
+5. La versión inicial del motor será `1.0.0`, independiente de la aplicación y cubierta por el
+   fingerprint.
