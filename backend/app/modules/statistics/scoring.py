@@ -10,9 +10,11 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Final, Literal
 
 from .inferential import TechniqueResult, cronbach_alpha
+
+SCORING_ENGINE_VERSION: Final = "1.0.0"
 
 
 class ScoringValidationError(ValueError):
