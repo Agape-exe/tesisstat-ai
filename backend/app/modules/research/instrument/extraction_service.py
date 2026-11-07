@@ -51,7 +51,7 @@ from app.modules.research.instrument.models import (
 )
 from app.modules.research.instrument.service import InstrumentService
 from app.modules.research.methodology.repository import MethodologyRepository
-from app.modules.research.projects.use_cases import ProjectNotFound, ProjectService
+from app.modules.research.projects.use_cases import ProjectService
 
 
 class DocumentExtractionConsentRequired(PermissionError):
@@ -95,10 +95,7 @@ class InstrumentExtractionService:
         self.fragment_limits = fragment_limits or FragmentSelectionLimits()
 
     def _require_project(self, project_id: UUID) -> None:
-        try:
-            self.projects.get(project_id)
-        except ProjectNotFound as exc:
-            raise DocumentNotFound(f"El proyecto '{project_id}' no existe.") from exc
+        self.projects.get(project_id)
 
     def _get_document(self, project_id: UUID, document_id: UUID) -> Document:
         self._require_project(project_id)
