@@ -1,0 +1,83 @@
+{
+  "fixture_status": "design_only_no_engine_execution",
+  "context_fixture": "satisfaction_confirmed.context.json",
+  "rule": {
+    "dimension_id": "77777777-7777-4777-8777-777777777777",
+    "item_columns": {
+      "99999999-9999-4999-8999-999999999991": "sat_p1",
+      "99999999-9999-4999-8999-999999999992": "sat_p2"
+    },
+    "aggregation": "mean",
+    "missing_policy": "all_required",
+    "reverse_item_id": "99999999-9999-4999-8999-999999999992",
+    "reverse_rule": "min_plus_max_minus_value",
+    "valid_range": [1, 5]
+  },
+  "score_cases": [
+    {
+      "id": "direct_and_reverse_mean",
+      "input": { "sat_p1": "4", "sat_p2": "2" },
+      "expected_recoded": { "sat_p1": 4, "sat_p2": 4 },
+      "expected_sum": 8,
+      "expected_mean": 4.0
+    },
+    {
+      "id": "all_required_missing",
+      "input": { "sat_p1": "4", "sat_p2": null },
+      "expected_score": null,
+      "expected_reason": "required_item_missing"
+    },
+    {
+      "id": "unknown_code",
+      "input": { "sat_p1": "6", "sat_p2": "2" },
+      "expected_error": "unknown_response_code"
+    },
+    {
+      "id": "non_numeric_code",
+      "input": { "sat_p1": "no_se", "sat_p2": "2" },
+      "expected_error": "unknown_response_code"
+    }
+  ],
+  "cronbach_cases": [
+    {
+      "id": "recoded_identical_items",
+      "input_rows": [
+        { "sat_p1": "1", "sat_p2": "5" },
+        { "sat_p1": "2", "sat_p2": "4" },
+        { "sat_p1": "3", "sat_p2": "3" },
+        { "sat_p1": "4", "sat_p2": "2" }
+      ],
+      "expected_recoded_rows": [[1, 1], [2, 2], [3, 3], [4, 4]],
+      "expected_valid_rows": 4,
+      "expected_excluded_rows": 0,
+      "expected_alpha": 1.0
+    },
+    {
+      "id": "complete_cases_only",
+      "input_rows": [
+        { "sat_p1": "1", "sat_p2": "5" },
+        { "sat_p1": "2", "sat_p2": null },
+        { "sat_p1": "3", "sat_p2": "3" }
+      ],
+      "expected_valid_rows": 2,
+      "expected_excluded_rows": 1,
+      "expected_alpha": 1.0
+    },
+    {
+      "id": "constant_scale",
+      "input_rows": [
+        { "sat_p1": "3", "sat_p2": "3" },
+        { "sat_p1": "3", "sat_p2": "3" }
+      ],
+      "expected_error": "total_variance_zero"
+    },
+    {
+      "id": "insufficient_complete_rows",
+      "input_rows": [
+        { "sat_p1": "4", "sat_p2": "2" },
+        { "sat_p1": null, "sat_p2": "2" }
+      ],
+      "expected_error": "fewer_than_two_complete_rows"
+    }
+  ]
+}
