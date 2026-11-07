@@ -4,7 +4,8 @@ from uuid import UUID
 
 import pytest
 
-from app.modules.statistics.scoring import ScoringValidationError
+import app.orchestration.instrument_scoring_preview as scoring_preview_module
+from app.modules.statistics.scoring import SCORING_ENGINE_VERSION, ScoringValidationError
 from app.orchestration.instrument_scoring_preview import (
     InstrumentScoringPreviewService,
     ScoringPreviewRequest,
@@ -64,6 +65,7 @@ def test_builds_deterministic_preview_without_raw_rows() -> None:
 
     assert first == second
     assert first.status == "previewed"
+    assert first.scoring_engine_version == SCORING_ENGINE_VERSION
     assert first.scores == (2.0, 4.0, 6.0, 8.0, 10.0)
     assert first.score_cases.model_dump() == {"total": 5, "valid": 5, "missing": 0}
     assert first.reliability.status == "calculated"
@@ -120,3 +122,18 @@ def test_fingerprint_changes_when_derived_scores_change() -> None:
     ).preview(request())
 
     assert first.fingerprint != second.fingerprint
+
+
+def test_fingerprint_covers_scoring_engine_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    first = InstrumentScoringPreviewService(FakeInstrumentBridge(complete_rows())).preview(  # type: ignore[arg-type]
+        request()
+    )
+    monkeypatch.setattr(scoring_preview_module, "SCORING_ENGINE_VERSION", "1.0.1")
+    second = InstrumentScoringPreviewService(FakeInstrumentBridge(complete_rows())).preview(  # type: ignore[arg-type]
+        request()
+    )
+
+    assert second.scoring_engine_version == "1.0.1"
+    assert first.fingerprint != second.fingerprint
+    excluded = {"scoring_engine_version", "fingerprint"}
+    assert first.model_dump(exclude=excluded) == second.model_dump(exclude=excluded)

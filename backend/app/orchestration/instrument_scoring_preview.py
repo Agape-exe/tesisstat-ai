@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.modules.statistics.inferential import StatisticalCalculationError
 from app.modules.statistics.scoring import (
+    SCORING_ENGINE_VERSION,
     calculate_cronbach_reliability,
     calculate_scores,
     recode_rows,
@@ -56,6 +57,7 @@ class ScoringPreviewPayload(InternalPreviewModel):
     dataset_id: UUID
     dataset_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     scoring_rule_id: UUID
+    scoring_engine_version: str = Field(pattern=r"^\d+\.\d+\.\d+$")
     scores: tuple[float | None, ...]
     score_cases: ScoreCaseCounts
     reliability: ReliabilityPreview
@@ -133,6 +135,7 @@ class InstrumentScoringPreviewService:
             dataset_id=mapping.dataset_id,
             dataset_hash=mapping.dataset_hash,
             scoring_rule_id=request.scoring_rule_id,
+            scoring_engine_version=SCORING_ENGINE_VERSION,
             scores=scores.values,
             score_cases=ScoreCaseCounts(
                 total=len(authorized.rows),
