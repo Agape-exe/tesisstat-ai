@@ -31,6 +31,7 @@ export function DatasetPreparation({
   onCreated: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [editingOperation, setEditingOperation] = useState<number | null>(null);
   const [kind, setKind] = useState<PreparationKind>('drop_duplicates');
   const [operations, setOperations] = useState<PreparationOperation[]>([]);
   const [preview, setPreview] = useState<PreparationPreview | null>(null);
@@ -126,6 +127,17 @@ export function DatasetPreparation({
             Revisa el análisis EDA de este dataset antes de elegir operaciones.
             Los cambios se aplican solo al confirmar.
           </p>
+          <ol
+            className="rp-preparation-steps"
+            aria-label="Secuencia de preparación"
+          >
+            <li aria-current={!preview ? 'step' : undefined}>1. Seleccionar</li>
+            <li aria-current={preview ? 'step' : undefined}>
+              2. Previsualizar
+            </li>
+            <li>3. Confirmar</li>
+            <li>4. Historial</li>
+          </ol>
           <label>
             Operación
             <select
@@ -144,6 +156,7 @@ export function DatasetPreparation({
           <button
             disabled={busy || operations.length >= 20}
             onClick={() => {
+              setEditingOperation(operations.length);
               setOperations((items) => [
                 ...items,
                 {
@@ -194,120 +207,135 @@ export function DatasetPreparation({
                   <strong>
                     {index + 1}. {labels[operation.type]}
                   </strong>
-                  {multi && (
-                    <fieldset>
-                      <legend>Columnas</legend>
-                      {available.map((name) => (
-                        <label key={name}>
-                          <input
-                            type="checkbox"
-                            checked={operation.columns?.includes(name) ?? false}
-                            onChange={(event) =>
-                              change(index, {
-                                ...operation,
-                                columns: event.target.checked
-                                  ? [...(operation.columns ?? []), name]
-                                  : operation.columns?.filter(
-                                      (item) => item !== name,
-                                    ),
-                              })
-                            }
-                          />
-                          {name}
-                        </label>
-                      ))}
-                    </fieldset>
-                  )}
-                  {single && (
-                    <label>
-                      Columna
-                      <select
-                        value={operation.column ?? ''}
-                        onChange={(event) =>
-                          change(index, {
-                            ...operation,
-                            column: event.target.value,
-                          })
-                        }
-                      >
-                        <option value="">Seleccionar</option>
+                  <button
+                    className="rp-link"
+                    aria-expanded={editingOperation === index}
+                    onClick={() =>
+                      setEditingOperation(
+                        editingOperation === index ? null : index,
+                      )
+                    }
+                  >
+                    Configurar operación {index + 1}
+                  </button>
+                  <div hidden={editingOperation !== index}>
+                    {multi && (
+                      <fieldset>
+                        <legend>Columnas</legend>
                         {available.map((name) => (
-                          <option key={name}>{name}</option>
+                          <label key={name}>
+                            <input
+                              type="checkbox"
+                              checked={
+                                operation.columns?.includes(name) ?? false
+                              }
+                              onChange={(event) =>
+                                change(index, {
+                                  ...operation,
+                                  columns: event.target.checked
+                                    ? [...(operation.columns ?? []), name]
+                                    : operation.columns?.filter(
+                                        (item) => item !== name,
+                                      ),
+                                })
+                              }
+                            />
+                            {name}
+                          </label>
                         ))}
-                      </select>
-                    </label>
-                  )}
-                  {operation.type === 'rename_column' && (
-                    <label>
-                      Nuevo nombre
-                      <input
-                        value={operation.new_name ?? ''}
-                        onChange={(event) =>
-                          change(index, {
-                            ...operation,
-                            new_name: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                  )}
-                  {operation.type === 'replace_missing' && (
-                    <label>
-                      Valor de reemplazo
-                      <input
-                        value={operation.value ?? ''}
-                        onChange={(event) =>
-                          change(index, {
-                            ...operation,
-                            value: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                  )}
-                  {missing && (
-                    <fieldset>
-                      <legend>Política de faltantes</legend>
+                      </fieldset>
+                    )}
+                    {single && (
                       <label>
-                        <input
-                          type="checkbox"
-                          checked={operation.empty_is_missing ?? true}
+                        Columna
+                        <select
+                          value={operation.column ?? ''}
                           onChange={(event) =>
                             change(index, {
                               ...operation,
-                              empty_is_missing: event.target.checked,
+                              column: event.target.value,
+                            })
+                          }
+                        >
+                          <option value="">Seleccionar</option>
+                          {available.map((name) => (
+                            <option key={name}>{name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    {operation.type === 'rename_column' && (
+                      <label>
+                        Nuevo nombre
+                        <input
+                          value={operation.new_name ?? ''}
+                          onChange={(event) =>
+                            change(index, {
+                              ...operation,
+                              new_name: event.target.value,
                             })
                           }
                         />
-                        Celdas vacías y espacios
                       </label>
-                      {markers.map((marker) => (
-                        <label key={marker}>
+                    )}
+                    {operation.type === 'replace_missing' && (
+                      <label>
+                        Valor de reemplazo
+                        <input
+                          value={operation.value ?? ''}
+                          onChange={(event) =>
+                            change(index, {
+                              ...operation,
+                              value: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    )}
+                    {missing && (
+                      <fieldset>
+                        <legend>Política de faltantes</legend>
+                        <label>
                           <input
                             type="checkbox"
-                            checked={
-                              operation.missing_markers?.includes(marker) ??
-                              false
-                            }
+                            checked={operation.empty_is_missing ?? true}
                             onChange={(event) =>
                               change(index, {
                                 ...operation,
-                                missing_markers: event.target.checked
-                                  ? [
-                                      ...(operation.missing_markers ?? []),
-                                      marker,
-                                    ]
-                                  : operation.missing_markers?.filter(
-                                      (item) => item !== marker,
-                                    ),
+                                empty_is_missing: event.target.checked,
                               })
                             }
                           />
-                          {marker}
+                          Celdas vacías y espacios
                         </label>
-                      ))}
-                    </fieldset>
-                  )}
+                        {markers.map((marker) => (
+                          <label key={marker}>
+                            <input
+                              type="checkbox"
+                              checked={
+                                operation.missing_markers?.includes(marker) ??
+                                false
+                              }
+                              onChange={(event) =>
+                                change(index, {
+                                  ...operation,
+                                  missing_markers: event.target.checked
+                                    ? [
+                                        ...(operation.missing_markers ?? []),
+                                        marker,
+                                      ]
+                                    : operation.missing_markers?.filter(
+                                        (item) => item !== marker,
+                                      ),
+                                })
+                              }
+                            />
+                            {marker}
+                          </label>
+                        ))}
+                      </fieldset>
+                    )}
+                  </div>
                   <button
                     className="rp-secondary"
                     disabled={index === 0}

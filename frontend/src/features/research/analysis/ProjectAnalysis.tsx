@@ -113,26 +113,29 @@ export function ProjectAnalysis({
             </div>
           ) : (
             <div className="rp-surface">
-              <label className="rp-field">
-                Propuesta a revisar
-                <select
-                  value={selected.plan.id}
-                  disabled={plans.busy}
-                  onChange={(e) => setChosen(e.target.value)}
-                >
-                  {matching.map((r) => (
-                    <option key={r.plan.id} value={r.plan.id}>
-                      {techniqueName(r)} · {dateLabel(r.created_at)} ·{' '}
-                      {r.plan.status === 'approved'
-                        ? 'Aprobado'
-                        : r.plan.status === 'needs_clarification'
-                          ? 'Requiere aclaraciones'
-                          : 'Propuesto'}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <PlanDetails record={selected} />
+              <details className="rp-technical">
+                <summary>Cambiar propuesta ({matching.length})</summary>
+                <label className="rp-field">
+                  Propuesta a revisar
+                  <select
+                    value={selected.plan.id}
+                    disabled={plans.busy}
+                    onChange={(e) => setChosen(e.target.value)}
+                  >
+                    {matching.map((r) => (
+                      <option key={r.plan.id} value={r.plan.id}>
+                        {techniqueName(r)} · {dateLabel(r.created_at)} ·{' '}
+                        {r.plan.status === 'approved'
+                          ? 'Aprobado'
+                          : r.plan.status === 'needs_clarification'
+                            ? 'Requiere aclaraciones'
+                            : 'Propuesto'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </details>
               {canApprove && (
                 <button
                   disabled={plans.busy}

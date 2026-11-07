@@ -25,8 +25,7 @@ export function ProjectResults({
     <section aria-label="Resultados de investigación">
       <div className="rp-section-heading">
         <div>
-          <p className="rp-eyebrow">EVIDENCIA DE TU INVESTIGACIÓN</p>
-          <h2>Resultados</h2>
+          <h2>Resultados de la investigación</h2>
           <p>
             Consulta lo que ya se calculó, sin volver a ejecutar el análisis.
           </p>
@@ -62,8 +61,11 @@ export function ProjectResults({
         </button>
       )}
       {!!history.records.length && (
-        <div className="rp-master-detail">
-          <nav aria-label="Resultados disponibles" className="rp-record-list">
+        <div className="rp-results-layout">
+          <nav
+            aria-label="Resultados disponibles"
+            className="rp-record-list rp-history-strip"
+          >
             {history.records.map((record) => (
               <button
                 className="rp-secondary"
@@ -89,12 +91,17 @@ export function ProjectResults({
             ))}
           </nav>
           {selected && (
-            <div className="rp-surface" key={selected.plan.id}>
-              <h3>{techniqueName(selected)}</h3>
-              <p className="rp-hint">
-                {dateLabel(selected.created_at)} ·{' '}
-                {recordState(selected, history.status)}
-              </p>
+            <div className="rp-selected-result" key={selected.plan.id}>
+              <div className="rp-selected-result-heading">
+                <h3>{techniqueName(selected)}</h3>
+                <p className="rp-hint">
+                  {dateLabel(selected.created_at)} ·{' '}
+                  {recordState(selected, history.status)} ·{' '}
+                  {selected.result?.status === 'completed'
+                    ? 'Completado'
+                    : 'Fallido'}
+                </p>
+              </div>
               {!recordIsCurrent(selected, history.status) && (
                 <p className="rp-warning">
                   {selected.stale_reason ??

@@ -7,7 +7,7 @@ import { AnalysisWorkspace } from '../packages/AnalysisWorkspace';
 import { ProjectResults } from '../analysis/ProjectResults';
 import { ProjectReports } from '../analysis/ProjectReports';
 import { navigateProject, navigateWorkspace, type Section } from './navigation';
-import { EmptyState } from './ProjectShell';
+import { ProjectInstrument } from '../instrument/ProjectInstrument';
 type WorkspaceRoute = { view: string | null; item: string | null };
 export function ProjectWorkspace({
   projectId,
@@ -119,11 +119,6 @@ function SectionContent({
         <ProjectReports projectId={projectId} item={item} active={active} />
       );
     case 'instrument':
-      return (
-        <EmptyState title="Instrumento: próximamente">
-          La extracción de ítems, validación y confiabilidad aún no están
-          disponibles.
-        </EmptyState>
-      );
+      return <ProjectInstrument projectId={projectId} />;
   }
 }

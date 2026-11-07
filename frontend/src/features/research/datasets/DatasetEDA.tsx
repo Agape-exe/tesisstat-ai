@@ -78,11 +78,27 @@ export function DatasetEDA({
       {report && (
         <>
           <h4>Resumen general</h4>
+          <dl className="rp-metric-grid" aria-label="Resumen de calidad">
+            <div>
+              <dd>{report.summary.rows}</dd>
+              <dt>Filas</dt>
+            </div>
+            <div>
+              <dd>
+                {report.summary.missing_percentage.toLocaleString('es-PE', {
+                  maximumFractionDigits: 2,
+                })}
+                %
+              </dd>
+              <dt>Valores ausentes ({report.summary.missing})</dt>
+            </div>
+            <div>
+              <dd>{report.summary.duplicates}</dd>
+              <dt>Duplicados</dt>
+            </div>
+          </dl>
           <p>
             {report.summary.rows} filas · {report.summary.columns} columnas ·{' '}
-            {report.summary.missing} faltantes (
-            {report.summary.missing_percentage.toFixed(1)}%) ·{' '}
-            {report.summary.duplicates} duplicados ·{' '}
             {report.summary.problem_columns} columnas problemáticas
           </p>
           <details className="rp-technical">

@@ -9,7 +9,6 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 import { ProjectResults } from './ProjectResults';
 import { ProjectReports } from './ProjectReports';
-import { ProjectMethodology } from '../methodology/ProjectMethodology';
 import { ProjectWorkspace } from '../projects/ProjectWorkspace';
 import { useProjectRoute, navigateProject } from '../projects/navigation';
 import { ProjectDatasets } from '../datasets/ProjectDatasets';
@@ -231,6 +230,8 @@ function mockApi(
           }),
         };
       else if (url.endsWith('/datasets')) value = [dataset];
+      else if (url.endsWith('/preview'))
+        value = { ...dataset, rows: [['1', '2']] };
       else if (url.endsWith('/eda'))
         return {
           ok: false,
@@ -368,10 +369,17 @@ it('Analysis opens a preparation summary and only mounts the link editor when re
 
 it('Methodology is a review of objectives and variables, with no upload or file list', async () => {
   mockApi();
-  render(<ProjectMethodology projectId="project" />);
+  window.history.replaceState(null, '', '#project=project&section=methodology');
+  render(<Host />);
   expect(
     await screen.findByText('Relacionar horas y rendimiento'),
   ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('heading', { name: 'Variables y dimensiones' }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Variables y dimensiones' }),
+  );
   expect(
     screen.getByRole('heading', { name: 'Variables y dimensiones' }),
   ).toBeInTheDocument();
@@ -443,7 +451,8 @@ it('separates preview, quality and preparation and retains a transformation draf
   expect(
     await screen.findByRole('button', { name: 'Analizar calidad de datos' }),
   ).toBeVisible();
-  expect(screen.queryByLabelText('Archivo')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Archivo')).not.toBeVisible();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
   fireEvent.click(
     screen.getByRole('button', { name: 'Preparación y transformaciones' }),
   );
@@ -475,7 +484,10 @@ it('restores the default dataset view with Back and the selected quality view wi
   await screen.findByRole('button', { name: 'Analizar calidad de datos' });
   expect(window.location.hash).toContain('view=quality');
   act(() => window.history.back());
-  await waitFor(() => expect(screen.getByLabelText('Archivo')).toBeVisible());
+  await waitFor(() => expect(screen.getByRole('table')).toBeVisible());
+  expect(
+    screen.getByRole('button', { name: 'Archivo y vista previa' }),
+  ).toHaveAttribute('aria-current', 'page');
   expect(window.location.hash).not.toContain('view=');
   act(() => window.history.forward());
   await waitFor(() =>

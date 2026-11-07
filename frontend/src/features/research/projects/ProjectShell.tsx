@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { navigateProject, sections, type Section } from './navigation';
 import type { Project } from './types';
 import { UiIcon } from './UiIcon';
+import { sectionInfo } from './sectionInfo';
 
 export function EmptyState({
   title,
@@ -221,21 +222,41 @@ export function ProjectHeader({
   section: Section;
 }) {
   return (
-    <header className="rp-project-header">
-      <button className="rp-link" onClick={() => navigateProject()}>
-        ← Volver al listado
-      </button>
-      <p className="rp-eyebrow">
-        {sections.find(([id]) => id === section)?.[1]}
-      </p>
-      <div className="rp-heading">
-        <div>
-          <h1>{project.title}</h1>
-          <p>
-            {project.university} · {project.program}
-          </p>
+    <header className="rp-project-header rp-section-header">
+      <div className="rp-section-header-inner">
+        <div className="rp-section-breadcrumb">
+          <button className="rp-link" onClick={() => navigateProject()}>
+            Mis investigaciones
+          </button>
+          <UiIcon name="chevron" />
+          <span title={project.title}>{project.title}</span>
         </div>
-        <span className="rp-badge">Borrador</span>
+        <h1>{sectionInfo[section].title}</h1>
+        <p>{sectionInfo[section].description}</p>
+        <nav className="rp-section-tabs" aria-label="Apartados del proyecto">
+          {sections.map(([id, label]) => (
+            <a
+              key={id}
+              aria-current={section === id ? 'page' : undefined}
+              href={`#project=${encodeURIComponent(project.id)}&section=${id}`}
+              onClick={(event) => {
+                if (
+                  event.button === 0 &&
+                  !event.ctrlKey &&
+                  !event.metaKey &&
+                  !event.shiftKey &&
+                  !event.altKey
+                ) {
+                  event.preventDefault();
+                  navigateProject(project.id, id);
+                }
+              }}
+            >
+              <UiIcon name={sectionInfo[id].icon} />
+              {label}
+            </a>
+          ))}
+        </nav>
       </div>
     </header>
   );

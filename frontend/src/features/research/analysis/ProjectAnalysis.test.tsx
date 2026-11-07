@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  within,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { ResearchPackageSummary } from '../packages/api';
 import { ProjectResults } from './ProjectResults';
@@ -181,7 +187,11 @@ it('proposes, explicitly approves, executes and reloads metrics with separate re
   expect(
     screen.getByLabelText('Frecuencias categóricas persistidas'),
   ).toBeInTheDocument();
-  expect(screen.getByText('2.5')).toBeInTheDocument();
+  expect(
+    within(
+      screen.getByRole('table', { name: 'Métricas sin redondear' }),
+    ).getByText('2.5'),
+  ).toBeInTheDocument();
   expect(screen.getByText(/Advertencia: Datos sintéticos/)).toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: 'Ejecutar análisis' }),

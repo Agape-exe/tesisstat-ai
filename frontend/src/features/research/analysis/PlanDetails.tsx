@@ -3,7 +3,16 @@ import { techniqueName } from './analysisPresentation';
 export function PlanDetails({ record }: { record: AnalysisRecord }) {
   return (
     <>
-      <h3>{techniqueName(record)}</h3>
+      <div className="rp-section-heading">
+        <h3>{techniqueName(record)}</h3>
+        <span className="rp-badge">
+          {record.plan.status === 'approved'
+            ? 'Aprobado'
+            : record.plan.status === 'needs_clarification'
+              ? 'Aclaraciones pendientes'
+              : 'Por aprobar'}
+        </span>
+      </div>
       <p>{record.plan.rationale}</p>
       <h4>Supuestos por comprobar</h4>
       {record.plan.assumptions_to_check?.length ? (

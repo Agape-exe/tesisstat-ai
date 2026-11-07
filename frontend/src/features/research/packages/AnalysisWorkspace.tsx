@@ -1,3 +1,8 @@
+import {
+  Guidance,
+  SectionColumns,
+  SupportPanel,
+} from '../projects/SectionLayout';
 import { useState } from 'react';
 import { ProjectPackage } from './ProjectPackage';
 import { useResearchPackage } from './useResearchPackage';
@@ -111,9 +116,6 @@ export function AnalysisWorkspace({
     : [];
   return (
     <section aria-label="Espacio de análisis">
-      <p className="rp-eyebrow">DE LAS FUENTES A LA EVIDENCIA</p>
-      <h2>Análisis</h2>
-      <p>Prepara, revisa y ejecuta. Cada etapa tiene una decisión distinta.</p>
       <nav className="rp-stage-nav" aria-label="Etapas del análisis">
         {stageNames.map(([id, label], i) => (
           <button
@@ -131,148 +133,180 @@ export function AnalysisWorkspace({
           </button>
         ))}
       </nav>
-      {(context.error || error) && (
-        <p role="alert" className="rp-error">
-          {error || context.error}
-        </p>
-      )}
-      {context.error && (
-        <button className="rp-secondary" onClick={() => void context.reload()}>
-          Reintentar preparación
-        </button>
-      )}
-      {stage === 'preparation' && (
-        <>
-          <div className="rp-section-heading">
-            <div>
-              <h3>Preparación de investigación</h3>
-              <p>
-                Comprueba las fuentes y completa lo pendiente antes de solicitar
-                un plan.
-              </p>
-            </div>
-            <span className="rp-badge">
-              {status?.state === 'generated'
-                ? 'Preparación vigente'
-                : status?.state === 'stale'
-                  ? 'Requiere actualización'
-                  : 'En preparación'}
-            </span>
-          </div>
-          {context.loading && <p role="status">Verificando fuentes…</p>}
-          <div className="rp-requirement-grid">
-            {checks.map(([label, state, description]) => (
-              <article className="rp-surface" key={label}>
-                <p className="rp-eyebrow">{label}</p>
-                <h4>{state}</h4>
-                <p>{description}</p>
-              </article>
-            ))}
-          </div>
-          {status?.errors.map((message) => (
-            <p key={message} className="rp-error">
-              {message}
+      <SectionColumns
+        support={
+          <SupportPanel
+            title="El asistente no ejecuta análisis"
+            projectId={projectId}
+            destination="assistant"
+            action="Consultar al asistente"
+          >
+            <p>
+              La IA explica y sugiere. El motor estadístico solo se ejecuta
+              mediante la aprobación del plan y los controles de autorización.
             </p>
-          ))}
-          {status?.warnings.map((message) => (
-            <p key={message} className="rp-warning">
-              {message}
-            </p>
-          ))}
-          {status?.state === 'stale' && (
-            <p className="rp-warning">
-              Las fuentes cambiaron. Actualiza las vinculaciones y vuelve a
-              preparar la investigación. Los resultados guardados permanecen
-              disponibles.
+            <Guidance
+              items={[
+                'Revisa las fuentes y vinculaciones',
+                'Aprueba la propuesta de forma explícita',
+                'Ejecuta solo cuando el plan sea apto',
+              ]}
+            />
+          </SupportPanel>
+        }
+      >
+        <div className="rp-surface rp-analysis-surface">
+          {(context.error || error) && (
+            <p role="alert" className="rp-error">
+              {error || context.error}
             </p>
           )}
-          <div className="rp-actions">
+          {context.error && (
             <button
               className="rp-secondary"
-              onClick={() => navigateWorkspace(projectId, 'analysis', 'links')}
+              onClick={() => void context.reload()}
             >
-              Editar vinculaciones
+              Reintentar preparación
             </button>
-            {current ? (
-              <button
-                onClick={() => navigateWorkspace(projectId, 'analysis', 'plan')}
-              >
-                Continuar al plan estadístico
-              </button>
-            ) : (
-              <button
-                disabled={busy || context.loading || !status}
-                onClick={() => void prepare()}
-              >
-                {busy ? 'Validando…' : 'Validar y preparar investigación'}
-              </button>
-            )}
-          </div>
-          <details className="rp-technical">
-            <summary>Estado avanzado</summary>
-            <p>Estado del paquete: {status?.state ?? 'Sin verificar'}</p>
-            <p>Referencia: {status?.package_id ?? 'Sin generar'}</p>
-          </details>
-        </>
-      )}
-      {stage === 'links' && (
-        <>
-          <button
-            className="rp-link"
-            onClick={() => {
-              void context.reload();
-              navigateWorkspace(projectId, 'analysis', 'preparation');
-            }}
-          >
-            ← Volver al resumen
-          </button>
-          <ProjectPackage
-            projectId={projectId}
-            onChanged={() => void context.reload()}
-          />
-        </>
-      )}
-      {['plan', 'execution'].includes(stage) && (
-        <>
-          {context.loading && <p role="status">Verificando vigencia…</p>}
-          {real && (
-            <aside className="rp-warning">
-              <h3>Autorización del dataset</h3>
-              <p>
-                Este dataset no es sintético. La autorización es explícita,
-                temporal y se revoca al reiniciar el servidor o cambiar sus
-                fuentes.
-              </p>
-              <button
-                className={authorized ? 'rp-secondary' : ''}
-                disabled={busy || context.loading}
-                onClick={() => void authorize()}
-              >
-                {authorized
-                  ? 'Renovar autorización local'
-                  : 'Autorizar datos reales para esta sesión'}
-              </button>
-            </aside>
           )}
-          {stage === 'plan' ? (
-            <ProjectAnalysis
-              projectId={projectId}
-              researchPackage={!context.loading ? current : null}
-              item={item}
-              authorized={authorized && !busy}
-              onRejected={() => setGrant(null)}
-            />
-          ) : (
-            <ExecutionStage
-              projectId={projectId}
-              researchPackage={!context.loading ? current : null}
-              item={item}
-              authorized={authorized && !busy}
-              onRejected={() => setGrant(null)}
-            />
+          {stage === 'preparation' && (
+            <>
+              <div className="rp-section-heading">
+                <div>
+                  <h3>Preparación de investigación</h3>
+                  <p>
+                    Comprueba las fuentes y completa lo pendiente antes de
+                    solicitar un plan.
+                  </p>
+                </div>
+                <span className="rp-badge">
+                  {status?.state === 'generated'
+                    ? 'Preparación vigente'
+                    : status?.state === 'stale'
+                      ? 'Requiere actualización'
+                      : 'En preparación'}
+                </span>
+              </div>
+              {context.loading && <p role="status">Verificando fuentes…</p>}
+              <div className="rp-requirement-grid">
+                {checks.map(([label, state, description]) => (
+                  <article className="rp-surface" key={label}>
+                    <p className="rp-eyebrow">{label}</p>
+                    <h4>{state}</h4>
+                    <p>{description}</p>
+                  </article>
+                ))}
+              </div>
+              {status?.errors.map((message) => (
+                <p key={message} className="rp-error">
+                  {message}
+                </p>
+              ))}
+              {status?.warnings.map((message) => (
+                <p key={message} className="rp-warning">
+                  {message}
+                </p>
+              ))}
+              {status?.state === 'stale' && (
+                <p className="rp-warning">
+                  Las fuentes cambiaron. Actualiza las vinculaciones y vuelve a
+                  preparar la investigación. Los resultados guardados permanecen
+                  disponibles.
+                </p>
+              )}
+              <div className="rp-actions">
+                <button
+                  className="rp-secondary"
+                  onClick={() =>
+                    navigateWorkspace(projectId, 'analysis', 'links')
+                  }
+                >
+                  Editar vinculaciones
+                </button>
+                {current ? (
+                  <button
+                    onClick={() =>
+                      navigateWorkspace(projectId, 'analysis', 'plan')
+                    }
+                  >
+                    Continuar al plan estadístico
+                  </button>
+                ) : (
+                  <button
+                    disabled={busy || context.loading || !status}
+                    onClick={() => void prepare()}
+                  >
+                    {busy ? 'Validando…' : 'Validar y preparar investigación'}
+                  </button>
+                )}
+              </div>
+              <details className="rp-technical">
+                <summary>Estado avanzado</summary>
+                <p>Estado del paquete: {status?.state ?? 'Sin verificar'}</p>
+                <p>Referencia: {status?.package_id ?? 'Sin generar'}</p>
+              </details>
+            </>
           )}
-        </>
-      )}
+          {stage === 'links' && (
+            <>
+              <button
+                className="rp-link"
+                onClick={() => {
+                  void context.reload();
+                  navigateWorkspace(projectId, 'analysis', 'preparation');
+                }}
+              >
+                ← Volver al resumen
+              </button>
+              <ProjectPackage
+                projectId={projectId}
+                onChanged={() => void context.reload()}
+              />
+            </>
+          )}
+          {['plan', 'execution'].includes(stage) && (
+            <>
+              {context.loading && <p role="status">Verificando vigencia…</p>}
+              {real && (
+                <aside className="rp-warning">
+                  <h3>Autorización del dataset</h3>
+                  <p>
+                    Este dataset no es sintético. La autorización es explícita,
+                    temporal y se revoca al reiniciar el servidor o cambiar sus
+                    fuentes.
+                  </p>
+                  <button
+                    className={authorized ? 'rp-secondary' : ''}
+                    disabled={busy || context.loading}
+                    onClick={() => void authorize()}
+                  >
+                    {authorized
+                      ? 'Renovar autorización local'
+                      : 'Autorizar datos reales para esta sesión'}
+                  </button>
+                </aside>
+              )}
+              {stage === 'plan' ? (
+                <ProjectAnalysis
+                  projectId={projectId}
+                  researchPackage={!context.loading ? current : null}
+                  item={item}
+                  authorized={authorized && !busy}
+                  onRejected={() => setGrant(null)}
+                />
+              ) : (
+                <ExecutionStage
+                  projectId={projectId}
+                  researchPackage={!context.loading ? current : null}
+                  item={item}
+                  authorized={authorized && !busy}
+                  onRejected={() => setGrant(null)}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </SectionColumns>
     </section>
   );
 }

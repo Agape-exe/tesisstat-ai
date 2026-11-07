@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { createDocumentApi } from './api';
 import type { DocumentApi, ExtractionResult, ResearchDocument } from './api';
+import {
+  Guidance,
+  SectionColumns,
+  SupportPanel,
+} from '../projects/SectionLayout';
+import { UiIcon } from '../projects/UiIcon';
 import { navigateWorkspace } from '../projects/navigation';
 
 const defaultApi = createDocumentApi();
@@ -26,6 +32,10 @@ export function ProjectDocuments({
   const [extractionBusy, setExtractionBusy] = useState(false);
   const [extractionError, setExtractionError] = useState('');
   const input = useRef<HTMLInputElement>(null);
+  const extractionRequest = useRef(0);
+  const [knownExtractions, setKnownExtractions] = useState<
+    Record<string, ExtractionResult | null>
+  >({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -105,6 +115,7 @@ export function ProjectDocuments({
     try {
       await api.delete(projectId, document.id);
       if (selected === document.id) {
+        extractionRequest.current += 1;
         setSelected(null);
         setExtraction(null);
       }
@@ -122,6 +133,8 @@ export function ProjectDocuments({
   }
 
   async function select(documentId: string) {
+    const request = ++extractionRequest.current;
+    setExtractionBusy(false);
     if (selected === documentId) {
       setSelected(null);
       return;
@@ -131,31 +144,40 @@ export function ProjectDocuments({
     setExtractionError('');
     setExtractionLoading(true);
     try {
-      setExtraction(await api.extraction(projectId, documentId));
+      const next = await api.extraction(projectId, documentId);
+      if (request !== extractionRequest.current) return;
+      setExtraction(next);
+      setKnownExtractions((items) => ({ ...items, [documentId]: next }));
     } catch (caught) {
+      if (request !== extractionRequest.current) return;
       setExtractionError(
         caught instanceof Error
           ? caught.message
           : 'No se pudo consultar la extracción.',
       );
     } finally {
-      setExtractionLoading(false);
+      if (request === extractionRequest.current) setExtractionLoading(false);
     }
   }
 
   async function extract(documentId: string) {
+    const request = ++extractionRequest.current;
     setExtractionBusy(true);
     setExtractionError('');
     try {
-      setExtraction(await api.extract(projectId, documentId));
+      const next = await api.extract(projectId, documentId);
+      if (request !== extractionRequest.current) return;
+      setExtraction(next);
+      setKnownExtractions((items) => ({ ...items, [documentId]: next }));
     } catch (caught) {
+      if (request !== extractionRequest.current) return;
       setExtractionError(
         caught instanceof Error
           ? caught.message
           : 'No se pudo extraer el texto.',
       );
     } finally {
-      setExtractionBusy(false);
+      if (request === extractionRequest.current) setExtractionBusy(false);
     }
   }
 
@@ -165,168 +187,221 @@ export function ProjectDocuments({
       aria-label="Documentos de investigación"
       aria-busy={loading || busy}
     >
-      <h3>Documentos</h3>
-      <p className="rp-hint">
-        Adjunta PDF o DOCX de hasta 10 MB. Usa solo archivos ficticios en esta
-        demo.
-      </p>
-      <label htmlFor="research-document">Archivo</label>
-      <div className="rp-documents-upload">
-        <input
-          ref={input}
-          id="research-document"
-          type="file"
-          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          disabled={busy}
-          onChange={(event) => choose(event.target.files?.[0] ?? null)}
-        />
-        <button
-          disabled={!file || busy || !!error}
-          onClick={() => void upload()}
-        >
-          {busy ? 'Procesando…' : 'Adjuntar documento'}
+      <div className="rp-section-heading">
+        <h2>Documentos de la investigación</h2>
+        <button onClick={() => input.current?.click()}>
+          <UiIcon name="plus" /> Añadir documento
         </button>
       </div>
-      {error && (
-        <p role="alert" className="rp-error">
-          {error}
-        </p>
-      )}
-      {notice && (
-        <p role="status" className="rp-success">
-          {notice}
-        </p>
-      )}
-      {loading ? (
-        <p role="status">Cargando documentos…</p>
-      ) : error && documents.length === 0 ? (
-        <button
-          className="rp-secondary"
-          onClick={() => {
-            setLoading(true);
-            setRetry((value) => value + 1);
-          }}
-        >
-          Reintentar listado
-        </button>
-      ) : documents.length === 0 ? (
-        <p>Aún no hay documentos en esta investigación.</p>
-      ) : (
-        <ul className="rp-documents-list">
-          {documents.map((document) => (
-            <li key={document.id}>
-              <div>
-                <strong>{document.name}</strong>
-                <small>
-                  {document.format.toUpperCase()} ·{' '}
-                  {(document.size / 1024).toFixed(1)} KB ·{' '}
-                  {new Date(document.uploaded_at).toLocaleString('es-PE')}
-                </small>
-                <small>
-                  Extracción:{' '}
-                  {selected === document.id && !extractionLoading
-                    ? extraction?.status === 'completed'
-                      ? 'Completada'
-                      : extraction?.status === 'failed'
-                        ? 'Fallida'
-                        : extraction?.status === 'no_text'
-                          ? 'Sin texto legible'
-                          : 'Sin extracción guardada'
-                    : 'Por consultar'}
-                </small>
-              </div>
-              <button
-                className="rp-secondary"
+      <SectionColumns
+        support={
+          <SupportPanel
+            title="Del documento a la metodología"
+            projectId={projectId}
+            destination="methodology"
+            action="Ir a Metodología"
+          >
+            <Guidance
+              items={[
+                'Seleccionar archivo PDF/DOCX',
+                'Extraer contenido con el backend',
+                'Revisar objetivos e hipótesis',
+                'Confirmar información',
+              ]}
+            />
+          </SupportPanel>
+        }
+      >
+        <div className="rp-surface rp-document-surface">
+          <div className="rp-section-heading">
+            <h3>Archivos del proyecto</h3>
+            <span className="rp-badge">
+              {documents.length}{' '}
+              {documents.length === 1 ? 'archivo' : 'archivos'}
+            </span>
+          </div>
+          <p className="rp-hint">
+            Adjunta PDF o DOCX de hasta 10 MB. Usa solo archivos ficticios en
+            esta demo.
+          </p>
+          <div className="rp-upload-zone">
+            <UiIcon name="upload" />
+            <label className="rp-file-picker" htmlFor="research-document">
+              {file?.name || 'Selecciona un PDF o DOCX'}
+            </label>
+            <div className="rp-documents-upload">
+              <input
+                ref={input}
+                id="research-document"
+                aria-label="Archivo"
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 disabled={busy}
-                onClick={() => void select(document.id)}
-              >
-                {selected === document.id ? 'Ocultar texto' : 'Ver extracción'}
-              </button>
+                onChange={(event) => choose(event.target.files?.[0] ?? null)}
+              />
               <button
-                className="rp-delete"
-                disabled={busy}
-                onClick={() => void remove(document)}
-                aria-label={`Eliminar documento ${document.name}`}
+                disabled={!file || busy || !!error}
+                onClick={() => void upload()}
               >
-                Eliminar
+                {busy ? 'Procesando…' : 'Adjuntar documento'}
               </button>
-              {selected === document.id && (
-                <div
-                  className="rp-extraction"
-                  aria-busy={extractionLoading || extractionBusy}
-                >
-                  {extractionLoading ? (
-                    <p role="status">Consultando extracción…</p>
-                  ) : (
-                    <>
-                      <button
-                        disabled={extractionBusy}
-                        onClick={() => void extract(document.id)}
-                      >
-                        {extractionBusy
-                          ? 'Extrayendo texto…'
-                          : extraction?.status === 'failed'
-                            ? 'Reintentar extracción'
-                            : 'Extraer texto'}
-                      </button>
-                      {extractionError && (
-                        <p role="alert" className="rp-error">
-                          {extractionError}
-                        </p>
-                      )}
-                      {extraction && (
-                        <div>
-                          <p role="status">
-                            Estado:{' '}
-                            {extraction.status === 'completed'
-                              ? 'Completado'
-                              : extraction.status === 'no_text'
-                                ? 'Sin texto extraíble'
-                                : 'Fallido'}
-                          </p>
-                          <small>
-                            {extraction.character_count} caracteres ·{' '}
-                            {extraction.units_processed}{' '}
-                            {document.format === 'pdf' ? 'páginas' : 'unidades'}{' '}
-                            ·{' '}
-                            {new Date(extraction.processed_at).toLocaleString(
-                              'es-PE',
-                            )}
-                            {extraction.truncated ? ' · Truncado' : ''}
-                          </small>
-                          {extraction.warnings.map((warning) => (
-                            <p role="alert" key={warning}>
-                              {warning}
-                            </p>
-                          ))}
-                          {extraction.text && (
-                            <pre className="rp-text-preview">
-                              {extraction.text}
-                            </pre>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
+            </div>
+          </div>
+          {error && (
+            <p role="alert" className="rp-error">
+              {error}
+            </p>
+          )}
+          {notice && (
+            <p role="status" className="rp-success">
+              {notice}
+            </p>
+          )}
+          {loading ? (
+            <p role="status">Cargando documentos…</p>
+          ) : error && documents.length === 0 ? (
+            <button
+              className="rp-secondary"
+              onClick={() => {
+                setLoading(true);
+                setRetry((value) => value + 1);
+              }}
+            >
+              Reintentar listado
+            </button>
+          ) : documents.length === 0 ? (
+            <p>Aún no hay documentos en esta investigación.</p>
+          ) : (
+            <ul className="rp-documents-list">
+              {documents.map((document) => (
+                <li key={document.id}>
+                  <span className="rp-file-symbol">
+                    <UiIcon name="file" />
+                  </span>
+                  <div className="rp-file-copy">
+                    <strong>{document.name}</strong>
+                    <small>
+                      {document.format.toUpperCase()} ·{' '}
+                      {(document.size / 1024).toFixed(1)} KB ·{' '}
+                      {new Date(document.uploaded_at).toLocaleString('es-PE')}
+                    </small>
+                    <small>
+                      Extracción:{' '}
+                      {document.id in knownExtractions
+                        ? knownExtractions[document.id]?.status === 'completed'
+                          ? 'Completada'
+                          : knownExtractions[document.id]?.status === 'failed'
+                            ? 'Fallida'
+                            : knownExtractions[document.id]?.status ===
+                                'no_text'
+                              ? 'Sin texto legible'
+                              : 'Sin extracción guardada'
+                        : 'Por consultar'}
+                    </small>
+                  </div>
                   <button
                     className="rp-secondary"
-                    onClick={() =>
-                      navigateWorkspace(
-                        projectId,
-                        'methodology',
-                        'summary',
-                        document.id,
-                      )
-                    }
+                    disabled={busy}
+                    onClick={() => void select(document.id)}
                   >
-                    Revisar metodología
+                    {selected === document.id
+                      ? 'Ocultar texto'
+                      : 'Ver extracción'}
                   </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+                  <button
+                    className="rp-delete"
+                    disabled={busy}
+                    onClick={() => void remove(document)}
+                    aria-label={`Eliminar documento ${document.name}`}
+                  >
+                    Eliminar
+                  </button>
+                  {selected === document.id && (
+                    <div
+                      className="rp-extraction"
+                      aria-busy={extractionLoading || extractionBusy}
+                    >
+                      {extractionLoading ? (
+                        <p role="status">Consultando extracción…</p>
+                      ) : (
+                        <>
+                          <button
+                            disabled={extractionBusy}
+                            onClick={() => void extract(document.id)}
+                          >
+                            {extractionBusy
+                              ? 'Extrayendo texto…'
+                              : extraction?.status === 'failed'
+                                ? 'Reintentar extracción'
+                                : 'Extraer texto'}
+                          </button>
+                          {extractionError && (
+                            <p role="alert" className="rp-error">
+                              {extractionError}
+                            </p>
+                          )}
+                          {extraction && (
+                            <div>
+                              <p role="status">
+                                Estado:{' '}
+                                {extraction.status === 'completed'
+                                  ? 'Completado'
+                                  : extraction.status === 'no_text'
+                                    ? 'Sin texto extraíble'
+                                    : 'Fallido'}
+                              </p>
+                              <small>
+                                {extraction.character_count} caracteres ·{' '}
+                                {extraction.units_processed}{' '}
+                                {document.format === 'pdf'
+                                  ? 'páginas'
+                                  : 'unidades'}{' '}
+                                ·{' '}
+                                {new Date(
+                                  extraction.processed_at,
+                                ).toLocaleString('es-PE')}
+                                {extraction.truncated ? ' · Truncado' : ''}
+                              </small>
+                              {extraction.warnings.map((warning) => (
+                                <p role="alert" key={warning}>
+                                  {warning}
+                                </p>
+                              ))}
+                              {extraction.text && (
+                                <pre className="rp-text-preview">
+                                  {extraction.text}
+                                </pre>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <button
+                        className="rp-secondary"
+                        onClick={() =>
+                          navigateWorkspace(
+                            projectId,
+                            'methodology',
+                            'summary',
+                            document.id,
+                          )
+                        }
+                      >
+                        Revisar metodología
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </SectionColumns>
+      <p className="rp-section-notice">
+        La presencia de un archivo no implica que su metodología se haya
+        extraído o validado. Consulta la extracción y confirma la información
+        antes de utilizarla.
+      </p>
     </section>
   );
 }

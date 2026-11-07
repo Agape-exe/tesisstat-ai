@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProjectDocuments } from './ProjectDocuments';
 import type { DocumentApi, ResearchDocument } from './api';
@@ -33,6 +39,50 @@ function mockApi(): DocumentApi {
 }
 
 describe('Research documents UI', () => {
+  it('ignores an extraction response from a document that is no longer selected', async () => {
+    const api = mockApi();
+    vi.mocked(api.list).mockResolvedValue([
+      document,
+      {
+        ...document,
+        id: 'second-document',
+        name: 'segundo.docx',
+        format: 'docx',
+      },
+    ]);
+    let finish!: (
+      value: Awaited<ReturnType<DocumentApi['extraction']>>,
+    ) => void;
+    vi.mocked(api.extraction)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({
+        document_id: 'second-document',
+        project_id: document.project_id,
+        status: 'completed',
+        text: 'Texto del segundo documento',
+        character_count: 27,
+        units_processed: 1,
+        processed_at: document.uploaded_at,
+        warnings: [],
+        truncated: false,
+      });
+    render(<ProjectDocuments projectId="synthetic-project" api={api} />);
+    await screen.findByText('segundo.docx');
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Ver extracción' })[0],
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Ver extracción' }));
+    await screen.findByText('Texto del segundo documento');
+    await act(async () => finish(null));
+    expect(screen.getByText('Texto del segundo documento')).toBeInTheDocument();
+    expect(api.extract).not.toHaveBeenCalled();
+  });
+
   it('shows cached text and warnings after selecting a document', async () => {
     const api = mockApi();
     vi.mocked(api.list).mockResolvedValue([document]);

@@ -48,9 +48,21 @@ const api: DatasetApi = {
 
 beforeEach(() => vi.clearAllMocks());
 
+it('recovers the available dataset when a bookmarked selection was deleted', async () => {
+  render(
+    <ProjectDatasets projectId="project-1" item="deleted-dataset" api={api} />,
+  );
+  await screen.findByRole('table');
+  expect(api.preview).toHaveBeenCalledWith('project-1', dataset.id);
+  expect(api.preview).not.toHaveBeenCalledWith('project-1', 'deleted-dataset');
+});
+
 it('lists, previews and activates a dataset safely', async () => {
   render(<ProjectDatasets projectId="project-1" api={api} />);
   expect(await screen.findByText('datos.csv')).toBeInTheDocument();
+  fireEvent.click(screen.getByText('Procedencia y trazabilidad'));
+  fireEvent.click(screen.getByRole('button', { name: 'Ocultar datos' }));
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Ver datos' }));
   const table = await screen.findByRole('table');
   expect(within(table).getByText('<script>')).toBeInTheDocument();
@@ -75,6 +87,11 @@ it('validates upload and requires confirmation to delete', async () => {
   });
   fireEvent.click(screen.getByRole('button', { name: 'Subir dataset' }));
   await waitFor(() => expect(api.upload).toHaveBeenCalled());
+  fireEvent.change(
+    screen.getByRole('combobox', { name: 'Dataset de trabajo' }),
+    { target: { value: dataset.id } },
+  );
+  fireEvent.click(screen.getByText('Procedencia y trazabilidad'));
   fireEvent.click(
     screen.getByRole('button', { name: 'Eliminar dataset datos.csv' }),
   );
@@ -92,6 +109,8 @@ it('validates upload and requires confirmation to delete', async () => {
 it('declares synthetic provenance before preparing a derivative', async () => {
   const setOrigin = vi.fn(async () => ({ ...dataset, synthetic: true }));
   render(<ProjectDatasets projectId="project-1" api={{ ...api, setOrigin }} />);
+  await screen.findByText('datos.csv');
+  fireEvent.click(screen.getByText('Procedencia y trazabilidad'));
   const origin = await screen.findByRole('combobox', {
     name: 'Origen de datos.csv',
   });

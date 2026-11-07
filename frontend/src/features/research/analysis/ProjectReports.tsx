@@ -1,3 +1,5 @@
+import { metricLabel, metricValue } from './analysisPresentation';
+import { SectionColumns } from '../projects/SectionLayout';
 import { useState } from 'react';
 import { EmptyState } from '../projects/ProjectShell';
 import { navigateProject, navigateWorkspace } from '../projects/navigation';
@@ -63,8 +65,7 @@ export function ProjectReports({
     <section aria-label="Informes de investigación">
       <div className="rp-section-heading">
         <div>
-          <p className="rp-eyebrow">COMPARTE TUS HALLAZGOS</p>
-          <h2>Informes</h2>
+          <h2>Informes de la investigación</h2>
           <p>Exporta un resultado aprobado en PDF o DOCX.</p>
         </div>
         <button
@@ -99,8 +100,11 @@ export function ProjectReports({
         </EmptyState>
       )}
       {!!sources.length && (
-        <div className="rp-master-detail">
-          <nav className="rp-record-list" aria-label="Análisis de origen">
+        <div className="rp-reports-layout">
+          <nav
+            className="rp-record-list rp-history-strip"
+            aria-label="Análisis de origen"
+          >
             {sources.map((record) => (
               <button
                 key={record.plan.id}
@@ -129,60 +133,117 @@ export function ProjectReports({
             ))}
           </nav>
           {selected && (
-            <div className="rp-surface">
-              <h3>{techniqueName(selected)}</h3>
-              <p>{dateLabel(selected.created_at)}</p>
-              <p className="rp-hint">
-                El informe se prepara al descargarlo, a partir de este resultado
-                guardado.
-              </p>
-              {!allowed && !history.loading && (
-                <p className="rp-warning">
-                  {selected.stale_reason ??
-                    'La exportación requiere un resultado completado, aprobado y vigente.'}{' '}
-                  Las fuentes históricas o sin verificar no permiten exportar.
+            <SectionColumns
+              support={
+                <aside className="rp-surface rp-support">
+                  <h3>Exportaciones</h3>
+                  <p>
+                    PDF y DOCX a partir del resultado guardado. El archivo se
+                    genera al descargar.
+                  </p>
+                  {!allowed && !history.loading && (
+                    <p className="rp-warning">
+                      {selected.stale_reason ??
+                        'La exportación requiere un resultado completado, aprobado y vigente.'}{' '}
+                      Las fuentes históricas o sin verificar no permiten
+                      exportar.
+                    </p>
+                  )}
+                  <label className="rp-field">
+                    Formato de descarga
+                    <select
+                      value={format}
+                      disabled={busy}
+                      onChange={(e) =>
+                        setFormat(e.target.value as 'pdf' | 'docx')
+                      }
+                    >
+                      <option value="pdf">PDF</option>
+                      <option value="docx">DOCX</option>
+                    </select>
+                  </label>
+                  <button
+                    disabled={!allowed || busy}
+                    onClick={() => void download()}
+                  >
+                    {busy ? 'Preparando descarga…' : 'Descargar informe'}
+                  </button>
+                  <p className="rp-hint">
+                    Los datos no sintéticos necesitan además autorización local
+                    vigente. El servidor la verifica al descargar.
+                  </p>
+                  <button
+                    className="rp-link"
+                    onClick={() =>
+                      navigateWorkspace(projectId, 'analysis', 'execution')
+                    }
+                  >
+                    Revisar autorización en Análisis
+                  </button>
+                  <details className="rp-technical">
+                    <summary>Advertencias del resultado</summary>
+                    {selected.result?.warnings?.map((w) => (
+                      <p className="rp-warning" key={w}>
+                        {w}
+                      </p>
+                    ))}
+                  </details>
+                  <details className="rp-technical">
+                    <summary>Referencias de la exportación</summary>
+                    <p>Plan: {selected.plan.id}</p>
+                    <p>Resultado: {selected.result?.id}</p>
+                  </details>
+                </aside>
+              }
+            >
+              <article className="rp-surface rp-report-origin">
+                <p className="rp-eyebrow">ANÁLISIS DE ORIGEN</p>
+                <h2>{techniqueName(selected)}</h2>
+                <p>{dateLabel(selected.created_at)}</p>
+                <span className="rp-badge">
+                  {recordState(selected, history.status)}
+                </span>
+                <hr />
+                <h3>Resultado registrado</h3>
+                <p>
+                  {selected.result?.status === 'completed'
+                    ? 'Completado'
+                    : 'Pendiente'}
                 </p>
-              )}
-              {selected.result?.warnings?.map((w) => (
-                <p className="rp-warning" key={w}>
-                  {w}
+                <dl className="rp-report-metrics">
+                  {selected.result?.metrics?.map((metric) => (
+                    <div key={metric.name}>
+                      <dt>{metricLabel(metric.name)}</dt>
+                      <dd>{metricValue(metric.name, metric.value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <h3>Interpretación registrada</h3>
+                <p>
+                  {selected.result?.interpretation ||
+                    'Sin interpretación registrada.'}
                 </p>
-              ))}
-              <label className="rp-field">
-                Formato de descarga
-                <select
-                  value={format}
-                  disabled={busy}
-                  onChange={(e) => setFormat(e.target.value as 'pdf' | 'docx')}
+                <hr />
+                <p className="rp-hint">
+                  Resumen del análisis guardado. El archivo se genera al
+                  descargar; este resumen no es una previsualización del
+                  documento final. No se almacena una copia de la exportación.
+                </p>
+                <button
+                  className="rp-link"
+                  onClick={() =>
+                    navigateWorkspace(
+                      projectId,
+                      'results',
+                      'detail',
+                      selected.plan.id,
+                    )
+                  }
                 >
-                  <option value="pdf">PDF</option>
-                  <option value="docx">DOCX</option>
-                </select>
-              </label>
-              <button
-                disabled={!allowed || busy}
-                onClick={() => void download()}
-              >
-                {busy ? 'Preparando descarga…' : 'Descargar informe'}
-              </button>
-              <p className="rp-hint">
-                Los datos no sintéticos necesitan además autorización local
-                vigente. El servidor la verifica al descargar.
-              </p>
-              <button
-                className="rp-link"
-                onClick={() =>
-                  navigateWorkspace(projectId, 'analysis', 'execution')
-                }
-              >
-                Revisar autorización en Análisis
-              </button>
-              <details className="rp-technical">
-                <summary>Referencias de la exportación</summary>
-                <p>Plan: {selected.plan.id}</p>
-                <p>Resultado: {selected.result?.id}</p>
-              </details>
-            </div>
+                  Consultar resultado completo →
+                </button>
+              </article>
+            </SectionColumns>
           )}
         </div>
       )}
