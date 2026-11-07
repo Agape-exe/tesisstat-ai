@@ -472,6 +472,47 @@ def test_inaccessible_sources_are_unverified_and_history_remains_readable(case, 
     assert len(case.client.get(case.chat).json()["messages"]) == 2
 
 
+@pytest.mark.parametrize("with_result", [False, True])
+def test_expired_analysis_authorization_preserves_other_verified_sources(case, with_result):
+    # Synthetic bytes exercise the non-synthetic authorization policy, without real data.
+    assert case.client.put(case.dataset + "/origin", json={"synthetic": False}).status_code == 200
+    config = case.client.get(case.package_root + "/configuration").json()
+    assert case.client.put(case.package_root + "/configuration", json=config).status_code == 200
+    case.package = case.client.post(case.package_root + "/build").json()
+    assert (
+        case.client.post(
+            case.root + "/authorization/real-dataset",
+            json={
+                "package_id": case.package["id"],
+                "dataset_id": case.package["dataset"]["id"],
+                "confirm": True,
+            },
+        ).status_code
+        == 200
+    )
+    record = executed(case)[0] if with_result else proposed(case)
+    # Authorization is deliberately in memory; restarting must not restore it.
+    case.client = TestClient(
+        create_app(settings=case.settings, conversation_provider=case.provider)
+    )
+    case.builder = case.client.app.state.conversation_context
+    before = case.builder.analyses.repository.list(case.project_id)
+    status = case.client.get(case.project + "/conversations/status")
+    assert status.status_code == 200
+    refs = status.json()["research_context"]["sources"]
+    assert next(s for s in refs if s["kind"] == "methodology")["status"] == "confirmed"
+    assert next(s for s in refs if s["kind"] == "package")["status"] == "current"
+    assert next(s for s in refs if s["kind"] == "plan")["status"] == "unverified"
+    if with_result:
+        assert next(s for s in refs if s["kind"] == "result")["status"] == "unverified"
+    payload, _ = send(case, "¿Cuál es mi objetivo y qué resultados tengo?")
+    assert any(f["field"] == "general_objective" for f in payload["facts"])
+    assert not any(f["field"] == "metrics" for f in payload["facts"])
+    assert case.execute(record).status_code == 403
+    assert case.builder.analyses.repository.list(case.project_id) == before
+    assert len(case.client.get(case.chat).json()["messages"]) == 2
+
+
 def test_legacy_message_schema_is_migrated_without_data_loss(tmp_path):
     path = tmp_path / "legacy.sqlite3"
     now = datetime.now(UTC).isoformat()
