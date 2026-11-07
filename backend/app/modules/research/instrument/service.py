@@ -7,6 +7,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from app.modules.research.datasets.hashing import compute_dataset_hash
 from app.modules.research.datasets.models import Dataset
 from app.modules.research.datasets.use_cases import DatasetNotFound, DatasetService
 from app.modules.research.documents.use_cases import DocumentService
@@ -67,9 +68,8 @@ class InstrumentService:
         return _digest(review.content.model_dump_json().encode())
 
     def _dataset_hash(self, project_id: UUID, dataset: Dataset) -> str:
-        metadata = dataset.model_dump_json(exclude={"active"}).encode()
         raw_bytes = self.datasets.read(project_id, dataset.id)
-        return _digest(metadata + raw_bytes)
+        return compute_dataset_hash(dataset, raw_bytes)
 
     def create_draft(
         self,

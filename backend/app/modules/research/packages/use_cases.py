@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+from app.modules.research.datasets.hashing import compute_dataset_hash
 from app.modules.research.datasets.models import Dataset
 from app.modules.research.datasets.use_cases import DatasetNotFound, DatasetService
 from app.modules.research.documents.use_cases import DocumentService
@@ -63,8 +64,8 @@ class PackageService:
         return review, dataset
 
     def _dataset_hash(self, project_id: UUID, dataset: Dataset) -> str:
-        metadata = dataset.model_dump_json(exclude={"active"}).encode()
-        return digest(metadata + self.datasets.read(project_id, dataset.id))
+        raw_bytes = self.datasets.read(project_id, dataset.id)
+        return compute_dataset_hash(dataset, raw_bytes)
 
     @staticmethod
     def _review_hash(review: MethodologyReview) -> str:
