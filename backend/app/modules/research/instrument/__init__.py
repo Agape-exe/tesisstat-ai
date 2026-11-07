@@ -1,6 +1,11 @@
 """Research Instrument domain module."""
 
 from app.modules.research.instrument.contracts import InstrumentContext
+from app.modules.research.instrument.extraction_service import (
+    DocumentExtractionConsentRequired,
+    IncompleteCandidateError,
+    InstrumentExtractionService,
+)
 from app.modules.research.instrument.models import (
     DatasetMapping,
     InstrumentConfirmation,
@@ -32,12 +37,15 @@ from app.modules.research.instrument.sqlite_repository import SQLiteInstrumentRe
 
 __all__ = [
     "DatasetMapping",
+    "DocumentExtractionConsentRequired",
+    "IncompleteCandidateError",
     "InstrumentConfirmation",
     "InstrumentConflict",
     "InstrumentContext",
     "InstrumentContextReader",
     "InstrumentDimension",
     "InstrumentError",
+    "InstrumentExtractionService",
     "InstrumentIndicator",
     "InstrumentItem",
     "InstrumentNotConfirmedError",

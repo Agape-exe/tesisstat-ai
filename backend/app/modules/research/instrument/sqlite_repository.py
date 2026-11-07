@@ -104,7 +104,7 @@ class SQLiteInstrumentRepository:
             )
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.db_path, timeout=5)
+        connection = sqlite3.connect(self.db_path, timeout=15)
         connection.execute("PRAGMA foreign_keys = ON")
         return connection
 

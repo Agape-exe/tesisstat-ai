@@ -196,6 +196,7 @@ class InstrumentService:
         document_id: UUID,
         variable_links: dict[UUID, UUID] | None = None,
         source_kind: str = "document",
+        source_document_id: UUID | None = None,
     ) -> InstrumentContext:
         self._require_project(project_id)
         current = self.get(project_id, instrument_id)
@@ -214,9 +215,19 @@ class InstrumentService:
 
         review_hash = self._review_hash(review)
 
+        actual_source_doc_id = source_document_id if source_document_id is not None else document_id
         source_doc_hash = None
         if source_kind == "document":
-            doc_bytes = self.documents.repository.read(project_id, document_id)
+            if actual_source_doc_id != document_id:
+                s_doc = next(
+                    (d for d in self.documents.list(project_id) if d.id == actual_source_doc_id),
+                    None,
+                )
+                if s_doc is None:
+                    raise InstrumentValidationError(
+                        f"El documento fuente '{actual_source_doc_id}' no pertenece al proyecto."
+                    )
+            doc_bytes = self.documents.repository.read(project_id, actual_source_doc_id)
             source_doc_hash = _digest(doc_bytes)
 
         # Validar y vincular variables con las variables de la revisión metodológica
@@ -245,7 +256,7 @@ class InstrumentService:
 
         provenance = InstrumentProvenance(
             source_kind=source_kind,
-            source_document_id=document_id if source_kind == "document" else None,
+            source_document_id=actual_source_doc_id if source_kind == "document" else None,
             source_document_hash=source_doc_hash if source_kind == "document" else None,
             methodology_review_id=document_id,
             methodology_review_version=review.version,
@@ -535,6 +546,7 @@ class InstrumentService:
         reasons = []
 
         if current.provenance is not None:
+            # 1. Comprobar revisión metodológica
             review = self.methodology.get_review(
                 project_id, current.provenance.methodology_review_id
             )
@@ -548,6 +560,35 @@ class InstrumentService:
                 ):
                     reasons.append(
                         "La metodología ha cambiado desde que se vinculó el instrumento."
+                    )
+
+            # 2. Comprobar documento fuente cuando procede de un documento
+            if (
+                current.provenance.source_kind == "document"
+                and current.provenance.source_document_id is not None
+            ):
+                source_doc_id = current.provenance.source_document_id
+                try:
+                    doc = self.documents.repository.get(project_id, source_doc_id)
+                    if doc is None:
+                        reasons.append(
+                            f"El documento fuente '{source_doc_id}' fue eliminado del proyecto."
+                        )
+                    else:
+                        doc_bytes = self.documents.repository.read(project_id, source_doc_id)
+                        cur_source_hash = _digest(doc_bytes)
+                        if (
+                            current.provenance.source_document_hash is not None
+                            and cur_source_hash != current.provenance.source_document_hash
+                        ):
+                            reasons.append(
+                                "El archivo del documento fuente ha sido modificado "
+                                "tras la vinculación."
+                            )
+                except Exception:
+                    # Falla segura ante errores de almacenamiento; no divulga rutas físicas
+                    reasons.append(
+                        "No se pudo acceder o verificar la integridad del documento fuente."
                     )
 
         if current.dataset_mapping is not None:

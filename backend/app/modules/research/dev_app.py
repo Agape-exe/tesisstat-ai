@@ -39,6 +39,16 @@ from app.modules.research.eda.analyzer import ExploratoryAnalyzer
 from app.modules.research.eda.routes import create_router as create_eda_router
 from app.modules.research.eda.sqlite_repository import EDAStorageError, SQLiteEDARepository
 from app.modules.research.eda.use_cases import EDANotFound, EDAService
+from app.modules.research.instrument.extraction_provider import (
+    InstrumentExtractionProvider,
+    InstrumentLanguageModel,
+)
+from app.modules.research.instrument.extraction_service import (
+    CandidateIntegrityError,
+    DocumentExtractionConsentRequired,
+    IncompleteCandidateError,
+    InstrumentExtractionService,
+)
 from app.modules.research.instrument.reader import ResearchInstrumentContextReader
 from app.modules.research.instrument.repository import (
     InstrumentConflict,
@@ -104,6 +114,7 @@ class ResearchDevSettings(ConversationSettings):
     research_methodology_max_characters: int = 6000
     research_methodology_max_attempts: int = 3
     research_methodology_retry_seconds: int = 30
+    research_integrity_secret: str | None = None
 
 
 def create_app(
@@ -111,6 +122,8 @@ def create_app(
     settings: ResearchDevSettings | None = None,
     methodology_provider: MethodologyProvider | None = None,
     conversation_provider: ResponseGenerator | None = None,
+    instrument_provider: InstrumentExtractionProvider | InstrumentLanguageModel | None = None,
+    instrument_extraction_service: InstrumentExtractionService | None = None,
 ) -> FastAPI:
     settings = settings or ResearchDevSettings()
     if settings.app_env != "development":
@@ -300,6 +313,24 @@ def create_app(
     ) -> JSONResponse:
         return JSONResponse(status_code=409, content={"detail": str(exc)})
 
+    @app.exception_handler(DocumentExtractionConsentRequired)
+    async def document_extraction_consent_required(
+        request: Request, exc: DocumentExtractionConsentRequired
+    ) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+    @app.exception_handler(IncompleteCandidateError)
+    async def incomplete_candidate_error(
+        request: Request, exc: IncompleteCandidateError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(CandidateIntegrityError)
+    async def candidate_integrity_error(
+        request: Request, exc: CandidateIntegrityError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
     projects = ProjectService(repository)
     document_repository = SQLiteDocumentRepository(
         settings.research_db_path, settings.research_documents_path
@@ -379,7 +410,26 @@ def create_app(
     instrument_reader = ResearchInstrumentContextReader(instruments)
     app.state.instrument_service = instruments
     app.state.instrument_reader = instrument_reader
-    app.include_router(create_instrument_router(instruments))
+    if instrument_extraction_service is not None:
+        extraction_service_inst = instrument_extraction_service
+    else:
+        inst_provider = instrument_provider or CloudflareLanguageModel(settings)
+        integrity_secret_bytes = (
+            settings.research_integrity_secret.encode("utf-8")
+            if settings.research_integrity_secret
+            else None
+        )
+        extraction_service_inst = InstrumentExtractionService(
+            projects=projects,
+            documents=documents,
+            extraction_service=extraction,
+            provider=inst_provider,
+            instrument_service=instruments,
+            methodology=methodology_repository,
+            integrity_secret=integrity_secret_bytes,
+        )
+    app.state.instrument_extraction_service = extraction_service_inst
+    app.include_router(create_instrument_router(instruments, extraction_service_inst))
     app.state.research_statistics_bridge = ResearchStatisticsBridge(
         projects, packages, datasets, instruments=instruments, instrument_reader=instrument_reader
     )

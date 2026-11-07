@@ -27,6 +27,9 @@ class NoRedirects(HTTPRedirectHandler):
 
 
 class CloudflareLanguageModel:
+    is_external: bool = True
+    is_local: bool = False
+
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self.model = settings.cloudflare_model
