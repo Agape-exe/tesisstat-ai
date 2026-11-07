@@ -1,0 +1,18 @@
+
+> tesisstat-frontend@0.1.0 test
+> vitest run --maxWorkers=1 --reporter=dot
+
+
+ RUN  v5.0.5 C:/Users/Melissa/Desktop/tesisstat-ai/redisenio-uxui-fase1/frontend
+
+···························································································································································
+
+ Test Files  26 passed (26)
+      Tests  155 passed (155)
+   Start at  21:25:27
+   Duration  89.62s (environment 57%, tests 23%, setup 15%, import 3%, transform 1%)
+
+Environment  jsdom was created 26 times · 47.87s total, 57% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+

@@ -1,0 +1,44 @@
+[
+  {
+    "section": "listing",
+    "width": 1440,
+    "height": 900,
+    "changedPixels": 0,
+    "maxChannelDelta": 0
+  },
+  {
+    "section": "assistant",
+    "width": 1440,
+    "height": 900,
+    "changedPixels": 0,
+    "maxChannelDelta": 0
+  },
+  {
+    "section": "listing",
+    "width": 1366,
+    "height": 768,
+    "changedPixels": 0,
+    "maxChannelDelta": 0
+  },
+  {
+    "section": "assistant",
+    "width": 1366,
+    "height": 768,
+    "changedPixels": 0,
+    "maxChannelDelta": 0
+  },
+  {
+    "section": "listing",
+    "width": 390,
+    "height": 844,
+    "changedPixels": 0,
+    "maxChannelDelta": 0
+  },
+  {
+    "section": "assistant",
+    "width": 390,
+    "height": 844,
+    "changedPixels": 0,
+    "maxChannelDelta": 0
+  }
+]
