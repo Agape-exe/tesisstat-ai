@@ -17,9 +17,12 @@ Strictly preserves academic integrity:
 from __future__ import annotations
 
 import hashlib
+import hmac
+import json
 import math
+import secrets
 from typing import Any
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from app.modules.research.documents.extraction import ExtractionResult, ExtractionService
 from app.modules.research.documents.models import Document
@@ -64,6 +67,82 @@ class IncompleteCandidateError(ValueError):
     """Raised when an incomplete candidate is requested to be converted to canonical draft."""
 
     pass
+
+
+class CandidateIntegrityError(ValueError):
+    """Raised when candidate integrity validation fails (tampered or unauthenticated)."""
+
+    pass
+
+
+# Internal server-side secret key for signing candidate integrity tokens.
+# Remains strictly within server runtime memory; never exposed to clients.
+_SERVER_INTEGRITY_SECRET: bytes = secrets.token_bytes(32)
+
+
+def compute_candidate_semantic_hash(candidate: CandidateInstrument) -> str:
+    """Computes deterministic SHA-256 over all academic and semantic fields of a candidate.
+
+    Excludes candidate_id, document_hash, and integrity_token so that only actual
+    extracted structure (variables, dimensions, indicators, items, response options,
+    scoring rules, warnings, and citations) contributes to the hash.
+    """
+    raw = candidate.model_dump(
+        mode="json",
+        exclude={"candidate_id", "document_hash", "integrity_token"},
+    )
+    serialized = json.dumps(raw, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def compute_stable_candidate_id(
+    project_id: UUID,
+    document_id: UUID,
+    doc_hash: str,
+    candidate: CandidateInstrument,
+) -> UUID:
+    """Derives a stable, deterministic UUIDv5 for an extracted candidate.
+
+    Guarantees that identical extractions produce the exact same instrument ID,
+    while distinct instruments or distinct document provenances produce unique IDs.
+    """
+    semantic_hash = compute_candidate_semantic_hash(candidate)
+    seed = f"tesisstat:candidate:{project_id}:{document_id}:{doc_hash}:{semantic_hash}"
+    return uuid5(NAMESPACE_URL, seed)
+
+
+def generate_candidate_integrity_token(
+    project_id: UUID,
+    document_id: UUID,
+    doc_hash: str,
+    candidate: CandidateInstrument,
+    secret: bytes = _SERVER_INTEGRITY_SECRET,
+) -> str:
+    """Produces an HMAC-SHA256 authenticated integrity token binding candidate to document."""
+    semantic_hash = compute_candidate_semantic_hash(candidate)
+    msg = f"{project_id}:{document_id}:{doc_hash}:{semantic_hash}".encode()
+    return hmac.new(secret, msg, hashlib.sha256).hexdigest()
+
+
+def verify_candidate_integrity_token(
+    project_id: UUID,
+    document_id: UUID,
+    doc_hash: str,
+    candidate: CandidateInstrument,
+    token: str | None,
+    secret: bytes = _SERVER_INTEGRITY_SECRET,
+) -> bool:
+    """Verifies that the candidate matches the authentic extraction produced by the server."""
+    if not token or not isinstance(token, str):
+        return False
+    expected = generate_candidate_integrity_token(
+        project_id=project_id,
+        document_id=document_id,
+        doc_hash=doc_hash,
+        candidate=candidate,
+        secret=secret,
+    )
+    return hmac.compare_digest(token, expected)
 
 
 def _sha256(data: bytes) -> str:
@@ -203,12 +282,24 @@ class InstrumentExtractionService:
             )
 
         # 5. Authorization and Consent Gate
-        # Only FixtureInstrumentProvider or explicitly local providers can run without consent.
-        is_external = getattr(self.provider.model, "is_external", None)
-        if is_external is None:
-            is_external = not isinstance(self.provider.model, FixtureInstrumentProvider)
+        # Fail-closed: only providers that explicitly declare is_local=True and is_external=False
+        # (or are verified offline fixtures) are permitted without external AI consent.
+        # Any unknown or unclassified provider defaults to external.
+        model = self.provider.model
+        is_local_declared = getattr(model, "is_local", False)
+        is_external_declared = getattr(model, "is_external", None)
 
-        if is_external and not external_ai_consent:
+        if is_external_declared is True:
+            provider_is_external = True
+        elif is_local_declared is True and is_external_declared is False:
+            provider_is_external = False
+        elif isinstance(model, FixtureInstrumentProvider):
+            provider_is_external = False
+        else:
+            # Fail-closed for unknown or custom provider without explicit is_local=True
+            provider_is_external = True
+
+        if provider_is_external and not external_ai_consent:
             msg = (
                 "Se requiere autorización explícita para enviar el contenido documental "
                 "al proveedor de IA externo. El consentimiento de conversación no se reutiliza "
@@ -249,6 +340,18 @@ class InstrumentExtractionService:
                 extraction=extraction,
                 source_text=text_result.text,
                 strict=strict_evidence,
+            )
+
+        # 8. Assign deterministic stable IDs and authenticated integrity tokens to candidates
+        for cand in extraction.instruments:
+            cand.document_hash = doc_hash
+            stable_id = compute_stable_candidate_id(project_id, document_id, doc_hash, cand)
+            cand.candidate_id = stable_id
+            cand.integrity_token = generate_candidate_integrity_token(
+                project_id=project_id,
+                document_id=document_id,
+                doc_hash=doc_hash,
+                candidate=cand,
             )
 
         return extraction
@@ -372,10 +475,14 @@ class InstrumentExtractionService:
         *,
         methodology_document_id: UUID | None = None,
         instrument_id: UUID | None = None,
+        expected_document_hash: str | None = None,
+        integrity_token: str | None = None,
+        strict_integrity: bool = False,
     ) -> InstrumentContext:
         """Persists a canonical InstrumentContext draft from a valid candidate.
 
-        Idempotent: Re-invocations return existing matching drafts rather than duplicating them.
+        Idempotent and atomic: Re-invocations return existing matching drafts rather than
+        duplicating them.
         """
         if self.instrument_service is None:
             raise RuntimeError(
@@ -395,26 +502,65 @@ class InstrumentExtractionService:
         doc_bytes = self._read_document_bytes(project_id, document_id)
         source_doc_hash = _sha256(doc_bytes)
 
-        # 3. Idempotency Check: Avoid duplicating drafts on repeated extraction calls
+        if expected_document_hash is not None and expected_document_hash != source_doc_hash:
+            from app.modules.research.instrument.repository import InstrumentStaleError
+
+            raise InstrumentStaleError(
+                "El documento fuente ha sido modificado desde la extracción original (hash stale).",
+                reasons=["hash_mismatch"],
+            )
+
+        # 3. Candidate integrity verification
+        token = integrity_token or candidate.integrity_token
+        if strict_integrity:
+            if not token or not verify_candidate_integrity_token(
+                project_id=project_id,
+                document_id=document_id,
+                doc_hash=source_doc_hash,
+                candidate=candidate,
+                token=token,
+            ):
+                raise CandidateIntegrityError(
+                    "La prueba de integridad del candidato no es válida o el contenido "
+                    "semántico fue sustituido respecto a la extracción original."
+                )
+        elif token is not None:
+            if not verify_candidate_integrity_token(
+                project_id=project_id,
+                document_id=document_id,
+                doc_hash=source_doc_hash,
+                candidate=candidate,
+                token=token,
+            ):
+                raise CandidateIntegrityError(
+                    "La prueba de integridad del candidato no es válida o el contenido "
+                    "semántico fue sustituido respecto a la extracción original."
+                )
+
+        # 4. Derive stable idempotent identity
+        stable_id = instrument_id or compute_stable_candidate_id(
+            project_id=project_id,
+            document_id=document_id,
+            doc_hash=source_doc_hash,
+            candidate=candidate,
+        )
+
+        # 5. Idempotency Check: Avoid duplicating drafts on repeated extraction calls
         existing_drafts = self.instrument_service.list(project_id)
-        target_id = instrument_id or candidate.candidate_id
         for existing in existing_drafts:
             if existing.status == "draft":
-                if existing.instrument_id == target_id:
+                if existing.instrument_id == stable_id:
                     return existing
 
                 matches_items = len(existing.items) == len(candidate.items) and all(
                     e.text == c.text for e, c in zip(existing.items, candidate.items, strict=False)
                 )
-                if matches_items:
-                    if existing.provenance is not None:
-                        if (
-                            existing.provenance.source_kind == "document"
-                            and existing.provenance.source_document_id == document_id
-                            and existing.provenance.source_document_hash == source_doc_hash
-                        ):
-                            return existing
-                    else:
+                if matches_items and existing.provenance is not None:
+                    if (
+                        existing.provenance.source_kind == "document"
+                        and existing.provenance.source_document_id == document_id
+                        and existing.provenance.source_document_hash == source_doc_hash
+                    ):
                         return existing
 
         # 4. Map variables without fictitious links
@@ -507,14 +653,23 @@ class InstrumentExtractionService:
                     methodology_review_hash=m_hash,
                 )
 
-        # 10. Persist draft via InstrumentService
-        return self.instrument_service.create_draft(
-            project_id=project_id,
-            variables=canonical_vars,
-            dimensions=canonical_dims,
-            indicators=canonical_inds,
-            items=canonical_items,
-            scoring_rules=canonical_rules,
-            provenance=provenance,
-            instrument_id=instrument_id or candidate.candidate_id,
-        )
+        # 10. Persist draft via InstrumentService with atomic conflict resolution
+        try:
+            return self.instrument_service.create_draft(
+                project_id=project_id,
+                variables=canonical_vars,
+                dimensions=canonical_dims,
+                indicators=canonical_inds,
+                items=canonical_items,
+                scoring_rules=canonical_rules,
+                provenance=provenance,
+                instrument_id=stable_id,
+            )
+        except Exception as exc:
+            from app.modules.research.instrument.repository import InstrumentConflict
+
+            if isinstance(exc, InstrumentConflict):
+                existing = self.instrument_service.get(project_id, stable_id)
+                if existing is not None and existing.status == "draft":
+                    return existing
+            raise

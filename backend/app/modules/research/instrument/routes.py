@@ -72,6 +72,7 @@ class CreateDraftFromCandidateRequest(BaseModel):
     candidate: CandidateInstrument
     methodology_document_id: UUID | None = None
     expected_document_hash: str | None = None
+    integrity_token: str | None = None
 
 
 class ConfirmScoringRulesRequest(BaseModel):
@@ -161,7 +162,10 @@ def create_router(
                         status.HTTP_504_GATEWAY_TIMEOUT,
                         "El proveedor de IA tardó demasiado en responder.",
                     )
-                if "esquema estructurado" in warning.lower():
+                if (
+                    "esquema estructurado" in warning.lower()
+                    or "invalid_response" in warning.lower()
+                ):
                     raise HTTPException(
                         status.HTTP_502_BAD_GATEWAY,
                         "La respuesta del proveedor de IA no cumple con el esquema estructurado.",
@@ -189,11 +193,15 @@ def create_router(
         doc_bytes = extraction_service._read_document_bytes(project_id, payload.document_id)
         current_doc_hash = hashlib.sha256(doc_bytes).hexdigest()
 
-        # 2. Verificar hash stale si el cliente especificó un hash esperado
-        if (
-            payload.expected_document_hash is not None
-            and payload.expected_document_hash != current_doc_hash
-        ):
+        # 2. Verificar hash documental (obligatorio para integridad, no eludible)
+        expected_hash = payload.expected_document_hash or payload.candidate.document_hash
+        if not expected_hash:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "Se requiere 'expected_document_hash' o 'candidate.document_hash' "
+                "para comprobar la integridad del documento fuente.",
+            )
+        if expected_hash != current_doc_hash:
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 "El documento fuente ha sido modificado desde la extracción original (hash stale).",
@@ -208,7 +216,7 @@ def create_router(
                 f"{', '.join(reasons)}",
             )
 
-        # 4. Verificación de integridad y evidencias contra el texto fuente
+        # 4. Verificación de evidencias contra el texto fuente
         text_result = extraction_service.extraction_service.extract(project_id, payload.document_id)
         if text_result.status != "completed" or not text_result.text:
             raise HTTPException(
@@ -251,12 +259,39 @@ def create_router(
                     "el documento fuente.",
                 )
 
-        # 5. Creación del borrador a través de InstrumentExtractionService
+        # 5. Validación de prueba de integridad del candidato (HMAC del servidor)
+        from app.modules.research.instrument.extraction_service import (
+            verify_candidate_integrity_token,
+        )
+
+        token = payload.integrity_token or payload.candidate.integrity_token
+        if not token:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "Se requiere una prueba de integridad autenticada por el servidor "
+                "('integrity_token' o 'candidate.integrity_token').",
+            )
+        if not verify_candidate_integrity_token(
+            project_id=project_id,
+            document_id=payload.document_id,
+            doc_hash=current_doc_hash,
+            candidate=payload.candidate,
+            token=token,
+        ):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "La prueba de integridad del candidato no es válida o el contenido "
+                "semántico fue sustituido respecto a la extracción original.",
+            )
+
+        # 6. Creación idempotente y atómica del borrador
         instrument = extraction_service.create_draft_from_candidate(
             project_id=project_id,
             document_id=payload.document_id,
             candidate=payload.candidate,
             methodology_document_id=payload.methodology_document_id,
+            expected_document_hash=expected_hash,
+            integrity_token=token,
         )
         response.headers["Location"] = (
             f"/api/research/projects/{project_id}/instruments/{instrument.instrument_id}"

@@ -261,6 +261,8 @@ class CandidateInstrument(BaseModel):
     scoring_rules: list[ExtractedScoringRule] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     pending_fields: list[str] = Field(default_factory=list)
+    document_hash: Sha256Hex | None = None
+    integrity_token: str | None = Field(default=None, max_length=128)
     is_complete: bool = False
 
     @model_validator(mode="after")

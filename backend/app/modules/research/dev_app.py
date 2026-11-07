@@ -44,6 +44,7 @@ from app.modules.research.instrument.extraction_provider import (
     InstrumentLanguageModel,
 )
 from app.modules.research.instrument.extraction_service import (
+    CandidateIntegrityError,
     DocumentExtractionConsentRequired,
     IncompleteCandidateError,
     InstrumentExtractionService,
@@ -320,6 +321,12 @@ def create_app(
     @app.exception_handler(IncompleteCandidateError)
     async def incomplete_candidate_error(
         request: Request, exc: IncompleteCandidateError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(CandidateIntegrityError)
+    async def candidate_integrity_error(
+        request: Request, exc: CandidateIntegrityError
     ) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 

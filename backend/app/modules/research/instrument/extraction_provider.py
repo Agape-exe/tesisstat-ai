@@ -150,6 +150,9 @@ def calculate_payload_budget_bytes(
 class FixtureInstrumentProvider:
     """Offline test double for instrument extraction without external API calls or tokens."""
 
+    is_external: bool = False
+    is_local: bool = True
+
     def __init__(
         self,
         responses: list[str | dict | Exception] | None = None,
