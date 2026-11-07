@@ -248,3 +248,43 @@ El conector GitHub rechazó la creación con 403; la CLI local autenticada como
 los tres jobs aprobados. Esa ejecución precede a las últimas fusiones; la
 compatibilidad con `916eff4` se comprueba separadamente y no se atribuye a esa CI.
 No se fusionó ningún PR ni se añadieron revisores, asignados o coautores.
+
+## Compatibilidad final con el rediseño fusionado (PR #57)
+
+Después de la fusión del PR #57, `origin/develop` avanzó a
+`33f068e0c475f6449e45a05bf004611a6e1a3080`. La rama del PR #53 permanece en
+`f445957bf71dd7f64a98c6a232fd2f64dc24c135`: tiene dos commits exclusivos y el
+`develop` actual tiene diecisiete. El ancestro común sigue siendo `418496b`.
+
+No hay archivos modificados por ambos lados desde ese ancestro. El cambio funcional
+de 17A continúa limitado a `research_context.py` y su prueba de regresión; el tercer
+archivo del PR es este informe. `git merge-tree --write-tree` produjo el árbol
+sintético `4134b8c9e8d4f081c417d4db3e1a7fd6f55ab062` sin conflictos. Ese árbol se
+materializó sobre un worktree detached de `origin/develop`, sin merge, rebase ni
+modificación de ramas compartidas.
+
+La combinación conserva el frontend aprobado y los cambios recientes de Statistics.
+Cuando vence la autorización local de un dataset no sintético, el plan y su resultado
+se presentan únicamente como `unverified`; no se incluyen métricas. La metodología
+confirmada y el paquete vigente permanecen disponibles. La ejecución continúa
+denegada con HTTP 403 y el repositorio de análisis no se modifica.
+
+Validación final en el árbol combinado:
+
+- Backend: Ruff y formato correctos; **419 pruebas aprobadas**, cero fallos, en
+  278.36 s; contratos backend y `compileall` correctos.
+- Frontend rediseñado: ESLint y Prettier correctos; **155 pruebas aprobadas** en
+  26 archivos; generación de contratos sin diferencias; builds principal y Research
+  correctos.
+- Integridad: `git diff --check` correcto y sólo los tres archivos esperados difieren
+  de `origin/develop`.
+
+`npm ci` volvió a informar diez vulnerabilidades moderadas y el build Research avisó
+de un chunk minificado de 537.01 kB. Son riesgos preexistentes de dependencias y
+rendimiento, no regresiones de esta corrección. No se ejecutó `npm audit fix`.
+
+GitHub informa que el PR #53 sigue abierto como borrador, `MERGEABLE/CLEAN`, sin
+revisiones y con sus tres checks en verde para `f445957`. Esos checks preceden al
+merge del PR #57; la compatibilidad con `33f068e` corresponde a la validación local
+aislada descrita aquí. No se hicieron inferencias externas, no se modificó Qwen3 y
+no se inició la Sesión 18A.
