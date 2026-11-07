@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
-from app.shared.instrument_context import InstrumentContext, ScoringRule
+from app.shared.instrument_contracts import InstrumentContext, ScoringRule
 
 from .scoring import (
     ItemScoringSpec,
@@ -84,21 +84,29 @@ def _item_specs(context: InstrumentContext, rule: ScoringRule) -> tuple[ItemScor
         mapping.item_id: mapping.column_name for mapping in context.dataset_mapping.item_columns
     }
     items = {item.item_id: item for item in context.items}
-    return tuple(
-        ItemScoringSpec(
-            item_id=str(item_id),
-            column_name=columns[item_id],
-            response_type=items[item_id].response_type,
-            response_options=tuple(
-                (option.code, option.numeric_value) for option in items[item_id].response_options
-            ),
-            valid_min=items[item_id].valid_min,
-            valid_max=items[item_id].valid_max,
-            reverse_scored=items[item_id].reverse_scored,
-            reverse_rule=items[item_id].reverse_rule,
+    specs: list[ItemScoringSpec] = []
+    for item_id in rule.item_ids:
+        item = items[item_id]
+        if (item.valid_min is None) != (item.valid_max is None):
+            raise InstrumentContextConsumptionError(
+                "La puntuación requiere ambos límites o ninguno; "
+                f"el ítem {item_id} declara un rango semiacotado."
+            )
+        specs.append(
+            ItemScoringSpec(
+                item_id=str(item_id),
+                column_name=columns[item_id],
+                response_type=item.response_type,
+                response_options=tuple(
+                    (option.code, option.numeric_value) for option in item.response_options
+                ),
+                valid_min=item.valid_min,
+                valid_max=item.valid_max,
+                reverse_scored=item.reverse_scored,
+                reverse_rule=item.reverse_rule,
+            )
         )
-        for item_id in rule.item_ids
-    )
+    return tuple(specs)
 
 
 def calculate_context_scores(
