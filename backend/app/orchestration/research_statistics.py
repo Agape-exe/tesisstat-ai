@@ -373,31 +373,6 @@ class InstrumentStatisticsBridge:
             ) from exc
 
         # 11. Vigencia y comprobación de cambios concurrentes tras la lectura
-        post_stale, post_reasons = self.instruments.check_stale(proj_uuid, inst_uuid)
-        if post_stale:
-            details = ", ".join(post_reasons)
-            raise ResearchInputError(
-                "instrument_stale",
-                f"El instrumento quedó desactualizado durante la lectura: {details}",
-            )
-
-        try:
-            post_context = self.reader.get_confirmed_context(str(proj_uuid), str(inst_uuid))
-        except Exception as exc:
-            raise ResearchInputError(
-                "instrument_concurrent_modification",
-                "El estado del instrumento cambió durante la lectura del dataset.",
-            ) from exc
-
-        if (
-            post_context.version != context.version
-            or post_context.updated_at != context.updated_at
-        ):
-            raise ResearchInputError(
-                "instrument_concurrent_modification",
-                "El instrumento fue modificado concurrentemente durante la lectura del dataset.",
-            )
-
         try:
             post_dataset = self.datasets.get(proj_uuid, dataset_id)
         except Exception as exc:
@@ -414,6 +389,57 @@ class InstrumentStatisticsBridge:
             raise ResearchInputError(
                 "dataset_concurrent_modification",
                 "El dataset fue modificado concurrentemente durante la lectura.",
+            )
+
+        # Segunda comprobación del hash del dataset post-lectura
+        try:
+            post_raw_bytes = self.datasets.read(proj_uuid, dataset_id)
+            if compute_dataset_hash(post_dataset, post_raw_bytes) != mapping.dataset_hash:
+                raise ResearchInputError(
+                    "dataset_concurrent_modification",
+                    "El contenido del dataset fue alterado durante la lectura.",
+                )
+        except (DatasetNotFound, DatasetStorageError, FileNotFoundError, OSError) as exc:
+            raise ResearchInputError(
+                "dataset_concurrent_modification",
+                "El dataset fue eliminado o se volvió inaccesible durante la lectura.",
+            ) from exc
+
+        try:
+            post_context = self.reader.get_confirmed_context(str(proj_uuid), str(inst_uuid))
+        except InstrumentStaleError as exc:
+            code = (
+                "dataset_concurrent_modification"
+                if "dataset" in str(exc).lower()
+                else "instrument_concurrent_modification"
+            )
+            raise ResearchInputError(code, str(exc)) from exc
+        except Exception as exc:
+            raise ResearchInputError(
+                "instrument_concurrent_modification",
+                "El estado del instrumento cambió durante la lectura del dataset.",
+            ) from exc
+
+        if (
+            post_context.version != context.version
+            or post_context.updated_at != context.updated_at
+        ):
+            raise ResearchInputError(
+                "instrument_concurrent_modification",
+                "El instrumento fue modificado concurrentemente durante la lectura del dataset.",
+            )
+
+        post_stale, post_reasons = self.instruments.check_stale(proj_uuid, inst_uuid)
+        if post_stale:
+            details = ", ".join(post_reasons)
+            code = (
+                "dataset_concurrent_modification"
+                if any("dataset" in r.lower() for r in post_reasons)
+                else "instrument_concurrent_modification"
+            )
+            raise ResearchInputError(
+                code,
+                f"Las fuentes quedaron desactualizadas durante la lectura: {details}",
             )
 
         return AuthorizedInstrumentData(

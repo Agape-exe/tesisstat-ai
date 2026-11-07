@@ -53,9 +53,12 @@ from app.modules.research.methodology.sqlite_repository import SQLiteMethodology
 from app.modules.research.projects.models import ProjectDraft
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
 from app.modules.research.projects.use_cases import ProjectService
+from app.modules.statistics.scoring import ScoringValidationError
 from app.modules.statistics.scoring_context import (
+    InstrumentContextConsumptionError,
     calculate_context_cronbach,
     calculate_context_scores,
+    scoring_inputs_from_context,
 )
 from app.orchestration.research_statistics import (
     AuthorizedInstrumentData,
@@ -63,6 +66,7 @@ from app.orchestration.research_statistics import (
     ResearchInputError,
     ResearchStatisticsBridge,
 )
+from app.shared.instrument_contracts import InstrumentContext
 from app.shared.ports import InstrumentContextReader
 
 
@@ -920,3 +924,181 @@ def test_unconfigured_bridge_raises_clear_error(tmp_path):
     with pytest.raises(ResearchInputError) as exc:
         unconfigured_bridge.get_authorized_instrument_data(uuid4(), uuid4())
     assert exc.value.code == "bridge_unconfigured"
+
+
+# =============================================================================
+# TESTS DE INTEGRACIÓN CRUZADA — MATRIZ STATISTICS 22B
+# =============================================================================
+
+
+def test_invalid_response_code_rejected_by_statistics_without_silent_none(tmp_path):
+    """Scenario A: Unknown response code is delivered as-is and rejected by Statistics.
+
+    Verifies:
+    1. Research delivers only authorized columns.
+    2. The invalid code ("99") is preserved and NOT converted silently to None.
+    3. Statistics rejects it explicitly with ScoringValidationError.
+    4. The original dataset remains completely unmodified in storage.
+    """
+    env = _setup_test_env(tmp_path)
+    seeded = _seed_complete_valid_setup(env, extra_columns=True)
+
+    project_id = seeded["project_id"]
+    instrument_id = seeded["instrument_id"]
+    rule_id = seeded["rule_id"]
+
+    # Registrar dataset que incluye un código fuera de las opciones Likert (código "99")
+    invalid_csv = (
+        b"p1_comunicacion_directa,p2_info_contradictoria,unmapped_column\n"
+        b"1,5,extra1\n"
+        b"99,4,extra2\n"  # Código inválido "99" en p1
+        b"3,3,extra3\n"
+    )
+    dataset = env["datasets"].add(project_id, "clima_invalido.csv", invalid_csv)
+    original_stored_bytes = env["datasets"].read(project_id, dataset.id)
+
+    instruments = env["instruments"]
+    current = instruments.get(project_id, instrument_id)
+    instruments.set_mapping(
+        project_id,
+        instrument_id,
+        expected_version=current.version,
+        dataset_id=dataset.id,
+        item_columns=[
+            ItemColumnMapping(item_id=seeded["item1_id"], column_name="p1_comunicacion_directa"),
+            ItemColumnMapping(item_id=seeded["item2_id"], column_name="p2_info_contradictoria"),
+        ],
+    )
+    current = instruments.get(project_id, instrument_id)
+    instruments.confirm_mapping(
+        project_id, instrument_id, expected_version=current.version, confirmer_ref="revisor"
+    )
+    current = instruments.get(project_id, instrument_id)
+    instruments.confirm_instrument(
+        project_id, instrument_id, expected_version=current.version, confirmer_ref="revisor"
+    )
+
+    # 1. Research entrega filas autorizadas
+    bridge = env["bridge"]
+    auth_data = bridge.get_authorized_instrument_data(project_id, instrument_id)
+
+    # Verifica que solo se entreguen columnas autorizadas
+    assert auth_data.column_names == ("p1_comunicacion_directa", "p2_info_contradictoria")
+    for r in auth_data.rows:
+        assert "unmapped_column" not in r
+
+    # 2. El código inválido NO se convirtió en None silenciosamente
+    assert auth_data.rows[1]["p1_comunicacion_directa"] == "99"
+
+    # 3. Statistics rechaza el código desconocido con error explícito
+    with pytest.raises(ScoringValidationError) as exc:
+        calculate_context_scores(auth_data.context, str(rule_id), auth_data.rows)
+    assert exc.value.row_index == 1
+    assert "código de respuesta desconocido" in exc.value.reason
+
+    # 4. El dataset original no se altera
+    after_bytes = env["datasets"].read(project_id, dataset.id)
+    assert after_bytes == original_stored_bytes
+
+
+def test_concurrent_dataset_modification_during_read_detected(tmp_path):
+    """Scenario B: Concurrent dataset modification during read is detected deterministically.
+
+    Verifies:
+    1. Alteration of dataset content during read is detected by post-read validation.
+    2. No authorized result is delivered to caller.
+    3. Safe typed ResearchInputError("dataset_concurrent_modification") is raised.
+    4. No physical filesystem path is leaked in the error message.
+    5. Distinguishable from pre-read hash mismatch.
+    """
+    env = _setup_test_env(tmp_path)
+    seeded = _seed_complete_valid_setup(env)
+
+    project_id = seeded["project_id"]
+    instrument_id = seeded["instrument_id"]
+    dataset_id = seeded["dataset_id"]
+
+    original_read = env["datasets"].read
+    call_count = 0
+
+    def mutating_read(proj, ds):
+        nonlocal call_count
+        call_count += 1
+        data = original_read(proj, ds)
+        if call_count == 3:
+            # En la lectura legítima (paso 9), simular que otro proceso
+            # sobrescribe los bytes en almacenamiento antes de que termine el bridge
+            storage_file = env["datasets"].repository._path(dataset_id)
+            storage_file.write_bytes(
+                b"p1_comunicacion_directa,p2_info_contradictoria\n1,1\n2,2\n3,3\n4,4\n5,5\n"
+            )
+        return data
+
+    env["datasets"].read = mutating_read
+
+    bridge = env["bridge"]
+    with pytest.raises(ResearchInputError) as exc:
+        bridge.get_authorized_instrument_data(project_id, instrument_id)
+
+    assert exc.value.code == "dataset_concurrent_modification"
+    # Comprobar ausencia de rutas físicas del sistema de archivos en el mensaje de error
+    assert "C:" not in str(exc.value)
+    assert "\\" not in str(exc.value)
+    assert "/storage" not in str(exc.value)
+
+
+def test_semibounded_numeric_range_contract_and_statistics_handling(tmp_path):
+    """Scenario C: Semi-bounded range is valid in InstrumentContext, rejected by Statistics.
+
+    Verifies:
+    1. InstrumentContext accepts a semi-bounded numeric item (valid_min=0, valid_max=None).
+    2. Research bridge composition does NOT add an artificial restriction and delivers data.
+    3. Statistics rejects the scoring operation with its existing operational error.
+    4. Pure engine remains unmodified.
+    """
+    env = _setup_test_env(tmp_path)
+    seeded = _seed_complete_valid_setup(env)
+
+    project_id = seeded["project_id"]
+    instrument_id = seeded["instrument_id"]
+    rule_id = seeded["rule_id"]
+
+    # Inyectar ítem numérico semiacotado en la base de datos
+    with env["instruments"].repository._connect() as conn:
+        row = conn.execute(
+            "SELECT payload FROM research_instruments WHERE id = ? AND is_current = 1",
+            (str(instrument_id),),
+        ).fetchone()
+        payload = json.loads(row[0])
+
+        # Convertir primer ítem a numérico semiacotado: valid_min=0.0, valid_max=None
+        payload["items"][0]["response_type"] = "numeric"
+        payload["items"][0]["response_options"] = []
+        payload["items"][0]["valid_min"] = 0.0
+        payload["items"][0]["valid_max"] = None
+        payload["items"][0]["reverse_scored"] = False
+        payload["items"][0]["reverse_rule"] = None
+
+        # 1. Comprobar que InstrumentContext acepta este contexto públicamente
+        validated_ctx = InstrumentContext.model_validate(payload)
+        assert validated_ctx.items[0].valid_min == 0.0
+        assert validated_ctx.items[0].valid_max is None
+
+        conn.execute(
+            "UPDATE research_instruments SET payload = ? WHERE id = ? AND is_current = 1",
+            (json.dumps(payload), str(instrument_id)),
+        )
+        conn.commit()
+
+    # 2. Research entrega las filas autorizadas sin imponer restricciones contractuales nuevas
+    bridge = env["bridge"]
+    auth_data = bridge.get_authorized_instrument_data(project_id, instrument_id)
+    assert auth_data.context.items[0].valid_min == 0.0
+    assert auth_data.context.items[0].valid_max is None
+
+    # 3. Statistics rechaza la operación de puntuación con su error operativo existente
+    with pytest.raises(InstrumentContextConsumptionError, match="rango semiacotado"):
+        calculate_context_scores(auth_data.context, str(rule_id), auth_data.rows)
+
+    with pytest.raises(InstrumentContextConsumptionError, match="rango semiacotado"):
+        scoring_inputs_from_context(auth_data.context, str(rule_id))
