@@ -1,53 +1,53 @@
 {
   "schema_version": "1.0.0",
-  "instrument_id": "a47e5d1d-4225-46de-8672-a1e0452f687b",
-  "project_id": "dc9ed615-157a-4352-91bf-f750a47d8d58",
+  "instrument_id": "2ce50158-5b15-59f3-824d-f6f1d211f315",
+  "project_id": "e908d032-6537-5bb9-9591-89a9eb6300f7",
   "research_package_id": null,
   "version": 3,
   "status": "reviewed",
-  "created_at": "2026-11-07T07:18:55.835680Z",
-  "updated_at": "2026-11-07T07:18:55.878031Z",
+  "created_at": "2026-11-01T10:00:00Z",
+  "updated_at": "2026-11-01T10:03:00Z",
   "provenance": {
     "source_kind": "document",
-    "source_document_id": "12a4b8cd-ef67-4890-a123-456789abcdef",
-    "source_document_hash": "86ec692bd6fe288672a223d34e5d883658147f6f200993e4009f7a360bcc0f72",
-    "methodology_review_id": "12a4b8cd-ef67-4890-a123-456789abcdef",
+    "source_document_id": "60710443-8573-5bd7-b9f4-c51a11c4036f",
+    "source_document_hash": "a1ed9aabaffa0dcbde2cf016419c62ac9cf457c575a61c38c503c5bcb67e8260",
+    "methodology_review_id": "60710443-8573-5bd7-b9f4-c51a11c4036f",
     "methodology_review_version": 1,
-    "methodology_review_hash": "531c22288dfceaf997c777b1fd891674fdda83ccfec89e2a63c8d4894a52526a"
+    "methodology_review_hash": "7351015183ca97148ff6d34b555c1ed6f90612a86bd4370551bd80207e26e027"
   },
   "confirmation": {
     "state": "confirmed",
-    "confirmed_at": "2026-11-07T07:18:55.878031Z",
+    "confirmed_at": "2026-11-01T10:03:00Z",
     "confirmer_ref": "auditor_investigacion"
   },
   "variables": [
     {
-      "variable_id": "4da4a82a-4d5d-49d9-af7a-84099498b837",
+      "variable_id": "7865570c-a18f-5dcb-8b2d-286be5273610",
       "name": "Autoeficacia",
       "scale": "interval",
-      "methodology_variable_id": "5b398a33-ae68-4c91-a3e1-e622cd304fce"
+      "methodology_variable_id": "ac40f22c-3c1e-596a-9c7e-9d8e6dc55739"
     }
   ],
   "dimensions": [
     {
-      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
-      "variable_id": "4da4a82a-4d5d-49d9-af7a-84099498b837",
+      "dimension_id": "ad485dff-654f-536c-aaa0-17735ff04f24",
+      "variable_id": "7865570c-a18f-5dcb-8b2d-286be5273610",
       "name": "Confianza en Tareas Complejas"
     }
   ],
   "indicators": [
     {
-      "indicator_id": "fc64c118-acd4-413a-bd73-df636620b736",
-      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
+      "indicator_id": "234c97c2-1c44-53be-8ec1-639e2592fe6f",
+      "dimension_id": "ad485dff-654f-536c-aaa0-17735ff04f24",
       "name": "Persistencia"
     }
   ],
   "items": [
     {
-      "item_id": "183600f1-3211-4a60-ad67-c3890352d9de",
-      "variable_id": "4da4a82a-4d5d-49d9-af7a-84099498b837",
-      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
-      "indicator_id": "fc64c118-acd4-413a-bd73-df636620b736",
+      "item_id": "90ca88e7-3a73-583e-bbc2-4d2a07a83f54",
+      "variable_id": "7865570c-a18f-5dcb-8b2d-286be5273610",
+      "dimension_id": "ad485dff-654f-536c-aaa0-17735ff04f24",
+      "indicator_id": "234c97c2-1c44-53be-8ec1-639e2592fe6f",
       "text": "Puedo resolver problemas difíciles si me esfuerzo lo suficiente.",
       "response_type": "single_choice",
       "response_options": [
@@ -86,11 +86,11 @@
   ],
   "scoring_rules": [
     {
-      "scoring_rule_id": "3489cf95-943f-4024-acf9-0ab82c19e85d",
+      "scoring_rule_id": "3ecbaedd-6bff-5731-ae45-a84553ed2725",
       "scope": "dimension",
-      "dimension_id": "97572537-5fa7-477a-82fe-1b1e462802cf",
+      "dimension_id": "ad485dff-654f-536c-aaa0-17735ff04f24",
       "item_ids": [
-        "183600f1-3211-4a60-ad67-c3890352d9de"
+        "90ca88e7-3a73-583e-bbc2-4d2a07a83f54"
       ],
       "aggregation": "mean",
       "missing_policy": "all_required",

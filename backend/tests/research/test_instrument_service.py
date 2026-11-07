@@ -12,7 +12,13 @@ from app.modules.research.datasets.use_cases import DatasetService
 from app.modules.research.documents.models import Document
 from app.modules.research.documents.sqlite_repository import SQLiteDocumentRepository
 from app.modules.research.documents.use_cases import DocumentService
-from app.modules.research.instrument.fixtures import standard_likert_options
+from app.modules.research.instrument.fixtures import (
+    build_deterministic_confirmed_instrument_with_mapping,
+    build_deterministic_reviewed_instrument_without_mapping,
+    create_deterministic_harness,
+    deterministic_uuid,
+    standard_likert_options,
+)
 from app.modules.research.instrument.models import (
     InstrumentDimension,
     InstrumentIndicator,
@@ -1162,3 +1168,130 @@ class TestSQLiteIntegrityAndCascades:
         restored = InstrumentContext.model_validate_json(serialized)
         assert restored.instrument_id == ctx.instrument_id
         assert restored.version == 5
+
+    def test_deterministic_fixture_confirmed_with_mapping_double_generation(self):
+        """Requisito 3.1 & 3.2: Genera contexto con mapeo y comprueba igualdad exacta."""
+        ctx_a = build_deterministic_confirmed_instrument_with_mapping()
+        ctx_b = build_deterministic_confirmed_instrument_with_mapping()
+
+        # Igualdad exacta de modelo y de serialización canónica
+        assert ctx_a == ctx_b
+        json_a = ctx_a.model_dump_json(indent=2)
+        json_b = ctx_b.model_dump_json(indent=2)
+        assert json_a == json_b
+
+        # Verificación exhaustiva: versiones, UUIDs, timestamps y hashes reales
+        assert ctx_a.version == 5
+        assert ctx_a.status == "reviewed"
+        assert ctx_a.schema_version == "1.0.0"
+        assert ctx_a.instrument_id == deterministic_uuid("instrument:clima")
+        assert ctx_a.project_id == deterministic_uuid("project:clima")
+        assert ctx_a.created_at == datetime(2026, 11, 1, 10, 0, 0, tzinfo=UTC)
+        assert ctx_a.updated_at == datetime(2026, 11, 1, 10, 5, 0, tzinfo=UTC)
+        assert ctx_a.confirmation.state == "confirmed"
+        assert ctx_a.confirmation.confirmed_at == datetime(2026, 11, 1, 10, 5, 0, tzinfo=UTC)
+        assert ctx_a.confirmation.confirmer_ref == "revisor_metodologico"
+
+        # Hashes SHA-256 reales (longitud 64, caracteres hexadecimales, no cadenas repetidas)
+        assert len(ctx_a.provenance.source_document_hash) == 64
+        assert len(ctx_a.provenance.methodology_review_hash) == 64
+        assert len(ctx_a.dataset_mapping.dataset_hash) == 64
+        assert ctx_a.provenance.source_document_hash != "a" * 64
+        assert ctx_a.provenance.methodology_review_hash != "b" * 64
+        assert ctx_a.dataset_mapping.dataset_hash != "c" * 64
+
+        # Mapeo y variables
+        assert ctx_a.dataset_mapping.instrument_version == 5
+        assert ctx_a.dataset_mapping.status == "confirmed"
+        assert ctx_a.dataset_mapping.confirmation.confirmed_at == datetime(
+            2026, 11, 1, 10, 4, 0, tzinfo=UTC
+        )
+        assert len(ctx_a.items) == 2
+        assert len(ctx_a.scoring_rules) == 1
+        assert ctx_a.scoring_rules[0].confirmed is True
+
+    def test_deterministic_fixture_reviewed_without_mapping_double_generation(self):
+        """Requisito 3.3 & 3.4: Genera contexto revisado y comprueba igualdad exacta."""
+        ctx_a = build_deterministic_reviewed_instrument_without_mapping()
+        ctx_b = build_deterministic_reviewed_instrument_without_mapping()
+
+        assert ctx_a == ctx_b
+        json_a = ctx_a.model_dump_json(indent=2)
+        json_b = ctx_b.model_dump_json(indent=2)
+        assert json_a == json_b
+
+        assert ctx_a.version == 3
+        assert ctx_a.status == "reviewed"
+        assert ctx_a.schema_version == "1.0.0"
+        assert ctx_a.instrument_id == deterministic_uuid("instrument:autoeficacia")
+        assert ctx_a.project_id == deterministic_uuid("project:autoeficacia")
+        assert ctx_a.created_at == datetime(2026, 11, 1, 10, 0, 0, tzinfo=UTC)
+        assert ctx_a.updated_at == datetime(2026, 11, 1, 10, 3, 0, tzinfo=UTC)
+        assert ctx_a.confirmation.state == "confirmed"
+        assert ctx_a.confirmation.confirmed_at == datetime(2026, 11, 1, 10, 3, 0, tzinfo=UTC)
+        assert ctx_a.dataset_mapping is None
+
+        # Hashes SHA-256 reales
+        assert len(ctx_a.provenance.source_document_hash) == 64
+        assert len(ctx_a.provenance.methodology_review_hash) == 64
+
+    def test_deterministic_fixtures_match_versioned_json_files(self):
+        """Requisito 3.5-3.7: Compara contra ejemplos versionados y valida con DTO canónico."""
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[3]
+        ex1_path = (
+            root / "docs" / "contracts" / "examples" / "instrument_confirmed_with_mapping.json"
+        )
+        ex2_path = (
+            root / "docs" / "contracts" / "examples" / "instrument_reviewed_without_mapping.json"
+        )
+
+        ctx_confirmed = build_deterministic_confirmed_instrument_with_mapping()
+        ctx_reviewed = build_deterministic_reviewed_instrument_without_mapping()
+
+        expected_json_confirmed = ctx_confirmed.model_dump_json(indent=2) + "\n"
+        expected_json_reviewed = ctx_reviewed.model_dump_json(indent=2) + "\n"
+
+        actual_json_confirmed = ex1_path.read_text(encoding="utf-8")
+        actual_json_reviewed = ex2_path.read_text(encoding="utf-8")
+
+        assert actual_json_confirmed == expected_json_confirmed
+        assert actual_json_reviewed == expected_json_reviewed
+
+        # Validación mediante DTO canónico público
+        dto1 = InstrumentContext.model_validate_json(actual_json_confirmed)
+        dto2 = InstrumentContext.model_validate_json(actual_json_reviewed)
+        assert dto1 == ctx_confirmed
+        assert dto2 == ctx_reviewed
+
+    def test_deterministic_lifecycle_authorized_reader_and_stale_detection(self, tmp_path):
+        """Requisito 3.8: Comprueba lectura autorizada y detección de stale sobre flujo real."""
+        # 1. Ejecutar ciclo determinista en directorio controlado
+        ctx = build_deterministic_confirmed_instrument_with_mapping(storage_dir=tmp_path)
+        assert ctx.version == 5
+        assert ctx.status == "reviewed"
+
+        # 2. Conectar arnés al directorio persistido y leer con lector autorizado
+        h = create_deterministic_harness(tmp_path)
+        read_ctx = h["reader"].get_confirmed_context(str(ctx.project_id), str(ctx.instrument_id))
+        assert read_ctx == ctx
+
+        # 3. Comprobar ausencia inicial de stale
+        is_stale, reasons = h["service"].check_stale(ctx.project_id, ctx.instrument_id)
+        assert is_stale is False
+        assert len(reasons) == 0
+
+        # 4. Alterar el contenido del dataset vinculado para forzar divergencia de hash
+        ds_path = h["dataset_repo"]._path(ctx.dataset_mapping.dataset_id)
+        ds_path.write_bytes(b"p1_comunicacion_directa,p2_info_contradictoria\n9,9\n")
+
+        # 5. Comprobar que check_stale detecta la discrepancia
+        is_stale_after, reasons_after = h["service"].check_stale(ctx.project_id, ctx.instrument_id)
+        assert is_stale_after is True
+        assert any("dataset" in r.lower() for r in reasons_after)
+
+        # 6. Comprobar que el lector autorizado rechaza servir el contexto si ha quedado stale
+        with pytest.raises(InstrumentStaleError) as exc_info:
+            h["reader"].get_confirmed_context(str(ctx.project_id), str(ctx.instrument_id))
+        assert "desactualizado" in str(exc_info.value).lower()

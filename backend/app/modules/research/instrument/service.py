@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -44,12 +45,17 @@ class InstrumentService:
         documents: DocumentService,
         methodology: MethodologyRepository,
         datasets: DatasetService,
+        clock: Callable[[], datetime] | None = None,
     ):
         self.repository = repository
         self.projects = projects
         self.documents = documents
         self.methodology = methodology
         self.datasets = datasets
+        self._clock = clock or (lambda: datetime.now(UTC))
+
+    def _now(self) -> datetime:
+        return self._clock()
 
     def _require_project(self, project_id: UUID) -> None:
         try:
@@ -74,14 +80,15 @@ class InstrumentService:
         items: list[InstrumentItem],
         scoring_rules: list[ScoringRule] | None = None,
         provenance: InstrumentProvenance | None = None,
+        instrument_id: UUID | None = None,
     ) -> InstrumentContext:
         self._require_project(project_id)
-        now = datetime.now(UTC)
-        instrument_id = uuid4()
+        now = self._now()
+        inst_id = instrument_id if instrument_id is not None else uuid4()
 
         context = InstrumentContext(
             schema_version="1.0.0",
-            instrument_id=instrument_id,
+            instrument_id=inst_id,
             project_id=project_id,
             version=0,
             status="draft",
@@ -143,7 +150,7 @@ class InstrumentService:
             )
 
         new_version = expected_version + 1
-        now = datetime.now(UTC)
+        now = self._now()
         updates = {
             "version": new_version,
             "updated_at": now,
@@ -245,7 +252,7 @@ class InstrumentService:
             methodology_review_hash=review_hash,
         )
 
-        now = datetime.now(UTC)
+        now = self._now()
         inst_updates = {
             "variables": updated_variables,
             "provenance": provenance,
@@ -305,7 +312,7 @@ class InstrumentService:
             confirmation=InstrumentConfirmation(state="pending"),
         )
 
-        now = datetime.now(UTC)
+        now = self._now()
         updated_inst = current.model_copy(
             update={
                 "dataset_mapping": mapping,
@@ -347,7 +354,7 @@ class InstrumentService:
             )
 
         new_version = expected_version + 1
-        now = datetime.now(UTC)
+        now = self._now()
         confirmed_confirmation = InstrumentConfirmation(
             state="confirmed",
             confirmed_at=now,
@@ -400,7 +407,7 @@ class InstrumentService:
             else:
                 updated_rules.append(r)
 
-        now = datetime.now(UTC)
+        now = self._now()
         updates = {
             "scoring_rules": updated_rules,
             "updated_at": now,
@@ -465,7 +472,7 @@ class InstrumentService:
             )
 
         new_version = expected_version + 1
-        now = datetime.now(UTC)
+        now = self._now()
         confirmed_confirmation = InstrumentConfirmation(
             state="confirmed",
             confirmed_at=now,
@@ -502,7 +509,7 @@ class InstrumentService:
             )
 
         new_version = expected_version + 1
-        now = datetime.now(UTC)
+        now = self._now()
         updates = {
             "status": "stale",
             "updated_at": now,

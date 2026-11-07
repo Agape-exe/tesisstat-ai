@@ -1,8 +1,18 @@
 """Synthetic fixtures for InstrumentContext v1.0.0 testing and validation."""
 
-from datetime import UTC, datetime
-from uuid import UUID, uuid4
+import tempfile
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
+from uuid import NAMESPACE_DNS, UUID, uuid4, uuid5
 
+from app.modules.research.datasets.models import Dataset, DatasetPreview
+from app.modules.research.datasets.sqlite_repository import SQLiteDatasetRepository
+from app.modules.research.datasets.use_cases import DatasetService
+from app.modules.research.documents.models import Document
+from app.modules.research.documents.sqlite_repository import SQLiteDocumentRepository
+from app.modules.research.documents.use_cases import DocumentService
 from app.modules.research.instrument.contracts import InstrumentContext
 from app.modules.research.instrument.models import (
     DatasetMapping,
@@ -16,6 +26,19 @@ from app.modules.research.instrument.models import (
     ResponseOption,
     ScoringRule,
 )
+from app.modules.research.instrument.reader import ResearchInstrumentContextReader
+from app.modules.research.instrument.service import InstrumentService
+from app.modules.research.instrument.sqlite_repository import SQLiteInstrumentRepository
+from app.modules.research.methodology.models import (
+    MethodologyReview,
+    ReviewContent,
+    ReviewFinding,
+    ReviewVariable,
+)
+from app.modules.research.methodology.sqlite_repository import SQLiteMethodologyRepository
+from app.modules.research.projects.models import Project
+from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
+from app.modules.research.projects.use_cases import ProjectService
 
 
 def standard_likert_options() -> list[ResponseOption]:
@@ -372,3 +395,422 @@ def make_valid_reviewed_without_dataset() -> InstrumentContext:
         ],
         dataset_mapping=None,
     )
+
+
+# =============================================================================
+# DETERMINISTIC CONTRACTUAL FIXTURES GENERATION (v1.0.0)
+# =============================================================================
+
+SEED_NAMESPACE = uuid5(NAMESPACE_DNS, "tesisstat.ai.contract.fixtures")
+
+
+def deterministic_uuid(name: str) -> UUID:
+    """Deriva un UUID5 determinista y reproducible a partir de un identificador textual."""
+    return uuid5(SEED_NAMESPACE, name)
+
+
+FIXED_BASE_TIME = datetime(2026, 11, 1, 10, 0, 0, tzinfo=UTC)
+
+
+def make_deterministic_clock(
+    start: datetime = FIXED_BASE_TIME, step_seconds: int = 60
+) -> Callable[[], datetime]:
+    """Generador de reloj controlado y monotónico determinista."""
+    current = start
+
+    def _clock() -> datetime:
+        nonlocal current
+        val = current
+        current = current + timedelta(seconds=step_seconds)
+        return val
+
+    return _clock
+
+
+# Documentos y datasets sintéticos fijos con contenido inmutable
+CONFIRMED_DOC_CONTENT = (
+    b"%PDF-1.4\nCuestionario de Clima Laboral y Desempeno Organizacional 2026\n%%EOF"
+)
+CONFIRMED_DATASET_CONTENT = (
+    b"p1_comunicacion_directa,p2_info_contradictoria\n1,5\n2,4\n3,3\n4,2\n5,1\n"
+)
+
+REVIEWED_DOC_CONTENT = b"%PDF-1.4\nEscala de Autoeficacia Percibida en Investigacion 2026\n%%EOF"
+
+
+def create_deterministic_harness(
+    tmp_path: Path,
+    clock: Callable[[], datetime] | None = None,
+) -> dict[str, Any]:
+    """Crea un arnés SQLite temporal para ejecución determinista del ciclo de vida."""
+    db_path = tmp_path / "research_contract.db"
+    storage_path = tmp_path / "storage"
+    storage_path.mkdir(parents=True, exist_ok=True)
+
+    project_repo = SQLiteProjectRepository(db_path)
+    projects = ProjectService(project_repo)
+
+    doc_repo = SQLiteDocumentRepository(db_path, storage_path / "docs")
+    documents = DocumentService(doc_repo, projects)
+
+    dataset_repo = SQLiteDatasetRepository(db_path, storage_path / "datasets")
+    datasets = DatasetService(dataset_repo, projects)
+
+    methodology_repo = SQLiteMethodologyRepository(db_path)
+    instrument_repo = SQLiteInstrumentRepository(db_path)
+
+    service = InstrumentService(
+        repository=instrument_repo,
+        projects=projects,
+        documents=documents,
+        methodology=methodology_repo,
+        datasets=datasets,
+        clock=clock,
+    )
+    reader = ResearchInstrumentContextReader(service)
+
+    return {
+        "db_path": db_path,
+        "storage_path": storage_path,
+        "project_repo": project_repo,
+        "projects": projects,
+        "doc_repo": doc_repo,
+        "documents": documents,
+        "dataset_repo": dataset_repo,
+        "datasets": datasets,
+        "methodology": methodology_repo,
+        "instrument_repo": instrument_repo,
+        "service": service,
+        "reader": reader,
+    }
+
+
+def _build_confirmed_in_dir(tmp_path: Path, clock_start: datetime) -> InstrumentContext:
+    clock = make_deterministic_clock(start=clock_start, step_seconds=60)
+    h = create_deterministic_harness(tmp_path, clock=clock)
+
+    project_id = deterministic_uuid("project:clima")
+    project = Project(
+        id=project_id,
+        title="Investigación de Clima y Desempeño",
+        description="Proyecto sintético determinista para validación contractual",
+        university="Universidad Nacional Mayor de San Marcos",
+        faculty="Facultad de Psicología",
+        program="Psicología Organizacional",
+        degree="bachelor",
+        academic_year=2026,
+        created_at=clock_start,
+        updated_at=clock_start,
+    )
+    h["project_repo"].add(project)
+
+    doc_id = deterministic_uuid("document:clima")
+    doc = Document(
+        id=doc_id,
+        project_id=project_id,
+        name="cuestionario_clima.pdf",
+        format="pdf",
+        size=len(CONFIRMED_DOC_CONTENT),
+        uploaded_at=clock_start,
+    )
+    h["doc_repo"].add(doc, CONFIRMED_DOC_CONTENT)
+
+    meth_var_id = deterministic_uuid("meth_var:clima")
+    finding = ReviewFinding(
+        value="Clima Laboral",
+        kind="quotation",
+        evidence=["Cuestionario de Clima Laboral y Desempeño Organizacional"],
+    )
+    review = MethodologyReview(
+        project_id=project_id,
+        document_id=doc_id,
+        origin="manual",
+        content=ReviewContent(
+            title=ReviewFinding(value="Investigación de Clima y Desempeño", kind="manual"),
+            variables=[
+                ReviewVariable(
+                    id=meth_var_id,
+                    name=finding,
+                )
+            ],
+        ),
+        pending_fields=[],
+        review_status="reviewed",
+        version=1,
+        updated_at=clock_start,
+        reviewed_at=clock_start,
+    )
+    h["methodology"].save_review(review, expected_version=None)
+
+    dataset_id = deterministic_uuid("dataset:clima")
+    dataset = Dataset(
+        id=dataset_id,
+        project_id=project_id,
+        name="clima_dataset.csv",
+        format="csv",
+        size=len(CONFIRMED_DATASET_CONTENT),
+        row_count=5,
+        column_count=2,
+        columns=["p1_comunicacion_directa", "p2_info_contradictoria"],
+        uploaded_at=clock_start,
+        active=True,
+    )
+    preview = DatasetPreview(
+        columns=["p1_comunicacion_directa", "p2_info_contradictoria"],
+        rows=[
+            ["1", "5"],
+            ["2", "4"],
+            ["3", "3"],
+            ["4", "2"],
+            ["5", "1"],
+        ],
+        row_count=5,
+        column_count=2,
+        format="csv",
+        warnings=[],
+    )
+    h["dataset_repo"].add(dataset, preview, CONFIRMED_DATASET_CONTENT)
+    h["dataset_repo"].activate(project_id, dataset_id)
+
+    var_id = deterministic_uuid("var:clima")
+    dim_id = deterministic_uuid("dim:comunicacion")
+    ind_id = deterministic_uuid("ind:claridad")
+    item1_id = deterministic_uuid("item:p1")
+    item2_id = deterministic_uuid("item:p2")
+    rule_id = deterministic_uuid("rule:sum_comunicacion")
+    inst_id = deterministic_uuid("instrument:clima")
+
+    opts = standard_likert_options()
+    items = [
+        InstrumentItem(
+            item_id=item1_id,
+            variable_id=var_id,
+            dimension_id=dim_id,
+            indicator_id=ind_id,
+            text="La comunicación de la dirección es oportuna y clara.",
+            response_type="single_choice",
+            response_options=opts,
+            valid_min=1.0,
+            valid_max=5.0,
+            reverse_scored=False,
+        ),
+        InstrumentItem(
+            item_id=item2_id,
+            variable_id=var_id,
+            dimension_id=dim_id,
+            indicator_id=ind_id,
+            text="Frecuentemente recibo información contradictoria de mis superiores.",
+            response_type="single_choice",
+            response_options=opts,
+            valid_min=1.0,
+            valid_max=5.0,
+            reverse_scored=True,
+            reverse_rule="min_plus_max_minus_value",
+        ),
+    ]
+    rules = [
+        ScoringRule(
+            scoring_rule_id=rule_id,
+            scope="dimension",
+            dimension_id=dim_id,
+            item_ids=[item1_id, item2_id],
+            aggregation="sum",
+            missing_policy="all_required",
+            confirmed=False,
+        )
+    ]
+
+    h["service"].create_draft(
+        project_id,
+        variables=[InstrumentVariable(variable_id=var_id, name="Clima Laboral", scale="ordinal")],
+        dimensions=[
+            InstrumentDimension(
+                dimension_id=dim_id, variable_id=var_id, name="Comunicación Interna"
+            )
+        ],
+        indicators=[
+            InstrumentIndicator(
+                indicator_id=ind_id, dimension_id=dim_id, name="Claridad de Información"
+            )
+        ],
+        items=items,
+        scoring_rules=rules,
+        instrument_id=inst_id,
+    )
+
+    h["service"].link_methodology(
+        project_id,
+        inst_id,
+        expected_version=0,
+        document_id=doc_id,
+        variable_links={var_id: meth_var_id},
+    )
+
+    h["service"].confirm_scoring_rules(project_id, inst_id, expected_version=1)
+
+    h["service"].set_mapping(
+        project_id,
+        inst_id,
+        expected_version=2,
+        dataset_id=dataset_id,
+        item_columns=[
+            ItemColumnMapping(item_id=item1_id, column_name="p1_comunicacion_directa"),
+            ItemColumnMapping(item_id=item2_id, column_name="p2_info_contradictoria"),
+        ],
+    )
+
+    h["service"].confirm_mapping(
+        project_id, inst_id, expected_version=3, confirmer_ref="revisor_metodologico"
+    )
+
+    h["service"].confirm_instrument(
+        project_id, inst_id, expected_version=4, confirmer_ref="revisor_metodologico"
+    )
+
+    return h["reader"].get_confirmed_context(str(project_id), str(inst_id))
+
+
+def build_deterministic_confirmed_instrument_with_mapping(
+    storage_dir: Path | None = None,
+    clock_start: datetime = FIXED_BASE_TIME,
+) -> InstrumentContext:
+    """Genera determinísticamente el fixture contractual de instrumento confirmado con mapeo."""
+    if storage_dir is None:
+        with tempfile.TemporaryDirectory() as td:
+            return _build_confirmed_in_dir(Path(td), clock_start)
+    return _build_confirmed_in_dir(storage_dir, clock_start)
+
+
+def _build_reviewed_in_dir(tmp_path: Path, clock_start: datetime) -> InstrumentContext:
+    clock = make_deterministic_clock(start=clock_start, step_seconds=60)
+    h = create_deterministic_harness(tmp_path, clock=clock)
+
+    project_id = deterministic_uuid("project:autoeficacia")
+    project = Project(
+        id=project_id,
+        title="Estudio de Autoeficacia en Investigadores",
+        description="Proyecto sintético determinista para validación contractual",
+        university="Universidad Nacional Mayor de San Marcos",
+        faculty="Facultad de Educación",
+        program="Investigación Educativa",
+        degree="master",
+        academic_year=2026,
+        created_at=clock_start,
+        updated_at=clock_start,
+    )
+    h["project_repo"].add(project)
+
+    doc_id = deterministic_uuid("document:autoeficacia")
+    doc = Document(
+        id=doc_id,
+        project_id=project_id,
+        name="escala_autoeficacia.pdf",
+        format="pdf",
+        size=len(REVIEWED_DOC_CONTENT),
+        uploaded_at=clock_start,
+    )
+    h["doc_repo"].add(doc, REVIEWED_DOC_CONTENT)
+
+    meth_var_id = deterministic_uuid("meth_var:autoeficacia")
+    finding = ReviewFinding(
+        value="Autoeficacia Académica",
+        kind="quotation",
+        evidence=["Escala de Autoeficacia Percibida en Investigadores"],
+    )
+    review = MethodologyReview(
+        project_id=project_id,
+        document_id=doc_id,
+        origin="manual",
+        content=ReviewContent(
+            title=ReviewFinding(value="Estudio de Autoeficacia", kind="manual"),
+            variables=[
+                ReviewVariable(
+                    id=meth_var_id,
+                    name=finding,
+                )
+            ],
+        ),
+        pending_fields=[],
+        review_status="reviewed",
+        version=1,
+        updated_at=clock_start,
+        reviewed_at=clock_start,
+    )
+    h["methodology"].save_review(review, expected_version=None)
+
+    var_id = deterministic_uuid("var:autoeficacia")
+    dim_id = deterministic_uuid("dim:confianza")
+    ind_id = deterministic_uuid("ind:persistencia")
+    item_id = deterministic_uuid("item:autoeficacia_1")
+    rule_id = deterministic_uuid("rule:mean_autoeficacia")
+    inst_id = deterministic_uuid("instrument:autoeficacia")
+
+    opts = standard_likert_options()
+    items = [
+        InstrumentItem(
+            item_id=item_id,
+            variable_id=var_id,
+            dimension_id=dim_id,
+            indicator_id=ind_id,
+            text="Puedo resolver problemas difíciles si me esfuerzo lo suficiente.",
+            response_type="single_choice",
+            response_options=opts,
+            valid_min=1.0,
+            valid_max=5.0,
+            reverse_scored=False,
+        )
+    ]
+    rules = [
+        ScoringRule(
+            scoring_rule_id=rule_id,
+            scope="dimension",
+            dimension_id=dim_id,
+            item_ids=[item_id],
+            aggregation="mean",
+            missing_policy="all_required",
+            confirmed=False,
+        )
+    ]
+
+    h["service"].create_draft(
+        project_id,
+        variables=[InstrumentVariable(variable_id=var_id, name="Autoeficacia", scale="interval")],
+        dimensions=[
+            InstrumentDimension(
+                dimension_id=dim_id, variable_id=var_id, name="Confianza en Tareas Complejas"
+            )
+        ],
+        indicators=[
+            InstrumentIndicator(indicator_id=ind_id, dimension_id=dim_id, name="Persistencia")
+        ],
+        items=items,
+        scoring_rules=rules,
+        instrument_id=inst_id,
+    )
+
+    h["service"].link_methodology(
+        project_id,
+        inst_id,
+        expected_version=0,
+        document_id=doc_id,
+        variable_links={var_id: meth_var_id},
+    )
+
+    h["service"].confirm_scoring_rules(project_id, inst_id, expected_version=1)
+
+    h["service"].confirm_instrument(
+        project_id, inst_id, expected_version=2, confirmer_ref="auditor_investigacion"
+    )
+
+    return h["reader"].get_confirmed_context(str(project_id), str(inst_id))
+
+
+def build_deterministic_reviewed_instrument_without_mapping(
+    storage_dir: Path | None = None,
+    clock_start: datetime = FIXED_BASE_TIME,
+) -> InstrumentContext:
+    """Genera determinísticamente el fixture contractual de instrumento revisado sin mapeo."""
+    if storage_dir is None:
+        with tempfile.TemporaryDirectory() as td:
+            return _build_reviewed_in_dir(Path(td), clock_start)
+    return _build_reviewed_in_dir(storage_dir, clock_start)
