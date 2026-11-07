@@ -8,6 +8,7 @@ import { ProjectWorkspace } from './ProjectWorkspace';
 import { navigateProject, useProjectRoute } from './navigation';
 import type { Project, ProjectDraft, ProjectService } from './types';
 import { degreeLabels } from './types';
+import { UiIcon } from './UiIcon';
 import './projects.css';
 import './redesign.css';
 
@@ -33,14 +34,14 @@ export function ResearchProjects({
   const [selected, setSelected] = useState<Project | null>(null);
   const [detailError, setDetailError] = useState('');
   const [notice, setNotice] = useState('');
-  const [deleting, setDeleting] = useState(false);
-  const deleteButton = useRef<HTMLButtonElement>(null);
+  const [deleting, setDeleting] = useState<Project | null>(null);
+  const deleteButton = useRef<HTMLButtonElement | null>(null);
   const activeRoute = useRef(route);
   useEffect(() => {
     activeRoute.current = route;
   });
   useEffect(() => {
-    const closeDialog = () => setDeleting(false);
+    const closeDialog = () => setDeleting(null);
     window.addEventListener('popstate', closeDialog);
     window.addEventListener('hashchange', closeDialog);
     window.addEventListener('tesisstat:navigate', closeDialog);
@@ -98,7 +99,7 @@ export function ResearchProjects({
     setNotice('');
     setDetailError('');
     setSelected(null);
-    setDeleting(false);
+    setDeleting(null);
     setLoading(true);
     setRefresh((n) => n + 1);
     navigateProject();
@@ -124,28 +125,34 @@ export function ResearchProjects({
     setDetailError('');
     setError('');
     setNotice(edited ? 'Investigación actualizada.' : 'Investigación creada.');
-    navigateProject(saved.id, edited ? section : 'assistant', null, true);
+    navigateProject(edited ? null : saved.id, 'assistant', null, true);
   }
   async function remove() {
-    if (!project) return;
-    await service.delete(project.id);
-    setProjects((items) => items.filter((p) => p.id !== project.id));
-    if (activeRoute.current.projectId !== project.id) return;
-    setDeleting(false);
-    setSelected(null);
-    setDetailError('');
-    setNotice('Investigación eliminada.');
-    navigateProject(null, 'assistant', null, true);
+    if (!deleting) return;
+    const target = deleting;
+    await service.delete(target.id);
+    setProjects((items) => items.filter((p) => p.id !== target.id));
+    setDeleting((current) => (current?.id === target.id ? null : current));
+    const currentProject = activeRoute.current.projectId;
+    if (currentProject === target.id) {
+      setSelected(null);
+      setDetailError('');
+      navigateProject(null, 'assistant', null, true);
+    }
+    if (!currentProject || currentProject === target.id)
+      setNotice('Investigación eliminada.');
   }
 
   return (
-    <ProjectShell project={project} section={section} homeHref={homeHref}>
-      <p className="rp-dev-note">
-        Entorno local sin autenticación. Utiliza únicamente información
-        ficticia.
-      </p>
+    <ProjectShell
+      project={project}
+      section={section}
+      homeHref={homeHref}
+      assistant={!!project && !form && section === 'assistant'}
+      listing={!projectId && !form}
+    >
       {notice && (
-        <p role="status" className="rp-success">
+        <p role="status" className="rp-success rp-toast">
           {notice}
         </p>
       )}
@@ -164,19 +171,22 @@ export function ResearchProjects({
         </>
       ) : !projectId ? (
         <>
-          <p className="rp-eyebrow">TU ESPACIO DE INVESTIGACIÓN</p>
+          <p className="rp-eyebrow">ESPACIO DE INVESTIGACIÓN</p>
           <div className="rp-heading">
             <div>
-              <h1>Mis investigaciones</h1>
-              <p>Organiza tu tesis y avanza, una pregunta a la vez.</p>
+              <h1>Tu investigación, con claridad.</h1>
+              <p className="rp-intro">
+                Selecciona tu proyecto para conversar con el asistente,
+                organizar tus materiales y comprender tus análisis.
+              </p>
             </div>
           </div>
           <div className="rp-entry-row">
             <section className="rp-feature-card">
-              <h2>Da el siguiente paso en tu tesis</h2>
+              <h2>Comienza una nueva investigación</h2>
               <p>
-                Reúne tus documentos y datos en un proyecto. Tu asistente te
-                acompaña para comprenderlos.
+                Crea el espacio de tu tesis. El asistente te acompañará desde la
+                metodología hasta la interpretación de resultados.
               </p>
               <button
                 disabled={loading}
@@ -185,14 +195,17 @@ export function ResearchProjects({
                   navigateProject(null, 'assistant', 'create');
                 }}
               >
-                Nueva investigación
+                <UiIcon name="plus" /> Nueva investigación
               </button>
             </section>
             <aside className="rp-info-card">
-              <h2>Una conversación con contexto</h2>
+              <span className="rp-info-icon">
+                <UiIcon name="message" />
+              </span>
+              <strong>El asistente trabaja dentro de cada proyecto</strong>
               <p>
-                Cada investigación conserva sus propios materiales e historial.
-                Tú revisas y apruebas los análisis.
+                Los documentos, instrumentos y datos permanecen vinculados a la
+                investigación que selecciones.
               </p>
             </aside>
           </div>
@@ -211,7 +224,19 @@ export function ResearchProjects({
                 </button>
               </div>
             ) : (
-              <ProjectList projects={projects} onOpen={open} />
+              <ProjectList
+                projects={projects}
+                onOpen={open}
+                onEdit={(target) => {
+                  setSelected(target);
+                  setNotice('');
+                  navigateProject(target.id, 'assistant', 'edit');
+                }}
+                onDelete={(target, trigger) => {
+                  deleteButton.current = trigger;
+                  setDeleting(target);
+                }}
+              />
             )}
           </section>
         </>
@@ -245,88 +270,83 @@ export function ResearchProjects({
             key={project.id}
             initial={project}
             onSave={save}
-            onCancel={() => navigateProject(project.id, section)}
+            onCancel={goList}
           />
         </>
       ) : (
         <section aria-label="Información de la investigación" key={project.id}>
-          <ProjectHeader project={project} section={section}>
-            <button
-              className="rp-secondary"
-              onClick={() => {
-                setNotice('');
-                navigateProject(project.id, section, 'edit');
-              }}
-            >
-              Editar investigación
-            </button>
-            <button
-              ref={deleteButton}
-              className="rp-delete"
-              onClick={() => setDeleting(true)}
-            >
-              Eliminar investigación
-            </button>
-          </ProjectHeader>
+          {section !== 'assistant' && (
+            <ProjectHeader project={project} section={section} />
+          )}
           <ProjectWorkspace
             key={project.id}
             projectId={project.id}
+            projectTitle={project.title}
             section={section}
             view={route.view}
             item={route.item}
           />
-          <details className="rp-project-details">
-            <summary>Información académica del proyecto</summary>
-            <p className="rp-description">
-              {project.description || 'Sin descripción todavía.'}
-            </p>
-            <dl>
-              <div>
-                <dt>Universidad</dt>
-                <dd>{project.university}</dd>
-              </div>
-              <div>
-                <dt>Facultad</dt>
-                <dd>{project.faculty || 'Sin especificar'}</dd>
-              </div>
-              <div>
-                <dt>Programa</dt>
-                <dd>{project.program}</dd>
-              </div>
-              <div>
-                <dt>Año académico</dt>
-                <dd>{project.academic_year ?? 'Sin especificar'}</dd>
-              </div>
-              <div>
-                <dt>Grado académico</dt>
-                <dd>{degreeLabels[project.degree]}</dd>
-              </div>
-              <div>
-                <dt>Creada</dt>
-                <dd>{new Date(project.created_at).toLocaleString('es-PE')}</dd>
-              </div>
-              <div>
-                <dt>Última actualización</dt>
-                <dd>{new Date(project.updated_at).toLocaleString('es-PE')}</dd>
-              </div>
-            </dl>
-          </details>
-          {deleting && (
-            <DeleteProjectDialog
-              title={project.title}
-              onConfirm={remove}
-              onCancel={() => {
-                setDeleting(false);
-                deleteButton.current?.focus();
-              }}
-            />
+          {section !== 'assistant' && (
+            <details className="rp-project-details">
+              <summary>Información académica del proyecto</summary>
+              <p className="rp-description">
+                {project.description || 'Sin descripción todavía.'}
+              </p>
+              <dl>
+                <div>
+                  <dt>Universidad</dt>
+                  <dd>{project.university}</dd>
+                </div>
+                <div>
+                  <dt>Facultad</dt>
+                  <dd>{project.faculty || 'Sin especificar'}</dd>
+                </div>
+                <div>
+                  <dt>Programa</dt>
+                  <dd>{project.program}</dd>
+                </div>
+                <div>
+                  <dt>Año académico</dt>
+                  <dd>{project.academic_year ?? 'Sin especificar'}</dd>
+                </div>
+                <div>
+                  <dt>Grado académico</dt>
+                  <dd>{degreeLabels[project.degree]}</dd>
+                </div>
+                <div>
+                  <dt>Creada</dt>
+                  <dd>
+                    {new Date(project.created_at).toLocaleString('es-PE')}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Última actualización</dt>
+                  <dd>
+                    {new Date(project.updated_at).toLocaleString('es-PE')}
+                  </dd>
+                </div>
+              </dl>
+            </details>
           )}
         </section>
       )}
-      <footer className="rp-footer">
-        TesisStat AI · {integrated ? 'Research + Statistics' : 'Research'} ·
-        Revisa las fuentes y aprueba cada propuesta antes de ejecutarla.
-      </footer>
+      {deleting && (
+        <DeleteProjectDialog
+          title={deleting.title}
+          onConfirm={remove}
+          onCancel={() => {
+            setDeleting(null);
+            deleteButton.current?.focus();
+          }}
+        />
+      )}
+      {!(project && !form && section === 'assistant') && (
+        <footer className="rp-footer">
+          TesisStat AI · {integrated ? 'Research + Statistics' : 'Research'} ·
+          Entorno local sin autenticación. Utiliza únicamente información
+          ficticia.
+        </footer>
+      )}
     </ProjectShell>
   );
 }

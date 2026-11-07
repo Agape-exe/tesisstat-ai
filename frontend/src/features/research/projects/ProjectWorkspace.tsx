@@ -11,11 +11,13 @@ import { EmptyState } from './ProjectShell';
 type WorkspaceRoute = { view: string | null; item: string | null };
 export function ProjectWorkspace({
   projectId,
+  projectTitle,
   section,
   view = null,
   item = null,
 }: {
   projectId: string;
+  projectTitle?: string;
   section: Section;
   view?: string | null;
   item?: string | null;
@@ -31,12 +33,16 @@ export function ProjectWorkspace({
       routes: { ...cache.routes, [section]: { view, item } },
     });
   return (
-    <div className="rp-workspace" aria-label="Sección del proyecto">
+    <div
+      className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : ''}`}
+      aria-label="Sección del proyecto"
+    >
       {(Object.entries(cache.routes) as [Section, WorkspaceRoute][]).map(
         ([id, route]) => (
           <div key={id} hidden={id !== section}>
             <SectionContent
               projectId={projectId}
+              projectTitle={projectTitle}
               section={id}
               view={route.view}
               item={route.item}
@@ -50,12 +56,14 @@ export function ProjectWorkspace({
 }
 function SectionContent({
   projectId,
+  projectTitle,
   section,
   view,
   item,
   active,
 }: {
   projectId: string;
+  projectTitle?: string;
   section: Section;
   view: string | null;
   item: string | null;
@@ -66,6 +74,7 @@ function SectionContent({
       return (
         <ConversationChat
           projectId={projectId}
+          projectTitle={projectTitle}
           onOpenResource={(resource) => navigateProject(projectId, resource)}
         />
       );

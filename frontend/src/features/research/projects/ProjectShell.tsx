@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { navigateProject, sections, type Section } from './navigation';
 import type { Project } from './types';
+import { UiIcon } from './UiIcon';
 
 export function EmptyState({
   title,
@@ -23,7 +24,11 @@ export function ProjectShell({
   section,
   homeHref,
   children,
+  assistant = false,
+  listing = false,
 }: {
+  assistant?: boolean;
+  listing?: boolean;
   project: Project | null;
   section: Section;
   homeHref: string;
@@ -32,6 +37,10 @@ export function ProjectShell({
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const content = useRef<HTMLElement>(null);
+  const navigationClose = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (menu) navigationClose.current?.focus();
+  }, [menu]);
   useEffect(() => {
     const focus = () => {
       content.current?.focus({ preventScroll: true });
@@ -51,7 +60,9 @@ export function ProjectShell({
     navigateProject(id && project ? project.id : null, id);
   }
   return (
-    <div className="rp-shell">
+    <div
+      className={`rp-shell ${assistant ? 'rp-assistant-shell' : ''} ${listing ? 'rp-list-shell' : ''}`}
+    >
       <a
         className="rp-skip"
         href="#main-content"
@@ -63,7 +74,9 @@ export function ProjectShell({
         Saltar al contenido
       </a>
       <header className="rp-mobile-head">
-        <strong>TesisStat AI</strong>
+        <strong>
+          <UiIcon name="chart" /> TesisStat AI
+        </strong>
         <button
           ref={menuButton}
           className="rp-secondary"
@@ -74,9 +87,22 @@ export function ProjectShell({
             if (event.key === 'Escape') setMenu(false);
           }}
         >
-          {menu ? 'Cerrar menú' : 'Abrir menú'}
+          <span className="rp-sr-only">
+            {menu ? 'Cerrar menú' : 'Abrir menú'}
+          </span>
+          <UiIcon name={menu ? 'x' : 'menu'} />
         </button>
       </header>
+      {menu && (
+        <button
+          className="rp-menu-scrim"
+          aria-label="Cerrar navegación"
+          onClick={() => {
+            setMenu(false);
+            menuButton.current?.focus();
+          }}
+        />
+      )}
       <aside
         className={`rp-sidebar ${menu ? 'rp-menu-open' : ''}`}
         onKeyDown={(event) => {
@@ -86,6 +112,17 @@ export function ProjectShell({
           }
         }}
       >
+        <button
+          ref={navigationClose}
+          className="rp-navigation-close"
+          aria-label="Cerrar menú de navegación"
+          onClick={() => {
+            setMenu(false);
+            menuButton.current?.focus();
+          }}
+        >
+          <UiIcon name="x" />
+        </button>
         <a
           className="rp-brand"
           href={homeHref}
@@ -96,41 +133,78 @@ export function ProjectShell({
           }}
         >
           <span className="rp-brand-mark" aria-hidden="true">
-            T
+            <UiIcon name="chart" />
           </span>{' '}
-          TesisStat <strong>AI</strong>
+          TesisStat AI
         </a>
         <nav id="primary-navigation" aria-label="Navegación principal">
-          <p className="rp-nav-label">TU ESPACIO</p>
+          {project && (
+            <div className="rp-selected-project">
+              <small>INVESTIGACIÓN ACTUAL</small>
+              <strong>
+                <UiIcon name="folder" />
+                <span>{project.title}</span>
+              </strong>
+            </div>
+          )}
+          <p className="rp-nav-label">NAVEGACIÓN</p>
           <button
             aria-current={!project ? 'page' : undefined}
             onClick={() => go()}
           >
-            Mis investigaciones
+            <UiIcon name="folder" />
+            <span>Mis investigaciones</span>
           </button>
           {project && (
             <>
-              <div className="rp-selected-project">
-                <small>INVESTIGACIÓN ACTUAL</small>
-                <strong>{project.title}</strong>
-              </div>
+              <div className="rp-nav-divider" />
               {sections.map(([id, label]) => (
                 <button
                   key={id}
                   aria-current={id === section ? 'page' : undefined}
                   onClick={() => go(id)}
                 >
-                  {label}
+                  <UiIcon
+                    name={
+                      {
+                        assistant: 'message',
+                        documents: 'file',
+                        methodology: 'book',
+                        instrument: 'clipboard',
+                        datasets: 'database',
+                        analysis: 'chart',
+                        results: 'scatter',
+                        reports: 'report',
+                      }[id]
+                    }
+                  />
+                  <span>{label}</span>
                   {id === 'instrument' && <small>Pendiente</small>}
                 </button>
               ))}
             </>
           )}
         </nav>
-        <p className="rp-sidebar-note">
-          Un espacio para comprender
-          <br />y avanzar con tu tesis.
-        </p>
+        <div className="rp-sidebar-bottom">
+          <details className="rp-help">
+            <summary>
+              <UiIcon name="help" />
+              Ayuda
+            </summary>
+            <p>
+              Selecciona una investigación. Revisa sus fuentes y aprueba cada
+              propuesta antes de ejecutarla. Entorno local sin autenticación:
+              utiliza únicamente información ficticia.
+            </p>
+          </details>
+          <div className="rp-profile">
+            <span className="rp-avatar">E</span>
+            <div>
+              <strong>Estudiante</strong>
+              <small>Entorno local · datos ficticios</small>
+            </div>
+          </div>
+        </div>
       </aside>
       <main id="main-content" ref={content} tabIndex={-1} className="rp-main">
         {children}
@@ -142,11 +216,9 @@ export function ProjectShell({
 export function ProjectHeader({
   project,
   section,
-  children,
 }: {
   project: Project;
   section: Section;
-  children: ReactNode;
 }) {
   return (
     <header className="rp-project-header">
@@ -165,7 +237,6 @@ export function ProjectHeader({
         </div>
         <span className="rp-badge">Borrador</span>
       </div>
-      <div className="rp-project-actions">{children}</div>
     </header>
   );
 }

@@ -1,0 +1,26 @@
+[
+  {
+    "width": 1440,
+    "document": 1440,
+    "table": 650,
+    "tableContent": 650,
+    "composer": 851,
+    "height": 900
+  },
+  {
+    "width": 1366,
+    "document": 1366,
+    "table": 650,
+    "tableContent": 650,
+    "composer": 719,
+    "height": 768
+  },
+  {
+    "width": 390,
+    "document": 390,
+    "table": 292.390625,
+    "tableContent": 435,
+    "composer": 793,
+    "height": 844
+  }
+]
