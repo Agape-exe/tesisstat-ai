@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0.0",
+  "instrument_id": "ad4515b6-76bf-5f5f-94b0-b68fc54cf0c4",
+  "project_id": "482a77df-3759-53cb-b28a-613a73d0386d",
+  "research_package_id": null,
+  "version": 5,
+  "status": "reviewed",
+  "created_at": "2026-11-01T10:00:00Z",
+  "updated_at": "2026-11-01T10:05:00Z",
+  "provenance": {
+    "source_kind": "document",
+    "source_document_id": "5e4433b0-e538-530b-9069-1be6e5b74915",
+    "source_document_hash": "e7f772d2800da15ebaa9ef282239b5ffc29c908eb0f0ebe438b2d5f4c186482b",
+    "methodology_review_id": "5e4433b0-e538-530b-9069-1be6e5b74915",
+    "methodology_review_version": 1,
+    "methodology_review_hash": "d7ae473f86917287853e4bd942d62e4a2a1325b400ee8fdfeb5917e0ffd6d1e9"
+  },
+  "confirmation": {
+    "state": "confirmed",
+    "confirmed_at": "2026-11-01T10:05:00Z",
+    "confirmer_ref": "revisor_metodologico"
+  },
+  "variables": [
+    {
+      "variable_id": "70dfc423-8fa7-59ce-8286-883a0dd12235",
+      "name": "Clima Laboral",
+      "scale": "ordinal",
+      "methodology_variable_id": "c936bb6e-6e14-5caf-9cd6-4fe74127bedc"
+    }
+  ],
+  "dimensions": [
+    {
+      "dimension_id": "860e5aa0-98f0-5f70-be63-7e18f9dd482a",
+      "variable_id": "70dfc423-8fa7-59ce-8286-883a0dd12235",
+      "name": "Comunicación Interna"
+    }
+  ],
+  "indicators": [
+    {
+      "indicator_id": "fb674bf9-b5f3-55f8-8b6e-9bcbab0ed4a7",
+      "dimension_id": "860e5aa0-98f0-5f70-be63-7e18f9dd482a",
+      "name": "Claridad de Información"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "b93b7e0e-495e-509d-aa7e-0a57bed27646",
+      "variable_id": "70dfc423-8fa7-59ce-8286-883a0dd12235",
+      "dimension_id": "860e5aa0-98f0-5f70-be63-7e18f9dd482a",
+      "indicator_id": "fb674bf9-b5f3-55f8-8b6e-9bcbab0ed4a7",
+      "text": "La comunicación de la dirección es oportuna y clara.",
+      "response_type": "single_choice",
+      "response_options": [
+        {
+          "code": "1",
+          "label": "Totalmente en desacuerdo",
+          "numeric_value": 1.0
+        },
+        {
+          "code": "2",
+          "label": "En desacuerdo",
+          "numeric_value": 2.0
+        },
+        {
+          "code": "3",
+          "label": "Neutral",
+          "numeric_value": 3.0
+        },
+        {
+          "code": "4",
+          "label": "De acuerdo",
+          "numeric_value": 4.0
+        },
+        {
+          "code": "5",
+          "label": "Totalmente de acuerdo",
+          "numeric_value": 5.0
+        }
+      ],
+      "valid_min": 1.0,
+      "valid_max": 5.0,
+      "reverse_scored": false,
+      "reverse_rule": null,
+      "source_quote": null
+    },
+    {
+      "item_id": "e4d7177d-36fc-5292-84f0-ee8c22ee373e",
+      "variable_id": "70dfc423-8fa7-59ce-8286-883a0dd12235",
+      "dimension_id": "860e5aa0-98f0-5f70-be63-7e18f9dd482a",
+      "indicator_id": "fb674bf9-b5f3-55f8-8b6e-9bcbab0ed4a7",
+      "text": "Frecuentemente recibo información contradictoria de mis superiores.",
+      "response_type": "single_choice",
+      "response_options": [
+        {
+          "code": "1",
+          "label": "Totalmente en desacuerdo",
+          "numeric_value": 1.0
+        },
+        {
+          "code": "2",
+          "label": "En desacuerdo",
+          "numeric_value": 2.0
+        },
+        {
+          "code": "3",
+          "label": "Neutral",
+          "numeric_value": 3.0
+        },
+        {
+          "code": "4",
+          "label": "De acuerdo",
+          "numeric_value": 4.0
+        },
+        {
+          "code": "5",
+          "label": "Totalmente de acuerdo",
+          "numeric_value": 5.0
+        }
+      ],
+      "valid_min": 1.0,
+      "valid_max": 5.0,
+      "reverse_scored": true,
+      "reverse_rule": "min_plus_max_minus_value",
+      "source_quote": null
+    }
+  ],
+  "scoring_rules": [
+    {
+      "scoring_rule_id": "2e2496cc-3fdd-53b2-bc33-028d5a96f747",
+      "scope": "dimension",
+      "dimension_id": "860e5aa0-98f0-5f70-be63-7e18f9dd482a",
+      "item_ids": [
+        "b93b7e0e-495e-509d-aa7e-0a57bed27646",
+        "e4d7177d-36fc-5292-84f0-ee8c22ee373e"
+      ],
+      "aggregation": "sum",
+      "missing_policy": "all_required",
+      "confirmed": true
+    }
+  ],
+  "dataset_mapping": {
+    "dataset_id": "2d34fff4-226f-550a-bb9b-be498195dfce",
+    "dataset_hash": "927eec2b9a9493b91de46c3727ae7c35e0233f43949c944e5d3811ffa62ce161",
+    "instrument_version": 5,
+    "item_columns": [
+      {
+        "item_id": "b93b7e0e-495e-509d-aa7e-0a57bed27646",
+        "column_name": "p1_comunicacion_directa"
+      },
+      {
+        "item_id": "e4d7177d-36fc-5292-84f0-ee8c22ee373e",
+        "column_name": "p2_info_contradictoria"
+      }
+    ],
+    "status": "confirmed",
+    "confirmation": {
+      "state": "confirmed",
+      "confirmed_at": "2026-11-01T10:04:00Z",
+      "confirmer_ref": "revisor_metodologico"
+    }
+  }
+}

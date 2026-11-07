@@ -1,0 +1,623 @@
+{
+  "$defs": {
+    "DatasetMapping": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "format": "uuid",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "dataset_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Dataset Hash",
+          "type": "string"
+        },
+        "instrument_version": {
+          "minimum": 0,
+          "title": "Instrument Version",
+          "type": "integer"
+        },
+        "item_columns": {
+          "items": {
+            "$ref": "#/$defs/ItemColumnMapping"
+          },
+          "title": "Item Columns",
+          "type": "array"
+        },
+        "status": {
+          "default": "draft",
+          "enum": [
+            "draft",
+            "confirmed",
+            "stale"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "confirmation": {
+          "$ref": "#/$defs/InstrumentConfirmation"
+        }
+      },
+      "required": [
+        "dataset_id",
+        "dataset_hash",
+        "instrument_version"
+      ],
+      "title": "DatasetMapping",
+      "type": "object"
+    },
+    "InstrumentConfirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "default": "pending",
+          "enum": [
+            "pending",
+            "confirmed"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed At"
+        },
+        "confirmer_ref": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmer Ref"
+        }
+      },
+      "title": "InstrumentConfirmation",
+      "type": "object"
+    },
+    "InstrumentDimension": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension_id": {
+          "format": "uuid",
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "variable_id": {
+          "format": "uuid",
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dimension_id",
+        "variable_id",
+        "name"
+      ],
+      "title": "InstrumentDimension",
+      "type": "object"
+    },
+    "InstrumentIndicator": {
+      "additionalProperties": false,
+      "properties": {
+        "indicator_id": {
+          "format": "uuid",
+          "title": "Indicator Id",
+          "type": "string"
+        },
+        "dimension_id": {
+          "format": "uuid",
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "indicator_id",
+        "dimension_id",
+        "name"
+      ],
+      "title": "InstrumentIndicator",
+      "type": "object"
+    },
+    "InstrumentItem": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "variable_id": {
+          "format": "uuid",
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "dimension_id": {
+          "format": "uuid",
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "indicator_id": {
+          "format": "uuid",
+          "title": "Indicator Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "response_type": {
+          "enum": [
+            "single_choice",
+            "numeric"
+          ],
+          "title": "Response Type",
+          "type": "string"
+        },
+        "response_options": {
+          "items": {
+            "$ref": "#/$defs/ResponseOption"
+          },
+          "title": "Response Options",
+          "type": "array"
+        },
+        "valid_min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid Min"
+        },
+        "valid_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid Max"
+        },
+        "reverse_scored": {
+          "default": false,
+          "title": "Reverse Scored",
+          "type": "boolean"
+        },
+        "reverse_rule": {
+          "anyOf": [
+            {
+              "const": "min_plus_max_minus_value",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reverse Rule"
+        },
+        "source_quote": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Quote"
+        }
+      },
+      "required": [
+        "item_id",
+        "variable_id",
+        "dimension_id",
+        "indicator_id",
+        "text",
+        "response_type"
+      ],
+      "title": "InstrumentItem",
+      "type": "object"
+    },
+    "InstrumentProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "source_kind": {
+          "enum": [
+            "document",
+            "manual"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_document_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Document Id"
+        },
+        "source_document_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Document Hash"
+        },
+        "methodology_review_id": {
+          "format": "uuid",
+          "title": "Methodology Review Id",
+          "type": "string"
+        },
+        "methodology_review_version": {
+          "minimum": 0,
+          "title": "Methodology Review Version",
+          "type": "integer"
+        },
+        "methodology_review_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Methodology Review Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_kind",
+        "methodology_review_id",
+        "methodology_review_version",
+        "methodology_review_hash"
+      ],
+      "title": "InstrumentProvenance",
+      "type": "object"
+    },
+    "InstrumentVariable": {
+      "additionalProperties": false,
+      "properties": {
+        "variable_id": {
+          "format": "uuid",
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "scale": {
+          "default": "unknown",
+          "enum": [
+            "nominal",
+            "ordinal",
+            "interval",
+            "ratio",
+            "unknown"
+          ],
+          "title": "Scale",
+          "type": "string"
+        },
+        "methodology_variable_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Methodology Variable Id"
+        }
+      },
+      "required": [
+        "variable_id",
+        "name"
+      ],
+      "title": "InstrumentVariable",
+      "type": "object"
+    },
+    "ItemColumnMapping": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "column_name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Column Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "column_name"
+      ],
+      "title": "ItemColumnMapping",
+      "type": "object"
+    },
+    "ResponseOption": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "numeric_value": {
+          "title": "Numeric Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "code",
+        "label",
+        "numeric_value"
+      ],
+      "title": "ResponseOption",
+      "type": "object"
+    },
+    "ScoringRule": {
+      "additionalProperties": false,
+      "properties": {
+        "scoring_rule_id": {
+          "format": "uuid",
+          "title": "Scoring Rule Id",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "dimension",
+            "instrument"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "dimension_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimension Id"
+        },
+        "item_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Item Ids",
+          "type": "array"
+        },
+        "aggregation": {
+          "enum": [
+            "sum",
+            "mean"
+          ],
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "missing_policy": {
+          "const": "all_required",
+          "default": "all_required",
+          "title": "Missing Policy",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "scoring_rule_id",
+        "scope",
+        "item_ids",
+        "aggregation"
+      ],
+      "title": "ScoringRule",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "instrument_id": {
+      "format": "uuid",
+      "title": "Instrument Id",
+      "type": "string"
+    },
+    "project_id": {
+      "format": "uuid",
+      "title": "Project Id",
+      "type": "string"
+    },
+    "research_package_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Research Package Id"
+    },
+    "version": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Version",
+      "type": "integer"
+    },
+    "status": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "reviewed",
+        "stale"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "provenance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/InstrumentProvenance"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "confirmation": {
+      "$ref": "#/$defs/InstrumentConfirmation"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/InstrumentVariable"
+      },
+      "minItems": 1,
+      "title": "Variables",
+      "type": "array"
+    },
+    "dimensions": {
+      "items": {
+        "$ref": "#/$defs/InstrumentDimension"
+      },
+      "minItems": 1,
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "indicators": {
+      "items": {
+        "$ref": "#/$defs/InstrumentIndicator"
+      },
+      "minItems": 1,
+      "title": "Indicators",
+      "type": "array"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/InstrumentItem"
+      },
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+    },
+    "scoring_rules": {
+      "items": {
+        "$ref": "#/$defs/ScoringRule"
+      },
+      "title": "Scoring Rules",
+      "type": "array"
+    },
+    "dataset_mapping": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DatasetMapping"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "instrument_id",
+    "project_id",
+    "created_at",
+    "updated_at",
+    "variables",
+    "dimensions",
+    "indicators",
+    "items"
+  ],
+  "title": "InstrumentContext",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v1/InstrumentContext.schema.json"
+}
