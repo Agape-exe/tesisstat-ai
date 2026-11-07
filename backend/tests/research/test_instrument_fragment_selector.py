@@ -206,7 +206,8 @@ def test_9_overlapping_fragments_merge():
     text = (
         "ANEXO 1: CUESTIONARIO DE DESEMPEÑO DOCENTE\n"
         "Escala tipo Likert:\n"
-        "1 = Totalmente en desacuerdo, 2 = En desacuerdo, 3 = De acuerdo, 4 = Muy de acuerdo\n"
+        "1 = Totalmente en desacuerdo, 2 = En desacuerdo, "
+        "3 = De acuerdo, 4 = Totalmente de acuerdo\n"
         "1. El profesor explica con claridad los temas del curso.\n"
         "2. Las actividades prácticas refuerzan los conceptos teóricos.\n"
     )

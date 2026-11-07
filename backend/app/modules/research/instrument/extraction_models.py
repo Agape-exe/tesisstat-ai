@@ -356,9 +356,13 @@ class DocumentInstrumentExtraction(BaseModel):
     project_id: UUID
     document_id: UUID
     provenance: InstrumentSourceProvenance
-    status: Literal["completed", "no_instruments_found", "insufficient_text", "failed"] = (
-        "completed"
-    )
+    status: Literal[
+        "completed",
+        "no_instruments_found",
+        "insufficient_text",
+        "failed",
+        "stale",
+    ] = "completed"
     instruments: list[CandidateInstrument] = Field(default_factory=list)
     evidences: list[SourceReference] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
