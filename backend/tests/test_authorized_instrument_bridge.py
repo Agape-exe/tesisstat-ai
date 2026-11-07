@@ -199,14 +199,7 @@ def _seed_complete_valid_setup(env, extra_columns=True):
             b"5,1,extra5\n"
         )
     else:
-        csv_bytes = (
-            b"p1_comunicacion_directa,p2_info_contradictoria\n"
-            b"1,5\n"
-            b"2,4\n"
-            b"3,3\n"
-            b"4,2\n"
-            b"5,1\n"
-        )
+        csv_bytes = b"p1_comunicacion_directa,p2_info_contradictoria\n1,5\n2,4\n3,3\n4,2\n5,1\n"
     dataset = datasets.add(project_id, "clima_respuestas.csv", csv_bytes)
 
     # 4. Instrument Draft
@@ -789,9 +782,7 @@ def test_uncalculated_xlsx_formula_detection(tmp_path):
         content=ReviewContent(
             title=ReviewFinding(value="Investigación", kind="manual"),
             variables=[
-                ReviewVariable(
-                    id=meth_var_id, name=ReviewFinding(value="Variable", kind="manual")
-                )
+                ReviewVariable(id=meth_var_id, name=ReviewFinding(value="Variable", kind="manual"))
             ],
         ),
         pending_fields=[],
@@ -873,9 +864,7 @@ def test_uncalculated_xlsx_formula_detection(tmp_path):
             ItemColumnMapping(item_id=item2_id, column_name="p2_info_contradictoria"),
         ],
     )
-    env["instruments"].confirm_mapping(
-        project_id, inst_id, expected_version=3, confirmer_ref="u"
-    )
+    env["instruments"].confirm_mapping(project_id, inst_id, expected_version=3, confirmer_ref="u")
     env["instruments"].confirm_instrument(
         project_id, inst_id, expected_version=4, confirmer_ref="u"
     )

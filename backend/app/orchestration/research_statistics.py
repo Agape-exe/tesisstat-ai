@@ -420,10 +420,7 @@ class InstrumentStatisticsBridge:
                 "El estado del instrumento cambió durante la lectura del dataset.",
             ) from exc
 
-        if (
-            post_context.version != context.version
-            or post_context.updated_at != context.updated_at
-        ):
+        if post_context.version != context.version or post_context.updated_at != context.updated_at:
             raise ResearchInputError(
                 "instrument_concurrent_modification",
                 "El instrumento fue modificado concurrentemente durante la lectura del dataset.",
