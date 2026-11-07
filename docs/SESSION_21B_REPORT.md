@@ -2,9 +2,9 @@
 
 ## Estado
 
-Diseño técnico cerrado y ratificado con Research. La sesión define el intercambio
-`InstrumentContext v1.0.0`; no implementa persistencia, rutas HTTP, adaptador de lectura,
-puntuaciones ni confiabilidad.
+Sesión cerrada. Research fusionó el contrato público `InstrumentContext v1.0.0`, su persistencia,
+rutas, fixtures deterministas y adaptador autorizado a `develop`. Statistics revisó y aprobó el
+PR #58, y su consumidor usa ya el contrato público.
 
 ## Resultado
 
@@ -27,24 +27,25 @@ Las decisiones ratificadas son:
 
 ## Artefactos
 
-- `backend/app/shared/instrument_context.py`: DTOs y validaciones del contrato.
-- `docs/INSTRUMENT_CONTEXT_V1.md`: especificación de intercambio.
-- `fixtures/instruments/`: caso confirmado y caso rechazado sintéticos.
-- `backend/tests/test_instrument_context.py`: validación del contrato y de sus casos límite.
+- `backend/app/shared/instrument_contracts.py`: DTO y validaciones canónicas.
+- `backend/app/shared/ports.py`: puerto público `InstrumentContextReader`.
+- `docs/contracts/instrument_context_v1.schema.json`: JSON Schema versionado.
+- `docs/contracts/examples/`: fixtures reproducibles publicados por Research.
+- `backend/tests/test_instrument_context.py`: consumo de contrato canónico y casos límite.
 
 ## Validación ejecutada
 
-Se aprobaron 7 pruebas focalizadas: cinco de InstrumentContext y dos de límites modulares. Ruff,
-formato, comprobación de contratos existentes y compilación también finalizaron correctamente.
+Las pruebas focalizadas de Statistics sobre contrato, conversión, puntuación, confiabilidad y
+límites modulares finalizaron correctamente (`24 passed`), junto con Ruff.
 
 ## Compatibilidad y límites
 
 No se modificaron `ResearchPackage`, `ResearchVariable`, `DatasetReference`, `AnalysisPlan` ni
-`AnalysisResult` v1.0.0. Tampoco se integra todavía Statistics con Research: hasta que 18A entregue
-el adaptador autorizado, los casos de 22B se mantienen como diseño y fixtures conceptuales.
+`AnalysisResult` v1.0.0. La integración controlada aún no lee filas reales ni ejecuta E2E; el
+motor de 22B sigue separado de repositorios y servicios internos de Research.
 
 ## Siguiente dependencia
 
-Research implementará 18A-1 en su rama independiente. Al compartir sus DTOs y JSON Schema finales,
-Statistics comprobará compatibilidad antes de iniciar la implementación del motor de puntuaciones
-en 22B.
+La siguiente dependencia es una composición autorizada que entregue a Statistics un
+`InstrumentContextReader` real y filas de un dataset confirmado. Esa coordinación habilitará la
+primera prueba Research → Statistics de 22B.

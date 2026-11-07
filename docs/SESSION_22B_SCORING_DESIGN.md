@@ -3,12 +3,14 @@
 ## Estado de implementación
 
 El núcleo puro fue implementado en `backend/app/modules/statistics/scoring.py` y se valida con
-`backend/tests/test_scoring.py`. Recibe filas sintéticas y especificaciones explícitas de ítems y
-reglas; no importa Research, persistencia, rutas HTTP ni el adaptador de lectura.
+`backend/tests/test_scoring.py`. La conversión contractual está en
+`backend/app/modules/statistics/scoring_context.py` y consume
+`app.shared.instrument_contracts.InstrumentContext`. Ambas capas reciben filas sintéticas y
+especificaciones explícitas; no importan repositorios ni servicios internos de Research.
 
-Continúan diferidos la integración con Research, la persistencia, los endpoints, la creación de
-datasets derivados y los recorridos E2E. El único insumo contractual futuro es
-`InstrumentContext v1.0.0` ratificado.
+Continúan diferidos la composición con el lector real, la persistencia de resultados, los endpoints,
+la creación de datasets derivados y los recorridos E2E. El insumo contractual ya disponible es el
+`InstrumentContext v1.0.0` canónico.
 
 ## Precondiciones para ejecutar una puntuación
 
@@ -62,7 +64,7 @@ Los valores sintéticos y resultados esperados están en
 
 ## Criterios para integrar 22B
 
-No integrar el motor hasta que Research publique los DTOs y JSON Schema definitivos de 18A-1 y el
-equipo confirme que coinciden con el contrato ratificado. La persistencia, endpoints y el adaptador
-autorizado pueden continuar en paralelo dentro de Research, pero no condicionan las pruebas
-unitarias puras del motor.
+El contrato, Schema y lector ya están publicados y revisados. Antes de la integración controlada
+queda acordar la composición que suministrará filas autorizadas junto al contexto confirmado.
+Esa composición requiere coordinación con Research; las pruebas unitarias puras y la validación
+contractual de Statistics pueden continuar de forma independiente.

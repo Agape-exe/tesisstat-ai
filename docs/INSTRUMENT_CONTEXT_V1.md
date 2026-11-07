@@ -8,18 +8,17 @@ dataset. No sustituye ni cambia `ResearchPackage`, `ResearchVariable`, `DatasetR
 `AnalysisPlan` o `AnalysisResult` v1.0.0.
 
 Research es propietario de la extracción, edición humana, persistencia, versionado, vinculación
-con columnas y creación de datasets derivados. Statistics consume un contexto confirmado por un
+con columnas y creación de datasets derivados. Statistics consume un contexto confirmado por el
 puerto de lectura `InstrumentContextReader.get_confirmed_context(project_id, instrument_id)`; no
-importa repositorios ni servicios internos de Research. El protocolo pertenece al contrato de
-intercambio y su adaptador será implementado por Research. La composición deberá verificar
-propiedad y autorización antes de resolverlo.
+importa repositorios ni servicios internos de Research. La composición deberá verificar propiedad
+y autorización antes de resolverlo.
 
 ## DTO canónico
 
-La implementación Pydantic está en `backend/app/shared/instrument_context.py`. Produce el esquema
-JSON mediante `InstrumentContext.model_json_schema()` y es el DTO de intercambio para esta fase.
-No se ha añadido al exportador de los contratos compartidos: esa publicación se hará al mismo
-tiempo que Research implemente su adaptador y sus rutas.
+La implementación Pydantic canónica está en `backend/app/shared/instrument_contracts.py`; el
+puerto público está en `backend/app/shared/ports.py`. El esquema versionado se publica en
+`docs/contracts/instrument_context_v1.schema.json`. `backend/app/shared/instrument_context.py`
+solo reexporta esos tipos por compatibilidad temporal y no define un segundo contrato.
 
 El DTO contiene:
 
@@ -63,13 +62,15 @@ producir una nueva versión; no se actualizan puntuaciones ni resultados histór
 
 ## Fixtures y cobertura
 
-`fixtures/instruments/satisfaction_confirmed.context.json` representa un cuestionario sintético
-de dos ítems y un mapeo confirmado. La prueba `backend/tests/test_instrument_context.py` valida el
-caso correcto y rechaza: confirmación ausente, inversión sin rango y mapeo confirmado incompleto.
+`docs/contracts/examples/instrument_confirmed_with_mapping.json` representa un cuestionario
+sintético reproducible de dos ítems y un mapeo confirmado. La prueba
+`backend/tests/test_instrument_context.py` valida el caso correcto y rechaza: confirmación
+ausente, inversión sin rango y mapeo confirmado incompleto.
 
 ## Integración posterior
 
-La Sesión 22B añadirá el adaptador del puerto y el motor de puntuaciones. Research seguirá creando
-el dataset derivado solo después de una previsualización y confirmación explícita. Statistics
-devolverá resultados deterministas y trazables, nunca escribirá en el dataset original ni decidirá
-reglas metodológicas por sí solo.
+La Sesión 22B ya contiene el motor puro y la conversión del contexto público a especificaciones de
+puntuación. Falta componer el lector autorizado con una fuente de filas aprobada y ejecutar la
+integración controlada. Research seguirá creando el dataset derivado solo después de una
+previsualización y confirmación explícita. Statistics devolverá resultados deterministas y
+trazables, nunca escribirá en el dataset original ni decidirá reglas metodológicas por sí solo.
