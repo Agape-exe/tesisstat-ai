@@ -105,9 +105,7 @@ class InstrumentScoringPreviewService:
             )
 
         try:
-            reliability_result = calculate_cronbach_reliability(
-                authorized.rows, inputs.item_specs
-            )
+            reliability_result = calculate_cronbach_reliability(authorized.rows, inputs.item_specs)
         except StatisticalCalculationError as error:
             reason = str(error)
             reliability = ReliabilityPreview(
