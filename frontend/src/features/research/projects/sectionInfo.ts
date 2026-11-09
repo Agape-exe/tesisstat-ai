@@ -39,7 +39,7 @@ export const sectionInfo: Record<
   datasets: {
     title: 'Datos',
     description:
-      'Explora el archivo de respuestas y revisa su relación con las variables.',
+      'Organiza tus archivos, revisa sus hojas y describe cada tabla.',
     icon: 'database',
   },
   analysis: {

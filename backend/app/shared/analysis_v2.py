@@ -39,6 +39,10 @@ class SourceRef(V2Model):
         "score",
         "plan",
         "result",
+        "source_file",
+        "source_sheet",
+        "table",
+        "table_context",
     ]
     id: ID
     revision: Revision

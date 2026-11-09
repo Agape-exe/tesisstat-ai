@@ -475,10 +475,16 @@ it('separates preview, quality and preparation and retains a transformation draf
   expect(api.runEda).not.toHaveBeenCalled();
 });
 
-it('restores the default dataset view with Back and the selected quality view with Forward', async () => {
+it('opens new sources by default and retains legacy quality navigation with Back and Forward', async () => {
   mockApi();
   window.history.replaceState(null, '', '#project=project&section=datasets');
   render(<Host />);
+  expect(
+    await screen.findByRole('heading', { name: 'Tus datos' }),
+  ).toBeVisible();
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Herramientas anteriores de datasets' }),
+  );
   await screen.findByText('sintetico.csv');
   fireEvent.click(screen.getByRole('button', { name: 'Calidad de datos' }));
   await screen.findByRole('button', { name: 'Analizar calidad de datos' });
@@ -488,7 +494,7 @@ it('restores the default dataset view with Back and the selected quality view wi
   expect(
     screen.getByRole('button', { name: 'Archivo y vista previa' }),
   ).toHaveAttribute('aria-current', 'page');
-  expect(window.location.hash).not.toContain('view=');
+  expect(window.location.hash).toContain('view=legacy');
   act(() => window.history.forward());
   await waitFor(() =>
     expect(

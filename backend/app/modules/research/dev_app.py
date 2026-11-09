@@ -83,6 +83,9 @@ from app.modules.research.projects.repository import ProjectRepository
 from app.modules.research.projects.routes import create_router
 from app.modules.research.projects.sqlite_repository import SQLiteProjectRepository
 from app.modules.research.projects.use_cases import ProjectNotFound, ProjectService
+from app.modules.research.sources.repository import SourceRepository
+from app.modules.research.sources.routes import create_router as create_source_router
+from app.modules.research.sources.service import SourceService
 from app.orchestration.analysis_repository import SQLiteAnalysisRepository
 from app.orchestration.analysis_routes import create_router as create_analysis_router
 from app.orchestration.analysis_routes import local_only
@@ -377,6 +380,24 @@ def create_app(
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
     projects = ProjectService(repository)
+    sources = SourceService(
+        projects,
+        SourceRepository(
+            settings.research_db_path,
+            settings.research_datasets_path.with_name(
+                settings.research_datasets_path.name + "-sources-v2"
+            ),
+        ),
+        DatasetLimits(
+            max_bytes=settings.research_dataset_max_bytes,
+            max_rows=settings.research_dataset_max_rows,
+            max_columns=settings.research_dataset_max_columns,
+            preview_rows=settings.research_dataset_preview_rows,
+            max_zip_bytes=settings.research_dataset_max_zip_bytes,
+        ),
+    )
+    app.state.source_service = sources
+    app.include_router(create_source_router(sources))
     app.include_router(
         create_context_router(
             ContextService(

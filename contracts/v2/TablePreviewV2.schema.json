@@ -1,0 +1,234 @@
+{
+  "$defs": {
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_ref": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Actor Ref",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "format": "date-time",
+          "title": "Confirmed At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actor_ref",
+        "confirmed_at",
+        "revision"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "ExtractionV2": {
+      "additionalProperties": false,
+      "properties": {
+        "header_row": {
+          "minimum": 1,
+          "title": "Header Row",
+          "type": "integer"
+        },
+        "range": {
+          "pattern": "^[A-Z]+[1-9][0-9]*:[A-Z]+[1-9][0-9]*$",
+          "title": "Range",
+          "type": "string"
+        },
+        "algorithm_version": {
+          "const": "tabular-v1",
+          "default": "tabular-v1",
+          "title": "Algorithm Version",
+          "type": "string"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "header_row",
+        "range"
+      ],
+      "title": "ExtractionV2",
+      "type": "object"
+    },
+    "ImportedTableV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "file_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "File Id",
+          "type": "string"
+        },
+        "sheet_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Sheet Id",
+          "type": "string"
+        },
+        "revision": {
+          "const": 1,
+          "default": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "original_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Original Hash",
+          "type": "string"
+        },
+        "content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "hash_algorithm": {
+          "const": "table-json-v1",
+          "default": "table-json-v1",
+          "title": "Hash Algorithm",
+          "type": "string"
+        },
+        "extraction": {
+          "$ref": "#/$defs/ExtractionV2"
+        },
+        "row_count": {
+          "minimum": 0,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "column_count": {
+          "minimum": 1,
+          "title": "Column Count",
+          "type": "integer"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/TableColumnV2"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "project_id",
+        "file_id",
+        "sheet_id",
+        "created_at",
+        "original_hash",
+        "content_hash",
+        "extraction",
+        "row_count",
+        "column_count",
+        "columns"
+      ],
+      "title": "ImportedTableV2",
+      "type": "object"
+    },
+    "TableColumnV2": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "position": {
+          "minimum": 0,
+          "title": "Position",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "position"
+      ],
+      "title": "TableColumnV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "table": {
+      "$ref": "#/$defs/ImportedTableV2"
+    },
+    "rows": {
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Rows",
+      "type": "array"
+    }
+  },
+  "required": [
+    "table",
+    "rows"
+  ],
+  "title": "TablePreviewV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/TablePreviewV2.schema.json"
+}

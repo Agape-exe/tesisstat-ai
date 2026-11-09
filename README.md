@@ -6,7 +6,8 @@ Para el siguiente trabajo rigen los acuerdos de S00 del 9 de noviembre de 2026:
 [integración y trabajo paralelo](docs/INTEGRACION_PARALELA.md).
 El [informe S00](docs/sesiones/S00.md) registra los acuerdos y el
 [informe S01](docs/sesiones/S01.md) documenta la creación mínima y el nuevo Inicio.
-Los contratos de contexto, análisis nuevo y tutor siguen pendientes.
+S02 implementa contexto persistente y S03A incorpora archivos/hojas/tablas y contexto por tabla.
+Diccionario/preparación v2 (S03B), análisis nuevo y tutor siguen pendientes.
 
 Demostración local para conectar metodología revisada y datos de un proyecto con un
 análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.
@@ -34,8 +35,7 @@ como borrador; el avance no equivale a completar la investigación ni acredita c
 La navegación principal es **Inicio · Contexto · Datos · Análisis · Resultados**. El chat se
 abre desde **Solicitar ayuda** o las herramientas de apoyo. Contexto introduce el recorrido y
 conserva documentos/metodología e instrumento; Resultados conserva informes/exportaciones.
-Puedes cargar y explorar Datos sin completar Contexto. La captura persistente del nuevo
-contexto aún no está disponible. Para proponer y ejecutar análisis sigue vigente el recorrido
+Puedes cargar y explorar Datos sin completar Contexto. El contexto manual se guarda y confirma con revisiones desde S02. Para proponer y ejecutar análisis sigue vigente el recorrido
 documental descrito arriba, con sus aprobaciones y controles actuales.
 
 API Research: `POST /api/research/projects` acepta `{"title":"Ensayo provisional"}`.
@@ -48,6 +48,27 @@ IDs, fechas de creación y estado se mantienen; el servidor actualiza `updated_a
 Los enlaces anteriores de assistant/documents/methodology/instrument/reports siguen
 abriendo su sección; package conserva su alias a Análisis y los parámetros `view/item`.
 Inicio diferencia consultas fallidas de recursos ausentes y permite actualizar su estado.
+
+## Tus datos: archivos y múltiples hojas (S03A)
+
+Datos abre la importación de varios CSV/XLSX, simultáneos o sucesivos. Todas las hojas del
+libro se inventarían, incluidas ocultas; las tabulares claras se incorporan automáticamente.
+Las demás quedan visibles y pendientes de exclusión o confirmación de encabezado/rango.
+Puedes reincorporarlas sin subir el original otra vez. Cada tabla tiene vista previa, conteos
+completos y contexto opcional editable, con confirmación explícita y conflicto recuperable.
+Los originales se conservan y se pueden descargar con su hash verificado.
+
+No hay unión de hojas ni transformación implícita. El diccionario, exploración y preparación
+opcional de estas tablas corresponden a S03B. Las herramientas v1 de perfil/preparación
+permanecen bajo **Herramientas anteriores de datasets**; sus rutas siguen vigentes y XLSX v1
+continúa leyendo solo la primera hoja. Abrir una tabla v2 no cambia el dataset activo v1.
+El chat/analizador actual todavía no consume el contexto por tabla.
+
+Ejemplos: [Excel sintético](fixtures/data/s03a/mediciones-sinteticas.xlsx) y
+[CSV independiente](fixtures/data/s03a/medicion-independiente.csv). Desde backend,
+`python -m scripts.create_s03a_examples` los regenera de forma reproducible.
+API, límites y recuperación: [fuentes C3](backend/app/modules/research/sources/README.md).
+Pruebas y evidencia visual: [S03A](docs/sesiones/S03A.md).
 
 ## Iniciar la aplicación
 

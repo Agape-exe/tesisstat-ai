@@ -1,7 +1,8 @@
-# Familia v2: contexto e intención/snapshot
+# Familia v2: contexto, fuentes e intención/snapshot
 
-Canónico: `backend/app/shared/analysis_v2.py`. S02 habilita únicamente C2; C4 es estructura
-preparada para S03/S04. Los seis contratos v1 y sus ejemplos permanecen intactos.
+Canónicos: `backend/app/shared/analysis_v2.py` y `data_sources_v2.py`. S02 habilita C2;
+S03A habilita archivos, hojas, tablas y contexto C3. C4 es estructura preparada para S04.
+Los seis contratos v1 y sus ejemplos permanecen intactos.
 
 Desde backend: `python -m scripts.export_contracts` regenera ambas familias;
 `--check` comprueba actualidad. Desde frontend: `npm run contracts:generate` genera tipos
@@ -24,7 +25,7 @@ Decisiones compatibles de S02 y consumidores:
 - SourceRef de contexto usa `id=project_id` porque C2 no tiene un ID distinto. La revisión
   identifica el histórico. UI y futuro resolver deben usar esa identidad canónica.
 - `SnapshotVariableV2` es proyección de variables elegidas (id, columnas, nombre y escala),
-  no un diccionario editable completo. S03 prepara el recurso de diccionario y S04 construye
+  no un diccionario editable completo. S03B prepara el recurso de diccionario y S04 construye
   esta proyección al resolver las fuentes. No se habilitan endpoints C3 en S02.
 - `source_refs` enumera las referencias nombradas del snapshot. El validador verifica tipo,
   pertenencia a esa lista, revisión/hash de intención congelada y variables seleccionadas.
@@ -34,3 +35,22 @@ Decisiones compatibles de S02 y consumidores:
   mantiene research-dataset-v1 según S00; no sustituirlo por el hash del manifiesto de ejemplo.
 
 No hay lectura heurística de v2 por consumidores v1 ni reutilización de aprobaciones.
+
+## Fuentes C3 de S03A
+
+`SourceFileV2` agrupa `SourceSheetV2`; cada hoja lista apunta a `ImportedTableV2`, con
+original_hash, extracción, columnas UUID y content_hash independiente de `TableContextV2`.
+`TablePreviewV2` contiene una ventana de esa misma extracción; no materializa otra tabla.
+Las fórmulas son texto, los faltantes se conservan y ninguna fila llega al proveedor IA.
+
+`python -m scripts.export_source_examples` regenera los cinco ejemplos C3 y el CSV real
+enlazado; tests verifican modelos/esquemas y hashes/conteos/referencias con sus bytes.
+`python -m scripts.create_s03a_examples` regenera el Excel multihoja y CSV de demostración
+en `fixtures/data/s03a`. No se insertan recursos ficticios al abrir proyectos anteriores.
+
+El enum SourceRef v2 añade `source_file|source_sheet|table|table_context`.
+`SourceService.source_refs` los resuelve en servidor; contexto usa id=table_id y su propia
+revisión. La futura construcción de AnalysisSnapshot adaptará esta evidencia C3 a su
+dataset/diccionario elegido; no hay consumidor ejecutable nuevo en esta entrega.
+Lectura completa, límites, selección y recuperación:
+[API C3](../../backend/app/modules/research/sources/README.md).

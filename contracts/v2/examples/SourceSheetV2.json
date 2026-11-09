@@ -1,0 +1,21 @@
+{
+  "id": "00000103-0000-4000-8000-000000000000",
+  "project_id": "00000101-0000-4000-8000-000000000000",
+  "file_id": "00000102-0000-4000-8000-000000000000",
+  "revision": 1,
+  "index": 0,
+  "name": "Tabla CSV",
+  "visibility": "visible",
+  "row_count": 4,
+  "column_count": 2,
+  "state": "ready",
+  "explanation": "Tabla reconocida automáticamente.",
+  "hash": "8942ef70b485735e48cc131b05eb36480acebf9aa06353f3197511d6c8109135",
+  "table_id": "00000104-0000-4000-8000-000000000000",
+  "extraction": {
+    "header_row": 1,
+    "range": "A1:B4",
+    "algorithm_version": "tabular-v1",
+    "confirmation": null
+  }
+}
