@@ -9,6 +9,7 @@ function responses({
   edaStatus = 200,
   fail = '',
   context = testContext(),
+  files = [],
 }: {
   data?: object[];
   plans?: object[];
@@ -16,6 +17,7 @@ function responses({
   edaStatus?: number;
   fail?: string;
   context?: ReturnType<typeof testContext>;
+  files?: object[];
 } = {}) {
   vi.stubGlobal(
     'fetch',
@@ -26,13 +28,15 @@ function responses({
         return new Response('{}', { status: edaStatus });
       return new Response(
         JSON.stringify(
-          url.endsWith('/context')
-            ? context
-            : url.endsWith('/datasets')
-              ? data
-              : url.endsWith('/plans')
-                ? plans
-                : status,
+          url.endsWith('/files')
+            ? files
+            : url.endsWith('/context')
+              ? context
+              : url.endsWith('/datasets')
+                ? data
+                : url.endsWith('/plans')
+                  ? plans
+                  : status,
         ),
       );
     }),
@@ -73,13 +77,19 @@ it.each([404, 503])(
     );
   },
 );
-it.each(['/datasets', '/plans', '/status', '/context'])(
+it.each(['/datasets', '/plans', '/status', '/context', '/files'])(
   'never treats failed query %s as absent evidence',
   async (fail) => {
     responses({ fail });
     const steps = await loadJourney(project);
     expect(
-      steps[fail === '/context' ? 0 : fail === '/datasets' ? 1 : 3].state,
+      steps[
+        fail === '/context'
+          ? 0
+          : fail === '/datasets' || fail === '/files'
+            ? 1
+            : 3
+      ].state,
     ).toBe('No verificable');
   },
 );
@@ -132,4 +142,26 @@ it('shows progress for inactive uploads and unapproved proposals', async () => {
   expect(steps[1].state).toBe('En progreso');
   expect(steps[3].state).toBe('En progreso');
   expect(steps[4].state).toBe('Pendiente');
+});
+
+it('counts all new sources while keeping data review in progress', async () => {
+  responses({
+    files: [
+      { id: 'file', sheets: [{ state: 'ready' }, { state: 'pending' }] },
+      { id: 'second-file', sheets: [{ state: 'ready' }] },
+    ],
+  });
+  let steps = await loadJourney(project);
+  expect(steps[1].evidence).toContain(
+    '2 archivos originales guardados · 2 tablas listas · 1 hojas pendientes',
+  );
+  expect(steps[1].state).toBe('En progreso');
+  expect(steps[2].state).toBe('En progreso');
+  expect(steps[2].view).toBe('sources');
+  responses({
+    files: [{ sheets: [{ state: 'ready' }, { state: 'excluded' }] }],
+  });
+  steps = await loadJourney(project);
+  expect(steps[1].state).toBe('Completado');
+  expect(steps[2].state).toBe('En progreso');
 });

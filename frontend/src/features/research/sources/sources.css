@@ -1,0 +1,165 @@
+.source-workspace {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.source-workspace .rp-surface {
+  padding: 24px;
+  min-width: 0;
+}
+.source-workspace .rp-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.source-workspace .rp-field textarea,
+.source-workspace .rp-field select,
+.source-workspace .rp-field input:not([type='file']) {
+  width: 100%;
+  box-sizing: border-box;
+}
+.source-context textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.source-context-field {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.source-upload > p {
+  max-width: 72ch;
+}
+.source-summary,
+.source-file-heading,
+.source-sheet-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.source-file h3,
+.source-sheet h4 {
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+.source-sheet-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+.source-sheet {
+  padding: 18px 0;
+  border-top: 1px solid #e7e6ef;
+}
+.source-sheet p {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.source-sheet-heading > div:first-child {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.source-sheet .rp-badge {
+  margin-right: 6px;
+}
+.source-state-ready {
+  background: #e8f5ed;
+  color: #225638;
+}
+.source-state-pending {
+  background: #fff3d9;
+  color: #795313;
+}
+.source-state-excluded {
+  background: #f0eff4;
+  color: #615b70;
+}
+.source-extraction {
+  padding: 12px;
+  background: #f8f7fc;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+.source-extraction summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.source-range-fields,
+.source-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.source-range-fields {
+  margin: 12px 0;
+}
+.source-context {
+  margin-top: 28px;
+  border-top: 1px solid #e7e6ef;
+  padding-top: 20px;
+}
+.source-context-grid {
+  margin: 20px 0;
+}
+.source-context .rp-field {
+  gap: 8px;
+}
+.source-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 8px;
+}
+.source-confirm input {
+  width: auto;
+  flex: none;
+}
+.source-context-field small {
+  font-size: 12px;
+  color: #6d677f;
+}
+.source-conflict {
+  padding: 16px;
+  border: 1px solid #dfb964;
+  border-radius: 10px;
+  background: #fff9ec;
+}
+.source-conflict dd {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.source-hash {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.source-table > p {
+  overflow-wrap: anywhere;
+}
+.source-workspace .rp-dataset-scroll {
+  max-width: 100%;
+  overflow: auto;
+}
+.source-workspace input[type='file'] {
+  max-width: 100%;
+}
+.source-workspace .rp-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .source-workspace .rp-surface {
+    padding: 16px;
+  }
+  .source-range-fields,
+  .source-context-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .source-sheet .rp-actions {
+    width: 100%;
+  }
+  .source-workspace button {
+    white-space: normal;
+  }
+}

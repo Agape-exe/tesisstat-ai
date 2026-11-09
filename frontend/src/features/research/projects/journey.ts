@@ -5,11 +5,13 @@ import { recordIsCurrent } from '../analysis/analysisPresentation';
 import type { Section } from './navigation';
 import { createContextApi } from '../context/api';
 import { facts } from '../context/draft';
+import { createSourcesApi } from '../sources/api';
 
 const datasets = createDatasetApi();
 const analysis = createAnalysisApi();
 const packages = createPackageApi();
 const contexts = createContextApi();
+const files = createSourcesApi();
 type State = 'Pendiente' | 'En progreso' | 'Completado' | 'No verificable';
 export interface JourneyStep {
   name: string;
@@ -19,12 +21,24 @@ export interface JourneyStep {
   view?: string;
 }
 export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
-  const [data, plans, sources, context] = await Promise.allSettled([
+  const [data, plans, sources, context, imported] = await Promise.allSettled([
     datasets.list(projectId),
     analysis.plans(projectId),
     packages.status(projectId),
     contexts.get(projectId),
+    files.files(projectId),
   ]);
+  const importedFiles = imported.status === 'fulfilled' ? imported.value : [];
+  const importedTables = importedFiles.flatMap((file) =>
+    file.sheets.filter((sheet) => sheet.state === 'ready'),
+  );
+  const pendingSheets = importedFiles.flatMap((file) =>
+    file.sheets.filter(
+      (sheet) => sheet.state === 'pending' || sheet.state === 'error',
+    ),
+  );
+  const uploadFailed =
+    data.status === 'rejected' || imported.status === 'rejected';
   const active =
     data.status === 'fulfilled' ? data.value.find((d) => d.active) : undefined;
   let profile: State =
@@ -44,6 +58,8 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
           : 'No verificable';
     }
   }
+  if (imported.status === 'rejected') profile = 'No verificable';
+  else if (importedFiles.length) profile = 'En progreso';
   const known = plans.status === 'fulfilled' && sources.status === 'fulfilled';
   const current = known
     ? plans.value.filter((r) => recordIsCurrent(r, sources.value))
@@ -78,17 +94,21 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
     },
     {
       name: 'Cargar datos',
-      state:
-        data.status === 'rejected'
-          ? 'No verificable'
+      state: uploadFailed
+        ? 'No verificable'
+        : importedFiles.length
+          ? importedTables.length && !pendingSheets.length
+            ? 'Completado'
+            : 'En progreso'
           : active
             ? 'Completado'
             : data.value.length
               ? 'En progreso'
               : 'Pendiente',
-      evidence:
-        data.status === 'rejected'
-          ? 'Error al cargar los datos. Reintenta para comprobar su estado.'
+      evidence: uploadFailed
+        ? 'Error al cargar los datos. Reintenta para comprobar su estado.'
+        : importedFiles.length
+          ? `${importedFiles.length} archivos originales guardados · ${importedTables.length} tablas listas · ${pendingSheets.length} hojas pendientes. La carga no acredita revisión de los datos.`
           : active
             ? `Archivo activo: ${active.name} · ${active.row_count} filas.`
             : data.value.length
@@ -102,11 +122,13 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
       evidence:
         profile === 'No verificable'
           ? 'Error al consultar el perfil de datos.'
-          : profile === 'Completado'
-            ? 'Existe un perfil exploratorio guardado del archivo activo. Revisa sus hallazgos.'
-            : 'Consulta y genera el perfil del archivo activo para revisar calidad y columnas.',
+          : importedFiles.length
+            ? 'Hay nuevas fuentes para inspeccionar. Su importación no confirma escalas ni relaciones; la definición de variables y la preparación opcional se incorporarán en una próxima entrega.'
+            : profile === 'Completado'
+              ? 'Existe un perfil exploratorio guardado del archivo activo. Revisa sus hallazgos.'
+              : 'Consulta y genera el perfil del archivo activo para revisar calidad y columnas.',
       section: 'datasets',
-      view: 'quality',
+      view: importedFiles.length ? 'sources' : 'quality',
     },
     {
       name: 'Revisar propuesta',

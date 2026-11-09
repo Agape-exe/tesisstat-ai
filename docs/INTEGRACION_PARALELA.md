@@ -218,3 +218,24 @@ directa con sus JWT, además de tests unitarios del verificador:
 Registrar entorno, commits, usuarios sintéticos, pruebas ejecutadas y pendientes. Pruebas
 con fakes validan aplicación; no demuestran RLS real ni persistencia del proveedor. S07
 solo cierra el gate remoto después de contar con esa evidencia, sin publicar durante S00.
+
+## Recursos C3 integrados en S03A
+
+S03 se divide en S03A y S03B según el alcance aprobado. S03A añade `research/sources/`,
+`shared/data_sources_v2.py`, rutas v2 files/sheets/tables y contexto de tabla. Conserva
+SQLite/archivos locales; no aprovisiona servicios ni migra datos. La entrega de persistencia
+debe incluir `source_files_v2`, `source_file_revisions_v2`, `imported_tables_v2`,
+`table_context_revisions_v2`, originales y tablas JSON, además de los recursos anteriores.
+Original y extracción son inmutables; selección/contexto tienen CAS e historial.
+
+`SourceService.read_table` es el puerto local de lectura completa para S03B/S04; comprueba
+proyecto, padres, inclusión y hash del contenido. `source_refs` resuelve referencias servidor
+`source_file|source_sheet|table|table_context`; sus tipos amplían únicamente v2. El contexto
+de tabla no altera hashes de datasets legados ni los seis contratos v1. S03B añadirá diccionario,
+perfil y derivados, con combinación confirmada por IDs; S04 resolverá varias fuentes por
+análisis. El tutor actual no consume estos facts. Autenticación/Storage remoto siguen siendo
+entrega paralela pendiente; no se afirma aislamiento de usuarios remotos desde pruebas locales.
+
+Garantías reales de publicación y comando de recuperación de manifiestos:
+[API de fuentes](../backend/app/modules/research/sources/README.md). Adaptadores remotos
+deberán conservar pertenencia y referencias padre/hijo y extender RLS al árbol completo.

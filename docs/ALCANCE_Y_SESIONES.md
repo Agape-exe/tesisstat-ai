@@ -12,6 +12,18 @@ se consultaron, pero no se incorporan ni se modifican: no estaban versionados en
 Este acuerdo es autónomo respecto de ellos. Cambiar una decisión exige registrar motivo,
 impacto y consumidores en el informe de la sesión responsable antes de implementar.
 
+## Ampliación aprobada S03A/S03B
+
+El caso de notas antes/después e instrumento en hojas/archivos separados requiere reconocer
+fuentes sin exigir preparar un CSV único. S03A incorpora todas las hojas tabulares claras
+por defecto, conserva originales, permite aclarar/excluir otras y guarda contexto propio por
+tabla. S03B añade diccionario, exploración y preparación opcional, incluida combinación
+confirmada por identificadores; no se ejecuta en S03A. S04 conservará varios análisis por
+proyecto con fuentes específicas. Cargar todas las hojas no marca los datos como revisados.
+Contexto/Datos siguen accesibles sin documentos ni hipótesis. El informe [S03A](sesiones/S03A.md)
+registra implementación, pruebas y recursos para S03B. Esta ampliación sustituye el antiguo
+alcance único de S03, sin ampliar ahora instrumentos, diagnósticos, tutor ni despliegue.
+
 ## Producto y límites
 
 Asistente para tesistas sin formación especializada: contexto necesario → cargar datos →
@@ -46,8 +58,8 @@ Las rutas indicadas son relativas a la raíz del repositorio.
 | Inicio/navegación | `frontend/src/features/research/projects/navigation.ts`: 8 secciones; destino assistant | Inicio, 5 entradas y alias; avance derivado | O / S01 | C1 | Crear abre Inicio; siguiente acción y enlaces antiguos funcionan; móvil/teclado |
 | Contexto manual | `research/methodology/models.py`: contenido y revisión vinculados a documento | Contexto autónomo, confirmación por campo, revisiones | O / S02 | C2 | Guardar/recargar sin documento; vacíos explícitos; propuesta IA no modifica confirmado |
 | Entrada asistida adicional | Extracción documental y borradores existentes | Prompt maestro/importación con revisión | P / S02 o posterior | C2 | Vista previa, rechazo y confirmación; ningún valor inventado |
-| Datos/perfil | `research/datasets/` CSV/XLSX; `research/eda/analyzer.py` faltantes, tipos, constantes, duplicados | Recorrido unido, diccionario humano y enlaces estables | O / S03 | C3 | CSV y hoja XLSX, códigos numéricos nominales, identificadores y faltantes; perfil sin contexto completo |
-| Preparación | `research/preparation/models.py`: preview/hash/confirm y derivados | Unificar diccionario y trazabilidad tras renombrar/eliminar | O / S03 | C3 | Fuente intacta; derivado con receta/hash; vínculo eliminado obliga a revisar |
+| Datos/perfil (S03B) | `research/datasets/` CSV/XLSX; `research/eda/analyzer.py` faltantes, tipos, constantes, duplicados | Recorrido unido, diccionario humano y enlaces estables | O / S03B | C3 | CSV y hoja XLSX, códigos numéricos nominales, identificadores y faltantes; perfil sin contexto completo |
+| Preparación | `research/preparation/models.py`: preview/hash/confirm y derivados | Unificar diccionario y trazabilidad tras renombrar/eliminar | O / S03B | C3 | Fuente intacta; derivado con receta/hash; vínculo eliminado obliga a revisar |
 | Intención/paquete | `research/packages/use_cases.py` exige documento revisado, variables e hipótesis | Snapshot v2 por intención, sin hipótesis ficticia | O / S02 + S04 | C2–C4 | Descriptivo sin documento/hipótesis llega a propuesta real; históricos v1 legibles |
 | Diagnósticos | `statistics/assumptions.py` calcula al ejecutar; normalidad JB desde n=8 | Acción previa persistida, casos efectivos y métodos válidos | O / S04a | C4, S03 | Diagnóstico acotado no ejecuta inferencia final; casos/grupos/pares y límites visibles |
 | Recomendación | `statistics/planner.py` por hipótesis/escalas; comparación independiente pide aclaración; no recibe perfil | Decisión con intención/diseño/perfil; elección justificada y límites | O / S04b | S04a | Selección real sin sustituir planner; ambigüedad produce aclaraciones, no técnica arbitraria |
@@ -145,19 +157,20 @@ no afirmaciones sobre el modelo efectivo de un chat.
 | S00 / GPT-6.1 Sol, alto | Base real, decisiones del usuario y código | Estos acuerdos e informe; commits/PR | Referencias, ejemplos, estados, diff --check; solo documentación |
 | S01 / GPT-6.1 Sol, medio | S00 C1 y alcance | DTO/proyecto mínimo, Inicio, 5 secciones y alias; informe | Solo nombre, edición preserva académicos, destino Inicio y navegación responsive; pruebas afectadas backend/frontend |
 | S02 / GPT-6.1 Sol, alto | S01 integrado; C2/C4 estructura | Persistencia/contexto manual, intención, revisión/snapshots; adaptador documental explícito | Sin documento/hipótesis; unknown/null; concurrencia 409; borrador IA aislado; históricos v1 legibles |
-| S03 / GPT-6.1 Sol, alto | S02; C3, fuentes/puertos | Datos integrado, diccionario, preparación confirmada y enlaces | CSV/XLSX, códigos/PII/faltantes, derivado/renombre, persistencia y fuente intacta |
-| S04a / GPT-6 Astra, alto | S03; C4–C5 | Dependencia/lock SciPy justificados, diagnóstico explícito y validación del mínimo; límites de aproximaciones | Métodos/rangos/casos, referencias independientes, costes locales; no inferencia final por diagnóstico |
+| S03A / GPT-6.1 Sol, alto | S02 integrado; extensión C3 | Varios archivos, inventario de todas las hojas, extracción rectangular y contexto opcional por tabla | Primera hoja no tabular, selección/exclusión reversible, conteos completos, originales/hash, CAS y reinicio; QA escritorio/móvil |
+| S03B / GPT-6.1 Sol, alto | S03A integrado; tablas/columnas y contexto C3 | Diccionario de variables, exploración y preparación opcional; combinación confirmada por identificadores y derivados trazables | Escalas/códigos/PII/faltantes, enlaces/recetas, coincidencias explícitas, sin uniones tácitas ni fuente modificada |
+| S04a / GPT-6 Astra, alto | S03A–S03B; C4–C5 | Dependencia/lock SciPy justificados, diagnóstico explícito y validación del mínimo; límites de aproximaciones | Métodos/rangos/casos, referencias independientes, costes locales; no inferencia final por diagnóstico |
 | S04b / GPT-6 Astra, alto | S04a; intención y snapshots v2 | Selector real, propuestas/aprobación/ejecución v2 y adaptación a cálculos puros | E1–E4/E6–E7, sin reemplazar planner; fixtures v1 y v2; ninguna hipótesis artificial |
-| S05 / GPT-6.1 Sol, alto | S03–S04 y C6 | Instrumento opcional editable, mapeo/reglas, preview/confirm score, derivado durable y alfa | E5, límites/ceros/faltantes, stale por cambio, manual sin documento, alfa no equivale a validez |
+| S05 / GPT-6.1 Sol, alto | S03A–S04 y C6 | Instrumento opcional editable, mapeo/reglas, preview/confirm score, derivado durable y alfa | E5, límites/ceros/faltantes, stale por cambio, manual sin documento, alfa no equivale a validez |
 | S06 / GPT-6.1 Sol, alto | S04/S05, C7 | Tutor por etapa, propuestas IA revisables, resultados/historial/exportaciones unificados | E9, consentimiento y redacción, proveedor ausente, cifras solo del motor, exportación vigente |
 | S07 / GPT-6 Astra, alto | S01–S06 y entrega de identidad/persistencia integrada | QA integral y correcciones; composition root destino autenticado, checklist funcional final | E1–E9, dos usuarios, restart/recuperación; contratos y suites pertinentes; QA visual; límites declarados |
 
 S04a/S04b subdividen S04 para separar exactitud de selección/integración; ambas obligatorias.
 No cambiar numeración de las otras sesiones. Implementar v2 por capas: estructura C4 en
-S02, perfil C3 en S03 y consumidores ejecutables C4/C5 en S04. Ninguna UI debe presentar
+S02, fuentes/contexto C3 en S03A, diccionario/perfil/preparación en S03B y consumidores ejecutables C4/C5 en S04. Ninguna UI debe presentar
 un adaptador aún pendiente como ejecutable.
 
-Meta: día 1 S00–S02; día 2 S03–S04 y E1 más una asociación/comparación completa al cierre;
+Meta: día 1 S00–S02; día 2 S03A–S03B/S04 y E1 más una asociación/comparación completa al cierre;
 día 3 S05–S06 e integración paralela; día 4 S07/correcciones. El calendario no rebaja los
 criterios. Despliegue se programa después de S07 funcional y validado (eventual S08,
 fuera de estas implementaciones), con autorización propia y verificación remota posterior.

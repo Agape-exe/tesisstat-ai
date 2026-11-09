@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ConversationChat } from '../../conversation/ConversationChat';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
 import { ProjectMethodology } from '../methodology/ProjectMethodology';
-import { ProjectDatasets } from '../datasets/ProjectDatasets';
+import { ProjectDataWorkspace } from '../sources/ProjectDataWorkspace';
 import { AnalysisWorkspace } from '../packages/AnalysisWorkspace';
 import { ProjectResults } from '../analysis/ProjectResults';
 import { ProjectReports } from '../analysis/ProjectReports';
@@ -111,7 +111,7 @@ function SectionContent({
       );
     case 'datasets':
       return (
-        <ProjectDatasets
+        <ProjectDataWorkspace
           projectId={projectId}
           view={view}
           item={item}
