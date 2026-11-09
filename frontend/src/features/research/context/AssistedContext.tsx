@@ -44,7 +44,11 @@ const states = {
   stale: 'Desactualizada',
 };
 
-function importEntries(proposal: ImportProposal, current: Context): Entry[] {
+function importEntries(
+  proposal: ImportProposal,
+  current: Context,
+  original: ImportProposal = proposal,
+): Entry[] {
   const entries: Entry[] = [];
   for (const field of [
     ...Object.keys(textFields),
@@ -52,11 +56,11 @@ function importEntries(proposal: ImportProposal, current: Context): Entry[] {
     'observations',
   ] as (keyof typeof textFields | 'design' | 'observations')[]) {
     const value = proposal[field];
-    if (value && value !== 'unknown')
+    if (original[field] && original[field] !== 'unknown')
       entries.push({
         key: field,
         field,
-        value,
+        value: value ?? '',
         current: current[field].value ?? '',
         duplicate: false,
       });
@@ -120,7 +124,9 @@ export function AssistedContext({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [stale, setStale] = useState(false);
-  const entries = proposal ? importEntries(proposal, current) : [];
+  const entries = proposal
+    ? importEntries(proposal, current, suggestion?.proposal as ImportProposal)
+    : [];
   async function run(action: () => Promise<void>) {
     if (busy) return;
     setBusy(true);
@@ -179,6 +185,8 @@ export function AssistedContext({
         ),
       });
     else setProposal({ ...proposal, [field]: value });
+    if (!value.trim() || value === 'unknown')
+      setSelected((previous) => previous.filter((key) => key !== entry.key));
     setConfirm(false);
   }
   return (
@@ -338,7 +346,11 @@ export function AssistedContext({
                   type="checkbox"
                   checked={selected.includes(entry.key)}
                   disabled={
-                    entry.duplicate || stale || suggestion.state !== 'pending'
+                    entry.duplicate ||
+                    !entry.value.trim() ||
+                    entry.value === 'unknown' ||
+                    stale ||
+                    suggestion.state !== 'pending'
                   }
                   onChange={(e) =>
                     setSelected((previous) =>
@@ -489,7 +501,14 @@ export function AssistedContext({
             className="rp-secondary"
             disabled={stale || suggestion.state !== 'pending'}
             onClick={() =>
-              setSelected(entries.filter((e) => !e.duplicate).map((e) => e.key))
+              setSelected(
+                entries
+                  .filter(
+                    (e) =>
+                      !e.duplicate && e.value.trim() && e.value !== 'unknown',
+                  )
+                  .map((e) => e.key),
+              )
             }
           >
             Seleccionar todos los campos válidos (incluye reemplazos)

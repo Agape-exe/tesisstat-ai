@@ -110,7 +110,24 @@ it('keeps existing value unselected, edits proposals, applies explicitly and doe
     screen.getByLabelText(
       'Valor propuesto: Qué representa cada observación o fila',
     ),
+    { target: { value: '' } },
+  );
+  expect(
+    screen.getByLabelText(
+      'Valor propuesto: Qué representa cada observación o fila',
+    ),
+  ).toHaveValue('');
+  expect(
+    screen.getByLabelText('Incorporar Qué representa cada observación o fila'),
+  ).not.toBeChecked();
+  fireEvent.change(
+    screen.getByLabelText(
+      'Valor propuesto: Qué representa cada observación o fila',
+    ),
     { target: { value: 'Una transacción' } },
+  );
+  fireEvent.click(
+    screen.getByLabelText('Incorporar Qué representa cada observación o fila'),
   );
   fireEvent.click(
     screen.getByRole('button', { name: 'Aplicar y guardar seleccionados' }),
