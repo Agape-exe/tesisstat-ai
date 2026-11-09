@@ -117,7 +117,14 @@ class ContextService:
                 value = value.strip() or None if isinstance(value, str) else value
                 if old and old.value == value and not metadata_changed:
                     return old.model_copy(deep=True)
-                return Fact(value=value, provenance=Provenance(kind="manual"))
+                return Fact(
+                    value=value,
+                    provenance=(
+                        old.provenance.model_copy(deep=True)
+                        if old and old.provenance.kind == "ai_suggestion"
+                        else Provenance(kind="manual")
+                    ),
+                )
 
             def checked_id(item_id: str | None, previous_items: dict) -> str:
                 if item_id is None:
@@ -176,10 +183,15 @@ class ContextService:
                         manual(
                             note,
                             next(
-                                (n for n in previous.complementary_notes if n.value == note), None
+                                (n for n in previous.complementary_notes if n.value == note),
+                                previous.complementary_notes[index]
+                                if index < len(previous.complementary_notes)
+                                and previous.complementary_notes[index].provenance.kind
+                                == "ai_suggestion"
+                                else None,
                             ),
                         )
-                        for note in value or []
+                        for index, note in enumerate(value or [])
                     ]
                 else:
                     setattr(current, name, manual(value, getattr(previous, name)))

@@ -1,0 +1,775 @@
+{
+  "$defs": {
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_ref": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Actor Ref",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "format": "date-time",
+          "title": "Confirmed At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actor_ref",
+        "confirmed_at",
+        "revision"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "ContextHypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "statement": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "objective_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective Id"
+        },
+        "alternative": {
+          "default": "unspecified",
+          "enum": [
+            "two-sided",
+            "greater",
+            "less",
+            "unspecified"
+          ],
+          "title": "Alternative",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "statement"
+      ],
+      "title": "ContextHypothesis",
+      "type": "object"
+    },
+    "ContextImport": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": "context-import-1.0",
+          "title": "Format Version",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "research_question": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Research Question"
+        },
+        "main_objective": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Main Objective"
+        },
+        "specific_objectives": {
+          "items": {
+            "$ref": "#/$defs/ImportObjective"
+          },
+          "maxItems": 40,
+          "title": "Specific Objectives",
+          "type": "array"
+        },
+        "hypotheses": {
+          "items": {
+            "$ref": "#/$defs/ImportHypothesis"
+          },
+          "maxItems": 40,
+          "title": "Hypotheses",
+          "type": "array"
+        },
+        "study_description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Study Description"
+        },
+        "data_description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Description"
+        },
+        "observational_unit": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observational Unit"
+        },
+        "sampling_notes": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sampling Notes"
+        },
+        "design": {
+          "default": "unknown",
+          "enum": [
+            "experimental",
+            "quasi_experimental",
+            "observational",
+            "unknown"
+          ],
+          "title": "Design",
+          "type": "string"
+        },
+        "observations": {
+          "default": "unknown",
+          "enum": [
+            "independent",
+            "paired",
+            "repeated",
+            "unknown"
+          ],
+          "title": "Observations",
+          "type": "string"
+        },
+        "complementary_notes": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Complementary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version"
+      ],
+      "title": "ContextImport",
+      "type": "object"
+    },
+    "Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MaxLen(max_length=2000)])]]",
+      "type": "object"
+    },
+    "Fact_Literal__experimental____quasi_experimental____observational____unknown___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "enum": [
+                "experimental",
+                "quasi_experimental",
+                "observational",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Literal['experimental', 'quasi_experimental', 'observational', 'unknown']]",
+      "type": "object"
+    },
+    "Fact_Literal__independent____paired____repeated____unknown___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "enum": [
+                "independent",
+                "paired",
+                "repeated",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Literal['independent', 'paired', 'repeated', 'unknown']]",
+      "type": "object"
+    },
+    "ImportHypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,39}$",
+          "title": "Ref",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "objective_ref": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,39}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective Ref"
+        },
+        "alternative": {
+          "default": "unspecified",
+          "enum": [
+            "two-sided",
+            "greater",
+            "less",
+            "unspecified"
+          ],
+          "title": "Alternative",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "statement"
+      ],
+      "title": "ImportHypothesis",
+      "type": "object"
+    },
+    "ImportObjective": {
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,39}$",
+          "title": "Ref",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "text"
+      ],
+      "title": "ImportObjective",
+      "type": "object"
+    },
+    "PendingQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "field": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 2000,
+          "title": "Question",
+          "type": "string"
+        },
+        "blocks": {
+          "enum": [
+            "profile",
+            "proposal",
+            "execution"
+          ],
+          "title": "Blocks",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "field",
+        "question",
+        "blocks"
+      ],
+      "title": "PendingQuestion",
+      "type": "object"
+    },
+    "ProjectContextV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "revision": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        },
+        "state": {
+          "default": "empty",
+          "enum": [
+            "empty",
+            "partial",
+            "usable"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "research_question": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "main_objective": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "specific_objectives": {
+          "items": {
+            "$ref": "#/$defs/SpecificObjective"
+          },
+          "maxItems": 40,
+          "title": "Specific Objectives",
+          "type": "array"
+        },
+        "hypotheses": {
+          "items": {
+            "$ref": "#/$defs/ContextHypothesis"
+          },
+          "maxItems": 40,
+          "title": "Hypotheses",
+          "type": "array"
+        },
+        "study_description": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "data_description": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "observational_unit": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "sampling_notes": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "design": {
+          "$ref": "#/$defs/Fact_Literal__experimental____quasi_experimental____observational____unknown___"
+        },
+        "observations": {
+          "$ref": "#/$defs/Fact_Literal__independent____paired____repeated____unknown___"
+        },
+        "complementary_notes": {
+          "items": {
+            "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+          },
+          "maxItems": 20,
+          "title": "Complementary Notes",
+          "type": "array"
+        },
+        "pending_questions": {
+          "items": {
+            "$ref": "#/$defs/PendingQuestion"
+          },
+          "title": "Pending Questions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "project_id"
+      ],
+      "title": "ProjectContextV2",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "manual",
+            "document",
+            "ai_suggestion",
+            "derived",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "algorithm_version": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Algorithm Version"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "SpecificObjective": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "SpecificObjective",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "base_revision": {
+      "title": "Base Revision",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "format_version": {
+      "const": "context-import-1.0",
+      "default": "context-import-1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "provenance": {
+      "const": "ai_suggestion",
+      "default": "ai_suggestion",
+      "title": "Provenance",
+      "type": "string"
+    },
+    "state": {
+      "default": "pending",
+      "enum": [
+        "pending",
+        "applied",
+        "rejected",
+        "stale"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "proposal": {
+      "$ref": "#/$defs/ContextImport"
+    },
+    "additional_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Additional Fields",
+      "type": "array"
+    },
+    "applied_proposal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ContextImport"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "selected_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Selected Fields",
+      "type": "array"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProjectContextV2"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "applied_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Applied By"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "base_revision",
+    "created_at",
+    "proposal"
+  ],
+  "title": "ContextSuggestion",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ContextSuggestion.schema.json"
+}

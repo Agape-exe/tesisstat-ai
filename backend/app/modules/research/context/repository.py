@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Protocol
 
+from app.modules.research.context.import_models import ContextSuggestion
 from app.shared.analysis_v2 import ProjectContextV2
 
 
@@ -21,6 +22,12 @@ class ContextError(Exception):
 
 
 class ContextRepository(Protocol):
+    def create_suggestion(self, suggestion: ContextSuggestion) -> ContextSuggestion: ...
+
+    def list_suggestions(self, project_id: str) -> list[ContextSuggestion]: ...
+
+    def suggestion_operation(self, project_id, suggestion_id, operation, body=None, build=None): ...
+
     def get(self, project_id: str) -> ProjectContextV2 | None: ...
 
     def revisions(self, project_id: str) -> list[ProjectContextV2]: ...

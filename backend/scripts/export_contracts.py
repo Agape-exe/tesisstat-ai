@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from app.modules.research.context.import_models import IMPORT_MODELS
 from app.shared.analysis_v2 import V2_CONTRACT_MODELS
 from app.shared.contracts import CONTRACT_MODELS
 from app.shared.data_sources_v2 import DATA_SOURCE_MODELS
@@ -25,7 +26,7 @@ def main() -> None:
     args = parser.parse_args()
     for version, models in (
         ("v1", CONTRACT_MODELS),
-        ("v2", (*V2_CONTRACT_MODELS, *DATA_SOURCE_MODELS, *WORKSPACE_MODELS)),
+        ("v2", (*V2_CONTRACT_MODELS, *DATA_SOURCE_MODELS, *WORKSPACE_MODELS, *IMPORT_MODELS)),
     ):
         output = ROOT / "contracts" / version
         output.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,262 @@
+{
+  "$defs": {
+    "ContextImport": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": "context-import-1.0",
+          "title": "Format Version",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "research_question": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Research Question"
+        },
+        "main_objective": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Main Objective"
+        },
+        "specific_objectives": {
+          "items": {
+            "$ref": "#/$defs/ImportObjective"
+          },
+          "maxItems": 40,
+          "title": "Specific Objectives",
+          "type": "array"
+        },
+        "hypotheses": {
+          "items": {
+            "$ref": "#/$defs/ImportHypothesis"
+          },
+          "maxItems": 40,
+          "title": "Hypotheses",
+          "type": "array"
+        },
+        "study_description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Study Description"
+        },
+        "data_description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Description"
+        },
+        "observational_unit": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observational Unit"
+        },
+        "sampling_notes": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sampling Notes"
+        },
+        "design": {
+          "default": "unknown",
+          "enum": [
+            "experimental",
+            "quasi_experimental",
+            "observational",
+            "unknown"
+          ],
+          "title": "Design",
+          "type": "string"
+        },
+        "observations": {
+          "default": "unknown",
+          "enum": [
+            "independent",
+            "paired",
+            "repeated",
+            "unknown"
+          ],
+          "title": "Observations",
+          "type": "string"
+        },
+        "complementary_notes": {
+          "items": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Complementary Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version"
+      ],
+      "title": "ContextImport",
+      "type": "object"
+    },
+    "ImportHypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,39}$",
+          "title": "Ref",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "objective_ref": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,39}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective Ref"
+        },
+        "alternative": {
+          "default": "unspecified",
+          "enum": [
+            "two-sided",
+            "greater",
+            "less",
+            "unspecified"
+          ],
+          "title": "Alternative",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "statement"
+      ],
+      "title": "ImportHypothesis",
+      "type": "object"
+    },
+    "ImportObjective": {
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,39}$",
+          "title": "Ref",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "text"
+      ],
+      "title": "ImportObjective",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "selected_fields": {
+      "items": {
+        "maxLength": 100,
+        "type": "string"
+      },
+      "maxItems": 108,
+      "minItems": 1,
+      "title": "Selected Fields",
+      "type": "array"
+    },
+    "proposal": {
+      "$ref": "#/$defs/ContextImport"
+    },
+    "confirm": {
+      "default": false,
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "selected_fields",
+    "proposal"
+  ],
+  "title": "SuggestionApply",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/SuggestionApply.schema.json"
+}

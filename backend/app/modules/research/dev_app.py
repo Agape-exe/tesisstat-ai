@@ -157,6 +157,24 @@ def create_app(
             local_only(request)
         except HTTPException as exc:
             return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        if "/context/suggestions" in request.url.path and request.method == "POST":
+            body = bytearray()
+            async for chunk in request.stream():
+                body.extend(chunk)
+                if len(body) > 800000:
+                    return JSONResponse(
+                        status_code=413,
+                        content={
+                            "error": {
+                                "code": "limit_exceeded",
+                                "message": "La respuesta es demasiado grande. "
+                                "Pide un resumen estructurado; no pegues la tesis completa.",
+                                "fields": [],
+                                "current_revision": None,
+                            }
+                        },
+                    )
+            request._body = bytes(body)
         if "/conversations" in request.url.path:
             body = bytearray()
             async for chunk in request.stream():
