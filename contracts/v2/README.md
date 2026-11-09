@@ -1,5 +1,11 @@
 # Familia v2: contexto, fuentes e intención/snapshot
 
+S02B añade `ContextImport`, `ContextSuggestion`, `SuggestionCreate` y `SuggestionApply`,
+canónicos en `research/context/import_models.py`. El formato externo context-import-1.0
+no es un DTO de Facts persistidos: referencias locales se traducen a UUIDs por el servidor,
+procedencia/confirmaciones no se toman del chat. Esquemas/tipos se generan con los comandos
+existentes. [Semántica C2 y límites](../../docs/CONTRATOS_EVOLUCION.md#s02b--contrato-ejecutable-de-importación-asistida).
+
 Canónicos: `backend/app/shared/analysis_v2.py` y `data_sources_v2.py` y `data_workspace_v2.py`. S02 habilita C2;
 S03A habilita archivos, hojas, tablas y contexto C3; S03B diccionario, perfil y derivados.
 C4 conserva su estructura preparada para S04.

@@ -1,5 +1,14 @@
 # Contexto manual v2 (S02)
 
+S02B añade **Completar con ayuda de otro chat**: prompt español versionado, interpretación
+determinista sin credenciales de IA, propuesta persistida aislada y revisión editable.
+API y semántica precisas: [contrato S02B](../../../../../docs/CONTRATOS_EVOLUCION.md#s02b--contrato-ejecutable-de-importación-asistida).
+GET `/import-prompt`, POST/GET `/suggestions`, GET `/suggestions/{id}`,
+POST `/suggestions/{id}/apply|reject`. Guardar no confirma por defecto. Listas se añaden con
+selección por elemento y UUID servidor; CAS y recibo son atómicos e idempotentes.
+Los campos que el usuario corrige tras importar conservan su origen IA y el historial.
+Ejemplos sintéticos: `fixtures/context-import/` en la raíz del repositorio.
+
 Operaciones disponibles en la composición local `research.dev_app`, bajo
 `/api/v2/research/projects/{project_id}/context`:
 

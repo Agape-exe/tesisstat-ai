@@ -26,6 +26,11 @@ alcance único de S03, sin ampliar ahora instrumentos, diagnósticos, tutor ni d
 
 ## Producto y límites
 
+Ampliación aprobada S02B: Contexto ofrece prompt maestro versionado e importación JSON
+determinista con borrador persistido, comparación, selección y aplicación humana con CAS.
+Funciona sin credenciales/proveedor IA; formulario manual siempre disponible. No carga
+tesis completas ni amplía S04. Detalle y evidencia: [S02B](sesiones/S02B.md).
+
 Asistente para tesistas sin formación especializada: contexto necesario → cargar datos →
 revisar datos → revisar propuesta → aprobar y ejecutar → comprender resultados.
 Crear solicita nombre obligatorio (provisional permitido) y descripción opcional; conserva

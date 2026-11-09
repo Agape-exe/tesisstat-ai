@@ -14,6 +14,7 @@ import {
   type TextField,
 } from './draft';
 import { ContextLists } from './ContextLists';
+import { AssistedContext } from './AssistedContext';
 import { navigateProject } from '../projects/navigation';
 import './context.css';
 
@@ -66,6 +67,8 @@ export function FieldStatus({
           : fact?.value && fact.value !== 'unknown'
             ? 'Guardado · sin confirmar'
             : 'Sin información todavía'}
+      {fact?.provenance?.kind === 'ai_suggestion' &&
+        ' · Origen: respuesta de IA'}
     </span>
   );
 }
@@ -301,6 +304,18 @@ export function ContextEditor({
           )}
         </div>
       )}
+      <AssistedContext
+        projectId={projectId}
+        current={saved}
+        title={title}
+        disabled={busy || dirty || conflicted}
+        onSaved={(result) => {
+          setSaved(result);
+          setDraft(toDraft(result));
+          setSelected([]);
+          setHistory(null);
+        }}
+      />
       <form
         className="rp-form rc-form"
         onSubmit={(event) => {

@@ -134,3 +134,36 @@
     white-space: normal;
   }
 }
+.rc-assisted {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid #cddbd7;
+  border-radius: 12px;
+}
+.rc-assisted summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.rc-assisted textarea,
+.rc-assisted select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: block;
+  margin: 0.5rem 0 1rem;
+}
+.rc-assisted fieldset {
+  min-width: 0;
+}
+.rc-import-item {
+  border-top: 1px solid #cddbd7;
+  padding: 1rem 0;
+  overflow-wrap: anywhere;
+}
+.rc-import-current {
+  white-space: pre-wrap;
+}
+.rc-assisted label:not(.rc-check) {
+  display: block;
+  margin-top: 0.75rem;
+}

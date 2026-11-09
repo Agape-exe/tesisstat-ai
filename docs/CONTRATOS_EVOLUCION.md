@@ -143,6 +143,52 @@ intacto. `pending→applied|rejected|stale`; stale si cambió base; no autoaplic
 Extracción documental conserva revisión y citas del documento original; importar campos
 seleccionados al contexto no simula revisión completa del documento.
 
+### S02B — contrato ejecutable de importación asistida
+
+`ContextImport` (formato `context-import-1.0`) es un DTO externo separado de Facts C2.
+Canónico: `research/context/import_models.py`; esquemas y tipos generados, sin cambiar v1.
+`GET P/context/import-prompt` entrega el prompt español con JSON Schema del modelo canónico.
+No necesita ni llama a un proveedor. Solo admite JSON directo o un único bloque Markdown
+`json`/sin lenguaje, sin texto adicional. Varios candidatos, claves duplicadas y no finitos
+son errores; nunca se elige un objeto arbitrariamente.
+
+POST `P/context/suggestions`: `{response:string,expected_revision:int>=0}` → 201
+`ContextSuggestion`. Guarda únicamente propuesta normalizada, nombres de campos adicionales,
+proyecto, revisión base, ID servidor, formato, procedencia `ai_suggestion` y estado.
+No guarda respuesta original ni tesis. Campos externos desconocidos se convierten en notas
+acotadas revisables, con su nombre y valor JSON visibles; no son parámetros estadísticos.
+Metadatos reservados del servidor se rechazan. Límite respuesta UTF-8 120000 bytes,
+profundidad 8, 1200 nodos (incluidas claves), textos 2000 y título 200; listas C2 40/40/20.
+El adaptador limita el body HTTP de sugerencias a 800000 bytes antes de decodificar.
+No hay truncamiento: exceso produce 413/422 sin sugerencia parcial.
+
+GET `P/context/suggestions` y GET `.../suggestions/{id}` recuperan borradores y recibos
+por proyecto, detectando estado stale contra la revisión actual. POST `.../{id}/reject`
+rechaza pending sin modificar C2; estados terminales se conservan. POST `.../{id}/apply`:
+`{expected_revision,proposal:ContextImport,selected_fields:string[],confirm:boolean=false}`.
+`proposal` es la versión corregida, revalidada; refs locales no cambian. Claves de selección:
+nombre de campo escalar, `specific_objectives/{ref}`, `hypotheses/{ref}`,
+`complementary_notes/{indice}`. No se aceptan IDs/actores/confirmaciones externos.
+
+Las listas se añaden elemento a elemento, preservando los existentes; coincidencias de texto
+sin distinción de mayúsculas se señalan/rechazan si se seleccionan. Una hipótesis vinculada
+exige seleccionar su objetivo en esta aplicación o desvincularla explícitamente. El servidor
+asigna UUIDs a ambos. No se equipara un objetivo nuevo con uno existente por parecido.
+Null/unknown/ausentes no son seleccionables ni borran datos. Título se compara con Project C1;
+solo el formulario existente de proyecto lo cambia, nunca la aplicación de la sugerencia.
+
+Aplicación y recibo/contexto/historial se escriben en una transacción SQLite con CAS.
+`pending→applied|rejected|stale`; conflicto 409 persiste stale antes de responder, sin escribir
+contexto. Revisión nueva crea otra sugerencia mediante POST explícito y comparación renovada.
+ID de sugerencia es clave idempotente: reaplicar applied devuelve su recibo original, sin
+otra revisión/IDs, incluso con solicitudes simultáneas. Recibo incluye propuesta aplicada,
+selección y contexto resultante; la propuesta original permanece para auditar correcciones.
+Guardar no confirma salvo `confirm=true` explícito; actor/fecha/revisión son del servidor.
+Facts importados usan `ai_suggestion` y `algorithm_version=context-import-1.0:{suggestion_id}`
+para localizar el recibo; SourceRefs externos nunca se confían. Confirmar y corregir después
+preservan esta procedencia; historial C2 conserva valores anteriores y retira confirmaciones
+afectadas. Consumidores S04/S06 deben respetar esa procedencia y resolver solo hechos revisados.
+
 Ejemplo PATCH sin hipótesis:
 
 ```json

@@ -1,0 +1,15 @@
+{
+  "format_version": "context-import-1.0",
+  "title": "Aprendizaje sintético en dos mediciones",
+  "research_question": "¿Cómo se relacionan las dos mediciones de aprendizaje?",
+  "main_objective": "Examinar la asociación entre dos mediciones de aprendizaje.",
+  "specific_objectives": [{"ref": "o1", "text": "Examinar la asociación entre las mediciones."}],
+  "hypotheses": [{"ref": "h1", "statement": "Existe asociación entre ambas mediciones.", "objective_ref": "o1", "alternative": "two-sided"}],
+  "study_description": "Estudio ficticio sin intervención asignada.",
+  "data_description": "Dos mediciones sintéticas por unidad.",
+  "observational_unit": "Una unidad de observación ficticia",
+  "design": "observational",
+  "observations": "paired",
+  "sampling_notes": "Selección no especificada en el material ficticio.",
+  "complementary_notes": []
+}
