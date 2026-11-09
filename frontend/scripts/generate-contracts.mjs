@@ -31,6 +31,12 @@ for (const name of [
   'ImportedTableV2',
   'TableContextV2',
   'TablePreviewV2',
+  'DatasetRefV2',
+  'VariableDictionaryV2',
+  'TableProfileV2',
+  'TableRecipeV2',
+  'PreparationPreviewV2',
+  'DerivedTableV2',
 ]) {
   const schema = JSON.parse(
     await readFile(

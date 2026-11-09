@@ -1,0 +1,195 @@
+{
+  "schema_version": "2.0.0",
+  "id": "3abc50c1-36ea-512f-b3ad-da8f3b3d0d1d",
+  "project_id": "00000101-0000-4000-8000-000000000000",
+  "revision": 1,
+  "hash": "8119e1a76b956349897d4401f5590b361a689b4369d006e5aa057072d136e237",
+  "dataset_ref": {
+    "schema_version": "2.0.0",
+    "id": "00000104-0000-4000-8000-000000000000",
+    "project_id": "00000101-0000-4000-8000-000000000000",
+    "revision": 1,
+    "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f",
+    "hash_algorithm": "table-json-v1",
+    "format": "table_json",
+    "kind": "imported",
+    "name": "data-sources.synthetic.csv · Tabla CSV",
+    "row_count": 3,
+    "columns": [
+      {
+        "id": "00000110-0000-4000-8000-000000000000",
+        "name": "codigo",
+        "position": 0
+      },
+      {
+        "id": "00000111-0000-4000-8000-000000000000",
+        "name": "nota",
+        "position": 1
+      }
+    ],
+    "synthetic": null,
+    "source_refs": [
+      {
+        "kind": "source_file",
+        "id": "00000102-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "ce0420d8f0798d49baf97cb2fd2eebc2986fd007608a4d52e0ccc066df2a5751"
+      },
+      {
+        "kind": "source_sheet",
+        "id": "00000103-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "8942ef70b485735e48cc131b05eb36480acebf9aa06353f3197511d6c8109135"
+      },
+      {
+        "kind": "table",
+        "id": "00000104-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+      }
+    ],
+    "preparation_ref": null
+  },
+  "updated_at": "2026-11-09T15:00:00Z",
+  "variables": [
+    {
+      "id": "591fc97b-a37f-54e8-a3ac-e9e24973b2a1",
+      "name": {
+        "value": "codigo",
+        "provenance": {
+          "kind": "derived",
+          "source_refs": [
+            {
+              "kind": "dataset",
+              "id": "00000104-0000-4000-8000-000000000000",
+              "revision": 1,
+              "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+            }
+          ],
+          "algorithm_version": "header-suggestion-1"
+        },
+        "confirmation": null
+      },
+      "description": {
+        "value": null,
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "measurement_scale": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "column_ids": [
+        "00000110-0000-4000-8000-000000000000"
+      ],
+      "storage_type": "unknown",
+      "category_order": [],
+      "missing_markers": [
+        "",
+        "NA",
+        "N/A",
+        "null",
+        "none"
+      ],
+      "possible_identifier": true,
+      "identifier_confirmed": {
+        "value": null,
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "field_confirmations": {}
+    },
+    {
+      "id": "48b5ca82-499f-54e5-919e-67bbdaa3d2cc",
+      "name": {
+        "value": "nota",
+        "provenance": {
+          "kind": "derived",
+          "source_refs": [
+            {
+              "kind": "dataset",
+              "id": "00000104-0000-4000-8000-000000000000",
+              "revision": 1,
+              "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+            }
+          ],
+          "algorithm_version": "header-suggestion-1"
+        },
+        "confirmation": {
+          "actor_ref": "local",
+          "confirmed_at": "2026-11-09T15:00:00Z",
+          "revision": 1
+        }
+      },
+      "description": {
+        "value": null,
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "measurement_scale": {
+        "value": "interval",
+        "provenance": {
+          "kind": "manual",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": {
+          "actor_ref": "local",
+          "confirmed_at": "2026-11-09T15:00:00Z",
+          "revision": 1
+        }
+      },
+      "column_ids": [
+        "00000111-0000-4000-8000-000000000000"
+      ],
+      "storage_type": "unknown",
+      "category_order": [],
+      "missing_markers": [
+        "",
+        "NA",
+        "N/A",
+        "null",
+        "none"
+      ],
+      "possible_identifier": false,
+      "identifier_confirmed": {
+        "value": false,
+        "provenance": {
+          "kind": "manual",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": {
+          "actor_ref": "local",
+          "confirmed_at": "2026-11-09T15:00:00Z",
+          "revision": 1
+        }
+      },
+      "field_confirmations": {
+        "column_ids": {
+          "actor_ref": "local",
+          "confirmed_at": "2026-11-09T15:00:00Z",
+          "revision": 1
+        }
+      }
+    }
+  ],
+  "pending_questions": []
+}

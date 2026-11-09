@@ -20,6 +20,9 @@ from app.modules.research.context.repository import ContextError
 from app.modules.research.context.routes import create_router as create_context_router
 from app.modules.research.context.sqlite_repository import SQLiteContextRepository
 from app.modules.research.context.use_cases import ContextService
+from app.modules.research.data_workspace.repository import WorkspaceRepository
+from app.modules.research.data_workspace.routes import create_router as create_workspace_router
+from app.modules.research.data_workspace.service import WorkspaceService
 from app.modules.research.datasets.readers import DatasetLimits, InvalidDataset
 from app.modules.research.datasets.routes import create_router as create_dataset_router
 from app.modules.research.datasets.sqlite_repository import (
@@ -398,6 +401,9 @@ def create_app(
     )
     app.state.source_service = sources
     app.include_router(create_source_router(sources))
+    workspace = WorkspaceService(sources, WorkspaceRepository(settings.research_db_path))
+    app.state.data_workspace_service = workspace
+    app.include_router(create_workspace_router(workspace))
     app.include_router(
         create_context_router(
             ContextService(

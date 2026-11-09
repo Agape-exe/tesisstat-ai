@@ -26,7 +26,10 @@ def _missing(value: str | None, markers: list[str], empty: bool) -> bool:
     return (
         value is None
         or (empty and not value.strip())
-        or (value is not None and value.strip().casefold() in {item.casefold() for item in markers})
+        or (
+            value is not None
+            and value.strip().casefold() in {item.strip().casefold() for item in markers}
+        )
     )
 
 
@@ -34,11 +37,49 @@ def transform(data: bytes, format: str, plan: Plan, limits: DatasetLimits) -> di
     with iter_dataset(data, format, limits) as parsed:
         columns = parsed.columns.copy()
         rows = [row.copy() for row in parsed.rows]
-        original_columns = columns.copy()
-        original_rows = len(rows)
         warnings = parsed.warnings.copy()
         if parsed.formula_columns:
             raise InvalidPlan("El XLSX contiene fórmulas; no se exportan como datos preparados.")
+    result = transform_rows(columns, rows, plan, warnings)
+    columns, rows = result["columns"], result["rows"]
+    if any(
+        value is not None
+        and (
+            value.lstrip().startswith(("=", "+", "@"))
+            or (
+                value.lstrip().startswith("-")
+                and not re.fullmatch(r"-\d+(?:\.\d+)?", value.strip())
+            )
+        )
+        for row in chain([columns], rows)
+        for value in row
+    ):
+        raise InvalidPlan(
+            "El resultado contiene valores que podrían ejecutarse como fórmulas al abrir CSV."
+        )
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\r\n")
+    writer.writerow(columns)
+    writer.writerows(rows)
+    encoded = output.getvalue().encode("utf-8")
+    if len(encoded) > limits.max_bytes:
+        raise InvalidDataset("El resultado supera el límite de 10 MiB.")
+    try:
+        verified = read_csv(encoded, limits)
+    except InvalidDataset as exc:
+        raise InvalidPlan("El resultado no puede releerse como CSV válido.") from exc
+    if verified.columns != columns or verified.row_count != len(rows):
+        raise InvalidPlan("El resultado CSV no conserva la estructura prevista.")
+    return result | {"data": encoded}
+
+
+def transform_rows(columns, rows, plan, warnings=None):
+    """Shared explicit transformations, before format-specific export constraints."""
+    columns = columns.copy()
+    rows = [row.copy() for row in rows]
+    original_columns = columns.copy()
+    original_rows = len(rows)
+    warnings = list(warnings or [])
     summaries = []
     for operation in plan.operations:
         kind = operation.type
@@ -135,38 +176,9 @@ def transform(data: bytes, format: str, plan: Plan, limits: DatasetLimits) -> di
                     row[index] = canonical
                     summary.cells_changed += 1
         summaries.append(summary)
-    if any(
-        value is not None
-        and (
-            value.lstrip().startswith(("=", "+", "@"))
-            or (
-                value.lstrip().startswith("-")
-                and not re.fullmatch(r"-\d+(?:\.\d+)?", value.strip())
-            )
-        )
-        for row in chain([columns], rows)
-        for value in row
-    ):
-        raise InvalidPlan(
-            "El resultado contiene valores que podrían ejecutarse como fórmulas al abrir CSV."
-        )
-    output = io.StringIO(newline="")
-    writer = csv.writer(output, lineterminator="\r\n")
-    writer.writerow(columns)
-    writer.writerows(rows)
-    encoded = output.getvalue().encode("utf-8")
-    if len(encoded) > limits.max_bytes:
-        raise InvalidDataset("El resultado supera el límite de 10 MiB.")
-    try:
-        verified = read_csv(encoded, limits)
-    except InvalidDataset as exc:
-        raise InvalidPlan("El resultado no puede releerse como CSV válido.") from exc
-    if verified.columns != columns or verified.row_count != len(rows):
-        raise InvalidPlan("El resultado CSV no conserva la estructura prevista.")
     return {
         "columns": columns,
         "rows": rows,
-        "data": encoded,
         "original_columns": original_columns,
         "original_rows": original_rows,
         "warnings": list(dict.fromkeys(warnings)),

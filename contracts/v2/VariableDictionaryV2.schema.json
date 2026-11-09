@@ -1,0 +1,566 @@
+{
+  "$defs": {
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_ref": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Actor Ref",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "format": "date-time",
+          "title": "Confirmed At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actor_ref",
+        "confirmed_at",
+        "revision"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "DatasetRefV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "revision": {
+          "const": 1,
+          "default": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        },
+        "hash_algorithm": {
+          "const": "table-json-v1",
+          "default": "table-json-v1",
+          "title": "Hash Algorithm",
+          "type": "string"
+        },
+        "format": {
+          "const": "table_json",
+          "default": "table_json",
+          "title": "Format",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "imported",
+            "derived"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "row_count": {
+          "minimum": 0,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/TableColumnV2"
+          },
+          "maxItems": 200,
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "synthetic": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Synthetic"
+        },
+        "source_refs": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "preparation_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "project_id",
+        "hash",
+        "kind",
+        "name",
+        "row_count",
+        "columns",
+        "source_refs"
+      ],
+      "title": "DatasetRefV2",
+      "type": "object"
+    },
+    "Fact_Annotated_bool__Strict_strict_True___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Annotated[bool, Strict(strict=True)]]",
+      "type": "object"
+    },
+    "Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MaxLen(max_length=2000)])]]",
+      "type": "object"
+    },
+    "Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=1), MaxLen(max_length=200)])]]",
+      "type": "object"
+    },
+    "Fact_Literal__nominal____ordinal____interval____ratio____unknown___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "enum": [
+                "nominal",
+                "ordinal",
+                "interval",
+                "ratio",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Literal['nominal', 'ordinal', 'interval', 'ratio', 'unknown']]",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "manual",
+            "document",
+            "ai_suggestion",
+            "derived",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "algorithm_version": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Algorithm Version"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "TableColumnV2": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "position": {
+          "minimum": 0,
+          "title": "Position",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "position"
+      ],
+      "title": "TableColumnV2",
+      "type": "object"
+    },
+    "VariableV2": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"
+        },
+        "description": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "measurement_scale": {
+          "$ref": "#/$defs/Fact_Literal__nominal____ordinal____interval____ratio____unknown___"
+        },
+        "column_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 1,
+          "title": "Column Ids",
+          "type": "array"
+        },
+        "storage_type": {
+          "default": "unknown",
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "date",
+            "mixed",
+            "unknown"
+          ],
+          "title": "Storage Type",
+          "type": "string"
+        },
+        "category_order": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 1000,
+          "title": "Category Order",
+          "type": "array"
+        },
+        "missing_markers": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Missing Markers",
+          "type": "array"
+        },
+        "possible_identifier": {
+          "default": false,
+          "title": "Possible Identifier",
+          "type": "boolean"
+        },
+        "identifier_confirmed": {
+          "$ref": "#/$defs/Fact_Annotated_bool__Strict_strict_True___"
+        },
+        "field_confirmations": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Confirmation"
+          },
+          "title": "Field Confirmations",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "VariableV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "revision": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Hash",
+      "type": "string"
+    },
+    "dataset_ref": {
+      "$ref": "#/$defs/DatasetRefV2"
+    },
+    "updated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Updated At"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/VariableV2"
+      },
+      "maxItems": 200,
+      "title": "Variables",
+      "type": "array"
+    },
+    "pending_questions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Pending Questions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "hash",
+    "dataset_ref"
+  ],
+  "title": "VariableDictionaryV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/VariableDictionaryV2.schema.json"
+}

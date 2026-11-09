@@ -1,0 +1,506 @@
+{
+  "$defs": {
+    "ColumnProfileV2": {
+      "additionalProperties": false,
+      "properties": {
+        "column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Column Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "storage_type": {
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "date",
+            "mixed",
+            "unknown"
+          ],
+          "title": "Storage Type",
+          "type": "string"
+        },
+        "measurement_scale": {
+          "enum": [
+            "nominal",
+            "ordinal",
+            "interval",
+            "ratio",
+            "unknown"
+          ],
+          "title": "Measurement Scale",
+          "type": "string"
+        },
+        "present": {
+          "minimum": 0,
+          "title": "Present",
+          "type": "integer"
+        },
+        "missing": {
+          "minimum": 0,
+          "title": "Missing",
+          "type": "integer"
+        },
+        "distinct": {
+          "minimum": 0,
+          "title": "Distinct",
+          "type": "integer"
+        },
+        "constant": {
+          "title": "Constant",
+          "type": "boolean"
+        },
+        "possible_identifier": {
+          "title": "Possible Identifier",
+          "type": "boolean"
+        },
+        "formula_count": {
+          "minimum": 0,
+          "title": "Formula Count",
+          "type": "integer"
+        },
+        "frequencies": {
+          "items": {
+            "$ref": "#/$defs/FrequencyV2"
+          },
+          "title": "Frequencies",
+          "type": "array"
+        },
+        "numeric_summary": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Numeric Summary"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "column_id",
+        "name",
+        "storage_type",
+        "measurement_scale",
+        "present",
+        "missing",
+        "distinct",
+        "constant",
+        "possible_identifier",
+        "formula_count",
+        "frequencies",
+        "warnings"
+      ],
+      "title": "ColumnProfileV2",
+      "type": "object"
+    },
+    "DatasetRefV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "revision": {
+          "const": 1,
+          "default": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        },
+        "hash_algorithm": {
+          "const": "table-json-v1",
+          "default": "table-json-v1",
+          "title": "Hash Algorithm",
+          "type": "string"
+        },
+        "format": {
+          "const": "table_json",
+          "default": "table_json",
+          "title": "Format",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "imported",
+            "derived"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "row_count": {
+          "minimum": 0,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/TableColumnV2"
+          },
+          "maxItems": 200,
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "synthetic": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Synthetic"
+        },
+        "source_refs": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "preparation_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "project_id",
+        "hash",
+        "kind",
+        "name",
+        "row_count",
+        "columns",
+        "source_refs"
+      ],
+      "title": "DatasetRefV2",
+      "type": "object"
+    },
+    "FrequencyV2": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "percentage": {
+          "title": "Percentage",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value",
+        "count",
+        "percentage"
+      ],
+      "title": "FrequencyV2",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "TableColumnV2": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "position": {
+          "minimum": 0,
+          "title": "Position",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "position"
+      ],
+      "title": "TableColumnV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Hash",
+      "type": "string"
+    },
+    "dataset_ref": {
+      "$ref": "#/$defs/DatasetRefV2"
+    },
+    "dictionary_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "configuration_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Configuration Hash",
+      "type": "string"
+    },
+    "method": {
+      "const": "complete-table-descriptive",
+      "default": "complete-table-descriptive",
+      "title": "Method",
+      "type": "string"
+    },
+    "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "missing_policy": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Missing Policy",
+      "type": "object"
+    },
+    "formula_policy": {
+      "const": "text-no-evaluation",
+      "default": "text-no-evaluation",
+      "title": "Formula Policy",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "state": {
+      "default": "current",
+      "enum": [
+        "current",
+        "stale"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "rows": {
+      "minimum": 0,
+      "title": "Rows",
+      "type": "integer"
+    },
+    "columns_count": {
+      "minimum": 0,
+      "title": "Columns Count",
+      "type": "integer"
+    },
+    "missing": {
+      "minimum": 0,
+      "title": "Missing",
+      "type": "integer"
+    },
+    "duplicates": {
+      "minimum": 0,
+      "title": "Duplicates",
+      "type": "integer"
+    },
+    "constant_columns": {
+      "minimum": 0,
+      "title": "Constant Columns",
+      "type": "integer"
+    },
+    "empty_columns": {
+      "minimum": 0,
+      "title": "Empty Columns",
+      "type": "integer"
+    },
+    "columns": {
+      "items": {
+        "$ref": "#/$defs/ColumnProfileV2"
+      },
+      "title": "Columns",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "revision",
+    "hash",
+    "dataset_ref",
+    "dictionary_ref",
+    "source_refs",
+    "configuration_hash",
+    "engine_version",
+    "missing_policy",
+    "created_at",
+    "rows",
+    "columns_count",
+    "missing",
+    "duplicates",
+    "constant_columns",
+    "empty_columns",
+    "columns",
+    "warnings"
+  ],
+  "title": "TableProfileV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/TableProfileV2.schema.json"
+}

@@ -7,6 +7,7 @@ from pathlib import Path
 from app.shared.analysis_v2 import V2_CONTRACT_MODELS
 from app.shared.contracts import CONTRACT_MODELS
 from app.shared.data_sources_v2 import DATA_SOURCE_MODELS
+from app.shared.data_workspace_v2 import WORKSPACE_MODELS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,7 +25,7 @@ def main() -> None:
     args = parser.parse_args()
     for version, models in (
         ("v1", CONTRACT_MODELS),
-        ("v2", (*V2_CONTRACT_MODELS, *DATA_SOURCE_MODELS)),
+        ("v2", (*V2_CONTRACT_MODELS, *DATA_SOURCE_MODELS, *WORKSPACE_MODELS)),
     ):
         output = ROOT / "contracts" / version
         output.mkdir(parents=True, exist_ok=True)
