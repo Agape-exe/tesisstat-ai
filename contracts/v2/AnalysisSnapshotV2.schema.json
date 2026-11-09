@@ -1,0 +1,746 @@
+{
+  "$defs": {
+    "AnalysisIntentV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "descriptive",
+            "association",
+            "comparison",
+            "reliability",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "question": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "objective_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective Id"
+        },
+        "hypothesis_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hypothesis Id"
+        },
+        "variable_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Variable Ids",
+          "type": "array"
+        },
+        "roles": {
+          "items": {
+            "$ref": "#/$defs/IntentRole"
+          },
+          "title": "Roles",
+          "type": "array"
+        },
+        "observations": {
+          "$ref": "#/$defs/Fact_Literal__independent____paired____repeated____unknown___"
+        },
+        "paired_columns": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PairedColumns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "group_column_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Column Id"
+        },
+        "alternative": {
+          "default": "unspecified",
+          "enum": [
+            "two-sided",
+            "greater",
+            "less",
+            "unspecified"
+          ],
+          "title": "Alternative",
+          "type": "string"
+        },
+        "alpha": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "missing_policy": {
+          "const": "complete_cases",
+          "default": "complete_cases",
+          "title": "Missing Policy",
+          "type": "string"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "estimand": {
+          "default": "unknown",
+          "enum": [
+            "summary",
+            "linear_association",
+            "monotonic_association",
+            "mean_difference",
+            "distribution_difference",
+            "internal_consistency",
+            "unknown"
+          ],
+          "title": "Estimand",
+          "type": "string"
+        },
+        "conditions": {
+          "$ref": "#/$defs/IntentConditions"
+        },
+        "requested_technique": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Technique"
+        }
+      },
+      "required": [
+        "id",
+        "project_id",
+        "revision",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "AnalysisIntentV2",
+      "type": "object"
+    },
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_ref": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Actor Ref",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "format": "date-time",
+          "title": "Confirmed At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actor_ref",
+        "confirmed_at",
+        "revision"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MaxLen(max_length=2000)])]]",
+      "type": "object"
+    },
+    "Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=1), MaxLen(max_length=200)])]]",
+      "type": "object"
+    },
+    "Fact_Literal__independent____paired____repeated____unknown___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "enum": [
+                "independent",
+                "paired",
+                "repeated",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Literal['independent', 'paired', 'repeated', 'unknown']]",
+      "type": "object"
+    },
+    "Fact_Literal__nominal____ordinal____interval____ratio____unknown___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "enum": [
+                "nominal",
+                "ordinal",
+                "interval",
+                "ratio",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Literal['nominal', 'ordinal', 'interval', 'ratio', 'unknown']]",
+      "type": "object"
+    },
+    "Fact_Literal__yes____no____unknown___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Literal['yes', 'no', 'unknown']]",
+      "type": "object"
+    },
+    "IntentConditions": {
+      "additionalProperties": false,
+      "properties": {
+        "linearity": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
+        "monotonicity": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
+        "comparable_group_shapes": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
+        "difference_symmetry": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
+        "pooled_variance_justified": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        }
+      },
+      "title": "IntentConditions",
+      "type": "object"
+    },
+    "IntentRole": {
+      "additionalProperties": false,
+      "properties": {
+        "variable_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "outcome",
+            "predictor",
+            "group",
+            "item",
+            "descriptive"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable_id",
+        "role"
+      ],
+      "title": "IntentRole",
+      "type": "object"
+    },
+    "PairedColumns": {
+      "additionalProperties": false,
+      "properties": {
+        "before_column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Before Column Id",
+          "type": "string"
+        },
+        "after_column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "After Column Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "before_column_id",
+        "after_column_id"
+      ],
+      "title": "PairedColumns",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "default": "unknown",
+          "enum": [
+            "manual",
+            "document",
+            "ai_suggestion",
+            "derived",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_refs": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "algorithm_version": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Algorithm Version"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "SnapshotVariableV2": {
+      "additionalProperties": false,
+      "description": "Selected variable projection; not the full editable S03 dictionary.",
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "column_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Column Ids",
+          "type": "array"
+        },
+        "name": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"
+        },
+        "measurement_scale": {
+          "$ref": "#/$defs/Fact_Literal__nominal____ordinal____interval____ratio____unknown___"
+        }
+      },
+      "required": [
+        "id",
+        "column_ids",
+        "name",
+        "measurement_scale"
+      ],
+      "title": "SnapshotVariableV2",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "revision": {
+      "const": 1,
+      "default": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "context_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "dictionary_ref": {
+      "$ref": "#/$defs/SourceRef"
+    },
+    "dataset_ref": {
+      "$ref": "#/$defs/SourceRef"
+    },
+    "intent_ref": {
+      "$ref": "#/$defs/SourceRef"
+    },
+    "profile_ref": {
+      "$ref": "#/$defs/SourceRef"
+    },
+    "diagnostic_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Diagnostic Refs",
+      "type": "array"
+    },
+    "instrument_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "score_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "confirmed_facts": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+      },
+      "title": "Confirmed Facts",
+      "type": "object"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/SnapshotVariableV2"
+      },
+      "minItems": 1,
+      "title": "Variables",
+      "type": "array"
+    },
+    "intent": {
+      "$ref": "#/$defs/AnalysisIntentV2"
+    },
+    "source_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Fingerprint",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "created_at",
+    "source_refs",
+    "dictionary_ref",
+    "dataset_ref",
+    "intent_ref",
+    "profile_ref",
+    "variables",
+    "intent",
+    "source_fingerprint"
+  ],
+  "title": "AnalysisSnapshotV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/AnalysisSnapshotV2.schema.json"
+}
