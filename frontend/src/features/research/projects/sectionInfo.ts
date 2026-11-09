@@ -3,6 +3,16 @@ export const sectionInfo: Record<
   Section,
   { title: string; description: string; icon: string }
 > = {
+  home: {
+    title: 'Inicio',
+    description: 'Tu proyecto, paso a paso.',
+    icon: 'folder',
+  },
+  context: {
+    title: 'Contexto',
+    description: 'Define qué quieres comprender con tus datos.',
+    icon: 'book',
+  },
   assistant: {
     title: 'Asistente IA',
     description: 'Conversación dentro del proyecto seleccionado',

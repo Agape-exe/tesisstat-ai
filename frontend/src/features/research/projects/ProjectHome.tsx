@@ -1,0 +1,106 @@
+import { useCallback } from 'react';
+import { loadJourney, type JourneyStep } from './journey';
+import { useReadResource } from './useReadResource';
+import { navigateProject, navigateWorkspace } from './navigation';
+
+export function ProjectHome({
+  projectId,
+  title,
+  description,
+  active,
+}: {
+  projectId: string;
+  title: string;
+  description: string;
+  active: boolean;
+}) {
+  const load = useCallback(() => loadJourney(projectId), [projectId]);
+  const resource = useReadResource(load, active);
+  const steps = resource.loading || resource.error ? null : resource.data;
+  const next =
+    steps?.find((s) => s.state === 'No verificable') ??
+    steps?.slice(1).find((s) => s.state !== 'Completado') ??
+    steps?.[0];
+  function open(step: JourneyStep) {
+    if (step.view) navigateWorkspace(projectId, step.section, step.view);
+    else navigateProject(projectId, step.section);
+  }
+  return (
+    <section aria-label="Inicio del proyecto" className="rp-home">
+      <div className="rp-home-intro">
+        <p className="rp-eyebrow">TU INVESTIGACIÓN</p>
+        <h2>{title}</h2>
+        <p>
+          {description || 'Puedes añadir una descripción cuando lo necesites.'}
+        </p>
+        <p>
+          TesisStat AI te orienta para organizar tus datos, revisar una
+          propuesta estadística y comprender los resultados, paso a paso.
+        </p>
+      </div>
+      <div className="rp-home-next">
+        <h3>Siguiente paso</h3>
+        {resource.loading ? (
+          <p role="status">Comprobando recursos del proyecto…</p>
+        ) : resource.error ? (
+          <p role="alert">No se pudo comprobar el recorrido. Reintenta.</p>
+        ) : (
+          <p>
+            {next?.state === 'No verificable'
+              ? 'Reintenta la comprobación antes de decidir cómo continuar.'
+              : next
+                ? `${next.name}: ${next.evidence}`
+                : 'Consulta el recorrido recomendado.'}
+          </p>
+        )}
+        <div className="rp-actions">
+          {next && next.state !== 'No verificable' && (
+            <button onClick={() => open(next)}>Continuar: {next.name}</button>
+          )}
+          <button
+            className="rp-secondary"
+            onClick={() => navigateProject(projectId, 'datasets')}
+          >
+            Revisar datos
+          </button>
+          <button
+            className="rp-secondary"
+            onClick={() => navigateProject(projectId, 'assistant')}
+          >
+            Solicitar ayuda
+          </button>
+          <button
+            className="rp-secondary"
+            disabled={resource.loading}
+            onClick={resource.reload}
+          >
+            Actualizar estado
+          </button>
+        </div>
+      </div>
+      <h3>Recorrido recomendado</h3>
+      <p className="rp-hint">
+        El estado refleja archivos, perfiles, propuestas y resultados guardados.
+        Las etapas posteriores usan el recorrido documental actual; puedes
+        explorar Datos sin completar Contexto.
+      </p>
+      <ol className="rp-journey">
+        {steps?.map((step, index) => (
+          <li key={step.name}>
+            <span className="rp-journey-number" aria-hidden="true">
+              {index + 1}
+            </span>
+            <div>
+              <h4>{step.name}</h4>
+              <span className="rp-badge">{step.state}</span>
+              <p>{step.evidence}</p>
+              <button className="rp-link" onClick={() => open(step)}>
+                Ir a {step.name}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
