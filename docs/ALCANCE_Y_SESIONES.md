@@ -135,7 +135,8 @@ ejemplos manuales o referencias publicadas; invocar la misma función dos veces 
 ## Plan ejecutable
 
 Cada chat lee los tres acuerdos normativos y el informe previo integrado; verifica develop
-y AGENTS si aparece; usa rama codex/ y deja informe SXX con pruebas reales y pendientes.
+y AGENTS si aparece; usa rama `<tipo>/<descripcion>` (por ejemplo, `docs/`, `feat/` o
+`fix/`, según el trabajo) y deja informe SXX con pruebas reales y pendientes.
 No asumir que una rama abierta ya está integrada. Modelo/esfuerzo son recomendaciones,
 no afirmaciones sobre el modelo efectivo de un chat.
 

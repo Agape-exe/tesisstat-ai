@@ -190,7 +190,8 @@ Archivos de coordinación exclusiva (no modificar a la vez sin acuerdo):
 - Navegación, ProjectWorkspace/ProjectShell, clientes API y auth frontend, README y estos
   acuerdos: una rama por interfaz compartida, informe de cambio al integrar.
 
-Worktree propio desde develop verificado; rama codex/ descriptiva; no cambiar ramas de
+Worktree propio desde develop verificado; rama tradicional `<tipo>/<descripcion>`
+(`docs/`, `feat/`, `fix/`, `refactor/`, `test/` o `chore/`, según el trabajo); no cambiar ramas de
 otra copia. PRs pequeños hacia develop y sin fusionar sin autorización. Registrar commit
 base y dependencias; rebase/merge solo de la propia rama de forma acordada sin force push
 ni reescribir historial ajeno. Fijar el commit integrado de contratos antes de cambiar consumidores.
