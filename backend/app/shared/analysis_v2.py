@@ -43,6 +43,7 @@ class SourceRef(V2Model):
         "source_sheet",
         "table",
         "table_context",
+        "preparation",
     ]
     id: ID
     revision: Revision
@@ -299,7 +300,7 @@ def canonical_hash(value: V2Model | list | dict) -> str:
             return {
                 k: content(v)
                 for k, v in item.items()
-                if k not in {"created_at", "updated_at", "confirmation"}
+                if k not in {"created_at", "updated_at", "confirmation", "field_confirmations"}
                 and not (root and k == "hash")
             }
         if isinstance(item, list):

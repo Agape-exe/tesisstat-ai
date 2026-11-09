@@ -1,7 +1,8 @@
 # Familia v2: contexto, fuentes e intención/snapshot
 
-Canónicos: `backend/app/shared/analysis_v2.py` y `data_sources_v2.py`. S02 habilita C2;
-S03A habilita archivos, hojas, tablas y contexto C3. C4 es estructura preparada para S04.
+Canónicos: `backend/app/shared/analysis_v2.py` y `data_sources_v2.py` y `data_workspace_v2.py`. S02 habilita C2;
+S03A habilita archivos, hojas, tablas y contexto C3; S03B diccionario, perfil y derivados.
+C4 conserva su estructura preparada para S04.
 Los seis contratos v1 y sus ejemplos permanecen intactos.
 
 Desde backend: `python -m scripts.export_contracts` regenera ambas familias;
@@ -31,8 +32,8 @@ Decisiones compatibles de S02 y consumidores:
   pertenencia a esa lista, revisión/hash de intención congelada y variables seleccionadas.
   Resolver otras fuentes/columnas y permisos sigue siendo responsabilidad del servidor S04.
 - `canonical_hash` implementa json-sort-v1; excluye fechas, confirmaciones y hash propio del
-  recurso editable. Conserva hashes anidados de SourceRef. Para un DatasetRef futuro se
-  mantiene research-dataset-v1 según S00; no sustituirlo por el hash del manifiesto de ejemplo.
+  recurso editable. Conserva hashes anidados de SourceRef. DatasetRefV2 de tablas usa
+  table-json-v1 según la adaptación S03B; los datasets v1 conservan research-dataset-v1.
 
 No hay lectura heurística de v2 por consumidores v1 ni reutilización de aprobaciones.
 
@@ -54,3 +55,19 @@ revisión. La futura construcción de AnalysisSnapshot adaptará esta evidencia 
 dataset/diccionario elegido; no hay consumidor ejecutable nuevo en esta entrega.
 Lectura completa, límites, selección y recuperación:
 [API C3](../../backend/app/modules/research/sources/README.md).
+
+## Diccionario, perfil y derivados S03B
+
+`DatasetRefV2` identifica tabla JSON importada/derivada con hash table-json-v1. Nunca es un
+CSV/XLSX ficticio. `VariableDictionaryV2` guarda facts, listas, vínculos escalares e históricos.
+`TableProfileV2` guarda evidencia completa, política/versiones y vigencia. `TableRecipeV2`,
+`PreparationPreviewV2` y `DerivedTableV2` conservan recetas, todas las fuentes, linaje y
+confirmación humana. No se heredan confirmaciones al derivar ni se materializa un snapshot
+C4 automáticamente. `preparation` en SourceRef referencia el hash canónico de la receta.
+
+`python -m scripts.export_workspace_examples` genera ejemplos deterministas ejecutando los
+servicios reales sobre el CSV sintético ya existente. Tests validan esquema/ejemplo, y los
+conteos/filas de combinación se contrastan con resultados esperados escritos a mano en
+`test_data_workspace_v2.py`, independientes del algoritmo productivo.
+Puerto completo, operaciones PATCH, hashes/políticas y límites exactos:
+[API S03B](../../backend/app/modules/research/data_workspace/README.md).

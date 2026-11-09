@@ -1,0 +1,129 @@
+.data-workspace {
+  min-width: 0;
+}
+.data-workspace > .rp-field {
+  max-width: 720px;
+}
+.data-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.data-dictionary-fields {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  margin: 0;
+}
+.data-variable {
+  margin: 16px 0;
+}
+.data-workspace .rp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+  min-width: 0;
+}
+.data-workspace input:not([type='checkbox']),
+.data-workspace select,
+.data-workspace textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #182b44;
+  font: inherit;
+}
+.data-workspace textarea {
+  min-height: 85px;
+}
+.data-workspace pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 300px;
+  overflow: auto;
+  font-size: 12px;
+}
+.data-confirmations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 14px 0;
+}
+.data-confirmations label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.data-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: #f3f7fb;
+  border-radius: 12px;
+}
+.data-counts dt {
+  color: #526278;
+  font-size: 13px;
+}
+.data-counts dd {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.data-profile-column,
+.data-advanced {
+  padding: 16px 0;
+  border-top: 1px solid #dce4ec;
+  margin-top: 14px;
+}
+.data-output {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: 14px;
+}
+.data-inventory {
+  padding-left: 20px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.data-tabs {
+  margin: 20px 0;
+}
+.data-continue {
+  margin-top: 22px;
+}
+.data-workspace td {
+  white-space: pre-wrap;
+}
+.data-workspace summary {
+  cursor: pointer;
+  line-height: 1.5;
+}
+.data-workspace [hidden] {
+  display: none;
+}
+@media (max-width: 640px) {
+  .data-form-grid,
+  .data-output {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .data-workspace .rp-surface {
+    padding: 16px;
+  }
+  .data-tabs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .data-workspace button {
+    white-space: normal;
+  }
+}

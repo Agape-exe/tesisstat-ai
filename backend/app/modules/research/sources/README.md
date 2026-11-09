@@ -112,3 +112,11 @@ automáticamente al arrancar ni toca archivos de otra instancia. Una DB/director
 inconsistentes exigen restaurar juntos su copia, no fabricar registros. El borrado de un
 proyecto vuelve inaccesible su árbol; esta entrega conserva sus bytes y revisiones locales,
 sin introducir borrado permanente ni política nueva de retención.
+
+## Consumidor S03B integrado
+
+[Data workspace](../data_workspace/README.md) consume estas extracciones sin importarlas por
+v1. Expone DatasetRefV2 table_json, diccionario, perfil completo y preparación opcional,
+incluida combinación exacta uno a uno. Conserva las rutas/metadatos/originales anteriores;
+`WorkspaceService.read_table` amplía el puerto de lectura a derivados y valida todos los
+padres. La creación de derivados no escribe objetos sobre las fuentes S03A.

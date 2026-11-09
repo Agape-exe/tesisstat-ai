@@ -285,7 +285,8 @@
             "source_file",
             "source_sheet",
             "table",
-            "table_context"
+            "table_context",
+            "preparation"
           ],
           "title": "Kind",
           "type": "string"

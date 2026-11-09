@@ -27,7 +27,8 @@ export type Kind =
   | "source_file"
   | "source_sheet"
   | "table"
-  | "table_context";
+  | "table_context"
+  | "preparation";
 export type Id1 = string;
 export type Revision1 = number;
 export type Hash = string;

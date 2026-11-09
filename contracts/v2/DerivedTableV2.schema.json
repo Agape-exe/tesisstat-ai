@@ -1,0 +1,589 @@
+{
+  "$defs": {
+    "ColumnLineageV2": {
+      "additionalProperties": false,
+      "properties": {
+        "source_table_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Source Table Id",
+          "type": "string"
+        },
+        "source_column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Source Column Id",
+          "type": "string"
+        },
+        "result_column_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Result Column Id"
+        }
+      },
+      "required": [
+        "source_table_id",
+        "source_column_id",
+        "result_column_id"
+      ],
+      "title": "ColumnLineageV2",
+      "type": "object"
+    },
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_ref": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Actor Ref",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "format": "date-time",
+          "title": "Confirmed At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actor_ref",
+        "confirmed_at",
+        "revision"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "DatasetRefV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "project_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Project Id",
+          "type": "string"
+        },
+        "revision": {
+          "const": 1,
+          "default": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        },
+        "hash_algorithm": {
+          "const": "table-json-v1",
+          "default": "table-json-v1",
+          "title": "Hash Algorithm",
+          "type": "string"
+        },
+        "format": {
+          "const": "table_json",
+          "default": "table_json",
+          "title": "Format",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "imported",
+            "derived"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "row_count": {
+          "minimum": 0,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/TableColumnV2"
+          },
+          "maxItems": 200,
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "synthetic": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Synthetic"
+        },
+        "source_refs": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source Refs",
+          "type": "array"
+        },
+        "preparation_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "project_id",
+        "hash",
+        "kind",
+        "name",
+        "row_count",
+        "columns",
+        "source_refs"
+      ],
+      "title": "DatasetRefV2",
+      "type": "object"
+    },
+    "OutputColumnV2": {
+      "additionalProperties": false,
+      "properties": {
+        "table_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Table Id",
+          "type": "string"
+        },
+        "column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Column Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "table_id",
+        "column_id",
+        "name"
+      ],
+      "title": "OutputColumnV2",
+      "type": "object"
+    },
+    "PreparationOperationV2": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "rename_column",
+            "drop_columns",
+            "drop_missing",
+            "replace_missing",
+            "drop_duplicates"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "column_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Column Ids",
+          "type": "array"
+        },
+        "new_name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "New Name"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "PreparationOperationV2",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "TableColumnV2": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "position": {
+          "minimum": 0,
+          "title": "Position",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "position"
+      ],
+      "title": "TableColumnV2",
+      "type": "object"
+    },
+    "TableRecipeV2": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "prepare",
+            "join"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "left_table_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Left Table Id",
+          "type": "string"
+        },
+        "right_table_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right Table Id"
+        },
+        "left_key": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left Key"
+        },
+        "right_key": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right Key"
+        },
+        "key_policy": {
+          "const": "exact-text-v1",
+          "default": "exact-text-v1",
+          "title": "Key Policy",
+          "type": "string"
+        },
+        "unmatched_policy": {
+          "anyOf": [
+            {
+              "enum": [
+                "matches_only",
+                "all_cases"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unmatched Policy"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/OutputColumnV2"
+          },
+          "maxItems": 200,
+          "title": "Columns",
+          "type": "array"
+        },
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/PreparationOperationV2"
+          },
+          "maxItems": 20,
+          "title": "Operations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "left_table_id"
+      ],
+      "title": "TableRecipeV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "revision": {
+      "const": 1,
+      "default": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Hash",
+      "type": "string"
+    },
+    "dataset_ref": {
+      "$ref": "#/$defs/DatasetRefV2"
+    },
+    "preview_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Preview Id",
+      "type": "string"
+    },
+    "recipe": {
+      "$ref": "#/$defs/TableRecipeV2"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "confirmation": {
+      "$ref": "#/$defs/Confirmation"
+    },
+    "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "counts": {
+      "additionalProperties": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "title": "Counts",
+      "type": "object"
+    },
+    "column_lineage": {
+      "items": {
+        "$ref": "#/$defs/ColumnLineageV2"
+      },
+      "title": "Column Lineage",
+      "type": "array"
+    },
+    "row_lineage": {
+      "items": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "object"
+      },
+      "title": "Row Lineage",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "hash",
+    "dataset_ref",
+    "preview_id",
+    "recipe",
+    "source_refs",
+    "created_at",
+    "confirmation",
+    "engine_version",
+    "counts",
+    "column_lineage",
+    "row_lineage",
+    "warnings"
+  ],
+  "title": "DerivedTableV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/DerivedTableV2.schema.json"
+}

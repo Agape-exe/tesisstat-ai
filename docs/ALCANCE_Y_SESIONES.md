@@ -175,3 +175,10 @@ día 3 S05–S06 e integración paralela; día 4 S07/correcciones. El calendario
 criterios. Despliegue se programa después de S07 funcional y validado (eventual S08,
 fuera de estas implementaciones), con autorización propia y verificación remota posterior.
 Los paquetes paralelos se delimitan en integración; su división detallada se decidirá después.
+
+## Evidencia S03B
+
+[S03B](sesiones/S03B.md) registra el diccionario persistente, perfil completo por tabla y
+preparación/combinación opcional mediante fuentes reales S03A y derivados. El nuevo puerto
+TableReadPort y los recursos C3 quedan disponibles para S04, sin ejecución de análisis v2.
+Importar o generar un perfil no acredita revisión completa; transformar nunca es requisito.

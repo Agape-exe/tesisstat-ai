@@ -30,7 +30,8 @@ export type Kind1 =
   | "source_file"
   | "source_sheet"
   | "table"
-  | "table_context";
+  | "table_context"
+  | "preparation";
 export type Id = string;
 export type Revision1 = number;
 export type Hash1 = string;

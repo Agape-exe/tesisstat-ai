@@ -1,0 +1,181 @@
+{
+  "schema_version": "2.0.0",
+  "id": "05fab835-6935-5515-9760-fb3835d90697",
+  "project_id": "00000101-0000-4000-8000-000000000000",
+  "revision": 1,
+  "hash": "e85cefc140e6f02368b7c17d5f0159bd80906f038732dcd9406ccc39d4b6e5a0",
+  "dataset_ref": {
+    "schema_version": "2.0.0",
+    "id": "00000104-0000-4000-8000-000000000000",
+    "project_id": "00000101-0000-4000-8000-000000000000",
+    "revision": 1,
+    "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f",
+    "hash_algorithm": "table-json-v1",
+    "format": "table_json",
+    "kind": "imported",
+    "name": "data-sources.synthetic.csv · Tabla CSV",
+    "row_count": 3,
+    "columns": [
+      {
+        "id": "00000110-0000-4000-8000-000000000000",
+        "name": "codigo",
+        "position": 0
+      },
+      {
+        "id": "00000111-0000-4000-8000-000000000000",
+        "name": "nota",
+        "position": 1
+      }
+    ],
+    "synthetic": null,
+    "source_refs": [
+      {
+        "kind": "source_file",
+        "id": "00000102-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "ce0420d8f0798d49baf97cb2fd2eebc2986fd007608a4d52e0ccc066df2a5751"
+      },
+      {
+        "kind": "source_sheet",
+        "id": "00000103-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "8942ef70b485735e48cc131b05eb36480acebf9aa06353f3197511d6c8109135"
+      },
+      {
+        "kind": "table",
+        "id": "00000104-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+      }
+    ],
+    "preparation_ref": null
+  },
+  "dictionary_ref": {
+    "kind": "dictionary",
+    "id": "3abc50c1-36ea-512f-b3ad-da8f3b3d0d1d",
+    "revision": 1,
+    "hash": "8119e1a76b956349897d4401f5590b361a689b4369d006e5aa057072d136e237"
+  },
+  "source_refs": [
+    {
+      "kind": "source_file",
+      "id": "00000102-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "ce0420d8f0798d49baf97cb2fd2eebc2986fd007608a4d52e0ccc066df2a5751"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "00000103-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "8942ef70b485735e48cc131b05eb36480acebf9aa06353f3197511d6c8109135"
+    },
+    {
+      "kind": "table",
+      "id": "00000104-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+    }
+  ],
+  "configuration_hash": "d982fe6b5738b7b8ca4f3e9a62f817c7818bce40e9eb296ab183777a4b1751d5",
+  "method": "complete-table-descriptive",
+  "engine_version": "table-workspace-1/eda-1:n/a,na,none,null:30.0:80.0:10",
+  "missing_policy": {
+    "00000110-0000-4000-8000-000000000000": [
+      "",
+      "NA",
+      "N/A",
+      "null",
+      "none"
+    ],
+    "00000111-0000-4000-8000-000000000000": [
+      "",
+      "NA",
+      "N/A",
+      "null",
+      "none"
+    ]
+  },
+  "formula_policy": "text-no-evaluation",
+  "created_at": "2026-11-09T15:00:00Z",
+  "state": "current",
+  "rows": 3,
+  "columns_count": 2,
+  "missing": 1,
+  "duplicates": 0,
+  "constant_columns": 0,
+  "empty_columns": 0,
+  "columns": [
+    {
+      "column_id": "00000110-0000-4000-8000-000000000000",
+      "name": "codigo",
+      "storage_type": "number",
+      "measurement_scale": "unknown",
+      "present": 3,
+      "missing": 0,
+      "distinct": 3,
+      "constant": false,
+      "possible_identifier": true,
+      "formula_count": 0,
+      "frequencies": [
+        {
+          "value": "0001",
+          "count": 1,
+          "percentage": 33.333333333333336
+        },
+        {
+          "value": "0002",
+          "count": 1,
+          "percentage": 33.333333333333336
+        },
+        {
+          "value": "0003",
+          "count": 1,
+          "percentage": 33.333333333333336
+        }
+      ],
+      "numeric_summary": null,
+      "warnings": [
+        "La columna codigo parece ser un identificador; revisa su significado antes de tratarla como cuantitativa.",
+        "Frecuencias sobre presentes; no se promedian códigos ni escalas sin confirmar."
+      ]
+    },
+    {
+      "column_id": "00000111-0000-4000-8000-000000000000",
+      "name": "nota",
+      "storage_type": "number",
+      "measurement_scale": "interval",
+      "present": 2,
+      "missing": 1,
+      "distinct": 2,
+      "constant": false,
+      "possible_identifier": false,
+      "formula_count": 0,
+      "frequencies": [
+        {
+          "value": "12",
+          "count": 1,
+          "percentage": 50.0
+        },
+        {
+          "value": "14",
+          "count": 1,
+          "percentage": 50.0
+        }
+      ],
+      "numeric_summary": {
+        "min": "12",
+        "max": "14",
+        "mean": "13",
+        "median": "13",
+        "sample_stdev": "1.414213562373095048801688724"
+      },
+      "warnings": [
+        "La columna nota tiene un porcentaje elevado de valores faltantes."
+      ]
+    }
+  ],
+  "warnings": [
+    "Las advertencias no modifican datos. Un duplicado puede ser legítimo.",
+    "Fórmulas conservadas como texto; no se evalúan. No se realizan pruebas inferenciales."
+  ]
+}

@@ -1,0 +1,435 @@
+{
+  "$defs": {
+    "OutputColumnV2": {
+      "additionalProperties": false,
+      "properties": {
+        "table_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Table Id",
+          "type": "string"
+        },
+        "column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Column Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "table_id",
+        "column_id",
+        "name"
+      ],
+      "title": "OutputColumnV2",
+      "type": "object"
+    },
+    "PreparationOperationV2": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "rename_column",
+            "drop_columns",
+            "drop_missing",
+            "replace_missing",
+            "drop_duplicates"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "column_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 200,
+          "title": "Column Ids",
+          "type": "array"
+        },
+        "new_name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "New Name"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "PreparationOperationV2",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "TableRecipeV2": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "prepare",
+            "join"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "left_table_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Left Table Id",
+          "type": "string"
+        },
+        "right_table_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right Table Id"
+        },
+        "left_key": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left Key"
+        },
+        "right_key": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right Key"
+        },
+        "key_policy": {
+          "const": "exact-text-v1",
+          "default": "exact-text-v1",
+          "title": "Key Policy",
+          "type": "string"
+        },
+        "unmatched_policy": {
+          "anyOf": [
+            {
+              "enum": [
+                "matches_only",
+                "all_cases"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unmatched Policy"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/OutputColumnV2"
+          },
+          "maxItems": 200,
+          "title": "Columns",
+          "type": "array"
+        },
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/PreparationOperationV2"
+          },
+          "maxItems": 20,
+          "title": "Operations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "left_table_id"
+      ],
+      "title": "TableRecipeV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "recipe": {
+      "$ref": "#/$defs/TableRecipeV2"
+    },
+    "recipe_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Recipe Hash",
+      "type": "string"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "configuration_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Configuration Hash",
+      "type": "string"
+    },
+    "result_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Result Hash",
+      "type": "string"
+    },
+    "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "counts": {
+      "additionalProperties": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "title": "Counts",
+      "type": "object"
+    },
+    "result_columns": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Result Columns",
+      "type": "array"
+    },
+    "rows": {
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Rows",
+      "type": "array"
+    },
+    "unmatched_left": {
+      "items": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "title": "Unmatched Left",
+      "type": "array"
+    },
+    "unmatched_right": {
+      "items": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "title": "Unmatched Right",
+      "type": "array"
+    },
+    "unmatched_left_rows": {
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Unmatched Left Rows",
+      "type": "array"
+    },
+    "unmatched_right_rows": {
+      "items": {
+        "items": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "array"
+      },
+      "title": "Unmatched Right Rows",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "blockers": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Blockers",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "recipe",
+    "recipe_hash",
+    "source_refs",
+    "configuration_hash",
+    "result_hash",
+    "engine_version",
+    "created_at",
+    "expires_at",
+    "counts",
+    "result_columns",
+    "rows",
+    "unmatched_left",
+    "unmatched_right",
+    "warnings",
+    "blockers"
+  ],
+  "title": "PreparationPreviewV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/PreparationPreviewV2.schema.json"
+}
