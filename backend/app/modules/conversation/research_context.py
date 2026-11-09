@@ -189,7 +189,12 @@ class ResearchContextBuilder:
                         id=str(project_id),
                         status="current",
                         version=project.updated_at.isoformat(),
-                        data=clean({"title": project.title, "program": project.program}),
+                        data=clean(
+                            {
+                                "title": project.title,
+                                **({"program": project.program} if project.program else {}),
+                            }
+                        ),
                     ),
                     ContextSource(
                         kind="sources",
@@ -226,7 +231,7 @@ class ResearchContextBuilder:
             project.id,
             "current",
             project.updated_at.isoformat(),
-            {"title": project.title, "program": project.program},
+            {"title": project.title, **({"program": project.program} if project.program else {})},
         )
         docs = [doc for doc in self.documents.list(project_id) if doc.project_id == project_id]
         for doc in docs:

@@ -81,14 +81,8 @@ beforeAll(() => {
 });
 
 function fillForm() {
-  fireEvent.change(screen.getByLabelText('Título de la investigación *'), {
+  fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), {
     target: { value: project.title },
-  });
-  fireEvent.change(screen.getByLabelText('Universidad *'), {
-    target: { value: project.university },
-  });
-  fireEvent.change(screen.getByLabelText('Carrera o programa *'), {
-    target: { value: project.program },
   });
 }
 
@@ -138,12 +132,13 @@ describe('Research projects UI', () => {
     expect(
       await screen.findByText('Investigación creada.'),
     ).toBeInTheDocument();
-    expect(service.create).toHaveBeenCalledWith(
-      expect.objectContaining({ title: project.title, academic_year: null }),
-    );
+    expect(service.create).toHaveBeenCalledWith({
+      title: project.title,
+      description: '',
+    });
     vi.mocked(service.list).mockResolvedValue([project]);
     await projectAction('Editar investigación');
-    fireEvent.change(screen.getByLabelText('Título de la investigación *'), {
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), {
       target: { value: 'Investigación ficticia editada' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
@@ -217,16 +212,17 @@ describe('Research projects UI', () => {
       expect.any(AbortSignal),
     );
     await projectAction('Editar investigación');
-    expect(screen.getByLabelText('Título de la investigación *')).toHaveValue(
+    expect(screen.getByLabelText('Nombre del proyecto *')).toHaveValue(
       project.title,
     );
-    fireEvent.change(screen.getByLabelText('Título de la investigación *'), {
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), {
       target: { value: 'Cambio descartado' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(
       await screen.findByText(project.title, {
-        selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+        selector:
+          '.rp-home-intro h2, .chat-breadcrumb > span, .rp-card-copy h2',
       }),
     ).toBeInTheDocument();
     expect(service.update).not.toHaveBeenCalled();
@@ -242,19 +238,22 @@ describe('Research projects UI', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Crear investigación' }),
     );
-    expect(
-      screen.getByLabelText('Título de la investigación *'),
-    ).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByLabelText('Título de la investigación *')).toHaveFocus();
+    expect(screen.getByLabelText('Nombre del proyecto *')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(screen.getByLabelText('Nombre del proyecto *')).toHaveFocus();
     expect(service.create).not.toHaveBeenCalled();
     fillForm();
-    fireEvent.change(screen.getByLabelText('Año académico'), {
-      target: { value: '2101' },
+    fireEvent.change(screen.getByLabelText('Nombre del proyecto *'), {
+      target: { value: 'a'.repeat(201) },
     });
     fireEvent.click(
       screen.getByRole('button', { name: 'Crear investigación' }),
     );
-    expect(screen.getByText(/Ingresa un año entero/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Usa como máximo 200 caracteres/),
+    ).toBeInTheDocument();
     expect(service.create).not.toHaveBeenCalled();
   });
 
@@ -277,7 +276,7 @@ describe('Research projects UI', () => {
     expect(
       await screen.findByText('Título rechazado por la API.'),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Título de la investigación *')).toHaveValue(
+    expect(screen.getByLabelText('Nombre del proyecto *')).toHaveValue(
       project.title,
     );
     expect(screen.getByRole('alert')).toHaveTextContent('Revisa los datos');
@@ -302,9 +301,7 @@ describe('Research projects UI', () => {
     );
     expect(screen.getByRole('button', { name: 'Guardando…' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled();
-    expect(
-      screen.getByLabelText('Título de la investigación *'),
-    ).toBeDisabled();
+    expect(screen.getByLabelText('Nombre del proyecto *')).toBeDisabled();
     fireEvent.submit(screen.getByRole('form', { name: 'Crear investigación' }));
     expect(service.create).toHaveBeenCalledTimes(1);
     finish(project);
@@ -351,7 +348,7 @@ describe('Research projects UI', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar detalle' }));
     expect(
-      await screen.findByRole('region', { name: 'Asistente IA' }),
+      await screen.findByRole('region', { name: 'Inicio del proyecto' }),
     ).toBeInTheDocument();
   });
 
@@ -376,7 +373,8 @@ describe('Research projects UI', () => {
     ).toHaveTextContent('No se pudo eliminar.');
     expect(
       screen.getByText(project.title, {
-        selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+        selector:
+          '.rp-home-intro h2, .chat-breadcrumb > span, .rp-card-copy h2',
       }),
     ).toBeInTheDocument();
     fireEvent.click(
@@ -429,7 +427,7 @@ it('navigates between document and dataset steps', async () => {
       name: `Ver investigación: ${project.title}`,
     }),
   );
-  await screen.findByRole('region', { name: 'Asistente IA' });
+  await screen.findByRole('region', { name: 'Inicio del proyecto' });
   fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   expect(
     await screen.findByRole('region', { name: 'Documentos de investigación' }),
@@ -471,7 +469,7 @@ it('opens Asistente IA, preserves document state and restores the project after 
       name: `Ver investigación: ${project.title}`,
     }),
   );
-  await screen.findByRole('region', { name: 'Asistente IA' });
+  await screen.findByRole('region', { name: 'Inicio del proyecto' });
   fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   const documents = await screen.findByRole('region', {
     name: 'Documentos de investigación',
@@ -499,7 +497,7 @@ it('opens Asistente IA, preserves document state and restores the project after 
   ).toBeInTheDocument();
   expect(
     screen.getByText(project.title, {
-      selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+      selector: '.rp-home-intro h2, .chat-breadcrumb > span, .rp-card-copy h2',
     }),
   ).toBeInTheDocument();
   vi.unstubAllGlobals();
@@ -537,45 +535,30 @@ it('searches persisted projects and preserves CRUD after clearing the search', a
   expect(service.list).toHaveBeenCalledTimes(1);
 });
 
-it('creates through the project service and opens the real assistant without loading documents', async () => {
+it('creates with only a name and opens Inicio without starting the assistant', async () => {
   const service = mockService();
-  vi.stubGlobal(
-    'fetch',
-    vi
-      .fn()
-      .mockImplementation(
-        async (url: string) =>
-          new Response(
-            JSON.stringify(
-              url.endsWith('/status') ? { provider_configured: false } : [],
-            ),
-          ),
-      ),
-  );
   render(<ResearchProjects service={service} />);
   await screen.findByText('Tu próxima investigación empieza aquí');
   fireEvent.click(screen.getByRole('button', { name: 'Nueva investigación' }));
+  expect(screen.queryByLabelText('Universidad *')).not.toBeInTheDocument();
   fillForm();
   fireEvent.click(screen.getByRole('button', { name: 'Crear investigación' }));
   expect(
-    await screen.findByRole('region', { name: 'Asistente IA' }),
+    await screen.findByRole('region', { name: 'Inicio del proyecto' }),
   ).toBeInTheDocument();
-  await screen.findByText('Aún no hay conversaciones.');
-  expect(window.location.hash).toContain('section=assistant');
-  expect(service.create).toHaveBeenCalledTimes(1);
+  expect(window.location.hash).toContain('section=home');
+  expect(service.create).toHaveBeenCalledWith({
+    title: project.title,
+    description: '',
+  });
   expect(
-    screen.getByRole('button', { name: /Cargar documentos/ }),
-  ).toBeEnabled();
-  expect(screen.getByRole('button', { name: /Cargar datos/ })).toBeEnabled();
-  expect(
-    vi
-      .mocked(fetch)
-      .mock.calls.some(([url]) => String(url).endsWith('/documents')),
-  ).toBe(false);
+    screen.queryByRole('region', { name: 'Asistente IA' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Solicitar ayuda' })).toBeEnabled();
   expect(
     vi
       .mocked(fetch)
-      .mock.calls.some(([, options]) => options?.method === 'POST'),
+      .mock.calls.some(([url]) => String(url).includes('/conversations')),
   ).toBe(false);
 });
 
@@ -601,24 +584,25 @@ it('restores project and section with browser Back and Forward, then reloads Dat
       name: `Ver investigación: ${project.title}`,
     }),
   );
-  await screen.findByRole('region', { name: 'Asistente IA' });
+  await screen.findByRole('region', { name: 'Inicio del proyecto' });
   fireEvent.click(screen.getByRole('button', { name: 'Datos' }));
   expect(window.location.hash).toContain('section=datasets');
   act(() => window.history.back());
   await waitFor(() =>
-    expect(
-      screen.getByRole('button', { name: 'Asistente IA' }),
-    ).toHaveAttribute('aria-current', 'page'),
+    expect(screen.getByRole('button', { name: 'Inicio' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    ),
   );
   expect(
     screen.getByText(project.title, {
-      selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+      selector: '.rp-home-intro h2, .chat-breadcrumb > span, .rp-card-copy h2',
     }),
   ).toBeInTheDocument();
   act(() => window.history.back());
   await screen.findByRole('heading', { name: 'Mis investigaciones' });
   act(() => window.history.forward());
-  await screen.findByRole('region', { name: 'Asistente IA' });
+  await screen.findByRole('region', { name: 'Inicio del proyecto' });
   act(() => window.history.forward());
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Datos' })).toHaveAttribute(
@@ -708,21 +692,21 @@ it('discards a late response for a different project when navigating browser his
     window.dispatchEvent(new PopStateEvent('popstate'));
   });
   await screen.findByText(second.title, {
-    selector: '.chat-breadcrumb > span',
+    selector: '.rp-home-intro h2, .chat-breadcrumb > span',
   });
   await act(async () => finish(project));
   expect(
-    screen.getByText(second.title, { selector: '.chat-breadcrumb > span' }),
+    screen.getByText(second.title, {
+      selector: '.rp-home-intro h2, .chat-breadcrumb > span',
+    }),
   ).toBeInTheDocument();
   expect(
     screen.queryByText(project.title, {
-      selector: '.chat-breadcrumb > span, .rp-card-copy h2',
+      selector: '.rp-home-intro h2, .chat-breadcrumb > span, .rp-card-copy h2',
     }),
   ).not.toBeInTheDocument();
   expect(
-    vi
-      .mocked(fetch)
-      .mock.calls.every(([url]) => String(url).includes('/p2/conversations')),
+    vi.mocked(fetch).mock.calls.every(([url]) => String(url).includes('/p2/')),
   ).toBe(true);
 });
 
@@ -738,7 +722,7 @@ it('closes a project dialog when browser history changes and does not reopen it 
   await projectAction('Eliminar investigación');
   expect(screen.getByRole('dialog')).toBeInTheDocument();
   act(() => window.history.back());
-  await screen.findByRole('region', { name: 'Asistente IA' });
+  await screen.findByRole('region', { name: 'Inicio del proyecto' });
   act(() => window.history.forward());
   await screen.findByRole('heading', { name: 'Mis investigaciones' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -771,7 +755,7 @@ it('supports project menu keyboard navigation and Escape', async () => {
   fireEvent.click(
     screen.getByRole('button', { name: `Ver investigación: ${project.title}` }),
   );
-  await screen.findByRole('region', { name: 'Asistente IA' });
+  await screen.findByRole('region', { name: 'Inicio del proyecto' });
   expect(service.delete).not.toHaveBeenCalled();
   expect(service.update).not.toHaveBeenCalled();
 });
@@ -875,4 +859,32 @@ it.each([
   ).not.toBeInTheDocument();
   expect(service.delete).not.toHaveBeenCalled();
   expect(service.update).not.toHaveBeenCalled();
+});
+
+it('lists, searches and opens projects without academic metadata', async () => {
+  const minimal: Project = {
+    ...project,
+    university: null,
+    faculty: null,
+    program: null,
+    degree: null,
+    academic_year: null,
+  };
+  const service = mockService();
+  vi.mocked(service.list).mockResolvedValue([minimal]);
+  vi.mocked(service.get).mockResolvedValue(minimal);
+  render(<ResearchProjects service={service} />);
+  const search = await screen.findByRole('searchbox', {
+    name: 'Buscar investigaciones',
+  });
+  fireEvent.change(search, { target: { value: 'sin coincidencia' } });
+  expect(screen.getByText('No hay coincidencias')).toBeInTheDocument();
+  fireEvent.change(search, { target: { value: minimal.title } });
+  expect(document.body.innerHTML).not.toMatch(/title="[^"<]*(null|undefined)/);
+  fireEvent.click(
+    screen.getByRole('button', { name: `Ver investigación: ${minimal.title}` }),
+  );
+  await screen.findByRole('region', { name: 'Inicio del proyecto' });
+  expect(screen.getAllByText('Sin especificar')).toHaveLength(5);
+  expect(document.body.textContent).not.toMatch(/\b(null|undefined)\b/);
 });

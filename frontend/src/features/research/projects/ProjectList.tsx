@@ -21,7 +21,7 @@ export function ProjectList({
   const filtered = projects
     .filter((p) =>
       [p.title, p.description, p.university, p.program].some((value) =>
-        value.toLocaleLowerCase('es').includes(normalized),
+        (value ?? '').toLocaleLowerCase('es').includes(normalized),
       ),
     )
     .sort((a, b) =>
@@ -65,7 +65,7 @@ export function ProjectList({
       </p>
       {!projects.length ? (
         <EmptyState title="Tu próxima investigación empieza aquí">
-          Aún no tienes proyectos. Crea uno y completa su información académica.
+          Aún no tienes proyectos. Crea uno con un nombre provisional.
         </EmptyState>
       ) : !filtered.length ? (
         <EmptyState title="No hay coincidencias">
@@ -81,7 +81,13 @@ export function ProjectList({
               <div className="rp-card-copy">
                 <h2>{project.title}</h2>
                 <small
-                  title={`${project.university} · ${project.program} · ${degreeLabels[project.degree]}`}
+                  title={[
+                    project.university,
+                    project.program,
+                    project.degree ? degreeLabels[project.degree] : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 >
                   Actualizada el{' '}
                   {new Date(project.updated_at).toLocaleDateString('es-PE')}
@@ -95,7 +101,7 @@ export function ProjectList({
                 aria-label={`Ver investigación: ${project.title}`}
                 onClick={() => onOpen(project.id)}
               >
-                <span className="rp-sr-only">Abrir asistente</span>
+                <span className="rp-sr-only">Abrir proyecto</span>
                 <UiIcon name="chevron" />
               </button>
               <ActionMenu

@@ -134,9 +134,9 @@ def test_api_full_crud(client):
         ({"title": "   "}, "title"),
         ({"title": "x" * 201}, "title"),
         ({"description": "x" * 2001}, "description"),
-        ({"university": " "}, "university"),
+        ({"university": "x" * 161}, "university"),
         ({"faculty": "x" * 161}, "faculty"),
-        ({"program": "x"}, "program"),
+        ({"program": "x" * 161}, "program"),
         ({"degree": "invalid"}, "degree"),
         ({"academic_year": 1899}, "academic_year"),
         ({"academic_year": 2101}, "academic_year"),
@@ -226,3 +226,29 @@ def test_model_does_not_require_methodology():
     assert "hypotheses" not in draft.model_dump()
     with pytest.raises(ValidationError):
         ProjectDraft(**(PAYLOAD | {"dataset": {}}))
+
+
+def test_minimal_creation_and_compatible_put(client):
+    minimal = client.post(URL, json={"title": " A "})
+    assert minimal.status_code == 201
+    value = minimal.json()
+    assert value["title"] == "A"
+    assert value["description"] == ""
+    assert value["status"] == "draft"
+    academics = ("university", "faculty", "program", "degree", "academic_year")
+    assert all(value[key] is None for key in academics)
+    legacy = client.post(URL, json=PAYLOAD).json()
+    path = f"{URL}/{legacy['id']}"
+    edited = client.put(path, json={"title": "Nuevo", "description": "Breve"}).json()
+    for key in (*academics, "created_at", "id", "status"):
+        assert edited[key] == legacy[key]
+    assert edited["updated_at"] >= legacy["updated_at"]
+    unchanged = client.put(path, json={}).json()
+    for key in edited.keys() - {"updated_at"}:
+        assert unchanged[key] == edited[key]
+    cleared = client.put(path, json=dict.fromkeys(academics))
+    assert cleared.status_code == 200
+    assert all(cleared.json()[key] is None for key in academics)
+    for invalid in ({"title": None}, {"description": None}, {"title": " "}, {"owner_id": "fake"}):
+        assert client.put(path, json=invalid).status_code == 422
+    assert client.get(path).json() == cleared.json()

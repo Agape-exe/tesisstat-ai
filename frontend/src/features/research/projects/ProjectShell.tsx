@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { navigateProject, sections, type Section } from './navigation';
+import {
+  navigateProject,
+  sections,
+  secondarySections,
+  primarySection,
+  type Section,
+} from './navigation';
 import type { Project } from './types';
 import { UiIcon } from './UiIcon';
 import { sectionInfo } from './sectionInfo';
@@ -162,25 +168,25 @@ export function ProjectShell({
               {sections.map(([id, label]) => (
                 <button
                   key={id}
+                  aria-current={
+                    id === primarySection(section) ? 'page' : undefined
+                  }
+                  onClick={() => go(id)}
+                >
+                  <UiIcon name={sectionInfo[id].icon} />
+                  <span>{label}</span>
+                </button>
+              ))}
+              <div className="rp-nav-divider" />
+              <p className="rp-nav-label">APOYO Y HERRAMIENTAS</p>
+              {secondarySections.map(([id, label]) => (
+                <button
+                  key={id}
                   aria-current={id === section ? 'page' : undefined}
                   onClick={() => go(id)}
                 >
-                  <UiIcon
-                    name={
-                      {
-                        assistant: 'message',
-                        documents: 'file',
-                        methodology: 'book',
-                        instrument: 'clipboard',
-                        datasets: 'database',
-                        analysis: 'chart',
-                        results: 'scatter',
-                        reports: 'report',
-                      }[id]
-                    }
-                  />
+                  <UiIcon name={sectionInfo[id].icon} />
                   <span>{label}</span>
-                  {id === 'instrument' && <small>Pendiente</small>}
                 </button>
               ))}
             </>
@@ -237,7 +243,7 @@ export function ProjectHeader({
           {sections.map(([id, label]) => (
             <a
               key={id}
-              aria-current={section === id ? 'page' : undefined}
+              aria-current={primarySection(section) === id ? 'page' : undefined}
               href={`#project=${encodeURIComponent(project.id)}&section=${id}`}
               onClick={(event) => {
                 if (

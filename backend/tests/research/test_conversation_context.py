@@ -626,3 +626,14 @@ def test_isolated_demo_is_repeatable_with_no_external_ai(tmp_path, monkeypatch):
     restarted = TestClient(make_demo_app())
     assert len(restarted.get("/api/research/projects").json()) == 2
     assert len(restarted.get(target).json()["messages"]) == 2
+
+
+def test_minimal_project_context_omits_absent_academic_metadata(tmp_path):
+    client, root, _, _ = setup(tmp_path)
+    project_path = root.removesuffix("/conversations")
+    assert client.put(project_path, json={"program": None}).status_code == 200
+    builder = client.app.state.conversation_context
+    source = next(
+        s for s in builder.build(UUID(project_path.split("/")[-1])).sources if s.kind == "project"
+    )
+    assert source.data == {"title": PROJECT["title"]}

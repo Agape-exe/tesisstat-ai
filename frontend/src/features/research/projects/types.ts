@@ -3,12 +3,12 @@ export type Degree = 'bachelor' | 'master' | 'doctorate' | 'other';
 
 export interface ProjectDraft {
   title: string;
-  description: string;
-  university: string;
-  faculty: string;
-  program: string;
-  degree: Degree;
-  academic_year: number | null;
+  description?: string;
+  university?: string | null;
+  faculty?: string | null;
+  program?: string | null;
+  degree?: Degree | null;
+  academic_year?: number | null;
 }
 
 export interface Project extends ProjectDraft {
@@ -22,7 +22,7 @@ export interface ProjectService {
   list(signal?: AbortSignal): Promise<Project[]>;
   get(id: string, signal?: AbortSignal): Promise<Project>;
   create(draft: ProjectDraft): Promise<Project>;
-  update(id: string, draft: ProjectDraft): Promise<Project>;
+  update(id: string, draft: Partial<ProjectDraft>): Promise<Project>;
   delete(id: string): Promise<void>;
 }
 

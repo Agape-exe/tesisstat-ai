@@ -4,8 +4,9 @@ Para el siguiente trabajo rigen los acuerdos de S00 del 9 de noviembre de 2026:
 [alcance y sesiones](docs/ALCANCE_Y_SESIONES.md),
 [evolución de contratos](docs/CONTRATOS_EVOLUCION.md) e
 [integración y trabajo paralelo](docs/INTEGRACION_PARALELA.md).
-Son decisiones por implementar; el [informe S00](docs/sesiones/S00.md) registra la revisión.
-La descripción que sigue corresponde a la demostración actual.
+El [informe S00](docs/sesiones/S00.md) registra los acuerdos y el
+[informe S01](docs/sesiones/S01.md) documenta la creación mínima y el nuevo Inicio.
+Los contratos de contexto, análisis nuevo y tutor siguen pendientes.
 
 Demostración local para conectar metodología revisada y datos de un proyecto con un
 análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.
@@ -22,6 +23,31 @@ Esta es una demostración sin autenticación, exclusivamente local y con informa
 No es un servicio de producción. El recorrido manual completo, las descargas y su revisión
 visual fueron confirmados por la usuaria el 2 de noviembre de 2026; consulta los resultados
 y límites en [APPLICATION_INTEGRATION.md](docs/APPLICATION_INTEGRATION.md).
+
+## Crear y abrir proyectos
+
+Solo necesitas un **nombre de 1–200 caracteres** (puede ser provisional). La descripción
+es opcional, hasta 2000 caracteres. Crear o abrir normalmente un proyecto muestra **Inicio**,
+con las seis etapas recomendadas y evidencia de recursos guardados. El proyecto permanece
+como borrador; el avance no equivale a completar la investigación ni acredita comprensión.
+
+La navegación principal es **Inicio · Contexto · Datos · Análisis · Resultados**. El chat se
+abre desde **Solicitar ayuda** o las herramientas de apoyo. Contexto introduce el recorrido y
+conserva documentos/metodología e instrumento; Resultados conserva informes/exportaciones.
+Puedes cargar y explorar Datos sin completar Contexto. La captura persistente del nuevo
+contexto aún no está disponible. Para proponer y ejecutar análisis sigue vigente el recorrido
+documental descrito arriba, con sus aprobaciones y controles actuales.
+
+API Research: `POST /api/research/projects` acepta `{"title":"Ensayo provisional"}`.
+Los datos académicos son opcionales y anulables. El `PUT` existente actualiza **solo campos
+suministrados**: omitir conserva; `null` borra universidad, facultad, programa, grado o año.
+Nombre y descripción no admiten `null`; nombre vacío o solo espacios produce 422. La UI de
+edición envía exclusivamente nombre/descripción y conserva los académicos anteriores.
+IDs, fechas de creación y estado se mantienen; el servidor actualiza `updated_at`.
+
+Los enlaces anteriores de assistant/documents/methodology/instrument/reports siguen
+abriendo su sección; package conserva su alias a Análisis y los parámetros `view/item`.
+Inicio diferencia consultas fallidas de recursos ausentes y permite actualizar su estado.
 
 ## Iniciar la aplicación
 
@@ -124,7 +150,7 @@ fuentes desactualizadas. Las sesiones anteriores están documentadas en `docs/` 
 los comandos vigentes de demostración y validación están en esta guía. La matriz de cierre y sus
 limitaciones se encuentran en [STATISTICS_INTEGRANTE2_AUDIT.md](docs/STATISTICS_INTEGRANTE2_AUDIT.md).
 
-El detalle de investigación incluye **4. Asistente IA**, con conversaciones e historial SQLite.
+La ayuda del proyecto incluye **Asistente IA**, con conversaciones e historial SQLite.
 El envío requiere Cloudflare configurado y consentimiento explícito. Consulta configuración,
 pruebas y limitaciones en [CHAT_CONVERSACIONAL.md](docs/CHAT_CONVERSACIONAL.md).
 La Sesión 16A incorpora metodología confirmada, metadatos del dataset, planes y

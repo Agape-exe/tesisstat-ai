@@ -125,7 +125,7 @@ export function ResearchProjects({
     setDetailError('');
     setError('');
     setNotice(edited ? 'Investigación actualizada.' : 'Investigación creada.');
-    navigateProject(edited ? null : saved.id, 'assistant', null, true);
+    navigateProject(saved.id, 'home', null, true);
   }
   async function remove() {
     if (!deleting) return;
@@ -163,7 +163,8 @@ export function ResearchProjects({
             <div>
               <h1>Nueva investigación</h1>
               <p>
-                Completa la información académica. Después abrirás tu asistente.
+                Elige un nombre provisional y comienza el recorrido de tu
+                proyecto.
               </p>
             </div>
           </div>
@@ -176,8 +177,8 @@ export function ResearchProjects({
             <div>
               <h1>Tu investigación, con claridad.</h1>
               <p className="rp-intro">
-                Selecciona tu proyecto para conversar con el asistente,
-                organizar tus materiales y comprender tus análisis.
+                Selecciona tu proyecto para continuar el recorrido, organizar
+                tus materiales y comprender tus análisis.
               </p>
             </div>
           </div>
@@ -282,6 +283,7 @@ export function ResearchProjects({
             key={project.id}
             projectId={project.id}
             projectTitle={project.title}
+            projectDescription={project.description}
             section={section}
             view={route.view}
             item={route.item}
@@ -295,7 +297,7 @@ export function ResearchProjects({
               <dl>
                 <div>
                   <dt>Universidad</dt>
-                  <dd>{project.university}</dd>
+                  <dd>{project.university || 'Sin especificar'}</dd>
                 </div>
                 <div>
                   <dt>Facultad</dt>
@@ -303,7 +305,7 @@ export function ResearchProjects({
                 </div>
                 <div>
                   <dt>Programa</dt>
-                  <dd>{project.program}</dd>
+                  <dd>{project.program || 'Sin especificar'}</dd>
                 </div>
                 <div>
                   <dt>Año académico</dt>
@@ -311,7 +313,11 @@ export function ResearchProjects({
                 </div>
                 <div>
                   <dt>Grado académico</dt>
-                  <dd>{degreeLabels[project.degree]}</dd>
+                  <dd>
+                    {project.degree
+                      ? degreeLabels[project.degree]
+                      : 'Sin especificar'}
+                  </dd>
                 </div>
                 <div>
                   <dt>Creada</dt>

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from app.modules.research.projects.models import Project, ProjectDraft
+from app.modules.research.projects.models import Project, ProjectDraft, ProjectUpdate
 from app.modules.research.projects.repository import ProjectRepository
 
 
@@ -28,13 +28,14 @@ class ProjectService:
             raise ProjectNotFound
         return project
 
-    def update(self, project_id: UUID, draft: ProjectDraft) -> Project:
+    def update(self, project_id: UUID, draft: ProjectUpdate | ProjectDraft) -> Project:
         previous = self.get(project_id)
         project = Project(
-            **draft.model_dump(),
-            id=previous.id,
-            created_at=previous.created_at,
-            updated_at=datetime.now(UTC),
+            **{
+                **previous.model_dump(),
+                **draft.model_dump(exclude_unset=True),
+                "updated_at": datetime.now(UTC),
+            },
         )
         if not self.repository.replace(project):
             raise ProjectNotFound

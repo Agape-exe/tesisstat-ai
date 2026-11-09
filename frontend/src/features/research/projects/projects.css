@@ -555,3 +555,65 @@ body:has(.rp-shell) {
   max-width: 100%;
   margin-top: 0.3rem;
 }
+
+.rp-home {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.rp-home-intro h2 {
+  overflow-wrap: anywhere;
+  font-size: 1.6rem;
+}
+.rp-home-next {
+  background: #edf6f4;
+  border: 1px solid #c7ded8;
+  border-radius: 16px;
+  padding: 22px;
+  margin: 24px 0;
+}
+.rp-home-next h3 {
+  margin-top: 0;
+}
+.rp-journey {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.rp-journey li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid #dbe5e2;
+  border-radius: 14px;
+  padding: 20px;
+  background: white;
+}
+.rp-journey li > div {
+  min-width: 0;
+}
+.rp-journey h4 {
+  margin: 0 0 10px;
+}
+.rp-journey-number {
+  background: #e1efeb;
+  color: #245e50;
+  border-radius: 50%;
+  min-width: 32px;
+  line-height: 32px;
+  text-align: center;
+  font-weight: 700;
+}
+@media (max-width: 700px) {
+  .rp-journey {
+    grid-template-columns: 1fr;
+  }
+  .rp-home {
+    padding: 16px;
+  }
+  .rp-home .rp-actions {
+    align-items: stretch;
+  }
+}

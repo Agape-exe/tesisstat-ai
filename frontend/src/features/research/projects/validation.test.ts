@@ -1,58 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { toProjectDraft, validateProject } from './validation';
-import type { ProjectFormValues } from './validation';
-
-const valid: ProjectFormValues = {
-  title: 'Título sintético',
-  description: '',
-  university: 'Universidad ficticia',
-  faculty: '',
-  program: 'Programa simulado',
-  degree: 'bachelor',
-  academic_year: '2026',
-};
-
-describe('Project form rules', () => {
-  it('accepts optional fields and trims values for the API', () => {
+const valid = { title: 'A', description: '' };
+describe('Minimal project form', () => {
+  it('accepts a provisional name and sends only visible fields', () => {
     expect(validateProject(valid)).toEqual({});
-    expect(validateProject({ ...valid, academic_year: '' })).toEqual({});
-    expect(
-      toProjectDraft({
-        ...valid,
-        title: '  Título sintético  ',
-        academic_year: ' ',
-      }),
-    ).toMatchObject({ title: valid.title, academic_year: null });
+    expect(toProjectDraft({ title: ' A ', description: ' Texto ' })).toEqual({
+      title: 'A',
+      description: 'Texto',
+    });
   });
-
-  it.each(['title', 'university', 'program'] as const)(
-    'rejects blank %s',
-    (field) => {
-      expect(validateProject({ ...valid, [field]: ' ' })[field]).toBeTruthy();
-    },
-  );
-
-  it.each([
-    ['title', 200],
-    ['description', 2000],
-    ['university', 160],
-    ['faculty', 160],
-    ['program', 160],
-  ] as const)('checks %s length limits', (field, max) => {
+  it.each(['', ' ', 'a'.repeat(201)])('rejects invalid name %s', (title) => {
+    expect(validateProject({ ...valid, title }).title).toBeTruthy();
+  });
+  it('accepts boundaries and rejects an oversized description', () => {
     expect(
-      validateProject({ ...valid, [field]: 'a'.repeat(max) })[field],
-    ).toBeUndefined();
+      validateProject({
+        title: 'a'.repeat(200),
+        description: 'a'.repeat(2000),
+      }),
+    ).toEqual({});
     expect(
-      validateProject({ ...valid, [field]: 'a'.repeat(max + 1) })[field],
+      validateProject({ ...valid, description: 'a'.repeat(2001) }).description,
     ).toBeTruthy();
   });
-
-  it.each(['1899', '2101', '2026.5', '2e3', 'abc', '-2026'])(
-    'rejects invalid year %s',
-    (academic_year) => {
-      expect(
-        validateProject({ ...valid, academic_year }).academic_year,
-      ).toBeTruthy();
-    },
-  );
 });

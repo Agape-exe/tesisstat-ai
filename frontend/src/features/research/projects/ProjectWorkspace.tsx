@@ -1,3 +1,5 @@
+import { ProjectHome } from './ProjectHome';
+import { ProjectContext } from './ProjectContext';
 import { useState } from 'react';
 import { ConversationChat } from '../../conversation/ConversationChat';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
@@ -12,12 +14,14 @@ type WorkspaceRoute = { view: string | null; item: string | null };
 export function ProjectWorkspace({
   projectId,
   projectTitle,
+  projectDescription,
   section,
   view = null,
   item = null,
 }: {
   projectId: string;
   projectTitle?: string;
+  projectDescription?: string;
   section: Section;
   view?: string | null;
   item?: string | null;
@@ -43,6 +47,7 @@ export function ProjectWorkspace({
             <SectionContent
               projectId={projectId}
               projectTitle={projectTitle}
+              projectDescription={projectDescription}
               section={id}
               view={route.view}
               item={route.item}
@@ -57,6 +62,7 @@ export function ProjectWorkspace({
 function SectionContent({
   projectId,
   projectTitle,
+  projectDescription,
   section,
   view,
   item,
@@ -64,12 +70,26 @@ function SectionContent({
 }: {
   projectId: string;
   projectTitle?: string;
+  projectDescription?: string;
   section: Section;
   view: string | null;
   item: string | null;
   active: boolean;
 }) {
   switch (section) {
+    case 'home':
+      return (
+        <ProjectHome
+          projectId={projectId}
+          title={projectTitle ?? ''}
+          description={projectDescription ?? ''}
+          active={active}
+        />
+      );
+    case 'context':
+      return (
+        <ProjectContext projectId={projectId} title={projectTitle ?? ''} />
+      );
     case 'assistant':
       return (
         <ConversationChat
@@ -112,7 +132,22 @@ function SectionContent({
       );
     case 'results':
       return (
-        <ProjectResults projectId={projectId} item={item} active={active} />
+        <>
+          <button
+            className="rp-secondary"
+            onClick={() =>
+              navigateWorkspace(
+                projectId,
+                'reports',
+                'detail',
+                item ?? undefined,
+              )
+            }
+          >
+            Informes y exportaciones
+          </button>
+          <ProjectResults projectId={projectId} item={item} active={active} />
+        </>
       );
     case 'reports':
       return (
