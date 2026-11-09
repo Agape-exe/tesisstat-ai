@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { loadJourney } from './journey';
+import { loadJourney, nextJourneyStep } from './journey';
+import { testContext } from '../context/testContext';
 const project = 'synthetic';
 function responses({
   data = [],
@@ -7,12 +8,14 @@ function responses({
   status = { state: 'incomplete' },
   edaStatus = 200,
   fail = '',
+  context = testContext(),
 }: {
   data?: object[];
   plans?: object[];
   status?: object;
   edaStatus?: number;
   fail?: string;
+  context?: ReturnType<typeof testContext>;
 } = {}) {
   vi.stubGlobal(
     'fetch',
@@ -23,11 +26,13 @@ function responses({
         return new Response('{}', { status: edaStatus });
       return new Response(
         JSON.stringify(
-          url.endsWith('/datasets')
-            ? data
-            : url.endsWith('/plans')
-              ? plans
-              : status,
+          url.endsWith('/context')
+            ? context
+            : url.endsWith('/datasets')
+              ? data
+              : url.endsWith('/plans')
+                ? plans
+                : status,
         ),
       );
     }),
@@ -68,14 +73,33 @@ it.each([404, 503])(
     );
   },
 );
-it.each(['/datasets', '/plans', '/status'])(
+it.each(['/datasets', '/plans', '/status', '/context'])(
   'never treats failed query %s as absent evidence',
   async (fail) => {
     responses({ fail });
     const steps = await loadJourney(project);
-    expect(steps[fail === '/datasets' ? 1 : 3].state).toBe('No verificable');
+    expect(
+      steps[fail === '/context' ? 0 : fail === '/datasets' ? 1 : 3].state,
+    ).toBe('No verificable');
   },
 );
+it('derives saved and confirmed context without a global completion seal', async () => {
+  const context = testContext(2, 'Describir');
+  context.main_objective.confirmation = {
+    actor_ref: 'local',
+    confirmed_at: context.updated_at!,
+    revision: 2,
+  };
+  responses({ context });
+  const steps = await loadJourney(project);
+  expect(steps[0].state).toBe('En progreso');
+  expect(steps[0].evidence).toContain(
+    '1 campos con información guardada; 1 confirmados',
+  );
+  expect(nextJourneyStep(steps)?.section).toBe('datasets');
+  responses();
+  expect(nextJourneyStep(await loadJourney(project))?.section).toBe('context');
+});
 it('only counts current completed results and never assumes comprehension', async () => {
   const record = {
     plan: { research_package_id: 'pack', status: 'approved' },

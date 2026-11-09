@@ -1,0 +1,136 @@
+.rc-context {
+  max-width: 850px;
+  margin: auto;
+  color: #29243d;
+}
+.rc-context header p {
+  max-width: 720px;
+  line-height: 1.6;
+}
+.rc-context h2 {
+  overflow-wrap: anywhere;
+}
+.rc-save-state {
+  padding: 16px 20px;
+  background: #f1efff;
+  border-left: 4px solid #6c5bd0;
+  border-radius: 8px;
+  margin: 20px 0;
+  font-weight: 600;
+}
+.rc-context .rc-form {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.rc-form > fieldset {
+  min-width: 0;
+}
+.rc-context details {
+  background: white;
+  border: 1px solid #e4e1ed;
+  border-radius: 10px;
+  padding: 18px;
+  margin: 18px 0;
+  min-width: 0;
+}
+.rc-context summary {
+  cursor: pointer;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.rc-context label {
+  font-weight: 600;
+}
+.rc-field {
+  margin: 20px 0;
+}
+.rc-field .rp-hint {
+  margin: 4px 0 8px;
+}
+.rc-field-status {
+  display: block;
+  color: #59516f;
+  font-size: 12px;
+  margin: 6px 0 14px;
+}
+.rc-item {
+  background: #faf9fd;
+  border: 1px solid #e5e2ee;
+  border-radius: 8px;
+  padding: 14px;
+  margin: 16px 0;
+}
+.rc-context textarea,
+.rc-context select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.rc-save-actions {
+  margin-top: 22px;
+}
+.rc-confirm {
+  padding: 22px;
+  border: 1px solid #dfdbe9;
+  background: #fff;
+  border-radius: 12px;
+  margin: 24px 0;
+}
+.rc-confirm fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.rc-confirm legend {
+  margin-bottom: 12px;
+}
+.rc-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 16px 0;
+  font-weight: 400 !important;
+  overflow-wrap: anywhere;
+}
+.rc-check input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin: 3px 0;
+}
+.rc-check small {
+  display: block;
+  margin-top: 5px;
+  color: #655e75;
+}
+.rc-conflict {
+  border: 2px solid #b37b25;
+  background: #fff9ed;
+  border-radius: 10px;
+  padding: 20px;
+}
+.rc-conflict pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 13px;
+}
+.rc-context :focus-visible {
+  outline: 3px solid #6c5bd0;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .rc-context details,
+  .rc-confirm,
+  .rc-conflict {
+    padding: 14px;
+  }
+  .rc-context .rp-actions {
+    align-items: stretch;
+  }
+  .rc-context .rp-actions button {
+    white-space: normal;
+  }
+}

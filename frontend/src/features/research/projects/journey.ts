@@ -3,10 +3,13 @@ import { createAnalysisApi } from '../analysis/api';
 import { createPackageApi } from '../packages/api';
 import { recordIsCurrent } from '../analysis/analysisPresentation';
 import type { Section } from './navigation';
+import { createContextApi } from '../context/api';
+import { facts } from '../context/draft';
 
 const datasets = createDatasetApi();
 const analysis = createAnalysisApi();
 const packages = createPackageApi();
+const contexts = createContextApi();
 type State = 'Pendiente' | 'En progreso' | 'Completado' | 'No verificable';
 export interface JourneyStep {
   name: string;
@@ -16,10 +19,11 @@ export interface JourneyStep {
   view?: string;
 }
 export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
-  const [data, plans, sources] = await Promise.allSettled([
+  const [data, plans, sources, context] = await Promise.allSettled([
     datasets.list(projectId),
     analysis.plans(projectId),
     packages.status(projectId),
+    contexts.get(projectId),
   ]);
   const active =
     data.status === 'fulfilled' ? data.value.find((d) => d.active) : undefined;
@@ -49,12 +53,27 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
     (r) => r.plan.status === 'proposed' || r.plan.status === 'approved',
   );
   const approved = current.some((r) => r.approved_at);
+  const contextFacts =
+    context.status === 'fulfilled' ? facts(context.value) : [];
+  const knownFacts = contextFacts.filter(
+    ([, f]) => f.value != null && f.value !== '' && f.value !== 'unknown',
+  );
+  const confirmed = knownFacts.filter(([, f]) => f.confirmation).length;
   return [
     {
       name: 'Contexto necesario',
-      state: 'Pendiente',
+      state:
+        context.status === 'rejected'
+          ? 'No verificable'
+          : knownFacts.length
+            ? 'En progreso'
+            : 'Pendiente',
       evidence:
-        'La confirmación del nuevo contexto aún no está disponible. Puedes continuar con Datos.',
+        context.status === 'rejected'
+          ? 'Error al consultar el contexto guardado. Reintenta para comprobar su estado.'
+          : knownFacts.length
+            ? `${knownFacts.length} campos con información guardada; ${confirmed} confirmados por ti. ${context.value.pending_questions.map((q) => q.question).join(' ')} La información necesaria depende del análisis; puedes continuar con Datos.`
+            : 'Todavía no hay información de investigación guardada. Empieza con una pregunta u objetivo, o explora Datos.',
       section: 'context',
     },
     {
@@ -140,4 +159,13 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
       section: 'results',
     },
   ];
+}
+
+export function nextJourneyStep(steps: JourneyStep[]): JourneyStep | undefined {
+  return (
+    steps.find((s) => s.state === 'No verificable') ??
+    (steps[0]?.state === 'Pendiente' ? steps[0] : undefined) ??
+    steps.slice(1).find((s) => s.state !== 'Completado') ??
+    steps[0]
+  );
 }

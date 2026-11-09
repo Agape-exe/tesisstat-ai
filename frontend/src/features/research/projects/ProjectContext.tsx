@@ -1,4 +1,8 @@
-import { navigateProject } from './navigation';
+import { useCallback } from 'react';
+import { createContextApi } from '../context/api';
+import { ContextEditor } from '../context/ContextEditor';
+import { useReadResource } from './useReadResource';
+const api = createContextApi();
 export function ProjectContext({
   projectId,
   title,
@@ -6,45 +10,22 @@ export function ProjectContext({
   projectId: string;
   title: string;
 }) {
-  return (
-    <section aria-label="Contexto de investigación" className="rp-state">
-      <h2>{title}</h2>
-      <p>
-        El contexto ayuda a elegir un análisis: qué quieres comprender, qué
-        representa cada fila y qué variables tienes.
-      </p>
-      <p>
-        La captura y confirmación de contexto sin documentos estará disponible
-        más adelante. Puedes cargar y explorar tus datos desde ahora.
-      </p>
-      <p>
-        Si ya trabajas con una tesis, conserva el recorrido documental
-        disponible. Sus revisiones pertenecen a ese recorrido y no confirman el
-        nuevo contexto.
-      </p>
-      <div className="rp-actions">
-        <button onClick={() => navigateProject(projectId, 'datasets')}>
-          Ir a Datos
-        </button>
-        <button
-          className="rp-secondary"
-          onClick={() => navigateProject(projectId, 'documents')}
-        >
-          Documentos de apoyo
-        </button>
-        <button
-          className="rp-secondary"
-          onClick={() => navigateProject(projectId, 'methodology')}
-        >
-          Revisión metodológica existente
-        </button>
-        <button
-          className="rp-secondary"
-          onClick={() => navigateProject(projectId, 'instrument')}
-        >
-          Instrumento
-        </button>
+  const load = useCallback(() => api.get(projectId), [projectId]);
+  const resource = useReadResource(load);
+  if (resource.loading) return <p role="status">Cargando contexto…</p>;
+  if (resource.error || !resource.data)
+    return (
+      <div role="alert">
+        <p>{resource.error || 'No se pudo cargar el contexto.'}</p>
+        <button onClick={resource.reload}>Reintentar</button>
       </div>
-    </section>
+    );
+  return (
+    <ContextEditor
+      key={projectId}
+      projectId={projectId}
+      title={title}
+      initial={resource.data}
+    />
   );
 }
