@@ -1,5 +1,12 @@
 # TesisStat AI
 
+Para el siguiente trabajo rigen los acuerdos de S00 del 9 de noviembre de 2026:
+[alcance y sesiones](docs/ALCANCE_Y_SESIONES.md),
+[evolución de contratos](docs/CONTRATOS_EVOLUCION.md) e
+[integración y trabajo paralelo](docs/INTEGRACION_PARALELA.md).
+Son decisiones por implementar; el [informe S00](docs/sesiones/S00.md) registra la revisión.
+La descripción que sigue corresponde a la demostración actual.
+
 Demostración local para conectar metodología revisada y datos de un proyecto con un
 análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.
 
