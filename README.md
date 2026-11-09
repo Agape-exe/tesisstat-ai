@@ -86,6 +86,14 @@ secretos en variables `VITE_*`. La revisión manual no necesita Cloudflare ni cr
 
 ## Datos ficticios y demostración
 
+S02 permite guardar contexto manual desde **Contexto** con solo una pregunta u objetivo,
+sin documento, dataset ni hipótesis. Guardar y confirmar son acciones separadas; el servidor
+conserva revisiones y detecta ediciones concurrentes. Inicio consulta el contexto real y
+permite continuar a Datos aunque esté incompleto. Documentos y metodología v1 siguen como
+apoyo opcional; el tutor y el análisis actuales conservan sus consumidores legados.
+Consulta [S02](docs/sesiones/S02.md), [API C2](backend/app/modules/research/context/README.md)
+y [contratos v2 preparados](contracts/v2/README.md). No hay ejecución v2 todavía.
+
 La Sesión 17A integra el chat con un grafo LangGraph local de investigación, planificación
 y conversación, con una llamada al proveedor como máximo por turno. Consulta
 [la arquitectura y demostración multiagente](docs/ORQUESTACION_MULTIAGENTE.md).

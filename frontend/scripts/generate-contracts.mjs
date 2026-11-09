@@ -20,3 +20,18 @@ for (const name of names) {
   );
   await writeFile(new URL(`${name}.ts`, output), await compile(schema, name));
 }
+const v2Output = new URL('v2/', output);
+await mkdir(v2Output, { recursive: true });
+for (const name of [
+  'ProjectContextV2',
+  'AnalysisIntentV2',
+  'AnalysisSnapshotV2',
+]) {
+  const schema = JSON.parse(
+    await readFile(
+      new URL(`../../contracts/v2/${name}.schema.json`, import.meta.url),
+      'utf8',
+    ),
+  );
+  await writeFile(new URL(`${name}.ts`, v2Output), await compile(schema, name));
+}

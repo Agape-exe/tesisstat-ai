@@ -16,6 +16,10 @@ from app.modules.conversation.research_context import ResearchContextBuilder
 from app.modules.conversation.routes import create_router as create_conversation_router
 from app.modules.conversation.service import ConversationService, ConversationSettings
 from app.modules.conversation.sqlite_repository import SQLiteConversationRepository
+from app.modules.research.context.repository import ContextError
+from app.modules.research.context.routes import create_router as create_context_router
+from app.modules.research.context.sqlite_repository import SQLiteContextRepository
+from app.modules.research.context.use_cases import ContextService
 from app.modules.research.datasets.readers import DatasetLimits, InvalidDataset
 from app.modules.research.datasets.routes import create_router as create_dataset_router
 from app.modules.research.datasets.sqlite_repository import (
@@ -134,7 +138,7 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type", "X-File-Name"],
         allow_credentials=False,
     )
@@ -159,6 +163,20 @@ def create_app(
             request._body = bytes(body)
         return await call_next(request)
 
+    @app.exception_handler(ContextError)
+    async def context_error(request: Request, exc: ContextError) -> JSONResponse:
+        return JSONResponse(
+            status_code=exc.status,
+            content={
+                "error": {
+                    "code": exc.code,
+                    "message": exc.message,
+                    "fields": exc.fields,
+                    "current_revision": exc.current_revision,
+                }
+            },
+        )
+
     @app.exception_handler(ConversationError)
     async def conversation_error(request: Request, exc: ConversationError) -> JSONResponse:
         return JSONResponse(
@@ -178,6 +196,21 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
+        if request.url.path.startswith("/api/v2/"):
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "error": {
+                        "code": "invalid_payload",
+                        "message": "Revisa los campos enviados.",
+                        "fields": [
+                            "/" + "/".join(str(p) for p in e["loc"] if p != "body")
+                            for e in exc.errors()
+                        ],
+                        "current_revision": None,
+                    }
+                },
+            )
         errors = {}
         is_review = "/methodology/review" in request.url.path
         for error in exc.errors():
@@ -218,6 +251,18 @@ def create_app(
     @app.exception_handler(sqlite3.Error)
     async def storage_error(request: Request, exc: sqlite3.Error) -> JSONResponse:
         logger.error("Research development storage failed", exc_info=exc)
+        if request.url.path.startswith("/api/v2/"):
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": {
+                        "code": "storage_unavailable",
+                        "message": "El almacenamiento local no está disponible.",
+                        "fields": [],
+                        "current_revision": None,
+                    }
+                },
+            )
         return JSONResponse(
             status_code=503,
             content={"detail": "El almacenamiento local no está disponible. Intenta nuevamente."},
@@ -332,6 +377,15 @@ def create_app(
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
     projects = ProjectService(repository)
+    app.include_router(
+        create_context_router(
+            ContextService(
+                projects,
+                SQLiteContextRepository(settings.research_db_path),
+                actor_ref="local",
+            )
+        )
+    )
     document_repository = SQLiteDocumentRepository(
         settings.research_db_path, settings.research_documents_path
     )

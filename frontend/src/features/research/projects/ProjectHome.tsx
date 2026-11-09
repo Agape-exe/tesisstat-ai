@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { loadJourney, type JourneyStep } from './journey';
+import { loadJourney, nextJourneyStep, type JourneyStep } from './journey';
 import { useReadResource } from './useReadResource';
 import { navigateProject, navigateWorkspace } from './navigation';
 
@@ -17,10 +17,7 @@ export function ProjectHome({
   const load = useCallback(() => loadJourney(projectId), [projectId]);
   const resource = useReadResource(load, active);
   const steps = resource.loading || resource.error ? null : resource.data;
-  const next =
-    steps?.find((s) => s.state === 'No verificable') ??
-    steps?.slice(1).find((s) => s.state !== 'Completado') ??
-    steps?.[0];
+  const next = steps ? nextJourneyStep(steps) : undefined;
   function open(step: JourneyStep) {
     if (step.view) navigateWorkspace(projectId, step.section, step.view);
     else navigateProject(projectId, step.section);
@@ -80,9 +77,9 @@ export function ProjectHome({
       </div>
       <h3>Recorrido recomendado</h3>
       <p className="rp-hint">
-        El estado refleja archivos, perfiles, propuestas y resultados guardados.
-        Las etapas posteriores usan el recorrido documental actual; puedes
-        explorar Datos sin completar Contexto.
+        El estado refleja contexto, archivos, perfiles, propuestas y resultados
+        guardados. Las etapas posteriores usan el recorrido documental actual;
+        puedes explorar Datos sin completar Contexto.
       </p>
       <ol className="rp-journey">
         {steps?.map((step, index) => (

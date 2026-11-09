@@ -18,6 +18,7 @@ import {
 import { ProjectApiError } from './api';
 import { ResearchProjects } from './ResearchProjects';
 import type { Project, ProjectService } from './types';
+import { testContext } from '../context/testContext';
 
 const project: Project = {
   id: 'synthetic-project',
@@ -47,9 +48,11 @@ beforeEach(() => {
         async (url: string) =>
           new Response(
             JSON.stringify(
-              url.endsWith('/status')
-                ? { provider_configured: false, max_message_characters: 2000 }
-                : [],
+              url.endsWith('/context')
+                ? testContext()
+                : url.endsWith('/status')
+                  ? { provider_configured: false, max_message_characters: 2000 }
+                  : [],
             ),
           ),
       ),
