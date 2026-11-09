@@ -28,15 +28,17 @@ function responses({
         return new Response('{}', { status: edaStatus });
       return new Response(
         JSON.stringify(
-          url.endsWith('/files')
-            ? files
-            : url.endsWith('/context')
-              ? context
-              : url.endsWith('/datasets')
-                ? data
-                : url.endsWith('/plans')
-                  ? plans
-                  : status,
+          url.endsWith('/data-summary')
+            ? { tables: [], derived: 0 }
+            : url.endsWith('/files')
+              ? files
+              : url.endsWith('/context')
+                ? context
+                : url.endsWith('/datasets')
+                  ? data
+                  : url.endsWith('/plans')
+                    ? plans
+                    : status,
         ),
       );
     }),
@@ -157,7 +159,7 @@ it('counts all new sources while keeping data review in progress', async () => {
   );
   expect(steps[1].state).toBe('En progreso');
   expect(steps[2].state).toBe('En progreso');
-  expect(steps[2].view).toBe('sources');
+  expect(steps[2].view).toBe('review');
   responses({
     files: [{ sheets: [{ state: 'ready' }, { state: 'excluded' }] }],
   });

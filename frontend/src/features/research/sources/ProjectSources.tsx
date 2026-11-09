@@ -25,12 +25,14 @@ export function ProjectSources({
   active = true,
   item,
   onSelect,
+  onReview,
 }: {
   projectId: string;
   api?: SourcesApi;
   active?: boolean;
   item?: string | null;
   onSelect?: (id: string) => void;
+  onReview?: (id: string) => void;
 }) {
   const load = useCallback(async () => {
     const [files, contexts] = await Promise.all([
@@ -276,6 +278,7 @@ export function ProjectSources({
           fileName={source.name}
           sheetName={chosen.name}
           api={api}
+          onReview={onReview ? () => onReview(chosen.table_id!) : undefined}
           onSaved={(context) =>
             setNames((previous) => ({
               ...previous,
@@ -433,6 +436,7 @@ function TablePanel({
   sheetName,
   api,
   onSaved,
+  onReview,
 }: {
   projectId: string;
   tableId: string;
@@ -440,6 +444,7 @@ function TablePanel({
   sheetName: string;
   api: SourcesApi;
   onSaved: (context: TableContext) => void;
+  onReview?: () => void;
 }) {
   const load = useCallback(async () => {
     const [preview, context] = await Promise.all([
@@ -544,12 +549,11 @@ function TablePanel({
                 onSaved(context);
               }}
             />
-            <p className="rp-hint">
-              La definición de variables, la exploración y la preparación
-              opcional de estas tablas estarán disponibles en una próxima
-              entrega. Las herramientas anteriores siguen disponibles para los
-              datasets del recorrido previo.
-            </p>
+            {onReview && (
+              <button onClick={onReview}>
+                Revisar datos y definir variables de esta tabla
+              </button>
+            )}
           </>
         )
       )}
