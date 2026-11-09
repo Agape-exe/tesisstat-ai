@@ -1,0 +1,189 @@
+{
+  "$defs": {
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_ref": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Actor Ref",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "format": "date-time",
+          "title": "Confirmed At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actor_ref",
+        "confirmed_at",
+        "revision"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "ExtractionV2": {
+      "additionalProperties": false,
+      "properties": {
+        "header_row": {
+          "minimum": 1,
+          "title": "Header Row",
+          "type": "integer"
+        },
+        "range": {
+          "pattern": "^[A-Z]+[1-9][0-9]*:[A-Z]+[1-9][0-9]*$",
+          "title": "Range",
+          "type": "string"
+        },
+        "algorithm_version": {
+          "const": "tabular-v1",
+          "default": "tabular-v1",
+          "title": "Algorithm Version",
+          "type": "string"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "header_row",
+        "range"
+      ],
+      "title": "ExtractionV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "file_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "File Id",
+      "type": "string"
+    },
+    "revision": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "index": {
+      "minimum": 0,
+      "title": "Index",
+      "type": "integer"
+    },
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "visibility": {
+      "default": "visible",
+      "enum": [
+        "visible",
+        "hidden",
+        "veryHidden"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    },
+    "row_count": {
+      "minimum": 0,
+      "title": "Row Count",
+      "type": "integer"
+    },
+    "column_count": {
+      "minimum": 0,
+      "title": "Column Count",
+      "type": "integer"
+    },
+    "state": {
+      "enum": [
+        "ready",
+        "pending",
+        "excluded",
+        "error"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "explanation": {
+      "maxLength": 2000,
+      "title": "Explanation",
+      "type": "string"
+    },
+    "hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Hash",
+      "type": "string"
+    },
+    "table_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Table Id"
+    },
+    "extraction": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ExtractionV2"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "file_id",
+    "index",
+    "name",
+    "row_count",
+    "column_count",
+    "state",
+    "explanation",
+    "hash"
+  ],
+  "title": "SourceSheetV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/SourceSheetV2.schema.json"
+}

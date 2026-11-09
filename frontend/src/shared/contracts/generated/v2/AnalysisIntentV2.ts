@@ -27,7 +27,11 @@ export type Kind2 =
   | "mapping"
   | "score"
   | "plan"
-  | "result";
+  | "result"
+  | "source_file"
+  | "source_sheet"
+  | "table"
+  | "table_context";
 export type Id1 = string;
 export type Revision1 = number;
 export type Hash = string;

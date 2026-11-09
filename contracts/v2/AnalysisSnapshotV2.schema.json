@@ -580,7 +580,11 @@
             "mapping",
             "score",
             "plan",
-            "result"
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context"
           ],
           "title": "Kind",
           "type": "string"

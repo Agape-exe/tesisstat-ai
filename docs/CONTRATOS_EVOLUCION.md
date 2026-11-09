@@ -36,7 +36,8 @@ Orchestration ensambla snapshots, obtiene bytes por puerto autorizado, aprueba, 
 vigencia y persiste resultados. Research conserva contexto, archivos, diccionario/instrumento.
 Statistics no consulta repositorios Research, JWT, HTTP ni rutas físicas.
 
-S02 implementa C2 y estructura del snapshot/intención C4; S03 C3; S04 C4–C5 y sus
+S02 implementa C2 y estructura del snapshot/intención C4; S03A fuentes/contexto C3 y S03B
+diccionario/perfil/preparación C3; S04 C4–C5 y sus
 consumidores; S05 C6; S06 C7. Primero modelos canónicos y exportadores, después regenerar
 esquemas/tipos con scripts; jamás editar generados a mano. CI debe incluir ambos formatos,
 fixtures v1 intactos, ejemplos v2 válidos y rechazo de versiones no admitidas (422).
@@ -50,7 +51,7 @@ fixtures v1 intactos, ejemplos v2 válidos y rechazo de versiones no admitidas (
 | Fecha / hash | Fecha UTC RFC3339 del servidor; hash SHA-256 hexadecimal minúscula de 64 caracteres; no rutas/URLs firmadas en snapshots |
 | Valores | JSON estricto sin campos adicionales; números finitos; texto recortado; texto opcional desconocido=null, listas vacías=[]; enums usan unknown; nunca string vacío como evidencia |
 | Provenance | `{kind: manual|document|ai_suggestion|derived|unknown, source_refs: SourceRef[]}`; documento exige referencia+hash; IA no se vuelve manual al confirmar; derived exige fuente/algoritmo; unknown no tiene referencias |
-| SourceRef | `{kind: project|context|dataset|dictionary|intent|profile|diagnostic|document|instrument|mapping|score|plan|result, id: ID, revision: int>=1, hash: Hash}`; hash de contenido canónico/bytes, no secreto |
+| SourceRef | `{kind: project|context|dataset|dictionary|intent|profile|diagnostic|document|instrument|mapping|score|plan|result|source_file|source_sheet|table|table_context, id: ID, revision: int>=1, hash: Hash}`; hash de contenido canónico/bytes, no secreto |
 | Confirmation | `null` o `{actor_ref: ID, confirmed_at: DateTime, revision: int>=1}` emitido por servidor para esa revisión; actor del principal validado, o actor local etiquetado en modo local; nunca tomado del body |
 | Fact<T> | `{value:T|null, provenance:Provenance, confirmation:Confirmation|null}`; unknown enum es valor explícito desconocido y no confirmado; valor IA pendiente no es evidencia confirmada |
 | Snapshot | `schema_version, id, project_id, revision, created_at, source_refs`; inmutable; un cambio crea nueva revisión/ID según contrato, no reescribe evidencia histórica |
@@ -151,7 +152,56 @@ Ejemplo PATCH sin hipótesis:
 Guardar contexto parcial nunca exige todo el catálogo de campos. S04 calcula elegibilidad
 por intención y genera aclaraciones específicas sobre campos no confirmados relevantes.
 
-## C3 — Diccionario y fuentes (Research → Statistics por puertos, UI/chat; S03)
+## C3 — Fuentes y contexto (S03A); diccionario y preparación (S03B)
+
+### Extensión acordada e implementada en S03A
+
+Se separa S03 en S03A (archivos, todas las hojas y contexto por tabla) y S03B
+(diccionario, exploración y preparación opcional, incluida combinación confirmada por IDs).
+S04 consumirá fuentes específicas por análisis; S03A no une tablas ni activa datasets v1.
+Modelos canónicos: `backend/app/shared/data_sources_v2.py`; exportación mediante los
+generadores existentes. Los seis contratos v1 y `compute_dataset_hash` quedan intactos.
+
+- `SourceFileV2`: UUID servidor, project_id, revision>=1, nombre, formato, tamaño,
+  hash SHA256 de bytes originales, fechas UTC, estado `complete|needs_clarification` y hojas.
+  Un original se guarda una sola vez. `complete` significa que todas las hojas están listas
+  o excluidas, nunca revisión científica de los datos.
+- `SourceSheetV2`: UUID, project_id, file_id, revision>=1, índice/nombre/visibilidad,
+  dimensiones, estado `ready|pending|excluded|error`, explicación, hash JSON canónico,
+  extracción y table_id opcionales. Incluso hojas vacías/instrucciones permanecen inventariadas.
+- `ExtractionV2`: header_row y range A1 rectangular (incluye encabezado),
+  confirmation nula para detección automática o actor/fecha/revisión servidor para selección
+  humana; algorithm_version `tabular-v1`. Una extracción publicada es inmutable.
+- `ImportedTableV2`: UUID, project_id, file_id, sheet_id, revision=1, columnas UUID estables,
+  row_count, column_count, warnings, extraction, original_hash, content_hash y fecha.
+  `content_hash` usa `table-json-v1`: SHA256 del JSON compacto UTF-8 de nombres de columnas
+  y todas las filas (valores string|null). No es el hash de datasets legados. Las celdas se
+  conservan como texto/null sin inferir escala, imputar ni ejecutar fórmulas.
+- `TableContextV2`: schema_version=2.0.0, project_id, table_id, revision (0 virtual),
+  hash, updated_at y facts opcionales: name, description, purpose, row_meaning,
+  measurement_moment (`before|after|other|unknown`), population, identifier_column_id,
+  related_tables_notes. Cada fact conserva provenance/confirmation de C2. La columna
+  identificadora se resuelve contra columnas de esa tabla. Relaciones son texto, no uniones.
+
+Rutas bajo P: GET/POST `/files` (POST bytes + X-File-Name, 201); GET `/files/{id}/original`;
+PATCH `/files/{file_id}/sheets/{sheet_id}` con `{expected_revision, action:exclude|include|extract,
+header_row?, range?}`; GET `/tables`, `/tables/{id}`, `/tables/{id}/preview` (20 filas máx.);
+GET/PATCH `/tables/{id}/context` y GET `/tables/{id}/context/revisions`.
+GET `/table-contexts` lista los contextos actuales del proyecto, sin filas.
+PATCH contexto: `{expected_revision, changes:{campo:valor}, confirm_fields:["/campo"]}`.
+Omitir conserva; null borra; guardar no confirma. Conflicto CAS 409 conserva borrador UI.
+IDs/padres comprobados por servidor; no se aceptan rutas, claves, actor ni confirmaciones.
+No se recibe SourceRef del cliente como evidencia. El modo local mantiene sus guardas.
+
+Carga, extracción y publicación son pasos distintos. Solo se publica en SQLite tras escribir
+y verificar todos los objetos inmutables. Un manifiesto permite recuperar huérfanos de una
+interrupción; no hay transacción distribuida ni almacenamiento remoto. Garantías/límites y
+recuperación se detallan en `backend/app/modules/research/sources/README.md`.
+S03B consume IDs de tabla/columna, lectura completa local, extracción, hashes y contexto
+confirmado con revisiones; debe crear derivados y nuevas referencias sin mutar originales.
+S04/S06 resolverán estas fuentes: el chat/analizador actual no consume este contexto.
+
+### Diseño de S03B pendiente
 
 CSV/XLSX, límites y preparación existentes se reutilizan; no cambiar fuente in situ.
 `DatasetRefV2`: id, project_id, revision, hash, hash_algorithm, format=csv|xlsx,

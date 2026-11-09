@@ -26,6 +26,11 @@ for (const name of [
   'ProjectContextV2',
   'AnalysisIntentV2',
   'AnalysisSnapshotV2',
+  'SourceFileV2',
+  'SourceSheetV2',
+  'ImportedTableV2',
+  'TableContextV2',
+  'TablePreviewV2',
 ]) {
   const schema = JSON.parse(
     await readFile(
