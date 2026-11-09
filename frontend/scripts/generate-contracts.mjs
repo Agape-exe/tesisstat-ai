@@ -24,6 +24,10 @@ const v2Output = new URL('v2/', output);
 await mkdir(v2Output, { recursive: true });
 for (const name of [
   'ProjectContextV2',
+  'ContextImport',
+  'ContextSuggestion',
+  'SuggestionCreate',
+  'SuggestionApply',
   'AnalysisIntentV2',
   'AnalysisSnapshotV2',
   'SourceFileV2',

@@ -26,6 +26,11 @@ alcance único de S03, sin ampliar ahora instrumentos, diagnósticos, tutor ni d
 
 ## Producto y límites
 
+Ampliación aprobada S02B: Contexto ofrece prompt maestro versionado e importación JSON
+determinista con borrador persistido, comparación, selección y aplicación humana con CAS.
+Funciona sin credenciales/proveedor IA; formulario manual siempre disponible. No carga
+tesis completas ni amplía S04. Detalle y evidencia: [S02B](sesiones/S02B.md).
+
 Asistente para tesistas sin formación especializada: contexto necesario → cargar datos →
 revisar datos → revisar propuesta → aprobar y ejecutar → comprender resultados.
 Crear solicita nombre obligatorio (provisional permitido) y descripción opcional; conserva
@@ -36,7 +41,10 @@ pertenecen a Resultados. Conservar enlaces antiguos mediante alias.
 
 Contexto manual, progresivo y editable: título; pregunta y objetivo principal; objetivos
 específicos e hipótesis si existen; descripción del estudio y datos; variables, escalas,
-unidad observacional, dependencia y muestreo cuando sean necesarios para la intención.
+entidades estudiadas en general (opcional) y población/muestreo. El significado de filas
+es propio de cada tabla en Datos (`row_meaning`). La relación y comparación se revisan por
+intención en S04; observations global se conserva solo como antecedente legado. No heredar
+independencia, emparejamiento ni unilateralidad de una confirmación del contexto general.
 Explorar datos no exige contexto completo. Descriptivos no exigen hipótesis ni documento.
 Chat disponible desde el inicio como ayuda contextual; formularios y botones completan todo
 el recorrido. Una propuesta IA nunca confirma datos, aprueba planes ni reemplaza al motor.

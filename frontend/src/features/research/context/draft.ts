@@ -5,7 +5,7 @@ export const textFields = {
   main_objective: 'Objetivo general',
   study_description: 'Descripción del estudio',
   data_description: 'Descripción de los datos',
-  observational_unit: 'Qué representa cada observación o fila',
+  observational_unit: '¿A quién o qué estudia la investigación?',
   sampling_notes: 'Procedencia o selección de la muestra',
 };
 export type TextField = keyof typeof textFields;

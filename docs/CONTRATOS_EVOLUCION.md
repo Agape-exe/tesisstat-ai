@@ -119,15 +119,32 @@ Campos de contenido:
 | specific_objectives | Lista máx.40 de `{id:ID, text:Fact<string máx.2000>}`; default [] |
 | hypotheses | Lista máx.40 de `{id:ID, statement:Fact<string>, objective_id:ID|null, alternative:two-sided|greater|less|unspecified}`; default []; no obligatoria |
 | study_description, data_description | Fact<string máx.2000>, default null |
-| observational_unit, sampling_notes | Fact<string máx.2000>, default null; inferencia requiere límites de muestreo explícitos, permite declarar no probabilístico/desconocido y restringir generalización |
+| observational_unit | Fact<string máx.2000>, default null, opcional: «¿A quién o qué estudia la investigación?»; alcance general, no significado de filas |
+| sampling_notes | Fact<string máx.2000>, default null; población/procedencia/selección de muestra; límites explícitos al generalizar |
 | design | Fact<experimental|quasi_experimental|observational|unknown>, default unknown |
-| observations | Fact<independent|paired|repeated|unknown>, default unknown; no inferir de tamaño |
+| observations | Fact<independent|paired|repeated|unknown>, default unknown; antecedente legado consultable, fuera del recorrido/confirmación global normal; nunca determina relaciones de todas las intenciones |
 | complementary_notes | Lista máx.20 de texto máx.2000 con provenance; no parámetros estadísticos ni editor genérico |
 | pending_questions | Lista derivada `{code,field,question,blocks:profile|proposal|execution}`; no pregunta repetida si ya respondida |
 
 Título se lee de Project C1, no existe otro título editable que pueda divergir. Hipótesis
 no se generan para dar contenido a hypotheses[]. Pregunta/objetivo pueden ser desconocidos
 en un análisis exploratorio explícitamente limitado.
+
+Corrección aprobada de alcance S02B: `observational_unit` describe sujetos/entidades de la
+investigación general, opcionalmente. `row_meaning` existente pertenece a cada tabla C3 en
+Datos; no se duplica ni se copia automáticamente desde C2 ni se asigna por nombres.
+Pregunta/objetivos/hipótesis, diseño, población/muestreo y descripciones generales siguen
+en C2. No exigir unidad general o clasificación global para guardar/explorar. GET actual
+recalcula solo las preguntas derivadas (sin pregunta global de dependencia/filas); no
+reescribe filas históricas. Hechos/confirmaciones/procedencia anteriores se conservan.
+
+Hipótesis opcionales, H0/H1 se conservan como texto. Etiquetas de `alternative`:
+unspecified «Pendiente de definir»; two-sided «Diferencia en cualquiera de los dos sentidos»;
+greater «Mayor que la referencia»; less «Menor que la referencia». Mayor/menor requiere saber
+variable/medida, referencia, orden de grupos/mediciones y codificación. No inferir greater de
+«favorable», «mejora», «influencia» o «efecto», ni asignar a H0 automáticamente la dirección
+de H1. No hay intérprete científico por palabras clave. Se preservan direcciones guardadas,
+corregibles; confirmar C2 no aprueba una prueba unilateral (ver C4).
 
 GET `P/context` devuelve revisión actual (empty, revision=0 virtual si no guardado);
 PATCH `P/context` recibe `{expected_revision, changes:{campo:valor_crudo}, confirm_fields:string[]}`.
@@ -142,6 +159,64 @@ selected_fields y confirm=true aplica solo elegidos como nueva revisión; rechaz
 intacto. `pending→applied|rejected|stale`; stale si cambió base; no autoaplicar extracción.
 Extracción documental conserva revisión y citas del documento original; importar campos
 seleccionados al contexto no simula revisión completa del documento.
+
+### S02B — contrato ejecutable de importación asistida
+
+`ContextImport` (formato `context-import-1.0`) es un DTO externo separado de Facts C2.
+Canónico: `research/context/import_models.py`; esquemas y tipos generados, sin cambiar v1.
+`GET P/context/import-prompt` entrega el prompt español con JSON Schema del modelo canónico.
+No necesita ni llama a un proveedor. Solo admite JSON directo o un único bloque Markdown
+`json`/sin lenguaje, sin texto adicional. Varios candidatos, claves duplicadas y no finitos
+son errores; nunca se elige un objeto arbitrariamente.
+
+Prompt revisado `context-prompt-1.1` (dato `prompt_version` en GET), con formato de transporte
+compatible `context-import-1.0`: exige `observations=unknown` y conserva relaciones explícitas
+en descripciones/notas narrativas. Para respuestas anteriores paired/independent/repeated,
+el parser transforma únicamente el borrador a unknown y propone una nota que conserva el
+valor anterior y advierte revisión por análisis. Si no cabe en 20 notas, 422 accionable;
+no truncar ni descartar. Las sugerencias pending/stale anteriores se proyectan así al
+consultarlas, sin reescribir su propuesta original guardada ni recibos aplicados.
+Backend excluye observations de candidatos y rechaza seleccionarlo con 422; incluso con
+body modificado no puede aplicarse como clasificación global. Las notas requieren selección
+como las demás. Una aplicación conserva el Fact observations ya existente, incluida su
+confirmación. PATCH legado sigue compatible, sin otorgar validez por intención.
+
+POST `P/context/suggestions`: `{response:string,expected_revision:int>=0}` → 201
+`ContextSuggestion`. Guarda únicamente propuesta normalizada, nombres de campos adicionales,
+proyecto, revisión base, ID servidor, formato, procedencia `ai_suggestion` y estado.
+No guarda respuesta original ni tesis. Campos externos desconocidos se convierten en notas
+acotadas revisables, con su nombre y valor JSON visibles; no son parámetros estadísticos.
+Metadatos reservados del servidor se rechazan. Límite respuesta UTF-8 120000 bytes,
+profundidad 8, 1200 nodos (incluidas claves), textos 2000 y título 200; listas C2 40/40/20.
+El adaptador limita el body HTTP de sugerencias a 800000 bytes antes de decodificar.
+No hay truncamiento: exceso produce 413/422 sin sugerencia parcial.
+
+GET `P/context/suggestions` y GET `.../suggestions/{id}` recuperan borradores y recibos
+por proyecto, detectando estado stale contra la revisión actual. POST `.../{id}/reject`
+rechaza pending sin modificar C2; estados terminales se conservan. POST `.../{id}/apply`:
+`{expected_revision,proposal:ContextImport,selected_fields:string[],confirm:boolean=false}`.
+`proposal` es la versión corregida, revalidada; refs locales no cambian. Claves de selección:
+nombre de campo escalar, `specific_objectives/{ref}`, `hypotheses/{ref}`,
+`complementary_notes/{indice}`. No se aceptan IDs/actores/confirmaciones externos.
+
+Las listas se añaden elemento a elemento, preservando los existentes; coincidencias de texto
+sin distinción de mayúsculas se señalan/rechazan si se seleccionan. Una hipótesis vinculada
+exige seleccionar su objetivo en esta aplicación o desvincularla explícitamente. El servidor
+asigna UUIDs a ambos. No se equipara un objetivo nuevo con uno existente por parecido.
+Null/unknown/ausentes no son seleccionables ni borran datos. Título se compara con Project C1;
+solo el formulario existente de proyecto lo cambia, nunca la aplicación de la sugerencia.
+
+Aplicación y recibo/contexto/historial se escriben en una transacción SQLite con CAS.
+`pending→applied|rejected|stale`; conflicto 409 persiste stale antes de responder, sin escribir
+contexto. Revisión nueva crea otra sugerencia mediante POST explícito y comparación renovada.
+ID de sugerencia es clave idempotente: reaplicar applied devuelve su recibo original, sin
+otra revisión/IDs, incluso con solicitudes simultáneas. Recibo incluye propuesta aplicada,
+selección y contexto resultante; la propuesta original permanece para auditar correcciones.
+Guardar no confirma salvo `confirm=true` explícito; actor/fecha/revisión son del servidor.
+Facts importados usan `ai_suggestion` y `algorithm_version=context-import-1.0:{suggestion_id}`
+para localizar el recibo; SourceRefs externos nunca se confían. Confirmar y corregir después
+preservan esta procedencia; historial C2 conserva valores anteriores y retira confirmaciones
+afectadas. Consumidores S04/S06 deben respetar esa procedencia y resolver solo hechos revisados.
 
 Ejemplo PATCH sin hipótesis:
 
@@ -278,8 +353,8 @@ selección; Orchestration coordina/persiste la evaluación. UI/chat consumen DTO
 kind=descriptive|association|comparison|reliability|unknown; question:Fact<string> default
 null; objective_id:ID|null; hypothesis_id:ID|null (referencias C2 reales, sin obligación);
 variable_ids:ID[]; roles:`{variable_id,role:outcome|predictor|group|item|descriptive}[]`;
-observations=independent|paired|repeated|unknown (de C2 confirmado o decisión confirmada de
-esta intención con provenance); paired_columns:`{before_column_id,after_column_id}`|null;
+observations=independent|paired|repeated|unknown (decisión revisada y confirmada de
+esta intención con provenance; NO heredar de C2 confirmado); paired_columns:`{before_column_id,after_column_id}`|null;
 group_column_id:ID|null; alternative=two-sided|greater|less|unspecified;
 alpha:number (0,1), default .05; missing_policy=complete_cases; confirmation:null|Confirmation.
 `estimand=summary|linear_association|monotonic_association|mean_difference|distribution_difference|
@@ -290,6 +365,15 @@ cada uno Fact<yes|no|unknown> default unknown. Son juicios revisados del usuario
 de diagnósticos, no inferencias certificadas por IA. No son obligatorios fuera de su técnica.
 Descriptivos usan alternative=unspecified; inferencia bilateral por defecto explícito al
 confirmar la intención; unilateral requiere pregunta direccional confirmada antes de mirar p.
+
+S04 deberá verificar en CADA intención las tablas y variables concretas, unidad de sus
+filas, identificadores, correspondencias, posibilidad real de vinculación y orden de
+grupos/mediciones/codificación. Dos grupos, notas antes/después vinculables y cuestionarios
+anónimos por sesión no comparten necesariamente la misma relación. Una confirmación global
+de observations, un nombre Antes/Después o una dirección de hipótesis C2 no bastan para
+establecer pares, independencia ni aprobar unilateralidad. Resolver y confirmar la comparación
+específica y conservar límites/ambigüedades, sin fabricar vínculos. Esta corrección es contrato
+para S04; S02B no implementa recomendador ni ejecución nueva.
 prediction no se añade a este mínimo; v1 conserva sus regresiones.
 
 POST `P/intents` y PATCH `P/intents/{id}` con expected_revision, changes y confirm=true;

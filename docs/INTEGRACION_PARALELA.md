@@ -255,3 +255,23 @@ El derivado referencia todos sus padres y diccionarios, linaje completo y receta
 el acceso remoto debe aplicar scope al árbol entero. Hash table-json-v1 y formatos JSON son
 explícitos; no reutilizar el hash research-dataset-v1 para estos bytes. No hay nueva aprobación
 ni ejecución v2 en esta entrega. Detalle: [API S03B](../backend/app/modules/research/data_workspace/README.md).
+
+## Recurso C2 incorporado en S02B
+
+La migración de persistencia debe incluir `context_suggestions_v2` por proyecto y su recibo
+de aplicación. Adaptadores implementan `create_suggestion`, `list_suggestions` y
+`suggestion_operation` del puerto de Contexto, además del append existente. Aplicación,
+historial y estado/recibo tienen que compartir transacción y exclusión mutua/CAS en DB;
+el ID de sugerencia evita duplicados en reintentos. No trasladar esto a locks por proceso.
+Autorizar proyecto y pertenencia del hijo en todos los GET/POST y RLS; el ID no autoriza.
+No almacenar texto original ni tesis, solo propuesta normalizada y trazabilidad acotada.
+Origen de IA permanece al confirmar/corregir; el recibo y el historial permiten auditarlo.
+Sin nuevo proveedor, autenticación, despliegue ni cambios de los seis contratos v1.
+
+La corrección de alcance S02B no migra hechos ni históricos: observational_unit general
+es opcional; row_meaning sigue en cada tabla C3. observations global es antecedente legado,
+no confirmación heredable por intenciones. El adaptador de sugerencias proyecta propuestas
+pending/stale antiguas a nota/unknown solo en la vista, conservando su original y recibos.
+Aplicación rechaza seleccionar observations en servidor, incluidas solicitudes alteradas.
+Persistencia remota debe preservar esta distinción sin reescribir valores/confirmaciones
+al migrar ni vincular tablas por nombres. S04 comprobará cada comparación concreta.

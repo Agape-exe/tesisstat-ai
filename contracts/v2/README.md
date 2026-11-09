@@ -1,9 +1,24 @@
 # Familia v2: contexto, fuentes e intención/snapshot
 
+S02B añade `ContextImport`, `ContextSuggestion`, `SuggestionCreate` y `SuggestionApply`,
+canónicos en `research/context/import_models.py`. El formato externo context-import-1.0
+no es un DTO de Facts persistidos: referencias locales se traducen a UUIDs por el servidor,
+procedencia/confirmaciones no se toman del chat. Esquemas/tipos se generan con los comandos
+existentes. [Semántica C2 y límites](../../docs/CONTRATOS_EVOLUCION.md#s02b--contrato-ejecutable-de-importación-asistida).
+
 Canónicos: `backend/app/shared/analysis_v2.py` y `data_sources_v2.py` y `data_workspace_v2.py`. S02 habilita C2;
 S03A habilita archivos, hojas, tablas y contexto C3; S03B diccionario, perfil y derivados.
 C4 conserva su estructura preparada para S04.
 Los seis contratos v1 y sus ejemplos permanecen intactos.
+
+Corrección de alcance S02B: `ProjectContextV2.observational_unit` es la entidad general
+estudiada (opcional); `TableContextV2.row_meaning` describe filas de UNA tabla. No se copian
+automáticamente. `ProjectContextV2.observations` es antecedente legado, con su procedencia,
+confirmación e historial intactos. Las intenciones S04 deben resolver sus relaciones y
+comparaciones propias; no heredan esa confirmación ni aprueban unilateralidad desde C2.
+Enums/formatos guardados se mantienen compatibles; cambios de esquema documentan semántica.
+Prompt `context-prompt-1.1` solicita observations=unknown; importador anterior 1.0 compatible
+propone notas para clasificaciones antiguas y bloquea aplicarlas globalmente.
 
 Desde backend: `python -m scripts.export_contracts` regenera ambas familias;
 `--check` comprueba actualidad. Desde frontend: `npm run contracts:generate` genera tipos

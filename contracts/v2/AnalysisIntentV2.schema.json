@@ -401,7 +401,8 @@
       "type": "array"
     },
     "observations": {
-      "$ref": "#/$defs/Fact_Literal__independent____paired____repeated____unknown___"
+      "$ref": "#/$defs/Fact_Literal__independent____paired____repeated____unknown___",
+      "description": "Decisión específica de esta intención: verificar tablas, variables, identificación, orden y vinculación. No heredar confirmación global de C2."
     },
     "paired_columns": {
       "anyOf": [

@@ -79,7 +79,11 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
   const contextFacts =
     context.status === 'fulfilled' ? facts(context.value) : [];
   const knownFacts = contextFacts.filter(
-    ([, f]) => f.value != null && f.value !== '' && f.value !== 'unknown',
+    ([path, f]) =>
+      path !== '/observations' &&
+      f.value != null &&
+      f.value !== '' &&
+      f.value !== 'unknown',
   );
   const confirmed = knownFacts.filter(([, f]) => f.confirmation).length;
   return [

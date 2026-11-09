@@ -1,0 +1,17 @@
+{
+  "format_version": "context-import-1.0",
+  "title": "Estudio sintético con grupos y sesiones",
+  "main_objective": "Describir los grupos A y B y los cambios registrados entre sesiones.",
+  "observational_unit": "Participantes de los grupos A y B",
+  "study_description": "Hay dos grupos. Las notas antes y después tienen un identificador ficticio que permite vincular mediciones de la misma persona. Los cuestionarios son anónimos por sesión y no permiten vincular respuestas individuales entre sesiones.",
+  "data_description": "Se recogen notas en dos momentos y cuestionarios anónimos separados por sesión. Cada tabla debe aclarar qué representan sus filas y qué vínculos son verificables.",
+  "design": "unknown",
+  "observations": "unknown",
+  "specific_objectives": [{"ref": "o1", "text": "Describir las mediciones y respuestas de cada sesión."}],
+  "hypotheses": [
+    {"ref": "h0", "statement": "H0: No existe un efecto favorable de la intervención.", "objective_ref": "o1", "alternative": "unspecified"},
+    {"ref": "h1", "statement": "H1: La intervención tiene un efecto favorable en el aprendizaje.", "objective_ref": "o1", "alternative": "unspecified"}
+  ],
+  "sampling_notes": null,
+  "complementary_notes": []
+}
