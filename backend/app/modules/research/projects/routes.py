@@ -4,7 +4,7 @@ from fastapi import APIRouter, Response, status
 
 from app.modules.research.datasets.use_cases import DatasetService
 from app.modules.research.documents.use_cases import DocumentService
-from app.modules.research.projects.models import Project, ProjectDraft
+from app.modules.research.projects.models import Project, ProjectDraft, ProjectUpdate
 from app.modules.research.projects.use_cases import ProjectService
 
 
@@ -30,7 +30,8 @@ def create_router(
         return service.get(project_id)
 
     @router.put("/{project_id}", response_model=Project)
-    def update_project(project_id: UUID, draft: ProjectDraft) -> Project:
+    def update_project(project_id: UUID, draft: ProjectUpdate) -> Project:
+        """Preserve omitted fields; explicit null clears nullable academic fields."""
         return service.update(project_id, draft)
 
     @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
