@@ -141,23 +141,35 @@ class ContextService:
                     ]
                 elif name == "hypotheses":
                     old = {h.id: h for h in previous.hypotheses}
-                    current.hypotheses = [
-                        ContextHypothesis(
-                            id=checked_id(h.id, old),
-                            objective_id=h.objective_id,
-                            alternative=h.alternative,
-                            statement=manual(
-                                h.statement,
-                                old[h.id].statement if h.id in old else None,
-                                h.id in old
-                                and (
-                                    old[h.id].objective_id != h.objective_id
-                                    or old[h.id].alternative != h.alternative
-                                ),
-                            ),
+                    current.hypotheses = []
+                    for h in value or []:
+                        prior = old.get(h.id)
+                        objective_id = (
+                            h.objective_id
+                            if "objective_id" in h.model_fields_set or prior is None
+                            else prior.objective_id
                         )
-                        for h in value or []
-                    ]
+                        alternative = (
+                            h.alternative
+                            if "alternative" in h.model_fields_set or prior is None
+                            else prior.alternative
+                        )
+                        current.hypotheses.append(
+                            ContextHypothesis(
+                                id=checked_id(h.id, old),
+                                objective_id=objective_id,
+                                alternative=alternative,
+                                statement=manual(
+                                    h.statement,
+                                    prior.statement if prior else None,
+                                    prior is not None
+                                    and (
+                                        prior.objective_id != objective_id
+                                        or prior.alternative != alternative
+                                    ),
+                                ),
+                            )
+                        )
                 elif name == "complementary_notes":
                     # Preserve provenance of unchanged notes across reordering.
                     current.complementary_notes = [

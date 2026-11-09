@@ -303,3 +303,56 @@ def test_patch_cors_is_allowed_and_local_guards_remain(setup):
     )
     assert response.status_code == 200
     assert client.get(url, headers={"Host": "external.invalid"}).status_code == 403
+
+
+def test_omitting_hypothesis_metadata_preserves_links_and_confirmation(setup):
+    client, url, _ = setup
+    first = save(client, url, changes={"specific_objectives": [{"text": "Describir"}]}).json()
+    objective_id = first["specific_objectives"][0]["id"]
+    second = save(
+        client,
+        url,
+        1,
+        {
+            "hypotheses": [
+                {
+                    "statement": "Mayor importe",
+                    "objective_id": objective_id,
+                    "alternative": "greater",
+                }
+            ]
+        },
+        ["/hypotheses/0/statement"],
+    ).json()
+    hypothesis = second["hypotheses"][0]
+    third = save(
+        client,
+        url,
+        2,
+        {
+            "hypotheses": [
+                {
+                    "id": hypothesis["id"],
+                    "statement": "Mayor importe",
+                }
+            ]
+        },
+    ).json()
+    assert third["hypotheses"][0] == hypothesis
+    cleared = save(
+        client,
+        url,
+        3,
+        {
+            "hypotheses": [
+                {
+                    "id": hypothesis["id"],
+                    "statement": "Mayor importe",
+                    "objective_id": None,
+                }
+            ]
+        },
+    ).json()
+    assert cleared["hypotheses"][0]["objective_id"] is None
+    assert cleared["hypotheses"][0]["alternative"] == "greater"
+    assert cleared["hypotheses"][0]["statement"]["confirmation"] is None

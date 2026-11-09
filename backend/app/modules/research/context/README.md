@@ -26,6 +26,8 @@ Confirmaciones: JSON Pointer al documento resultante, por ejemplo `/main_objecti
 `/specific_objectives/0/text`, `/hypotheses/0/statement`, `/complementary_notes/0`.
 Se usan índices JSON normales, no IDs como índices; IDs son referencias durables entre
 recursos. CAS impide confirmar índices de una lista de otra revisión inadvertidamente.
+En hipótesis existentes, omitir objective_id o alternative conserva sus metadatos;
+objective_id=null desvincula de manera explícita.
 Confirmar sin modificar crea otra revisión. Cada confirmación lleva revisión, fecha UTC y
 actor del servidor. En esta composición local el actor es `local`; no es un usuario
 autenticado. Los hechos no modificados mantienen procedencia y confirmación originales.
