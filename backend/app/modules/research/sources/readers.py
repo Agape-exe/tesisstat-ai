@@ -10,7 +10,7 @@ import json
 import re
 import zipfile
 from dataclasses import dataclass, field
-from xml.etree.ElementTree import ParseError, fromstring
+from xml.etree.ElementTree import fromstring
 
 from openpyxl import load_workbook
 from openpyxl.utils.cell import get_column_letter, range_boundaries
@@ -111,6 +111,8 @@ def inventory(data: bytes, format: str, limits: DatasetLimits, book: WorkbookLim
             io.BytesIO(data), read_only=True, data_only=False, keep_links=False
         )
         try:
+            if not workbook.sheetnames:
+                raise ContextError("invalid_payload", "El XLSX no contiene hojas.")
             if len(workbook.sheetnames) > book.max_sheets:
                 limit(f"El libro supera el límite de {book.max_sheets} hojas.")
             result = []
@@ -167,7 +169,8 @@ def inventory(data: bytes, format: str, limits: DatasetLimits, book: WorkbookLim
         OSError,
         ValueError,
         KeyError,
-        ParseError,
+        SyntaxError,
+        IndexError,
         InvalidFileException,
     ) as exc:
         raise ContextError(

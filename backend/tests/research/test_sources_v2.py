@@ -518,3 +518,19 @@ def test_failed_pending_extraction_preserves_existing_publication(setup, monkeyp
     assert client.get(root + "/tables").json() == tables_before
     assert len(list(service.repository.storage_path.glob("*.table"))) == 3
     assert client.get(f"{root}/files/{source['id']}/original").content == workbook_bytes()
+
+
+@pytest.mark.parametrize("target", ["xl/workbook.xml", "xl/styles.xml", "xl/worksheets/sheet2.xml"])
+def test_malformed_workbook_xml_returns_clear_422_without_publication(setup, target):
+    client, root, _, _ = setup
+    output = io.BytesIO()
+    with (
+        zipfile.ZipFile(io.BytesIO(workbook_bytes())) as source,
+        zipfile.ZipFile(output, "w") as dest,
+    ):
+        for name in source.namelist():
+            dest.writestr(name, b"<invalid" if name == target else source.read(name))
+    response = upload(client, root, output.getvalue())
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "invalid_payload"
+    assert client.get(root + "/files").json() == []
