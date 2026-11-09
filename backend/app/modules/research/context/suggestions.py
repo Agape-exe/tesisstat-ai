@@ -8,7 +8,11 @@ from app.modules.research.context.import_models import (
     SuggestionApply,
     SuggestionCreate,
 )
-from app.modules.research.context.import_parser import candidates, parse_response
+from app.modules.research.context.import_parser import (
+    candidates,
+    normalize_observations,
+    parse_response,
+)
 from app.modules.research.context.repository import ContextError
 from app.modules.research.context.use_cases import ContextService, derive
 from app.shared.analysis_v2 import (
@@ -40,11 +44,24 @@ class SuggestionService:
         return self.repository.create_suggestion(suggestion)
 
     def list(self, project_id: str):
-        return self.repository.list_suggestions(self.context._require(project_id))
+        return [
+            self._preview(s)
+            for s in self.repository.list_suggestions(self.context._require(project_id))
+        ]
+
+    @staticmethod
+    def _preview(suggestion: ContextSuggestion):
+        if suggestion.state in ("pending", "stale"):
+            return suggestion.model_copy(
+                update={"proposal": normalize_observations(suggestion.proposal)}
+            )
+        return suggestion
 
     def get(self, project_id: str, suggestion_id: str):
-        return self.repository.suggestion_operation(
-            self.context._require(project_id), suggestion_id, "read"
+        return self._preview(
+            self.repository.suggestion_operation(
+                self.context._require(project_id), suggestion_id, "read"
+            )
         )
 
     def reject(self, project_id: str, suggestion_id: str):
@@ -54,6 +71,14 @@ class SuggestionService:
 
     def apply(self, project_id: str, suggestion_id: str, body: SuggestionApply):
         def build(previous: ProjectContextV2, suggestion: ContextSuggestion):
+            if "observations" in body.selected_fields:
+                raise ContextError(
+                    "invalid_payload",
+                    "La relación debe revisarse para cada análisis. "
+                    "No se importa como decisión global; incorpora la nota narrativa "
+                    "si deseas conservar el antecedente.",
+                    fields=["observations"],
+                )
             # Edits can correct values, never inject new local identities or server metadata.
             for name in ("specific_objectives", "hypotheses"):
                 if [i.ref for i in getattr(body.proposal, name)] != [
@@ -62,7 +87,7 @@ class SuggestionService:
                     raise ContextError(
                         "invalid_payload", "Conserva las referencias de la propuesta."
                     )
-            available = candidates(body.proposal)
+            available = candidates(normalize_observations(body.proposal))
             selected = body.selected_fields
             if len(set(selected)) != len(selected) or any(k not in available for k in selected):
                 raise ContextError("invalid_payload", "Selecciona campos presentes sin repetirlos.")

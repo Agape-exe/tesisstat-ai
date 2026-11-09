@@ -175,6 +175,9 @@ export interface IntentRole {
   variable_id: VariableId;
   role: Role;
 }
+/**
+ * Decisión específica de esta intención: verificar tablas, variables, identificación, orden y vinculación. No heredar confirmación global de C2.
+ */
 export interface FactLiteralIndependentPairedRepeatedUnknown {
   value?: Value3;
   provenance?: Provenance;

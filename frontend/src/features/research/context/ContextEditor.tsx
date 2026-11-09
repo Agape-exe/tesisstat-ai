@@ -15,6 +15,12 @@ import {
 } from './draft';
 import { ContextLists } from './ContextLists';
 import { AssistedContext } from './AssistedContext';
+import {
+  unitHelp,
+  relationHelp,
+  relationLabels,
+  directionLabels,
+} from './semantics';
 import { navigateProject } from '../projects/navigation';
 import './context.css';
 
@@ -22,13 +28,14 @@ const api = createContextApi();
 const contextLabels: Record<string, string> = {
   ...textFields,
   design: 'Diseño del estudio',
-  observations: 'Relación entre observaciones',
+  observations: 'Clasificación global anterior (antecedente)',
   specific_objectives: 'Objetivos específicos',
   hypotheses: 'Hipótesis',
   complementary_notes: 'Contexto adicional',
 };
 
 function describeField(key: string, draft: Draft): string {
+  if (key === 'observations') return relationLabels[draft.observations];
   if (key === 'specific_objectives')
     return (
       draft.specific_objectives
@@ -40,7 +47,7 @@ function describeField(key: string, draft: Draft): string {
       draft.hypotheses
         .map(
           (h, i) =>
-            `${i + 1}. ${h.statement || 'Sin texto'} · Objetivo: ${draft.specific_objectives.find((o) => o.id === h.objective_id)?.text || 'Sin vínculo'} · Dirección: ${h.alternative}`,
+            `${i + 1}. ${h.statement || 'Sin texto'} · Objetivo: ${draft.specific_objectives.find((o) => o.id === h.objective_id)?.text || 'Sin vínculo'} · Dirección: ${directionLabels[h.alternative]}`,
         )
         .join('\n') || 'Sin hipótesis'
     );
@@ -95,7 +102,11 @@ export function ContextEditor({
   const changes = changesFrom(saved, draft);
   const dirty = Object.keys(changes).length > 0;
   const confirmable = facts(saved).filter(
-    ([, f]) => f.value != null && f.value !== '' && f.value !== 'unknown',
+    ([path, f]) =>
+      path !== '/observations' &&
+      f.value != null &&
+      f.value !== '' &&
+      f.value !== 'unknown',
   );
 
   useEffect(() => {
@@ -342,12 +353,9 @@ export function ContextEditor({
             )}
             {textField(
               'data_description',
-              'Qué información has recogido o planeas recoger; no necesitas cargar un archivo aún.',
+              'Descripción general de la información recogida o prevista. El significado de las filas y los detalles de cada tabla se revisan en Datos.',
             )}
-            {textField(
-              'observational_unit',
-              'Por ejemplo, una persona, una venta o una visita. Si no lo sabes, déjalo vacío.',
-            )}
+            {textField('observational_unit', unitHelp)}
             <label htmlFor="context-design">Diseño del estudio</label>
             <select
               id="context-design"
@@ -368,31 +376,6 @@ export function ContextEditor({
               </option>
             </select>
             <FieldStatus fact={saved.design} changed={'design' in changes} />
-            <label htmlFor="context-observations">
-              Relación entre observaciones
-            </label>
-            <select
-              id="context-observations"
-              value={draft.observations}
-              onChange={(e) =>
-                update('observations', e.target.value as Draft['observations'])
-              }
-            >
-              <option value="unknown">No lo sé todavía</option>
-              <option value="independent">
-                Independientes: cada fila es una unidad distinta sin relación
-              </option>
-              <option value="paired">
-                Pareadas: dos mediciones relacionadas por unidad
-              </option>
-              <option value="repeated">
-                Repetidas: varias mediciones de la misma unidad
-              </option>
-            </select>
-            <FieldStatus
-              fact={saved.observations}
-              changed={'observations' in changes}
-            />
             {textField(
               'sampling_notes',
               'De dónde proceden los casos y cómo se seleccionaron. Puedes indicar que no lo sabes todavía.',
@@ -462,6 +445,15 @@ export function ContextEditor({
           </div>
         </fieldset>
       </form>
+      <details>
+        <summary>Antecedentes de relación entre observaciones</summary>
+        <p>{relationHelp}</p>
+        <p>
+          Clasificación global anterior:{' '}
+          {relationLabels[saved.observations.value ?? 'unknown']}
+        </p>
+        <FieldStatus fact={saved.observations} changed={false} />
+      </details>
       <section className="rc-confirm" aria-label="Confirmación de información">
         <h3>Revisar y confirmar</h3>
         <p>
@@ -545,8 +537,13 @@ export function ContextEditor({
                     .filter(([, f]) => f.value != null && f.value !== 'unknown')
                     .map(([path, f]) => (
                       <li key={path}>
-                        {contextLabels[path.split('/')[1]]}: {f.value} ·{' '}
-                        {f.confirmation ? 'Confirmado' : 'Sin confirmar'}
+                        {contextLabels[path.split('/')[1]]}:{' '}
+                        {path === '/observations'
+                          ? relationLabels[
+                              f.value as keyof typeof relationLabels
+                            ] || 'Sin clasificación anterior'
+                          : f.value}{' '}
+                        · {f.confirmation ? 'Confirmado' : 'Sin confirmar'}
                       </li>
                     ))}
                 </ul>

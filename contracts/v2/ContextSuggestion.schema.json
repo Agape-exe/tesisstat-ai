@@ -56,6 +56,7 @@
         },
         "alternative": {
           "default": "unspecified",
+          "description": "Antecedente opcional de dirección. Conservar H0/H1 como texto; confirmar contexto no aprueba prueba unilateral. Resolver y confirmar comparación concreta por intención.",
           "enum": [
             "two-sided",
             "greater",
@@ -174,6 +175,7 @@
             }
           ],
           "default": null,
+          "description": "A quién o qué estudia la investigación en general; opcional. No describe filas de tablas.",
           "title": "Observational Unit"
         },
         "sampling_notes": {
@@ -202,6 +204,7 @@
         },
         "observations": {
           "default": "unknown",
+          "description": "El prompt nuevo devuelve unknown. Valores anteriores se conservan como notas narrativas revisables, nunca como decisión global.",
           "enum": [
             "independent",
             "paired",
@@ -369,6 +372,7 @@
         },
         "alternative": {
           "default": "unspecified",
+          "description": "Detalle opcional: comparación y orden deben ser inequívocos. No inferir greater de mejora/efecto ni heredar dirección de H1 a H0. No aprueba una prueba unilateral.",
           "enum": [
             "two-sided",
             "greater",
@@ -520,7 +524,8 @@
           "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
         },
         "observational_unit": {
-          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____",
+          "description": "A quién o qué estudia la investigación en general; opcional. Cada tabla describe sus filas en row_meaning."
         },
         "sampling_notes": {
           "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
@@ -529,7 +534,8 @@
           "$ref": "#/$defs/Fact_Literal__experimental____quasi_experimental____observational____unknown___"
         },
         "observations": {
-          "$ref": "#/$defs/Fact_Literal__independent____paired____repeated____unknown___"
+          "$ref": "#/$defs/Fact_Literal__independent____paired____repeated____unknown___",
+          "description": "Antecedente global legado. No establece independencia ni emparejamiento de una intención."
         },
         "complementary_notes": {
           "items": {

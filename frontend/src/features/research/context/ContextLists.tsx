@@ -1,5 +1,6 @@
 import type { Context } from './api';
 import type { Draft } from './draft';
+import { directionHelp, directionLabels } from './semantics';
 
 export function ContextLists({
   draft,
@@ -85,7 +86,8 @@ export function ContextLists({
       <h3>Hipótesis, si existen</h3>
       <p className="rp-hint">
         Una respuesta que esperas contrastar. No es necesaria para explorar o
-        describir datos.
+        describir datos. Puedes conservar H0 y H1 como texto, sin completar una
+        dirección.
       </p>
       {draft.hypotheses.map((h, i) => (
         <div className="rc-item" key={h.key}>
@@ -134,7 +136,7 @@ export function ContextLists({
             Guarda los objetivos nuevos para poder vincularlos.
           </p>
           <label htmlFor={`hypothesis-alternative-${h.key}`}>
-            Dirección prevista
+            Dirección de la hipótesis (opcional)
           </label>
           <select
             id={`hypothesis-alternative-${h.key}`}
@@ -153,13 +155,13 @@ export function ContextLists({
               )
             }
           >
-            <option value="unspecified">No lo sé todavía</option>
-            <option value="two-sided">
-              En cualquier dirección (bilateral)
-            </option>
-            <option value="greater">Mayor que</option>
-            <option value="less">Menor que</option>
+            {Object.entries(directionLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
+          <p className="rp-hint">{directionHelp}</p>
           <p className="rc-field-status">
             {!h.id ||
             h.statement !==

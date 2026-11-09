@@ -29,6 +29,7 @@
         },
         "alternative": {
           "default": "unspecified",
+          "description": "Detalle opcional: comparación y orden deben ser inequívocos. No inferir greater de mejora/efecto ni heredar dirección de H1 a H0. No aprueba una prueba unilateral.",
           "enum": [
             "two-sided",
             "greater",
@@ -169,6 +170,7 @@
         }
       ],
       "default": null,
+      "description": "A quién o qué estudia la investigación en general; opcional. No describe filas de tablas.",
       "title": "Observational Unit"
     },
     "sampling_notes": {
@@ -197,6 +199,7 @@
     },
     "observations": {
       "default": "unknown",
+      "description": "El prompt nuevo devuelve unknown. Valores anteriores se conservan como notas narrativas revisables, nunca como decisión global.",
       "enum": [
         "independent",
         "paired",

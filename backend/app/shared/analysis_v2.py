@@ -95,7 +95,14 @@ class ContextHypothesis(V2Model):
     id: ID
     statement: Fact[Text]
     objective_id: ID | None = None
-    alternative: Alternative = "unspecified"
+    alternative: Alternative = Field(
+        default="unspecified",
+        description=(
+            "Antecedente opcional de dirección. Conservar H0/H1 como texto; confirmar "
+            "contexto no aprueba prueba unilateral. Resolver y confirmar comparación concreta "
+            "por intención."
+        ),
+    )
 
 
 class PendingQuestion(V2Model):
@@ -117,11 +124,21 @@ class ProjectContextV2(V2Model):
     hypotheses: list[ContextHypothesis] = Field(default_factory=list, max_length=40)
     study_description: Fact[Text] = Field(default_factory=Fact[Text])
     data_description: Fact[Text] = Field(default_factory=Fact[Text])
-    observational_unit: Fact[Text] = Field(default_factory=Fact[Text])
+    observational_unit: Fact[Text] = Field(
+        default_factory=Fact[Text],
+        description=(
+            "A quién o qué estudia la investigación en general; opcional. Cada tabla describe "
+            "sus filas en row_meaning."
+        ),
+    )
     sampling_notes: Fact[Text] = Field(default_factory=Fact[Text])
     design: Fact[Design] = Field(default_factory=lambda: Fact[Design](value="unknown"))
     observations: Fact[Observations] = Field(
-        default_factory=lambda: Fact[Observations](value="unknown")
+        default_factory=lambda: Fact[Observations](value="unknown"),
+        description=(
+            "Antecedente global legado. No establece independencia ni emparejamiento de una "
+            "intención."
+        ),
     )
     complementary_notes: list[Fact[Text]] = Field(default_factory=list, max_length=20)
     pending_questions: list[PendingQuestion] = Field(default_factory=list)
@@ -188,7 +205,13 @@ class AnalysisIntentV2(V2Model):
     hypothesis_id: ID | None = None
     variable_ids: list[ID] = Field(default_factory=list)
     roles: list[IntentRole] = Field(default_factory=list)
-    observations: Fact[Observations] = Field(default_factory=lambda: Fact(value="unknown"))
+    observations: Fact[Observations] = Field(
+        default_factory=lambda: Fact(value="unknown"),
+        description=(
+            "Decisión específica de esta intención: verificar tablas, variables, "
+            "identificación, orden y vinculación. No heredar confirmación global de C2."
+        ),
+    )
     paired_columns: PairedColumns | None = None
     group_column_id: ID | None = None
     alternative: Alternative = "unspecified"

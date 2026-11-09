@@ -6,7 +6,7 @@ from app.modules.research.context.import_models import (
     SuggestionCreate,
 )
 from app.modules.research.context.models import ContextPatch
-from app.modules.research.context.prompt import MASTER_PROMPT
+from app.modules.research.context.prompt import MASTER_PROMPT, PROMPT_VERSION
 from app.modules.research.context.suggestions import SuggestionService
 from app.modules.research.context.use_cases import ContextService
 from app.shared.analysis_v2 import ProjectContextV2
@@ -19,7 +19,11 @@ def create_router(service: ContextService) -> APIRouter:
     @router.get("/import-prompt")
     def prompt(project_id: str):
         service._require(project_id)
-        return {"format_version": "context-import-1.0", "prompt": MASTER_PROMPT}
+        return {
+            "format_version": "context-import-1.0",
+            "prompt_version": PROMPT_VERSION,
+            "prompt": MASTER_PROMPT,
+        }
 
     @router.post("/suggestions", response_model=ContextSuggestion, status_code=201)
     def create_suggestion(project_id: str, body: SuggestionCreate):

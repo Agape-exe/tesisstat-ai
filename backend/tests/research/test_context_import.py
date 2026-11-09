@@ -275,7 +275,9 @@ def test_duplicates_limits_forged_metadata_and_prompt(setup):
         )
 
 
-@pytest.mark.parametrize("name", ["ventas", "educacion", "encuesta-organizacional"])
+@pytest.mark.parametrize(
+    "name", ["ventas", "educacion", "encuesta-organizacional", "grupos-y-sesiones"]
+)
 def test_published_synthetic_examples_match_canonical_schema(name):
     from jsonschema import Draft202012Validator
 
@@ -321,3 +323,137 @@ def test_combined_capacity_null_selection_and_manual_note_trace(setup):
         updated["complementary_notes"][0]["provenance"]
         == result["complementary_notes"][0]["provenance"]
     )
+
+
+@pytest.mark.parametrize("legacy", ["paired", "independent", "repeated"])
+def test_mixed_study_relationship_is_narrative_not_global(setup, legacy):
+    client, url, _ = setup
+    root = Path(__file__).resolve().parents[3]
+    value = json.loads((root / "fixtures/context-import/grupos-y-sesiones.json").read_text("utf-8"))
+    value["observations"] = legacy
+    tables_url = url.removesuffix("context") + "data-tables"
+    tables_before = client.get(tables_url).json()
+    suggestion = create(client, url, value)
+    proposal = suggestion["proposal"]
+    assert proposal["observations"] == "unknown"
+    assert legacy in proposal["complementary_notes"][-1]
+    assert "anónimos" in proposal["study_description"]
+    assert "identificador" in proposal["study_description"]
+    assert "observations" not in candidates(ContextImport.model_validate(proposal))
+    blocked = apply(client, url, suggestion, ["observations"])
+    assert blocked.status_code == 422 and "cada análisis" in blocked.json()["error"]["message"]
+    assert client.get(url).json()["revision"] == 0
+    result = apply(client, url, suggestion, confirm=True).json()["result"]
+    assert result["observations"]["value"] == "unknown"
+    assert result["observations"]["confirmation"] is None
+    assert [h["statement"]["value"] for h in result["hypotheses"]] == [
+        h["statement"] for h in value["hypotheses"]
+    ]
+    assert [h["alternative"] for h in result["hypotheses"]] == ["unspecified", "unspecified"]
+    assert client.get(tables_url).json() == tables_before
+    assert apply(client, url, suggestion).json()["result"] == result
+
+
+def test_legacy_pending_preview_does_not_rewrite_original_or_allow_global_apply(setup):
+    client, url, settings = setup
+    suggestion = create(client, url)
+    with sqlite3.connect(settings.research_db_path) as connection:
+        original = json.loads(
+            connection.execute(
+                "SELECT payload FROM context_suggestions_v2 WHERE id=?", (suggestion["id"],)
+            ).fetchone()[0]
+        )
+        original["proposal"]["observations"] = "paired"
+        connection.execute(
+            "UPDATE context_suggestions_v2 SET payload=? WHERE id=?",
+            (json.dumps(original), suggestion["id"]),
+        )
+    preview = client.get(url + f"/suggestions/{suggestion['id']}").json()
+    assert preview["proposal"]["observations"] == "unknown"
+    assert "paired" in preview["proposal"]["complementary_notes"][0]
+    with sqlite3.connect(settings.research_db_path) as connection:
+        stored = json.loads(
+            connection.execute(
+                "SELECT payload FROM context_suggestions_v2 WHERE id=?", (suggestion["id"],)
+            ).fetchone()[0]
+        )
+    assert stored == original
+    assert apply(client, url, original, ["observations"]).status_code == 422
+    applied = apply(client, url, preview, ["main_objective", "complementary_notes/0"]).json()
+    assert applied["proposal"]["observations"] == "paired"
+    assert applied["result"]["observations"]["value"] == "unknown"
+    assert applied["result"]["complementary_notes"][0]["provenance"]["kind"] == "ai_suggestion"
+
+
+def test_preserve_legacy_context_and_directions_without_silent_migration(setup):
+    client, url, settings = setup
+    old = client.patch(
+        url,
+        json={
+            "expected_revision": 0,
+            "changes": {
+                "observational_unit": "Texto general anterior",
+                "observations": "paired",
+                "hypotheses": [{"statement": "H1: efecto favorable", "alternative": "less"}],
+            },
+            "confirm_fields": ["/observational_unit", "/observations", "/hypotheses/0/statement"],
+        },
+    ).json()
+    before = client.get(url + "/revisions").json()
+    with sqlite3.connect(settings.research_db_path) as connection:
+        rows_before = connection.execute(
+            "SELECT payload FROM research_context_revisions_v2"
+        ).fetchall()
+    current = client.get(url).json()
+    assert current["observations"] == old["observations"]
+    assert not any(
+        q["field"] in ("/observations", "/observational_unit") for q in current["pending_questions"]
+    )
+    assert "fila" not in " ".join(q["question"] for q in current["pending_questions"])
+    with sqlite3.connect(settings.research_db_path) as connection:
+        assert (
+            connection.execute("SELECT payload FROM research_context_revisions_v2").fetchall()
+            == rows_before
+        )
+    suggestion = create(client, url, {**response(), "observations": "independent"}, 1)
+    result = apply(client, url, suggestion, ["main_objective"]).json()["result"]
+    for name in ("observations", "observational_unit", "hypotheses"):
+        assert result[name] == old[name]
+    assert client.get(url + "/revisions").json()[1:] == before
+
+
+def test_legacy_relation_limit_is_explicit_and_prompt_is_scoped(setup):
+    client, url, _ = setup
+    normalized, _ = parse_response(json.dumps({**response(), "observations": "paired"}))
+    repeated, _ = parse_response(
+        json.dumps(
+            {
+                **response(),
+                "observations": "paired",
+                "complementary_notes": [normalized.complementary_notes[0].upper()],
+            }
+        )
+    )
+    assert len(repeated.complementary_notes) == 1
+    value = {
+        **response(),
+        "observations": "paired",
+        "complementary_notes": [str(i) for i in range(20)],
+    }
+    result = client.post(
+        url + "/suggestions", json={"expected_revision": 0, "response": json.dumps(value)}
+    )
+    assert result.status_code == 422 and "no se descartó" in result.json()["error"]["message"]
+    assert client.get(url + "/suggestions").json() == []
+    prompt = client.get(url + "/import-prompt").json()
+    assert prompt["prompt_version"] == "context-prompt-1.1"
+    for text in (
+        "row_meaning",
+        "observations=unknown",
+        "H0",
+        "H1",
+        "favorable",
+        "codificación",
+        "unspecified",
+    ):
+        assert text in prompt["prompt"]

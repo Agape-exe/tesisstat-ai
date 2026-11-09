@@ -112,6 +112,23 @@ it('derives saved and confirmed context without a global completion seal', async
   responses();
   expect(nextJourneyStep(await loadJourney(project))?.section).toBe('context');
 });
+it('does not count a legacy global relationship as research context progress', async () => {
+  const context = testContext(1);
+  context.observations = {
+    value: 'paired',
+    provenance: { kind: 'manual' },
+    confirmation: {
+      actor_ref: 'local',
+      confirmed_at: context.updated_at!,
+      revision: 1,
+    },
+  };
+  responses({ context });
+  const steps = await loadJourney(project);
+  expect(steps[0].state).toBe('Pendiente');
+  expect(steps[0].evidence).not.toContain('confirmados');
+  expect(context.observations.value).toBe('paired');
+});
 it('only counts current completed results and never assumes comprehension', async () => {
   const record = {
     plan: { research_package_id: 'pack', status: 'approved' },

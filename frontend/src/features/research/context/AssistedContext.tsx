@@ -7,13 +7,18 @@ import {
   type Suggestion,
 } from './api';
 import { textFields } from './draft';
+import {
+  unitHelp,
+  relationHelp,
+  directionHelp,
+  directionLabels,
+} from './semantics';
 import { navigateProject } from '../projects/navigation';
 
 const api = createContextApi();
 const labels: Record<string, string> = {
   ...textFields,
   design: 'Diseño',
-  observations: 'Relación entre observaciones',
   specific_objectives: 'Objetivo específico',
   hypotheses: 'Hipótesis',
   complementary_notes: 'Nota complementaria',
@@ -23,12 +28,6 @@ const designs = {
   observational: 'Observacional',
   experimental: 'Experimental',
   quasi_experimental: 'Cuasiexperimental',
-};
-const observations = {
-  unknown: 'No consta',
-  independent: 'Independientes',
-  paired: 'Pareadas',
-  repeated: 'Repetidas',
 };
 type Entry = {
   key: string;
@@ -50,11 +49,9 @@ function importEntries(
   original: ImportProposal = proposal,
 ): Entry[] {
   const entries: Entry[] = [];
-  for (const field of [
-    ...Object.keys(textFields),
-    'design',
-    'observations',
-  ] as (keyof typeof textFields | 'design' | 'observations')[]) {
+  for (const field of [...Object.keys(textFields), 'design'] as (
+    keyof typeof textFields | 'design'
+  )[]) {
     const value = proposal[field];
     if (original[field] && original[field] !== 'unknown')
       entries.push({
@@ -307,6 +304,13 @@ export function AssistedContext({
         <fieldset disabled={busy || disabled}>
           <legend>3. Comparar y elegir campos</legend>
           <p>
+            {relationHelp} Las respuestas anteriores con paired, independent o
+            repeated se ofrecen como notas y no como decisión global.
+          </p>
+          <p>
+            Las hipótesis son opcionales; puedes conservar H0 y H1 como texto.
+          </p>
+          <p>
             Origen: respuesta de IA · Estado: {states[suggestion.state]} ·
             Revisión base: {suggestion.base_revision}. Los elementos elegidos se
             añaden a las listas existentes.
@@ -368,13 +372,12 @@ export function AssistedContext({
                   {entry.field === 'design'
                     ? designs[entry.current as keyof typeof designs] ||
                       'Sin información'
-                    : entry.field === 'observations'
-                      ? observations[
-                          entry.current as keyof typeof observations
-                        ] || 'Sin información'
-                      : entry.current || 'Sin información'}
+                    : entry.current || 'Sin información'}
                 </span>
               </p>
+              {entry.field === 'observational_unit' && (
+                <p className="rp-hint">{unitHelp}</p>
+              )}
               {entry.duplicate && (
                 <p role="status">
                   Posible duplicado: ya existe este texto. Se conservará el
@@ -388,14 +391,12 @@ export function AssistedContext({
                 )}
               <label>
                 Valor propuesto: {labels[entry.field]}
-                {entry.field === 'design' || entry.field === 'observations' ? (
+                {entry.field === 'design' ? (
                   <select
                     value={entry.value}
                     onChange={(e) => edit(entry, e.target.value)}
                   >
-                    {Object.entries(
-                      entry.field === 'design' ? designs : observations,
-                    ).map(([v, label]) => (
+                    {Object.entries(designs).map(([v, label]) => (
                       <option value={v} key={v}>
                         {label}
                       </option>
@@ -445,7 +446,7 @@ export function AssistedContext({
                         </select>
                       </label>
                       <label>
-                        Dirección de la hipótesis
+                        Dirección de la hipótesis (opcional)
                         <select
                           value={h.alternative}
                           onChange={(e) => {
@@ -464,18 +465,14 @@ export function AssistedContext({
                             setConfirm(false);
                           }}
                         >
-                          {Object.entries({
-                            unspecified: 'No especificada',
-                            'two-sided': 'Bilateral',
-                            greater: 'Mayor',
-                            less: 'Menor',
-                          }).map(([v, l]) => (
+                          {Object.entries(directionLabels).map(([v, l]) => (
                             <option key={v} value={v}>
                               {l}
                             </option>
                           ))}
                         </select>
                       </label>
+                      <p className="rp-hint">{directionHelp}</p>
                     </>
                   );
                 })()}

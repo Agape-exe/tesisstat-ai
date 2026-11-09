@@ -146,7 +146,7 @@ it('preserves the draft on 409 and requires an explicit comparison before reappl
     confirm_fields: [],
   });
   expect(
-    screen.getByLabelText('Qué representa cada observación o fila'),
+    screen.getByLabelText('¿A quién o qué estudia la investigación?'),
   ).toHaveValue('Una venta');
 });
 
@@ -249,4 +249,87 @@ it('excludes unknown values from bulk confirmation and renders independent revis
   expect(
     screen.getByText('Objetivo general: Anterior · Sin confirmar'),
   ).toBeInTheDocument();
+});
+
+it('keeps general scope optional and legacy relations out of normal editing and bulk confirmation', async () => {
+  const initial = testContext(2, 'Estudio de grupos y sesiones');
+  initial.observational_unit.value = 'Participantes de dos grupos';
+  initial.observations = {
+    value: 'paired',
+    provenance: { kind: 'ai_suggestion' },
+    confirmation: {
+      actor_ref: 'local',
+      confirmed_at: '2026-11-09T12:00:00Z',
+      revision: 2,
+    },
+  };
+  initial.hypotheses = [
+    {
+      id: 'h0',
+      statement: {
+        value: 'H0: sin efecto favorable',
+        provenance: { kind: 'manual' },
+      },
+      alternative: 'less',
+      objective_id: null,
+    },
+  ];
+  const fetcher = vi.fn(async () => respond(initial));
+  vi.stubGlobal('fetch', fetcher);
+  render(
+    <ContextEditor projectId="synthetic" title="Mixto" initial={initial} />,
+  );
+  fireEvent.click(screen.getByText('2. Sobre el estudio y los datos'));
+  expect(
+    screen.getByLabelText('¿A quién o qué estudia la investigación?'),
+  ).toHaveValue('Participantes de dos grupos');
+  expect(
+    screen.getByText(
+      /Qué representa cada fila se define para cada tabla en Datos/,
+    ),
+  ).toBeVisible();
+  expect(
+    screen.queryByLabelText('Relación entre observaciones'),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByText('Antecedentes de relación entre observaciones'),
+  );
+  expect(
+    screen.getByText('Clasificación global anterior: Pareadas'),
+  ).toBeVisible();
+  const confirmation = screen.getByRole('region', {
+    name: 'Confirmación de información',
+  });
+  expect(
+    within(confirmation).queryByText(/Clasificación global anterior/),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByText('Objetivos específicos e hipótesis (opcionales)'),
+  );
+  const direction = screen.getByLabelText(
+    'Dirección de la hipótesis (opcional)',
+  );
+  expect(direction).toHaveValue('less');
+  expect(
+    within(direction).getByRole('option', { name: 'Pendiente de definir' }),
+  ).toBeInTheDocument();
+  expect(
+    within(direction).getByRole('option', {
+      name: 'Diferencia en cualquiera de los dos sentidos',
+    }),
+  ).toBeInTheDocument();
+  fireEvent.change(direction, { target: { value: 'unspecified' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Guardar información' }));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+  const options = (
+    fetcher.mock.calls as unknown as [string, RequestInit][]
+  )[0][1];
+  const body = JSON.parse(options.body as string);
+  expect(body.changes).not.toHaveProperty('observations');
+  expect(body.changes).not.toHaveProperty('observational_unit');
+  expect(body.changes.hypotheses[0]).toMatchObject({
+    id: 'h0',
+    statement: 'H0: sin efecto favorable',
+    alternative: 'unspecified',
+  });
 });

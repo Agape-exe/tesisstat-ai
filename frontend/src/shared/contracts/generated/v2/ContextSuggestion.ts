@@ -25,6 +25,9 @@ export type SpecificObjectives = ImportObjective[];
 export type Ref1 = string;
 export type Statement = string;
 export type ObjectiveRef = string | null;
+/**
+ * Detalle opcional: comparación y orden deben ser inequívocos. No inferir greater de mejora/efecto ni heredar dirección de H1 a H0. No aprueba una prueba unilateral.
+ */
 export type Alternative = "two-sided" | "greater" | "less" | "unspecified";
 /**
  * @maxItems 40
@@ -32,9 +35,15 @@ export type Alternative = "two-sided" | "greater" | "less" | "unspecified";
 export type Hypotheses = ImportHypothesis[];
 export type StudyDescription = string | null;
 export type DataDescription = string | null;
+/**
+ * A quién o qué estudia la investigación en general; opcional. No describe filas de tablas.
+ */
 export type ObservationalUnit = string | null;
 export type SamplingNotes = string | null;
 export type Design = "experimental" | "quasi_experimental" | "observational" | "unknown";
+/**
+ * El prompt nuevo devuelve unknown. Valores anteriores se conservan como notas narrativas revisables, nunca como decisión global.
+ */
 export type Observations = "independent" | "paired" | "repeated" | "unknown";
 /**
  * @maxItems 20
@@ -215,6 +224,9 @@ export type Id2 = string;
 export type SpecificObjectives1 = SpecificObjective[];
 export type Id3 = string;
 export type ObjectiveId = string | null;
+/**
+ * Antecedente opcional de dirección. Conservar H0/H1 como texto; confirmar contexto no aprueba prueba unilateral. Resolver y confirmar comparación concreta por intención.
+ */
 export type Alternative1 = "two-sided" | "greater" | "less" | "unspecified";
 /**
  * @maxItems 40
@@ -534,7 +546,7 @@ export interface ProjectContextV2 {
   hypotheses?: Hypotheses1;
   study_description?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
   data_description?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
-  observational_unit?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
+  observational_unit?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength20001;
   sampling_notes?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
   design?: FactLiteralExperimentalQuasiExperimentalObservationalUnknown;
   observations?: FactLiteralIndependentPairedRepeatedUnknown;
@@ -572,11 +584,22 @@ export interface ContextHypothesis {
   objective_id?: ObjectiveId;
   alternative?: Alternative1;
 }
+/**
+ * A quién o qué estudia la investigación en general; opcional. Cada tabla describe sus filas en row_meaning.
+ */
+export interface FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength20001 {
+  value?: Value;
+  provenance?: Provenance1;
+  confirmation?: Confirmation | null;
+}
 export interface FactLiteralExperimentalQuasiExperimentalObservationalUnknown {
   value?: Value1;
   provenance?: Provenance1;
   confirmation?: Confirmation | null;
 }
+/**
+ * Antecedente global legado. No establece independencia ni emparejamiento de una intención.
+ */
 export interface FactLiteralIndependentPairedRepeatedUnknown {
   value?: Value2;
   provenance?: Provenance1;

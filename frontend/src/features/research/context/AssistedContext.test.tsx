@@ -99,7 +99,9 @@ it('keeps existing value unselected, edits proposals, applies explicitly and doe
     screen.getByLabelText('Incorporar Objetivo general'),
   ).not.toBeChecked();
   expect(
-    screen.getByLabelText('Incorporar Qué representa cada observación o fila'),
+    screen.getByLabelText(
+      'Incorporar ¿A quién o qué estudia la investigación?',
+    ),
   ).toBeChecked();
   expect(
     screen.getByLabelText(
@@ -108,26 +110,30 @@ it('keeps existing value unselected, edits proposals, applies explicitly and doe
   ).not.toBeChecked();
   fireEvent.change(
     screen.getByLabelText(
-      'Valor propuesto: Qué representa cada observación o fila',
+      'Valor propuesto: ¿A quién o qué estudia la investigación?',
     ),
     { target: { value: '' } },
   );
   expect(
     screen.getByLabelText(
-      'Valor propuesto: Qué representa cada observación o fila',
+      'Valor propuesto: ¿A quién o qué estudia la investigación?',
     ),
   ).toHaveValue('');
   expect(
-    screen.getByLabelText('Incorporar Qué representa cada observación o fila'),
+    screen.getByLabelText(
+      'Incorporar ¿A quién o qué estudia la investigación?',
+    ),
   ).not.toBeChecked();
   fireEvent.change(
     screen.getByLabelText(
-      'Valor propuesto: Qué representa cada observación o fila',
+      'Valor propuesto: ¿A quién o qué estudia la investigación?',
     ),
     { target: { value: 'Una transacción' } },
   );
   fireEvent.click(
-    screen.getByLabelText('Incorporar Qué representa cada observación o fila'),
+    screen.getByLabelText(
+      'Incorporar ¿A quién o qué estudia la investigación?',
+    ),
   );
   fireEvent.click(
     screen.getByRole('button', { name: 'Aplicar y guardar seleccionados' }),
@@ -215,7 +221,9 @@ it('keeps preview on 409, fetches latest before creating a new review and clears
     screen.getByLabelText('Incorporar Objetivo general'),
   ).not.toBeChecked();
   expect(
-    screen.getByLabelText('Incorporar Qué representa cada observación o fila'),
+    screen.getByLabelText(
+      'Incorporar ¿A quién o qué estudia la investigación?',
+    ),
   ).not.toBeChecked();
 });
 
@@ -250,4 +258,76 @@ it('recovers persisted pending draft and shows actionable parse errors without c
   expect(screen.getByLabelText('Objetivo general')).toHaveValue(
     'Objetivo previo',
   );
+});
+
+it('reviews legacy relations as notes and keeps H0/H1 directions optional with consistent labels', async () => {
+  const mixed = {
+    ...proposal,
+    observational_unit: 'Personas de dos grupos',
+    study_description:
+      'Notas antes/después vinculables; cuestionarios anónimos por sesión sin vínculo.',
+    complementary_notes: [
+      'Clasificación de una respuesta anterior: paired (pareadas). Revisar por análisis.',
+    ],
+    hypotheses: [
+      {
+        ref: 'h0',
+        statement: 'H0: sin efecto favorable',
+        objective_ref: null,
+        alternative: 'unspecified',
+      },
+      {
+        ref: 'h1',
+        statement: 'H1: efecto favorable',
+        objective_ref: null,
+        alternative: 'unspecified',
+      },
+    ],
+  };
+  let body: Record<string, unknown> | null = null;
+  const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url.endsWith('/apply')) {
+      body = JSON.parse(options!.body as string);
+      return respond({
+        ...suggestion,
+        state: 'applied',
+        result: testContext(2, 'Describir ventas'),
+      });
+    }
+    return respond({ ...suggestion, proposal: mixed });
+  });
+  mount(fetcher);
+  await review();
+  expect(
+    screen.queryByLabelText('Incorporar Relación entre observaciones'),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText(/no como decisión global/)).toBeVisible();
+  expect(
+    screen.getByLabelText('Valor propuesto: Nota complementaria'),
+  ).toHaveValue(mixed.complementary_notes[0]);
+  const directions = screen.getAllByLabelText(
+    'Dirección de la hipótesis (opcional)',
+  );
+  for (const direction of directions)
+    expect(direction).toHaveValue('unspecified');
+  expect(
+    screen.getAllByRole('option', { name: 'Mayor que la referencia' }),
+  ).toHaveLength(2);
+  expect(
+    screen.getAllByText(/orden de los grupos o mediciones y la codificación/),
+  ).toHaveLength(2);
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: /Seleccionar todos los campos válidos/,
+    }),
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Aplicar y guardar seleccionados' }),
+  );
+  await screen.findByText('Campos incorporados y guardados.');
+  expect(body).toMatchObject({
+    proposal: { observations: 'unknown', hypotheses: mixed.hypotheses },
+    confirm: false,
+  });
+  expect(body!['selected_fields'] as string[]).not.toContain('observations');
 });

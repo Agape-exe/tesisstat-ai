@@ -11,6 +11,15 @@ S03A habilita archivos, hojas, tablas y contexto C3; S03B diccionario, perfil y 
 C4 conserva su estructura preparada para S04.
 Los seis contratos v1 y sus ejemplos permanecen intactos.
 
+Corrección de alcance S02B: `ProjectContextV2.observational_unit` es la entidad general
+estudiada (opcional); `TableContextV2.row_meaning` describe filas de UNA tabla. No se copian
+automáticamente. `ProjectContextV2.observations` es antecedente legado, con su procedencia,
+confirmación e historial intactos. Las intenciones S04 deben resolver sus relaciones y
+comparaciones propias; no heredan esa confirmación ni aprueban unilateralidad desde C2.
+Enums/formatos guardados se mantienen compatibles; cambios de esquema documentan semántica.
+Prompt `context-prompt-1.1` solicita observations=unknown; importador anterior 1.0 compatible
+propone notas para clasificaciones antiguas y bloquea aplicarlas globalmente.
+
 Desde backend: `python -m scripts.export_contracts` regenera ambas familias;
 `--check` comprueba actualidad. Desde frontend: `npm run contracts:generate` genera tipos
 v1 y subcarpeta `generated/v2`. No editar los JSON Schema ni TypeScript generados a mano.

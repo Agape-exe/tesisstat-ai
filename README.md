@@ -11,6 +11,9 @@ S03B añade diccionario, perfil completo y preparación/combinación opcional de
 S02B añade **Completar con ayuda de otro chat** en Contexto: prompt maestro, respuesta
 estructurada, revisión editable y aplicación seleccionada sin credenciales ni llamadas IA.
 El formulario manual sigue disponible. [Entrega y pruebas S02B](docs/sesiones/S02B.md).
+Contexto describe la investigación general; qué representa cada fila se define en Datos
+para cada tabla. Relaciones y comparaciones se revisarán por análisis en S04. El prompt 1.1
+conserva relaciones narrativas y no impone una clasificación global ni una prueba unilateral.
 El análisis v2 (S04) y el nuevo tutor siguen pendientes.
 
 Demostración local para conectar metodología revisada y datos de un proyecto con un

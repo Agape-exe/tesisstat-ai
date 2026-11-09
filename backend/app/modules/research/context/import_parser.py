@@ -119,11 +119,34 @@ def parse_response(text: str) -> tuple[ContextImport, list[str]]:
     if extra:
         raw["complementary_notes"] = notes
     try:
-        return ContextImport.model_validate(raw), extra
+        return normalize_observations(ContextImport.model_validate(raw)), extra
     except ValidationError as exc:
         fields = ["/" + "/".join(map(str, e["loc"])) for e in exc.errors()]
         details = "; ".join(e["msg"] for e in exc.errors())[:800]
         fail("Pide corregir los campos indicados según el prompt. " + details, fields)
+
+
+def normalize_observations(proposal: ContextImport) -> ContextImport:
+    """Adapt legacy import proposals, never persisted context or historical receipts."""
+    if proposal.observations == "unknown":
+        return proposal
+    labels = {"paired": "pareadas", "independent": "independientes", "repeated": "repetidas"}
+    note = (
+        f"Clasificación de una respuesta anterior: {proposal.observations} "
+        f"({labels[proposal.observations]}). Es un antecedente narrativo; "
+        "la relación debe revisarse para cada análisis con sus tablas y variables. "
+        "No establece emparejamiento ni independencia de todo el proyecto."
+    )
+    notes = list(proposal.complementary_notes)
+    if not any(n.casefold() == note.casefold() for n in notes):
+        if len(notes) >= 20:
+            fail(
+                "La relación anterior necesita una nota revisable y ya hay 20. "
+                "Integra esa información en la descripción del estudio y devuelve "
+                "observations=unknown; no se descartó información."
+            )
+        notes.append(note)
+    return proposal.model_copy(update={"observations": "unknown", "complementary_notes": notes})
 
 
 def candidates(proposal: ContextImport) -> dict[str, object]:
@@ -136,7 +159,6 @@ def candidates(proposal: ContextImport) -> dict[str, object]:
         "observational_unit",
         "sampling_notes",
         "design",
-        "observations",
     ):
         value = getattr(proposal, name)
         if value not in (None, "", "unknown"):

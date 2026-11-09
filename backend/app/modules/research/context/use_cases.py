@@ -60,19 +60,6 @@ def derive(context: ProjectContextV2) -> ProjectContextV2:
                 blocks="proposal",
             )
         )
-    for field, question in (
-        ("observational_unit", "¿Qué representa cada fila?"),
-        ("observations", "¿Las filas son independientes o hay mediciones relacionadas?"),
-    ):
-        if getattr(context, field).value in (None, "unknown"):
-            context.pending_questions.append(
-                PendingQuestion(
-                    code=field,
-                    field=f"/{field}",
-                    question=question,
-                    blocks="proposal",
-                )
-            )
     return context
 
 
@@ -97,7 +84,11 @@ class ContextService:
 
     def get(self, project_id: str) -> ProjectContextV2:
         project_id = self._require(project_id)
-        return self.repository.get(project_id) or derive(ProjectContextV2(project_id=project_id))
+        stored = self.repository.get(project_id)
+        # Refresh derived guidance without rewriting historical values or confirmations.
+        return derive(
+            stored.model_copy(deep=True) if stored else ProjectContextV2(project_id=project_id)
+        )
 
     def revisions(self, project_id: str) -> list[ProjectContextV2]:
         project_id = self._require(project_id)

@@ -19,7 +19,14 @@ class ImportHypothesis(V2Model):
     ref: LocalRef
     statement: Annotated[StrictStr, Field(min_length=1, max_length=2000)]
     objective_ref: LocalRef | None = None
-    alternative: Alternative = "unspecified"
+    alternative: Alternative = Field(
+        default="unspecified",
+        description=(
+            "Detalle opcional: comparación y orden deben ser inequívocos. No inferir greater "
+            "de mejora/efecto ni heredar dirección de H1 a H0. No aprueba una prueba "
+            "unilateral."
+        ),
+    )
 
 
 class ContextImport(V2Model):
@@ -31,10 +38,22 @@ class ContextImport(V2Model):
     hypotheses: list[ImportHypothesis] = Field(default_factory=list, max_length=40)
     study_description: InputText | None = None
     data_description: InputText | None = None
-    observational_unit: InputText | None = None
+    observational_unit: InputText | None = Field(
+        default=None,
+        description=(
+            "A quién o qué estudia la investigación en general; opcional. No describe filas "
+            "de tablas."
+        ),
+    )
     sampling_notes: InputText | None = None
     design: Design = "unknown"
-    observations: Observations = "unknown"
+    observations: Observations = Field(
+        default="unknown",
+        description=(
+            "El prompt nuevo devuelve unknown. Valores anteriores se conservan como notas "
+            "narrativas revisables, nunca como decisión global."
+        ),
+    )
     complementary_notes: list[Annotated[StrictStr, Field(min_length=1, max_length=2000)]] = Field(
         default_factory=list, max_length=20
     )

@@ -267,3 +267,11 @@ Autorizar proyecto y pertenencia del hijo en todos los GET/POST y RLS; el ID no 
 No almacenar texto original ni tesis, solo propuesta normalizada y trazabilidad acotada.
 Origen de IA permanece al confirmar/corregir; el recibo y el historial permiten auditarlo.
 Sin nuevo proveedor, autenticación, despliegue ni cambios de los seis contratos v1.
+
+La corrección de alcance S02B no migra hechos ni históricos: observational_unit general
+es opcional; row_meaning sigue en cada tabla C3. observations global es antecedente legado,
+no confirmación heredable por intenciones. El adaptador de sugerencias proyecta propuestas
+pending/stale antiguas a nota/unknown solo en la vista, conservando su original y recibos.
+Aplicación rechaza seleccionar observations en servidor, incluidas solicitudes alteradas.
+Persistencia remota debe preservar esta distinción sin reescribir valores/confirmaciones
+al migrar ni vincular tablas por nombres. S04 comprobará cada comparación concreta.
