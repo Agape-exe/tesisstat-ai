@@ -239,3 +239,19 @@ entrega paralela pendiente; no se afirma aislamiento de usuarios remotos desde p
 Garantías reales de publicación y comando de recuperación de manifiestos:
 [API de fuentes](../backend/app/modules/research/sources/README.md). Adaptadores remotos
 deberán conservar pertenencia y referencias padre/hijo y extender RLS al árbol completo.
+
+## Recursos C3 incorporados en S03B
+
+`research/data_workspace/` adapta importadas y derivadas a DatasetRefV2 table_json, sin
+alterar datasets v1. `TableReadPort` comprueba proyecto, inclusión de antecesores, revisión y
+hash esperados antes de devolver todas las filas. S04 consume ese puerto, diccionario y perfil
+vigentes; S06 aún no incorpora filas ni facts automáticamente al tutor.
+
+Persistencia remota deberá añadir `data_workspace_revisions_v2` (diccionario/perfil/preview/
+recibo histórico) y `derived_content_v2` (contenido completo), con CAS y UNIQUE proyecto/preview,
+además de originales/objetos S03A. En SQLite se publican derivado, recibo y diccionario en una
+transacción. No trasladar esa garantía a Storage+Postgres sin protocolo de publicación.
+El derivado referencia todos sus padres y diccionarios, linaje completo y receta confirmada;
+el acceso remoto debe aplicar scope al árbol entero. Hash table-json-v1 y formatos JSON son
+explícitos; no reutilizar el hash research-dataset-v1 para estos bytes. No hay nueva aprobación
+ni ejecución v2 en esta entrega. Detalle: [API S03B](../backend/app/modules/research/data_workspace/README.md).

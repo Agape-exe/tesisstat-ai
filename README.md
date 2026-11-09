@@ -7,7 +7,8 @@ Para el siguiente trabajo rigen los acuerdos de S00 del 9 de noviembre de 2026:
 El [informe S00](docs/sesiones/S00.md) registra los acuerdos y el
 [informe S01](docs/sesiones/S01.md) documenta la creación mínima y el nuevo Inicio.
 S02 implementa contexto persistente y S03A incorpora archivos/hojas/tablas y contexto por tabla.
-Diccionario/preparación v2 (S03B), análisis nuevo y tutor siguen pendientes.
+S03B añade diccionario, perfil completo y preparación/combinación opcional de esas tablas.
+El análisis v2 (S04) y el nuevo tutor siguen pendientes.
 
 Demostración local para conectar metodología revisada y datos de un proyecto con un
 análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.
@@ -58,8 +59,12 @@ Puedes reincorporarlas sin subir el original otra vez. Cada tabla tiene vista pr
 completos y contexto opcional editable, con confirmación explícita y conflicto recuperable.
 Los originales se conservan y se pueden descargar con su hash verificado.
 
-No hay unión de hojas ni transformación implícita. El diccionario, exploración y preparación
-opcional de estas tablas corresponden a S03B. Las herramientas v1 de perfil/preparación
+Desde **Revisar datos y variables** puedes calcular un perfil completo por tabla, guardar
+un diccionario parcial y confirmar sus campos. En **Preparar o combinar (opcional)** puedes
+crear derivados o combinar antes/después por identificador exacto, con conteos, vista previa
+y confirmación humana. Originales intactos; ningún aviso transforma datos automáticamente.
+No necesitas contexto, documento ni hipótesis para explorar, ni limpiar para continuar.
+Las herramientas v1 de perfil/preparación
 permanecen bajo **Herramientas anteriores de datasets**; sus rutas siguen vigentes y XLSX v1
 continúa leyendo solo la primera hoja. Abrir una tabla v2 no cambia el dataset activo v1.
 El chat/analizador actual todavía no consume el contexto por tabla.
@@ -68,7 +73,11 @@ Ejemplos: [Excel sintético](fixtures/data/s03a/mediciones-sinteticas.xlsx) y
 [CSV independiente](fixtures/data/s03a/medicion-independiente.csv). Desde backend,
 `python -m scripts.create_s03a_examples` los regenera de forma reproducible.
 API, límites y recuperación: [fuentes C3](backend/app/modules/research/sources/README.md).
-Pruebas y evidencia visual: [S03A](docs/sesiones/S03A.md).
+Pruebas y evidencia visual: [S03A](docs/sesiones/S03A.md) y [S03B](docs/sesiones/S03B.md).
+Ejemplos antes/después y claves problemáticas: `fixtures/data/s03b/`.
+[API, persistencia y recursos para S04](backend/app/modules/research/data_workspace/README.md).
+Las propuestas y ejecución para estas tablas nuevas corresponden a S04; el análisis v1
+conserva su recorrido actual. Inicio muestra evidencia y pendientes reales al volver de Datos.
 
 ## Iniciar la aplicación
 

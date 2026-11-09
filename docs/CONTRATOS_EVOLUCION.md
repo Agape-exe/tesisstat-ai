@@ -51,15 +51,15 @@ fixtures v1 intactos, ejemplos v2 válidos y rechazo de versiones no admitidas (
 | Fecha / hash | Fecha UTC RFC3339 del servidor; hash SHA-256 hexadecimal minúscula de 64 caracteres; no rutas/URLs firmadas en snapshots |
 | Valores | JSON estricto sin campos adicionales; números finitos; texto recortado; texto opcional desconocido=null, listas vacías=[]; enums usan unknown; nunca string vacío como evidencia |
 | Provenance | `{kind: manual|document|ai_suggestion|derived|unknown, source_refs: SourceRef[]}`; documento exige referencia+hash; IA no se vuelve manual al confirmar; derived exige fuente/algoritmo; unknown no tiene referencias |
-| SourceRef | `{kind: project|context|dataset|dictionary|intent|profile|diagnostic|document|instrument|mapping|score|plan|result|source_file|source_sheet|table|table_context, id: ID, revision: int>=1, hash: Hash}`; hash de contenido canónico/bytes, no secreto |
+| SourceRef | `{kind: project|context|dataset|dictionary|intent|profile|diagnostic|document|instrument|mapping|score|plan|result|source_file|source_sheet|table|table_context|preparation, id: ID, revision: int>=1, hash: Hash}`; hash de contenido canónico/bytes, no secreto |
 | Confirmation | `null` o `{actor_ref: ID, confirmed_at: DateTime, revision: int>=1}` emitido por servidor para esa revisión; actor del principal validado, o actor local etiquetado en modo local; nunca tomado del body |
 | Fact<T> | `{value:T|null, provenance:Provenance, confirmation:Confirmation|null}`; unknown enum es valor explícito desconocido y no confirmado; valor IA pendiente no es evidencia confirmada |
 | Snapshot | `schema_version, id, project_id, revision, created_at, source_refs`; inmutable; un cambio crea nueva revisión/ID según contrato, no reescribe evidencia histórica |
 
 `hash` de recursos JSON = SHA256 de UTF-8 JSON canónico (claves ordenadas recursivamente,
 separadores compactos, Unicode sin escape, números finitos; versión de canonicalización
-`json-sort-v1`). En recursos editables se excluyen hash propio, fechas y confirmation del
-contenido a hashear; las confirmaciones apuntan a la revisión. En dataset reutilizar
+`json-sort-v1`). En recursos editables se excluyen hash propio, fechas, confirmation y field_confirmations del
+contenido a hashear; las confirmaciones apuntan a la revisión. En dataset legado reutilizar
 `compute_dataset_hash` y registrar `hash_algorithm="research-dataset-v1"`; no intercambiarlo
 con SHA256 de solo bytes. SourceRef no se acepta como prueba enviada por cliente: resolverlo
 en servidor y verificar pertenencia, revisión y hash. Sin ciclos entre fuentes.
@@ -201,49 +201,73 @@ S03B consume IDs de tabla/columna, lectura completa local, extracción, hashes y
 confirmado con revisiones; debe crear derivados y nuevas referencias sin mutar originales.
 S04/S06 resolverán estas fuentes: el chat/analizador actual no consume este contexto.
 
-### Diseño de S03B pendiente
+### Extensión implementada S03B
 
-CSV/XLSX, límites y preparación existentes se reutilizan; no cambiar fuente in situ.
-`DatasetRefV2`: id, project_id, revision, hash, hash_algorithm, format=csv|xlsx,
-row_count:int>=0, columns:`{id:ID,name:string,position:int>=0}[]`, sheet:string|null,
-synthetic:bool|null, source_dataset_id:ID|null, preparation_ref:SourceRef|null.
-`synthetic=null` significa no declarado: permite carga/perfil local, bloquea cálculo que
-requiere autorización hasta declararlo. No incluir bytes, filas ni location física en snapshot
-público. IDs de columna estables dentro de una revisión; no asumir correspondencia por posición.
+Se resuelve la adaptación antes de habilitar consumidores: `DatasetRefV2` representa tablas
+importadas/derivadas con `format=table_json`, revisión inmutable, columnas UUID, hash
+`table-json-v1`, `source_refs` completos y `synthetic:bool|null`. No se etiqueta una extracción
+JSON como CSV/XLSX inexistente. `research-dataset-v1` queda reservado para datasets legados y
+`compute_dataset_hash` permanece intacto. `preparation_ref` apunta a la receta inmutable por
+hash `json-sort-v1`; SourceRef amplía el enum v2 con `preparation`. No hay ciclos de hashes.
 
-`VariableDictionaryV2`: schema_version, project_id, id, revision, dataset_ref, updated_at,
-`variables: VariableV2[]` (puede ser [] mientras se explora).
-VariableV2: id; name:Fact<string 1–200>; description:Fact<string máx.2000>;
-measurement_scale:Fact<nominal|ordinal|interval|ratio|unknown>;
-column_ids:ID[] (vacío=mapeo pendiente); storage_type=string|integer|number|boolean|date|mixed|unknown
-(evidencia derivada del perfil, no escala humana); category_order:string[] (default [],
-exigida para ordinal cuando los códigos no expresen orden confirmado);
-missing_markers:string[] (default ["", "NA", "N/A", "null", "none"], comparación trim/casefold);
-possible_identifier:bool derivado, identifier_confirmed:Fact<bool> default null.
-Roles pertenecen a la intención, no son una propiedad universal de la variable.
+Modelos canónicos `shared/data_workspace_v2.py`: `DatasetRefV2`, `VariableDictionaryV2`,
+`TableProfileV2`, `TableRecipeV2`, `PreparationPreviewV2`, `DerivedTableV2`. Se generan
+esquemas/tipos y ejemplos mediante scripts existentes y `export_workspace_examples`.
 
-GET/PUT `P/datasets/{id}/dictionary`; PUT `{expected_revision,variables:[...]}` sustituye
-definiciones de esta revisión con facts de entrada value/provenance controlada por servidor
-y `confirm_fields` al nivel del body como C2. Variables no seleccionadas pueden seguir unknown.
-Columnas inexistentes, IDs duplicados o vínculos ajenos: 422/404; revisión/hash antiguo: 409.
-Una variable escalar usa una columna; multicolumna se permite para pares/ítems únicamente con
-semántica en C4/C6; no sumar columnas tácitamente. Identificadores no entran al cálculo/chat.
+El diccionario usa una variable escalar por columna con ID estable servidor, nombre y
+confirmaciones Fact de descripción/escala/identificador. `column_ids` tiene 0–1 elementos;
+0 es vínculo pendiente. Escalas nominal, ordinal, interval, ratio, unknown; storage_type
+inicial desconocido, sin inferir escala desde tipo numérico. Listas de orden de categorías
+y marcadores (default vacío/NA/N/A/null/none), indicio de identificador y `field_confirmations`
+para vínculo/orden/política. Boolean false confirmado es conocido. No hay roles globales.
+Puede guardarse parcial, sin descripciones obligatorias ni confirmación automática. Orden
+ordinal confirmado cubre categorías observadas no faltantes; no lo inventan los códigos.
 
-Después de preparación: nuevo dataset/ref/diccionario. Renombre con receta conserva la
-relación explícita old_column_id→new_column_id; eliminación deja variable sin vínculo y
-pending_question; no emparejar nombres parecidos. Confirmación de nueva escala/mapeo exige
-revisión humana. Históricos conservan sus refs. GET/POST de perfil/preparación legados
-siguen sus contratos actuales; la capa v2 normaliza a C4 sin alterar v1.
+Decisión sobre operaciones: GET/PATCH `P/data-tables/{id}/dictionary` sustituye el PUT
+completo diseñado en S00. PATCH `{expected_revision,dataset_revision,dataset_hash,changes,
+confirm_fields}` conserva lo omitido, permite null/borrar y retira confirmaciones afectadas.
+Changes se indexa por variable UUID; confirm_fields usa `/variables/{id}/{campo}`.
+No recibe procedencia/actor/fechas/confirmación del cliente. CAS en SQLite; 409 con borrador
+recuperable por proyecto/tabla. GET de históricos conserva revisiones/ref aun con exclusión.
 
-Ejemplo sintético de cambio de escala/mapeo, fragmento de `variables` (no request completo):
+`P/data-tables` lista referencias importadas incluidas y derivadas; GET `.../{id}/preview`
+consulta 20 filas reales. GET perfil consulta evidencia persistida; POST `.../{id}/profile`
+con `{dataset_revision,dataset_hash,confirm:true}` calcula todas las filas mediante adaptador
+del motor EDA existente. GET `.../dictionary/revisions` y `.../profile/revisions` conserva
+históricos. El perfil almacena versiones/método, política por columna, fórmula como texto,
+fuentes/hash y configuración/diccionario. Confirmar escalas no equivale a perfil vigente:
+una revisión de diccionario o de fuentes lo vuelve stale hasta cálculo explícito. No hay
+normalidad, inferencia, IA ni recomendaciones nuevas. Desconocidos/nominales/ordinales se
+resumen con frecuencias; cuantitativas confirmadas admiten resumen numérico acotado válido.
 
-```json
-{"id":"33333333-3333-4333-8333-333333333333","column_ids":["44444444-4444-4444-8444-444444444444"],"measurement_scale":{"value":"nominal"}}
-```
+POST `P/table-preparations/preview` recibe receta explícita prepare|join. Join exige dos
+tablas distintas del proyecto, una clave por tabla, columnas elegidas, nombres únicos y
+política matches_only|all_cases. exact-text-v1 conserva ceros/espacios/mayúsculas; faltantes
+no se emparejan; duplicados de clave bloquean uno a uno. Preview muestra conteos completos,
+hasta 20 filas de salida/casos sin pareja y referencias de filas; vence a los 30 minutos.
+POST `.../apply` con `{preview_id,recipe_hash,confirm:true}` revalida fuentes/configuración,
+receta/versión y resultado; reintento idempotente por proyecto/preview. Nunca rellena notas
+con cero, une por posición, descarta claves repetidas ni afirma causalidad/mejora.
 
-`P/datasets/{id}/profile` GET lee último perfil y POST `{dataset_revision, confirm:true}`
-solicita perfil determinista explícito; perfil no afirma revisión de escalas. Consentimiento
-para cálculo con datos no sintéticos se rige por integración, además de propiedad.
+Preparación acotada: renombrar/eliminar columnas, eliminar filas con faltantes/duplicados
+solo tras receta confirmada, reemplazo constante explícito. Reutiliza el motor existente.
+El derivado tiene tabla/contenido y diccionario propios, todas las fuentes y linajes de
+columnas/filas completos. Renombre conserva relación por ID; eliminación deja vínculo
+pendiente. No se heredan confirmaciones. Contexto de origen queda referenciado, sin asumir
+misma población/diseño ni crear hipótesis o metodología. Sintético se propaga conservadoramente;
+propiedad, consentimiento IA y aprobación del análisis siguen separados.
+
+`WorkspaceService.read_table` implementa `TableReadPort`: lectura completa con proyecto,
+revisión/hash esperados, bytes y todos los padres/inclusión comprobados. S04 debe usar ese
+puerto y resolver diccionario/perfil vigentes; no reinterpretar JSON como archivo ni usar
+las primeras filas como dataset. GET de recibo histórico no habilita su cálculo si está stale.
+
+Persistencia SQLite nueva: `data_workspace_revisions_v2` y `derived_content_v2`. Derivado
+completo, recibo y diccionario se publican juntos; fallo revierte la transacción, clave
+UNIQUE garantiza reintento. Límites de salida 50 000 filas, 200 columnas, 10 MiB del JSON.
+Los objetos S03A siguen en filesystem con sus manifiestos; no hay atomicidad distribuida.
+Detalle de garantías, métodos y recursos para S04:
+[API S03B](../backend/app/modules/research/data_workspace/README.md).
 
 ## C4 — Intención, perfil, diagnóstico y snapshot (S02 estructura; S04 comportamiento)
 
@@ -288,6 +312,16 @@ ni filas a IA. `AnalysisProfile` derivado para una intención añade complete_ca
 excluded_count, group_counts:`{label,count}[]`, complete_pair_count:int|null,
 expected_frequencies:number[][]|null, warnings; referencia perfil/dataset/diccionario/intención.
 Conteos por grupo/pares deben usar los mismos casos que cálculo final.
+
+Concreción S03B: esa evidencia por tabla se publica como `TableProfileV2` (sin intención).
+Para la proyección DatasetProfile de S04: total_rows←rows, duplicate_rows←duplicates,
+valid_count←present, missing_count←missing, unique_count←distinct y
+algorithm_version←engine_version. column_id/storage_type/constant/possible_identifier y
+warnings se conservan; dataset_ref/dictionary_ref/políticas/hash/revisión vinculan la evidencia.
+S03B no construye AnalysisProfile por intención, grupos/pares efectivos ni DiagnosticV2.
+Para tablas JSON, el puerto de bytes previsto abajo se sustituye por TableReadPort completo;
+Statistics recibe sus filas autorizadas, sin simular un CSV/XLSX. El puerto legado no cambia.
+
 
 `DiagnosticV2`: schema_version, id, project_id, revision=1, source_refs, created_at,
 intent_id, scope:`{column_ids:ID[],checks:string[],missing_policy:"complete_cases",alpha:number}`,
