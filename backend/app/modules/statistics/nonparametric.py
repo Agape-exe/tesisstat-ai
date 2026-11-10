@@ -205,13 +205,14 @@ def wilcoxon(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
     tie_counts: dict[float, int] = {}
     for value in (abs(item) for item in differences):
         tie_counts[value] = tie_counts.get(value, 0) + 1
+    # Each tie block contributes (t^3-t)/2; singleton ranks subtract nothing.
     variance = (
         count * (count + 1) * (2 * count + 1)
-        - sum(size * (size + 1) * (2 * size + 1) / 2 for size in tie_counts.values())
+        - sum(size**3 - size for size in tie_counts.values()) / 2
     ) / 24
     z_statistic = max(0.0, abs(statistic - count * (count + 1) / 4) - 0.5) / variance**0.5
     absolute_differences = [abs(item) for item in differences]
-    exact = count <= 20 and not _has_ties(absolute_differences)
+    exact = count <= 20 and len(differences) == len(x) and not _has_ties(absolute_differences)
     warnings: tuple[str, ...] = ()
     if exact:
         p_value = _exact_wilcoxon_p_value(ranks, statistic)

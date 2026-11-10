@@ -156,7 +156,7 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
         ? 'Error al comprobar propuestas o vigencia de fuentes.'
         : proposed
           ? 'Existe una propuesta vigente guardada; su existencia no acredita que la hayas revisado.'
-          : 'El análisis actual requiere la preparación documental y vinculaciones del recorrido existente.',
+          : 'En Análisis puedes guardar una pregunta, elegir una tabla y solicitar diagnósticos sin documento ni hipótesis. Las nuevas propuestas y ejecución corresponden a S04B.',
       section: 'analysis',
       view: 'plan',
     },

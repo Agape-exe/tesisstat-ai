@@ -189,6 +189,46 @@
           ],
           "default": null,
           "title": "Requested Technique"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "observational_unit": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "identification": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "comparison_notes": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
+        "linkage": {
+          "$ref": "#/$defs/Fact_Literal__same_row____unavailable____unknown___"
+        },
+        "identifier_column_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identifier Column Id"
         }
       },
       "required": [
@@ -375,6 +415,44 @@
         }
       },
       "title": "Fact[Literal['nominal', 'ordinal', 'interval', 'ratio', 'unknown']]",
+      "type": "object"
+    },
+    "Fact_Literal__same_row____unavailable____unknown___": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "enum": [
+                "same_row",
+                "unavailable",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "confirmation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Confirmation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Fact[Literal['same_row', 'unavailable', 'unknown']]",
       "type": "object"
     },
     "Fact_Literal__yes____no____unknown___": {

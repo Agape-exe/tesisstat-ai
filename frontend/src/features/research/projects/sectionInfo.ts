@@ -45,7 +45,7 @@ export const sectionInfo: Record<
   analysis: {
     title: 'Análisis estadístico',
     description:
-      'Revisa la técnica propuesta y sus condiciones antes de cualquier ejecución.',
+      'Define tu pregunta, elige datos y revisa diagnósticos antes de decidir una técnica.',
     icon: 'chart',
   },
   results: {

@@ -31,7 +31,8 @@ def test_wilcoxon_uses_average_ranks_for_tied_absolute_differences():
     assert result.metrics["w_positive"] == 0
     assert result.metrics["w_negative"] == 3
     assert result.metrics["w"] == 0
-    assert isclose(result.metrics["p_value"], 0.2059032107320683)
+    # Var(W+) = (30 - (2**3 - 2)/2) / 24 = 1.125, continuity 0.5.
+    assert isclose(result.metrics["p_value"], 0.34577858615116025)
     assert "aproximación normal" in result.warnings[0]
 
 

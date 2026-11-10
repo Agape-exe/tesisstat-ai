@@ -5,10 +5,12 @@ import json
 from pathlib import Path
 
 from app.modules.research.context.import_models import IMPORT_MODELS
+from app.modules.research.intents.models import DiagnosticRequest, IntentPatch
 from app.shared.analysis_v2 import V2_CONTRACT_MODELS
 from app.shared.contracts import CONTRACT_MODELS
 from app.shared.data_sources_v2 import DATA_SOURCE_MODELS
 from app.shared.data_workspace_v2 import WORKSPACE_MODELS
+from app.shared.diagnostics_v2 import DIAGNOSTIC_MODELS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -26,7 +28,18 @@ def main() -> None:
     args = parser.parse_args()
     for version, models in (
         ("v1", CONTRACT_MODELS),
-        ("v2", (*V2_CONTRACT_MODELS, *DATA_SOURCE_MODELS, *WORKSPACE_MODELS, *IMPORT_MODELS)),
+        (
+            "v2",
+            (
+                *V2_CONTRACT_MODELS,
+                *DATA_SOURCE_MODELS,
+                *WORKSPACE_MODELS,
+                *IMPORT_MODELS,
+                *DIAGNOSTIC_MODELS,
+                IntentPatch,
+                DiagnosticRequest,
+            ),
+        ),
     ):
         output = ROOT / "contracts" / version
         output.mkdir(parents=True, exist_ok=True)

@@ -158,6 +158,12 @@ def describe_numeric(values: list[str | None]) -> NumericSummary:
         "p75": _quantile_type_7(ordered, 0.75),
         "p100": _quantile_type_7(ordered, 1),
     }
+    if any(
+        not math.isfinite(v)
+        for v in [fmean(ordered), *quantiles.values()]
+        + ([variance, standard_deviation] if variance is not None else [])
+    ):
+        raise ValueError("El resumen excede la precisión numérica disponible.")
     return NumericSummary(
         valid_count=len(ordered),
         missing_count=missing_count,

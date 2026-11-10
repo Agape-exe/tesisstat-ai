@@ -25,6 +25,19 @@ class TechniqueResult:
     metrics: dict[str, float]
     warnings: tuple[str, ...] = ()
 
+    def __post_init__(self):
+        if self.technique in {
+            "pearson",
+            "spearman",
+            "t_welch",
+            "t_independent",
+            "t_paired",
+            "mann_whitney",
+            "wilcoxon",
+            "cronbach_alpha",
+        } and any(not math.isfinite(value) for value in self.metrics.values()):
+            raise StatisticalCalculationError("El cálculo excede la precisión numérica disponible.")
+
 
 def _number(value: object) -> float | None:
     if value is None or (isinstance(value, str) and is_missing(value)):
@@ -58,6 +71,16 @@ def _pearson(left: Sequence[float], right: Sequence[float]) -> float:
     right_mean = sum(right) / len(right)
     centered_left = [value - left_mean for value in left]
     centered_right = [value - right_mean for value in right]
+    if not all(math.isfinite(v) for v in centered_left + centered_right):
+        raise StatisticalCalculationError("La correlación excede la precisión numérica disponible.")
+    left_scale = max(abs(v) for v in centered_left)
+    right_scale = max(abs(v) for v in centered_right)
+    if not left_scale or not right_scale:
+        raise StatisticalCalculationError(
+            "La correlación no está definida para una columna constante."
+        )
+    centered_left = [v / left_scale for v in centered_left]
+    centered_right = [v / right_scale for v in centered_right]
     numerator = sum(a * b for a, b in zip(centered_left, centered_right, strict=True))
     left_sum = sum(value * value for value in centered_left)
     right_sum = sum(value * value for value in centered_right)
@@ -66,7 +89,7 @@ def _pearson(left: Sequence[float], right: Sequence[float]) -> float:
         raise StatisticalCalculationError(
             "La correlación no está definida para una columna constante."
         )
-    return numerator / denominator
+    return max(-1.0, min(1.0, numerator / denominator))
 
 
 def _fisher_interval(correlation: float, count: int) -> tuple[float, float] | None:
@@ -114,6 +137,9 @@ def pearson(left: Sequence[object], right: Sequence[object]) -> TechniqueResult:
         )
     else:
         metrics["r_ci_95_low"], metrics["r_ci_95_high"] = interval
+    if abs(correlation) == 1:
+        metrics.pop("t_statistic")
+        warnings += ("Correlación perfecta: t no es finito y se omite; p bilateral límite = 0.",)
     return TechniqueResult("pearson", metrics, warnings)
 
 
@@ -168,6 +194,9 @@ def spearman(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
             "El IC 95 % de Spearman usa una transformación Fisher-z asintótica sobre rho; "
             "es aproximado, especialmente con empates o muestras pequeñas."
         )
+    if abs(rho) == 1:
+        metrics.pop("t_statistic")
+        warnings.append("Correlación perfecta: t no es finito y se omite; p asintótico límite = 0.")
     return TechniqueResult("spearman", metrics, tuple(warnings))
 
 
@@ -312,4 +341,6 @@ def cronbach_alpha(rows: Sequence[Sequence[object]]) -> TechniqueResult:
     return TechniqueResult(
         "cronbach_alpha",
         {"n": float(len(complete)), "items": float(width), "alpha": alpha},
+        ("Alfa describe consistencia interna, no demuestra validez ni unidimensionalidad.",)
+        + (("Alfa negativo: revisa codificación y coherencia de los ítems.",) if alpha < 0 else ()),
     )

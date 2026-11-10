@@ -92,5 +92,43 @@
       "confirmation": null
     }
   },
-  "requested_technique": null
+  "requested_technique": null,
+  "dataset_id": null,
+  "observational_unit": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "identification": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "comparison_notes": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "linkage": {
+    "value": "unknown",
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "identifier_column_id": null
 }

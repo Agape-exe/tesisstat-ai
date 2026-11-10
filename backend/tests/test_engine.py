@@ -43,7 +43,7 @@ def test_engine_executes_approved_descriptive_plan_end_to_end():
     result = _engine().execute(_plan())
 
     assert result.status == "completed"
-    assert result.engine_version == "statistics-engine-v1"
+    assert result.engine_version == "statistics-engine-v2.0.0"
     metrics = {metric.name: metric.value for metric in result.metrics}
     assert metrics["score.mean"] == 20
     assert metrics["score.sample_variance"] == 100

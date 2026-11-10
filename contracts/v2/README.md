@@ -1,5 +1,11 @@
 # Familia v2: contexto, fuentes e intención/snapshot
 
+S04A habilita intenciones y diagnósticos: `DiagnosticV2`, `IntentPatch`, `DiagnosticRequest`
+y extensiones opcionales de AnalysisIntentV2 para tabla/unidad/identificación/vínculo.
+Canónicos en `shared/diagnostics_v2.py` y `research/intents/models.py`, generados por los
+mismos scripts. [API y garantías](../../backend/app/modules/research/intents/README.md).
+Snapshots/propuestas/aprobación/ejecución v2 siguen pendientes de S04B.
+
 S02B añade `ContextImport`, `ContextSuggestion`, `SuggestionCreate` y `SuggestionApply`,
 canónicos en `research/context/import_models.py`. El formato externo context-import-1.0
 no es un DTO de Facts persistidos: referencias locales se traducen a UUIDs por el servidor,

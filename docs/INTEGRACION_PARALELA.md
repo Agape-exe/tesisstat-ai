@@ -268,6 +268,16 @@ No almacenar texto original ni tesis, solo propuesta normalizada y trazabilidad 
 Origen de IA permanece al confirmar/corregir; el recibo y el historial permiten auditarlo.
 Sin nuevo proveedor, autenticación, despliegue ni cambios de los seis contratos v1.
 
+## Recurso C4 incorporado en S04A
+
+Persistencia debe incluir `analysis_evidence_v2` (intenciones revisionadas y diagnósticos
+inmutables), con scope de proyecto y CAS. Puerto `EvidenceStore`; adaptador local
+`SQLiteEvidenceStore`. Publicación de diagnósticos relee dependencias bajo la misma transacción
+que INSERT; el adaptador remoto deberá dar una garantía equivalente frente a escritores de
+fuentes/diccionario/perfil/intención. Freshness se proyecta al leer sin actualizar históricos.
+No reutilizar confirmación de intención o diagnóstico como aprobación de plan. No hay nueva
+ejecución v2 ni despliegue. [Detalle y límites S04A](sesiones/S04A.md).
+
 La corrección de alcance S02B no migra hechos ni históricos: observational_unit general
 es opcional; row_meaning sigue en cada tabla C3. observations global es antecedente legado,
 no confirmación heredable por intenciones. El adaptador de sugerencias proyecta propuestas

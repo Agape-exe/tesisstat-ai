@@ -229,6 +229,14 @@ class AnalysisIntentV2(V2Model):
     ] = "unknown"
     conditions: IntentConditions = Field(default_factory=IntentConditions)
     requested_technique: ID | None = None
+    dataset_id: ID | None = None
+    observational_unit: Fact[Text] = Field(default_factory=Fact[Text])
+    identification: Fact[Text] = Field(default_factory=Fact[Text])
+    comparison_notes: Fact[Text] = Field(default_factory=Fact[Text])
+    linkage: Fact[Literal["same_row", "unavailable", "unknown"]] = Field(
+        default_factory=lambda: Fact(value="unknown")
+    )
+    identifier_column_id: ID | None = None
 
     @model_validator(mode="after")
     def references(self) -> "AnalysisIntentV2":

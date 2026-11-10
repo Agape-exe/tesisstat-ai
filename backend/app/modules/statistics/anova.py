@@ -148,7 +148,7 @@ def _pairwise_result(
 def tukey(
     groups: Sequence[Sequence[object]], labels: Sequence[str] | None = None
 ) -> TechniqueResult:
-    """Return pooled-error pairwise mean differences for Tukey HSD."""
+    """Legacy ID: pooled-error t pairs + Bonferroni, NOT a full Tukey HSD."""
 
     parsed = _groups(groups)
     names = _labels(len(parsed), labels)
@@ -183,7 +183,7 @@ def tukey(
 def games_howell(
     groups: Sequence[Sequence[object]], labels: Sequence[str] | None = None
 ) -> TechniqueResult:
-    """Return heteroscedastic pairwise differences for Games–Howell."""
+    """Legacy ID: Welch pairs + Bonferroni, NOT a full Games–Howell procedure."""
 
     parsed = _groups(groups)
     names = _labels(len(parsed), labels)

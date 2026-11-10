@@ -230,7 +230,9 @@ it('reads persisted evidence without computing and computes only on explicit act
   expect(
     screen.getByRole('region', { name: 'Perfil exploratorio completo' }),
   ).toHaveTextContent('30');
-  expect(screen.getByText(/S04 incorporará propuestas/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/solicitar diagnósticos para estas tablas/),
+  ).toBeInTheDocument();
 });
 
 it('invalidates a join preview after recipe changes and blocks duplicate-key confirmation', async () => {
