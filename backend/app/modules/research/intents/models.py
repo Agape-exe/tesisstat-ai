@@ -14,7 +14,23 @@ from app.shared.analysis_v2 import (
 from app.shared.diagnostics_v2 import CheckName
 
 
+class ConditionChanges(V2Model):
+    linearity: Literal["yes", "no", "unknown"] | None = None
+    monotonicity: Literal["yes", "no", "unknown"] | None = None
+    comparable_group_shapes: Literal["yes", "no", "unknown"] | None = None
+    difference_symmetry: Literal["yes", "no", "unknown"] | None = None
+    pooled_variance_justified: Literal["yes", "no", "unknown"] | None = None
+    inference_reviewed: Literal["yes", "no", "unknown"] | None = None
+    influence_reviewed: Literal["yes", "no", "unknown"] | None = None
+    sampling_limit_accepted: Literal["yes", "no", "unknown"] | None = None
+    review_notes: Text | None = None
+
+
 class IntentChanges(V2Model):
+    objective_id: ID | None = None
+    hypothesis_id: ID | None = None
+    requested_technique: ID | None = None
+    conditions: ConditionChanges | None = None
     kind: Literal["descriptive", "association", "comparison", "reliability", "unknown"] | None = (
         None
     )

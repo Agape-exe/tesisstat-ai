@@ -46,6 +46,42 @@
   },
   "estimand": "summary",
   "conditions": {
+    "inference_reviewed": {
+      "value": "unknown",
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "influence_reviewed": {
+      "value": "unknown",
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "sampling_limit_accepted": {
+      "value": "unknown",
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "review_notes": {
+      "value": null,
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
     "linearity": {
       "value": "unknown",
       "provenance": {

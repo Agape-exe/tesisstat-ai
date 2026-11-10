@@ -19,7 +19,8 @@ FACTS = {
 
 
 class IntentService:
-    def __init__(self, workspace, repository: EvidenceStore):
+    def __init__(self, workspace, repository: EvidenceStore, contexts=None):
+        self.contexts = contexts
         self.workspace = workspace
         self.repository = repository
 
@@ -62,9 +63,22 @@ class IntentService:
             # Any edited intention needs its analysis-specific relation reviewed anew.
             for field in FACTS:
                 getattr(current, field).confirmation = None
+            for condition in type(current.conditions).model_fields:
+                getattr(current.conditions, condition).confirmation = None
             for field in patch.changes.model_fields_set:
                 value = getattr(patch.changes, field)
-                if field in FACTS:
+                if field == "conditions":
+                    if value is None:
+                        current.conditions = type(current.conditions)()
+                    else:
+                        for name in value.model_fields_set:
+                            raw = getattr(value, name)
+                            setattr(
+                                current.conditions,
+                                name,
+                                Fact(value=raw or None, provenance=Provenance(kind="manual")),
+                            )
+                elif field in FACTS:
                     setattr(
                         current,
                         field,
@@ -78,6 +92,16 @@ class IntentService:
                 current = AnalysisIntentV2.model_validate(current.model_dump())
             except ValidationError:
                 fail("Revisa el tipo, variables y propósito de este análisis.")
+            context = self.contexts.get(project_id) if self.contexts else None
+            if current.objective_id and (
+                not context
+                or current.objective_id not in {o.id for o in context.specific_objectives}
+            ):
+                fail("El objetivo debe existir en el Contexto de este proyecto.")
+            if current.hypothesis_id and (
+                not context or current.hypothesis_id not in {h.id for h in context.hypotheses}
+            ):
+                fail("La hipótesis debe existir en el Contexto de este proyecto.")
             if current.dataset_id:
                 dataset, _ = self.workspace.read_table(project_id, current.dataset_id)
                 dictionary = self.workspace.dictionary(project_id, dataset.id, dataset)
@@ -109,6 +133,10 @@ class IntentService:
                 current.confirmation = confirmation
                 for field in FACTS:
                     fact = getattr(current, field)
+                    if fact.value not in (None, "", "unknown"):
+                        fact.confirmation = confirmation
+                for name in type(current.conditions).model_fields:
+                    fact = getattr(current.conditions, name)
                     if fact.value not in (None, "", "unknown"):
                         fact.confirmation = confirmation
             self.repository.put(

@@ -54,3 +54,23 @@ S04B consumirá `IntentService`, `DiagnosticService.resolve/get/list`, `Evidence
 de nuevo al proponer/aprobar/ejecutar y construir AnalysisSnapshotV2 en servidor. Debe reutilizar
 las mismas políticas de selección de casos; no fabricar paquetes/hipótesis v1, inferir técnica
 por n=50 o p de normalidad, ni reutilizar confirmaciones como aprobación final.
+
+## C5 incorporado en S04B
+
+`orchestration.analysis_v2_service.AnalysisServiceV2` consume este servicio, el puerto
+TableReadPort y `EvidenceStore`. C5 registra snapshot/propuesta, autorización local de
+fuentes, aprobación explícita, reserva transaccional, intentos y resultados. Los tipos
+canónicos adicionales viven en `shared/plans_v2.py`; rutas bajo `P/analysis`.
+
+`IntentPatch` añade `objective_id`, `hypothesis_id`, `requested_technique` y cambios
+parciales de `conditions`; roles ya disponibles se editan también en la interfaz.
+Se verifican vínculos reales al Contexto del mismo proyecto. Condiciones nuevas:
+`inference_reviewed`, `influence_reviewed`, `sampling_limit_accepted`, `review_notes`.
+Confirmación siempre servidor. Guardar una nueva revisión retira las confirmaciones
+anteriores y deja obsoletas sus evidencias dependientes; no altera payloads aprobados.
+
+`statistics.planning_v2` es la política reutilizable por el futuro tutor.
+`statistics.diagnostics.select_cases` comparte casos efectivos con `execution_v2`.
+Wilcoxon conserva pares completos y además informa n sin ceros: used/excluded C5 reflejan
+el contraste, mientras el perfil diagnóstico mantiene complete_pair_count y zero_difference_count.
+Detalle, límites, recuperación de reservas y evidencia: [S04B](../../../../../docs/sesiones/S04B.md).

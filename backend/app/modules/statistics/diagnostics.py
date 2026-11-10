@@ -66,30 +66,7 @@ def evaluate(intent, dataset, dictionary, rows, requested):
         )
     if not _confirmed(intent.identification):
         notes.append("Explica cómo reconoces cada entidad y si puede aparecer en varias filas.")
-    complete, missing_count, invalid_count = [], 0, 0
-    for row in rows:
-        if not variables or len(variables) != len(selected):
-            missing_count += 1
-            continue
-        if any(_missing(row[columns[c].position], v.missing_markers) for c, v in variables.items()):
-            missing_count += 1
-            continue
-        converted = {}
-        invalid = False
-        for c, v in variables.items():
-            value = row[columns[c].position]
-            if _quantitative(v):
-                try:
-                    value = float(value)
-                    if not math.isfinite(value):
-                        invalid = True
-                except (ValueError, OverflowError):
-                    invalid = True
-            converted[c] = value
-        if invalid:
-            invalid_count += 1
-        else:
-            complete.append((row, converted))
+    complete, missing_count, invalid_count = select_cases(intent, dataset, dictionary, rows)
     effective = [r for _, r in complete]
     profile = AnalysisProfileV2(
         total_rows=len(rows),
@@ -143,7 +120,8 @@ def evaluate(intent, dataset, dictionary, rows, requested):
             )
         else:
             skip(
-                "group_sizes", "No se seleccionó una variable de grupo; no se deduce por su nombre."
+                "group_sizes",
+                "No se seleccionó una variable de grupo; no se deduce por su nombre.",
             )
 
     paired = intent.paired_columns
@@ -267,7 +245,10 @@ def evaluate(intent, dataset, dictionary, rows, requested):
                     )
                 else:
                     skip(
-                        check, "La precisión numérica no permite calcular Shapiro–Wilk.", target, n
+                        check,
+                        "La precisión numérica no permite calcular Shapiro–Wilk.",
+                        target,
+                        n,
                     )
             elif check == "distribution":
                 try:
@@ -417,3 +398,35 @@ def evaluate(intent, dataset, dictionary, rows, requested):
                 )
     profile.warnings = notes.copy()
     return profile, checks, figures, notes
+
+
+def select_cases(intent, dataset, dictionary, rows):
+    by_id = {v.id: v for v in dictionary.variables}
+    selected = [by_id[v] for v in intent.variable_ids]
+    columns = {c.id: c for c in dataset.columns}
+    variables = {v.column_ids[0]: v for v in selected if len(v.column_ids) == 1}
+    complete, missing_count, invalid_count = [], 0, 0
+    for row in rows:
+        if not variables or len(variables) != len(selected):
+            missing_count += 1
+            continue
+        if any(_missing(row[columns[c].position], v.missing_markers) for c, v in variables.items()):
+            missing_count += 1
+            continue
+        converted = {}
+        invalid = False
+        for c, v in variables.items():
+            value = row[columns[c].position]
+            if _quantitative(v):
+                try:
+                    value = float(value)
+                    if not math.isfinite(value):
+                        invalid = True
+                except (ValueError, OverflowError):
+                    invalid = True
+            converted[c] = value
+        if invalid:
+            invalid_count += 1
+        else:
+            complete.append((row, converted))
+    return complete, missing_count, invalid_count

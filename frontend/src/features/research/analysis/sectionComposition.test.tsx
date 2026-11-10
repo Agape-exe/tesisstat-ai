@@ -1,3 +1,10 @@
+vi.mock('./v2api', () => ({
+  createAnalysisV2Api: () => ({
+    plans: async () => [],
+    results: async () => [],
+  }),
+  techniqueLabels: {},
+}));
 import {
   act,
   fireEvent,

@@ -33,7 +33,7 @@
       "kind": "intent",
       "id": "00000002-0000-4000-8000-000000000000",
       "revision": 1,
-      "hash": "d474529777550a561dbd00f4f8f27519dea3bd5e04551feac2151e6dd5becb9e"
+      "hash": "84f631af0ca7cdc035dccdb21b1ab0a3606fb225651ced006384ebe2afddd018"
     }
   ],
   "context_ref": {
@@ -58,7 +58,7 @@
     "kind": "intent",
     "id": "00000002-0000-4000-8000-000000000000",
     "revision": 1,
-    "hash": "d474529777550a561dbd00f4f8f27519dea3bd5e04551feac2151e6dd5becb9e"
+    "hash": "84f631af0ca7cdc035dccdb21b1ab0a3606fb225651ced006384ebe2afddd018"
   },
   "profile_ref": {
     "kind": "profile",
@@ -166,6 +166,42 @@
     },
     "estimand": "summary",
     "conditions": {
+      "inference_reviewed": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "influence_reviewed": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "sampling_limit_accepted": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "review_notes": {
+        "value": null,
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
       "linearity": {
         "value": "unknown",
         "provenance": {
@@ -252,5 +288,7 @@
     },
     "identifier_column_id": null
   },
-  "source_fingerprint": "9759d9cde7d59ad52790b49e95acd0e3fb59a00d5bc5de541aceeaf2fdf1284e"
+  "source_fingerprint": "20994aa95d254227d3946f9be754cb46e4922646b7e918fe612300a980f8d401",
+  "dependency_fields": [],
+  "policy_versions": {}
 }

@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "proposal_token": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Proposal Token",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "proposal_token",
+    "request_id"
+  ],
+  "title": "ExecutionRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ExecutionRequest.schema.json"
+}

@@ -28,7 +28,8 @@ export type Kind =
   | "source_sheet"
   | "table"
   | "table_context"
-  | "preparation";
+  | "preparation"
+  | "snapshot";
 export type Id1 = string;
 export type Revision1 = number;
 export type Hash = string;
@@ -86,6 +87,7 @@ export type DatasetId = string | null;
 export type Value5 = ("same_row" | "unavailable" | "unknown") | null;
 export type IdentifierColumnId = string | null;
 export type SourceFingerprint = string;
+export type DependencyFields = string[];
 
 export interface AnalysisSnapshotV2 {
   schema_version?: SchemaVersion;
@@ -106,6 +108,8 @@ export interface AnalysisSnapshotV2 {
   variables: Variables;
   intent: AnalysisIntentV2;
   source_fingerprint: SourceFingerprint;
+  dependency_fields?: DependencyFields;
+  policy_versions?: PolicyVersions;
 }
 export interface SourceRef {
   kind: Kind;
@@ -197,6 +201,10 @@ export interface PairedColumns {
   after_column_id: AfterColumnId;
 }
 export interface IntentConditions {
+  inference_reviewed?: FactLiteralYesNoUnknown;
+  influence_reviewed?: FactLiteralYesNoUnknown;
+  sampling_limit_accepted?: FactLiteralYesNoUnknown;
+  review_notes?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
   linearity?: FactLiteralYesNoUnknown;
   monotonicity?: FactLiteralYesNoUnknown;
   comparable_group_shapes?: FactLiteralYesNoUnknown;
@@ -212,4 +220,7 @@ export interface FactLiteralSameRowUnavailableUnknown {
   value?: Value5;
   provenance?: Provenance;
   confirmation?: Confirmation | null;
+}
+export interface PolicyVersions {
+  [k: string]: string;
 }

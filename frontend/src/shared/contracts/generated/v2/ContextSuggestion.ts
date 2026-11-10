@@ -208,7 +208,8 @@ export type Kind1 =
   | "source_sheet"
   | "table"
   | "table_context"
-  | "preparation";
+  | "preparation"
+  | "snapshot";
 export type Id1 = string;
 export type Revision1 = number;
 export type Hash = string;

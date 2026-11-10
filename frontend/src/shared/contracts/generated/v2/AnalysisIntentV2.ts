@@ -32,7 +32,8 @@ export type Kind2 =
   | "source_sheet"
   | "table"
   | "table_context"
-  | "preparation";
+  | "preparation"
+  | "snapshot";
 export type Id1 = string;
 export type Revision1 = number;
 export type Hash = string;
@@ -136,6 +137,10 @@ export interface PairedColumns {
   after_column_id: AfterColumnId;
 }
 export interface IntentConditions {
+  inference_reviewed?: FactLiteralYesNoUnknown;
+  influence_reviewed?: FactLiteralYesNoUnknown;
+  sampling_limit_accepted?: FactLiteralYesNoUnknown;
+  review_notes?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
   linearity?: FactLiteralYesNoUnknown;
   monotonicity?: FactLiteralYesNoUnknown;
   comparable_group_shapes?: FactLiteralYesNoUnknown;

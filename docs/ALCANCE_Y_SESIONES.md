@@ -190,3 +190,11 @@ Los paquetes paralelos se delimitan en integración; su división detallada se d
 preparación/combinación opcional mediante fuentes reales S03A y derivados. El nuevo puerto
 TableReadPort y los recursos C3 quedan disponibles para S04, sin ejecución de análisis v2.
 Importar o generar un perfil no acredita revisión completa; transformar nunca es requisito.
+
+## Entrega S04B
+
+Implementados selector determinista por intención, propuestas C5 persistidas, autorización
+local de fuentes, aprobación humana y ejecución separada con resultados/historial.
+Análisis y Resultados permiten completar el recorrido sin documento ni hipótesis;
+Inicio deriva evidencia de varios análisis. Evidencia y límites en [S04B](sesiones/S04B.md).
+Revisión de instrumentos S05 y tutor/presentación/exportaciones unificadas S06 siguen pendientes.
