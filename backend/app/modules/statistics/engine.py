@@ -35,7 +35,7 @@ from .service import describe_table
 class DeterministicStatisticalEngine:
     """Execute only techniques explicitly implemented by this engine version."""
 
-    VERSION = "statistics-engine-v1"
+    VERSION = "statistics-engine-v2.0.0"
     _IMPLEMENTED_TECHNIQUES = frozenset(
         {
             "descriptive_summary",
@@ -91,7 +91,7 @@ class DeterministicStatisticalEngine:
                 if plan.technique == "descriptive_summary"
                 else self._calculate(plan.technique, self._inputs.get(plan.id))
             )
-        except (OSError, ValueError, StatisticalCalculationError) as error:
+        except (OSError, ValueError, OverflowError, StatisticalCalculationError) as error:
             return self._failed(plan, str(error))
 
         metrics = self._metrics(descriptions)

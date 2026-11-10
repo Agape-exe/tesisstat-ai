@@ -28,8 +28,6 @@ def _group(values: Sequence[object]) -> list[float]:
 
 def _t_statistic(mean_difference: float, standard_error: float) -> float:
     if standard_error == 0:
-        if mean_difference == 0:
-            return 0.0
         raise StatisticalCalculationError("La diferencia no tiene error estándar definido.")
     return mean_difference / standard_error
 

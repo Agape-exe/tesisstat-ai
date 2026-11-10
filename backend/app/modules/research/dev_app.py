@@ -67,6 +67,8 @@ from app.modules.research.instrument.repository import (
 from app.modules.research.instrument.routes import create_router as create_instrument_router
 from app.modules.research.instrument.service import InstrumentService
 from app.modules.research.instrument.sqlite_repository import SQLiteInstrumentRepository
+from app.modules.research.intents.repository import SQLiteEvidenceStore
+from app.modules.research.intents.service import IntentService
 from app.modules.research.methodology.review import ReviewService
 from app.modules.research.methodology.routes import create_router as create_methodology_router
 from app.modules.research.methodology.service import (
@@ -93,6 +95,8 @@ from app.orchestration.analysis_repository import SQLiteAnalysisRepository
 from app.orchestration.analysis_routes import create_router as create_analysis_router
 from app.orchestration.analysis_routes import local_only
 from app.orchestration.analysis_service import ResearchAnalysisService
+from app.orchestration.diagnostic_routes import create_router as create_diagnostic_router
+from app.orchestration.diagnostic_service import DiagnosticService
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
 from app.orchestration.statistics_routes import create_statistics_router
 from app.shared.adapters.cloudflare import CloudflareLanguageModel
@@ -140,7 +144,7 @@ def create_app(
         raise RuntimeError("La API de demostración solo admite APP_ENV=development.")
     if repository is None:
         repository = SQLiteProjectRepository(settings.research_db_path)
-    app = FastAPI(title="TesisStat Research — development only", version="0.2.0")
+    app = FastAPI(title="TesisStat Research — development only", version="0.3.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -422,6 +426,12 @@ def create_app(
     workspace = WorkspaceService(sources, WorkspaceRepository(settings.research_db_path))
     app.state.data_workspace_service = workspace
     app.include_router(create_workspace_router(workspace))
+    evidence_store = SQLiteEvidenceStore(settings.research_db_path)
+    intents = IntentService(workspace, evidence_store)
+    diagnostics = DiagnosticService(intents, workspace, evidence_store)
+    app.state.intent_service = intents
+    app.state.diagnostic_service = diagnostics
+    app.include_router(create_diagnostic_router(intents, diagnostics))
     app.include_router(
         create_context_router(
             ContextService(
@@ -566,7 +576,7 @@ def create_app(
 
     @app.get("/health")
     def health() -> dict[str, str]:
-        return {"status": "ok", "service": "research-dev", "version": "0.2.0"}
+        return {"status": "ok", "service": "research-dev", "version": "0.3.0"}
 
     return app
 

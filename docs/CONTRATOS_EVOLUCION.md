@@ -346,6 +346,16 @@ Detalle de garantías, métodos y recursos para S04:
 
 ## C4 — Intención, perfil, diagnóstico y snapshot (S02 estructura; S04 comportamiento)
 
+Concreción S04A: [informe](sesiones/S04A.md) y
+[API ejecutable](../backend/app/modules/research/intents/README.md). AnalysisIntentV2 añade
+`dataset_id` opcional (tabla analítica importada o derivada), Facts `observational_unit`,
+`identification`, `comparison_notes`, `linkage=same_row|unavailable|unknown` y
+`identifier_column_id` opcional. Un derivado conserva todos sus padres; no hay unión implícita
+en análisis. DiagnosticV2 añade `profile` de casos efectivos, `figures` numéricas y proyección
+`state/stale_reason` al consultar, sin mutar el payload histórico. La política numérica
+bilateral validada es `priority-numerics-1.0.0`; diagnóstico `diagnostics-1.0.0`.
+S04B sigue pendiente: selección/propuestas/snapshots/aprobación/ejecución v2.
+
 Research posee intención/snapshot de fuentes; Statistics el perfil diagnóstico y reglas de
 selección; Orchestration coordina/persiste la evaluación. UI/chat consumen DTOs públicos.
 

@@ -2,7 +2,6 @@
 
 import json
 import sqlite3
-import sys
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -234,11 +233,10 @@ def test_completed_pearson_sends_only_calculated_metrics_and_plan_provenance(cas
         "n": 4.0,
         "r": 1.0,
         "degrees_of_freedom": 2.0,
-        "t_statistic": sys.float_info.max,
         "p_value": 0.0,
     }
-    # Perfect correlation: the engine stores a finite sentinel for divergent t
-    # and a numeric boundary p-value, not a claim of an exactly null probability.
+    # Perfect correlation: S04A omits divergent t and preserves the numeric
+    # boundary p-value with a warning; no fabricated finite sentinel reaches chat.
     persisted = case.builder.analyses.repository.list(case.project_id)[0].result
     assert persisted.id == result.id
     assert [m.model_dump() for m in persisted.metrics] == expected
@@ -559,7 +557,6 @@ def test_category_metrics_and_identifier_column_metrics_are_excluded(case):
         "n",
         "r",
         "p_value",
-        "t_statistic",
         "degrees_of_freedom",
     }
     assert "PersonaSecreta" not in json.dumps(source.data)

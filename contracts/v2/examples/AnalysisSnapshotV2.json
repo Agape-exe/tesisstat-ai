@@ -33,7 +33,7 @@
       "kind": "intent",
       "id": "00000002-0000-4000-8000-000000000000",
       "revision": 1,
-      "hash": "72b4ccc354d663f787821d5e55a94b6f99b7dcbe39a4f013cb3aba9956d4857d"
+      "hash": "d474529777550a561dbd00f4f8f27519dea3bd5e04551feac2151e6dd5becb9e"
     }
   ],
   "context_ref": {
@@ -58,7 +58,7 @@
     "kind": "intent",
     "id": "00000002-0000-4000-8000-000000000000",
     "revision": 1,
-    "hash": "72b4ccc354d663f787821d5e55a94b6f99b7dcbe39a4f013cb3aba9956d4857d"
+    "hash": "d474529777550a561dbd00f4f8f27519dea3bd5e04551feac2151e6dd5becb9e"
   },
   "profile_ref": {
     "kind": "profile",
@@ -212,7 +212,45 @@
         "confirmation": null
       }
     },
-    "requested_technique": null
+    "requested_technique": null,
+    "dataset_id": null,
+    "observational_unit": {
+      "value": null,
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "identification": {
+      "value": null,
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "comparison_notes": {
+      "value": null,
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "linkage": {
+      "value": "unknown",
+      "provenance": {
+        "kind": "unknown",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "identifier_column_id": null
   },
-  "source_fingerprint": "bf99cd5a27202b4fa622c53201b3cf4153911a922d4bc57c1f0265ee6829d9df"
+  "source_fingerprint": "9759d9cde7d59ad52790b49e95acd0e3fb59a00d5bc5de541aceeaf2fdf1284e"
 }

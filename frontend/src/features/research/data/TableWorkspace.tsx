@@ -104,9 +104,10 @@ export function TableWorkspace({
       <div className="rp-surface data-continue">
         <h3>Continuar a Análisis</h3>
         <p>
-          No necesitas transformar datos que ya están listos. S04 incorporará
-          propuestas, diagnósticos y ejecución para estas tablas; el análisis
-          actual conserva su recorrido documental v1.
+          No necesitas transformar datos que ya están listos. Análisis permite
+          guardar preguntas y solicitar diagnósticos para estas tablas. Las
+          nuevas propuestas y ejecución llegarán en S04B; el análisis actual
+          conserva su recorrido documental v1.
         </p>
         <button onClick={() => navigateProject(projectId, 'analysis')}>
           Ir a Análisis

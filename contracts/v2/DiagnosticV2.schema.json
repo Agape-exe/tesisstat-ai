@@ -1,0 +1,474 @@
+{
+  "$defs": {
+    "AnalysisProfileV2": {
+      "additionalProperties": false,
+      "properties": {
+        "total_rows": {
+          "minimum": 0,
+          "title": "Total Rows",
+          "type": "integer"
+        },
+        "complete_case_count": {
+          "minimum": 0,
+          "title": "Complete Case Count",
+          "type": "integer"
+        },
+        "excluded_count": {
+          "minimum": 0,
+          "title": "Excluded Count",
+          "type": "integer"
+        },
+        "excluded_missing_count": {
+          "minimum": 0,
+          "title": "Excluded Missing Count",
+          "type": "integer"
+        },
+        "excluded_invalid_count": {
+          "minimum": 0,
+          "title": "Excluded Invalid Count",
+          "type": "integer"
+        },
+        "group_counts": {
+          "items": {
+            "$ref": "#/$defs/GroupCountV2"
+          },
+          "title": "Group Counts",
+          "type": "array"
+        },
+        "complete_pair_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Complete Pair Count"
+        },
+        "zero_difference_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zero Difference Count"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "total_rows",
+        "complete_case_count",
+        "excluded_count",
+        "excluded_missing_count",
+        "excluded_invalid_count"
+      ],
+      "title": "AnalysisProfileV2",
+      "type": "object"
+    },
+    "DiagnosticCheckV2": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "complete_cases",
+            "group_sizes",
+            "paired_cases",
+            "distribution",
+            "normality",
+            "homogeneity",
+            "influence"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "method_version": {
+          "title": "Method Version",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "case_count": {
+          "minimum": 0,
+          "title": "Case Count",
+          "type": "integer"
+        },
+        "statistic": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Statistic"
+        },
+        "p_value": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "P Value"
+        },
+        "status": {
+          "enum": [
+            "compatible",
+            "incompatible",
+            "not_checked"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "details": {
+          "minLength": 1,
+          "title": "Details",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "method",
+        "method_version",
+        "target",
+        "case_count",
+        "status",
+        "details"
+      ],
+      "title": "DiagnosticCheckV2",
+      "type": "object"
+    },
+    "DiagnosticFigureV2": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "histogram",
+            "qq",
+            "scatter"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "x_label": {
+          "title": "X Label",
+          "type": "string"
+        },
+        "y_label": {
+          "title": "Y Label",
+          "type": "string"
+        },
+        "x": {
+          "items": {
+            "type": "number"
+          },
+          "title": "X",
+          "type": "array"
+        },
+        "y": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Y",
+          "type": "array"
+        },
+        "details": {
+          "title": "Details",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "x_label",
+        "y_label",
+        "x",
+        "y",
+        "details"
+      ],
+      "title": "DiagnosticFigureV2",
+      "type": "object"
+    },
+    "DiagnosticScopeV2": {
+      "additionalProperties": false,
+      "properties": {
+        "column_ids": {
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Column Ids",
+          "type": "array"
+        },
+        "checks": {
+          "items": {
+            "enum": [
+              "complete_cases",
+              "group_sizes",
+              "paired_cases",
+              "distribution",
+              "normality",
+              "homogeneity",
+              "influence"
+            ],
+            "type": "string"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "missing_policy": {
+          "const": "complete_cases",
+          "default": "complete_cases",
+          "title": "Missing Policy",
+          "type": "string"
+        },
+        "alpha": {
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Alpha",
+          "type": "number"
+        }
+      },
+      "required": [
+        "column_ids",
+        "checks",
+        "alpha"
+      ],
+      "title": "DiagnosticScopeV2",
+      "type": "object"
+    },
+    "GroupCountV2": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "label",
+        "count"
+      ],
+      "title": "GroupCountV2",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "revision": {
+      "const": 1,
+      "default": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "intent_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/DiagnosticScopeV2"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "not_calculable",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "algorithm_version": {
+      "title": "Algorithm Version",
+      "type": "string"
+    },
+    "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/DiagnosticCheckV2"
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "profile": {
+      "$ref": "#/$defs/AnalysisProfileV2"
+    },
+    "figures": {
+      "items": {
+        "$ref": "#/$defs/DiagnosticFigureV2"
+      },
+      "title": "Figures",
+      "type": "array"
+    },
+    "state": {
+      "default": "current",
+      "enum": [
+        "current",
+        "stale"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "stale_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stale Reason"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "source_refs",
+    "created_at",
+    "intent_id",
+    "scope",
+    "status",
+    "algorithm_version",
+    "engine_version",
+    "checks",
+    "warnings",
+    "profile"
+  ],
+  "title": "DiagnosticV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/DiagnosticV2.schema.json"
+}

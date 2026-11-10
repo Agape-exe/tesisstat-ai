@@ -120,14 +120,14 @@ _TECHNIQUES = (
     ),
     TechniqueDefinition(
         "tukey",
-        "Tukey HSD",
+        "Aproximación t por pares + Bonferroni (ID legado Tukey)",
         "posthoc",
         "Compara pares de medias después de un ANOVA compatible.",
         ("ANOVA global significativo", "Homogeneidad de varianzas"),
     ),
     TechniqueDefinition(
         "games_howell",
-        "Games–Howell",
+        "Aproximación Welch por pares + Bonferroni (ID legado Games–Howell)",
         "posthoc",
         "Compara pares de medias después de un análisis global heterocedástico.",
         ("Análisis global significativo", "Independencia"),

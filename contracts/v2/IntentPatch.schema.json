@@ -1,0 +1,345 @@
+{
+  "$defs": {
+    "IntentChanges": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "descriptive",
+                "association",
+                "comparison",
+                "reliability",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "question": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "variable_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 200,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variable Ids"
+        },
+        "roles": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/IntentRole"
+              },
+              "maxItems": 200,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Roles"
+        },
+        "observations": {
+          "anyOf": [
+            {
+              "enum": [
+                "independent",
+                "paired",
+                "repeated",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observations"
+        },
+        "observational_unit": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observational Unit"
+        },
+        "identification": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identification"
+        },
+        "comparison_notes": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparison Notes"
+        },
+        "linkage": {
+          "anyOf": [
+            {
+              "enum": [
+                "same_row",
+                "unavailable",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linkage"
+        },
+        "identifier_column_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identifier Column Id"
+        },
+        "paired_columns": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PairedColumns"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "group_column_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Column Id"
+        },
+        "alternative": {
+          "anyOf": [
+            {
+              "enum": [
+                "two-sided",
+                "greater",
+                "less",
+                "unspecified"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alternative"
+        },
+        "alpha": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 1,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alpha"
+        },
+        "estimand": {
+          "anyOf": [
+            {
+              "enum": [
+                "summary",
+                "linear_association",
+                "monotonic_association",
+                "mean_difference",
+                "distribution_difference",
+                "internal_consistency",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimand"
+        },
+        "missing_policy": {
+          "anyOf": [
+            {
+              "const": "complete_cases",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Missing Policy"
+        }
+      },
+      "title": "IntentChanges",
+      "type": "object"
+    },
+    "IntentRole": {
+      "additionalProperties": false,
+      "properties": {
+        "variable_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "outcome",
+            "predictor",
+            "group",
+            "item",
+            "descriptive"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable_id",
+        "role"
+      ],
+      "title": "IntentRole",
+      "type": "object"
+    },
+    "PairedColumns": {
+      "additionalProperties": false,
+      "properties": {
+        "before_column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Before Column Id",
+          "type": "string"
+        },
+        "after_column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "After Column Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "before_column_id",
+        "after_column_id"
+      ],
+      "title": "PairedColumns",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "changes": {
+      "$ref": "#/$defs/IntentChanges"
+    },
+    "confirm": {
+      "default": false,
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "changes"
+  ],
+  "title": "IntentPatch",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/IntentPatch.schema.json"
+}

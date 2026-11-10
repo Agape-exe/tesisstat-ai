@@ -1,0 +1,65 @@
+.diagnostic-workspace {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.diagnostic-workspace fieldset {
+  min-width: 0;
+  border: 1px solid var(--rp-border, #d9e0e6);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.diagnostic-workspace label {
+  overflow-wrap: anywhere;
+}
+.diagnostic-workspace input:not([type='checkbox']),
+.diagnostic-workspace select,
+.diagnostic-workspace textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.diagnostic-workspace textarea {
+  min-height: 76px;
+}
+.diagnostic-options {
+  display: grid;
+  gap: 0.7rem;
+  margin-block: 0.8rem;
+}
+.diagnostic-actions {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+.diagnostic-check {
+  border-top: 1px solid #d9e0e6;
+  margin-top: 1rem;
+}
+.diagnostic-check h5 {
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+.diagnostic-evidence {
+  overflow-wrap: anywhere;
+}
+.diagnostic-workspace pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.diagnostic-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+.diagnostic-figure {
+  margin: 0;
+  min-width: 0;
+}
+.diagnostic-figure svg {
+  width: 100%;
+  max-height: 270px;
+}
+.diagnostic-figure figcaption {
+  font-weight: 600;
+}

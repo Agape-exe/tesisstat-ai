@@ -82,6 +82,9 @@ export type Estimand =
   | "unknown";
 export type Value4 = ("yes" | "no" | "unknown") | null;
 export type RequestedTechnique = string | null;
+export type DatasetId = string | null;
+export type Value5 = ("same_row" | "unavailable" | "unknown") | null;
+export type IdentifierColumnId = string | null;
 export type SourceFingerprint = string;
 
 export interface AnalysisSnapshotV2 {
@@ -170,6 +173,12 @@ export interface AnalysisIntentV2 {
   estimand?: Estimand;
   conditions?: IntentConditions;
   requested_technique?: RequestedTechnique;
+  dataset_id?: DatasetId;
+  observational_unit?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
+  identification?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
+  comparison_notes?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
+  linkage?: FactLiteralSameRowUnavailableUnknown;
+  identifier_column_id?: IdentifierColumnId;
 }
 export interface IntentRole {
   variable_id: VariableId;
@@ -196,6 +205,11 @@ export interface IntentConditions {
 }
 export interface FactLiteralYesNoUnknown {
   value?: Value4;
+  provenance?: Provenance;
+  confirmation?: Confirmation | null;
+}
+export interface FactLiteralSameRowUnavailableUnknown {
+  value?: Value5;
   provenance?: Provenance;
   confirmation?: Confirmation | null;
 }
