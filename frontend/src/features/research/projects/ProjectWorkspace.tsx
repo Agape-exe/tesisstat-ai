@@ -154,6 +154,6 @@ function SectionContent({
         <ProjectReports projectId={projectId} item={item} active={active} />
       );
     case 'instrument':
-      return <ProjectInstrument projectId={projectId} />;
+      return <ProjectInstrument projectId={projectId} active={active} />;
   }
 }

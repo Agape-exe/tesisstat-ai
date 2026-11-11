@@ -21,6 +21,7 @@ export type Kind =
   | "document"
   | "instrument"
   | "mapping"
+  | "recoding"
   | "score"
   | "plan"
   | "result"

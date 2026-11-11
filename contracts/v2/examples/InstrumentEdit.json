@@ -1,0 +1,85 @@
+{
+  "expected_revision": 2,
+  "structure": {
+    "variables": [
+      {
+        "variable_id": "90ca1ec5-e7dd-4b66-bcd4-6c60fe667c9f",
+        "name": "Experiencia del cliente",
+        "scale": "unknown",
+        "context_variable_id": null
+      }
+    ],
+    "dimensions": [
+      {
+        "dimension_id": "6e068e81-5df4-4b77-9e95-8a4e901d26d1",
+        "variable_id": "90ca1ec5-e7dd-4b66-bcd4-6c60fe667c9f",
+        "name": "Sin desglose dimensional (declarado)"
+      }
+    ],
+    "indicators": [
+      {
+        "indicator_id": "fde12af1-3e67-49ed-9bc8-efbf0ce9b9fe",
+        "dimension_id": "6e068e81-5df4-4b77-9e95-8a4e901d26d1",
+        "name": "Sin indicadores diferenciados (declarado)"
+      }
+    ],
+    "items": [
+      {
+        "item_id": "578a3912-ceb6-42e0-a0da-a2cda10e1e4c",
+        "variable_id": "90ca1ec5-e7dd-4b66-bcd4-6c60fe667c9f",
+        "dimension_id": "6e068e81-5df4-4b77-9e95-8a4e901d26d1",
+        "indicator_id": "fde12af1-3e67-49ed-9bc8-efbf0ce9b9fe",
+        "text": "Atención clara",
+        "response_type": "numeric",
+        "response_options": [],
+        "valid_min": 1,
+        "valid_max": 5,
+        "reverse_scored": false,
+        "reverse_rule": null,
+        "source_quote": null
+      },
+      {
+        "item_id": "24bf852e-c64d-4789-a9e4-e0e8f5ae1d5a",
+        "variable_id": "90ca1ec5-e7dd-4b66-bcd4-6c60fe667c9f",
+        "dimension_id": "6e068e81-5df4-4b77-9e95-8a4e901d26d1",
+        "indicator_id": "fde12af1-3e67-49ed-9bc8-efbf0ce9b9fe",
+        "text": "Dificultad para recibir ayuda",
+        "response_type": "numeric",
+        "response_options": [],
+        "valid_min": 1,
+        "valid_max": 5,
+        "reverse_scored": true,
+        "reverse_rule": "min_plus_max_minus_value",
+        "source_quote": null
+      },
+      {
+        "item_id": "ef770a9e-3a3d-4365-a8cd-b5ae822c471a",
+        "variable_id": "90ca1ec5-e7dd-4b66-bcd4-6c60fe667c9f",
+        "dimension_id": "6e068e81-5df4-4b77-9e95-8a4e901d26d1",
+        "indicator_id": "fde12af1-3e67-49ed-9bc8-efbf0ce9b9fe",
+        "text": "Información adicional",
+        "response_type": "numeric",
+        "response_options": [],
+        "valid_min": 1,
+        "valid_max": 5,
+        "reverse_scored": false,
+        "reverse_rule": null,
+        "source_quote": null
+      }
+    ],
+    "scoring_rules": [
+      {
+        "scoring_rule_id": "c945125b-dc56-44e9-a8f7-383dba837b86",
+        "scope": "dimension",
+        "dimension_id": "6e068e81-5df4-4b77-9e95-8a4e901d26d1",
+        "item_ids": [
+          "578a3912-ceb6-42e0-a0da-a2cda10e1e4c",
+          "24bf852e-c64d-4789-a9e4-e0e8f5ae1d5a"
+        ],
+        "aggregation": "sum",
+        "missing_policy": "all_required"
+      }
+    ]
+  },
+  "context_field": "study_description"
+}

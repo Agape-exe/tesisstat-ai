@@ -1,0 +1,102 @@
+{
+  "unchanged": true,
+  "table_count": 24,
+  "tables": {
+    "analysis_evidence_v2": {
+      "rows": 84,
+      "sha256": "5cbdb9926d635c46386a8b2de4e6296bda28b73b70dae3957a767034d74d3933"
+    },
+    "context_suggestions_v2": {
+      "rows": 20,
+      "sha256": "3390c456a20e02c18b8709071345a8da6f72e6d495df747b9f4f66590f27d2a0"
+    },
+    "conversation_messages": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "conversation_requests": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "conversations": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "data_workspace_revisions_v2": {
+      "rows": 73,
+      "sha256": "0c35fb56205cb1bfd72f284d38df0462ab3065012a74a215c332492e9655a343"
+    },
+    "derived_content_v2": {
+      "rows": 4,
+      "sha256": "f5f28af52f4d5a1c808d1b27266748bd1f2b08906a1d3eb6cf2316ec0332ffb1"
+    },
+    "imported_tables_v2": {
+      "rows": 28,
+      "sha256": "ee3e3166652800c774c3a510821b4887accce6895927454749e26be806796da7"
+    },
+    "research_analyses": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_context_revisions_v2": {
+      "rows": 33,
+      "sha256": "c1e8180a2634e4ba15f86619c62a035e17b868d7b59b75abb7c6a65bf61ac7f8"
+    },
+    "research_datasets": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_documents": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_eda": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_extractions": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_instruments": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_methodology": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_methodology_reviews": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_packages": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_preparation_previews": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_preparations": {
+      "rows": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_projects": {
+      "rows": 29,
+      "sha256": "6754fc3df4184e61cbc080c82ab42ec3a21f5bea3cfb916c1bf15e03710c78a3"
+    },
+    "source_file_revisions_v2": {
+      "rows": 28,
+      "sha256": "1e6890cc1e11d0a1972d7a7f7bdac83ff83133bdadf0a62634232db318696cdc"
+    },
+    "source_files_v2": {
+      "rows": 28,
+      "sha256": "ebb18b3d3cfe60731f95b7921455c0640c06a2411e2786be6711f05271caa373"
+    },
+    "table_context_revisions_v2": {
+      "rows": 6,
+      "sha256": "4fcd6bcbc2978dab219b6bb2a4b88aefcb16b02d93e17a1035753238df1600b6"
+    }
+  }
+}

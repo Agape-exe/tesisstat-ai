@@ -35,6 +35,7 @@ export type Kind1 =
   | "document"
   | "instrument"
   | "mapping"
+  | "recoding"
   | "score"
   | "plan"
   | "result"

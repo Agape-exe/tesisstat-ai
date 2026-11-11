@@ -72,9 +72,26 @@ class WorkspaceService:
         self.repository = repository
         self.limits = sources.limits
 
+    def publish_score(self, db, record, content):
+        """C6 write port: bytes, explicit score lineage and unconfirmed dictionary."""
+        self.repository.publish(db, record, content, kind="score_derived")
+        dictionary = self.virtual_dictionary(record.dataset_ref)
+        dictionary.revision = 1
+        dictionary.updated_at = datetime.now(UTC)
+        dictionary.pending_questions = ["Revisa el diccionario del derivado antes de analizarlo."]
+        dictionary.hash = canonical_hash(dictionary)
+        self.repository.put(
+            db, record.project_id, "dictionary", record.id, dictionary.model_dump(mode="json"), 0
+        )
+
     def derived(self, project_id, table_id):
         self.sources.require(project_id)
         value = self.repository.get(project_id, "derived", table_id)
+        score = self.repository.get(project_id, "score_derived", table_id)
+        if score:
+            from app.shared.instruments_v2 import ScoreDerivedTableV2
+
+            return ScoreDerivedTableV2.model_validate(score)
         if not value:
             not_found()
         return DerivedTableV2.model_validate(value)
@@ -84,6 +101,9 @@ class WorkspaceService:
         value = self.repository.get(project_id, "derived", table_id)
         if value:
             return DerivedTableV2.model_validate(value).dataset_ref
+        score = self.repository.get(project_id, "score_derived", table_id)
+        if score:
+            return self.derived(project_id, table_id).dataset_ref
         table = self.sources.table(project_id, table_id)
         source = self.sources.repository.file(project_id, table.file_id)
         context = self.sources.context(project_id, table_id)
@@ -116,7 +136,11 @@ class WorkspaceService:
             _, rows = self.sources.read_table(project_id, table_id)
         else:
             record = self.derived(project_id, table_id)
-            _, current = self.evidence(project_id, record.recipe, seen)
+            if hasattr(record, "score_id"):
+                self.score_reader.validate_derived(project_id, record)
+                current = record.source_refs
+            else:
+                _, current = self.evidence(project_id, record.recipe, seen)
             if current != record.source_refs:
                 fail(
                     "Las fuentes o su configuración cambiaron. Revisa el derivado.",
@@ -141,7 +165,11 @@ class WorkspaceService:
             DerivedTableV2.model_validate(r).dataset_ref
             for r in self.repository.all(project_id, "derived")
         ]
-        return imported + derived
+        scores = [
+            self.derived(project_id, r["id"]).dataset_ref
+            for r in self.repository.all(project_id, "score_derived")
+        ]
+        return imported + derived + scores
 
     def virtual_dictionary(self, dataset):
         provenance = Provenance(
@@ -177,7 +205,10 @@ class WorkspaceService:
 
     def history_access(self, project_id, table_id):
         self.sources.require(project_id)
-        if not self.repository.get(project_id, "derived", table_id):
+        if not (
+            self.repository.get(project_id, "derived", table_id)
+            or self.repository.get(project_id, "score_derived", table_id)
+        ):
             self.sources.table(project_id, table_id)
 
     def patch_dictionary(self, project_id, table_id, patch: DictionaryPatch):

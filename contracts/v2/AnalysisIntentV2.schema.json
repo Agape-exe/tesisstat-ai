@@ -180,6 +180,9 @@
     "IntentConditions": {
       "additionalProperties": false,
       "properties": {
+        "same_construct": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
         "inference_reviewed": {
           "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
         },
@@ -317,6 +320,7 @@
             "document",
             "instrument",
             "mapping",
+            "recoding",
             "score",
             "plan",
             "result",
@@ -391,6 +395,63 @@
       "format": "date-time",
       "title": "Updated At",
       "type": "string"
+    },
+    "instrument_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Instrument Id"
+    },
+    "instrument_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Instrument Revision"
+    },
+    "mapping_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mapping Revision"
+    },
+    "scoring_rule_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scoring Rule Id"
+    },
+    "reliability_group": {
+      "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
     },
     "kind": {
       "default": "unknown",

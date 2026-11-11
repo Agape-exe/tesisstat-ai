@@ -9,6 +9,7 @@ from app.modules.research.sources.repository import missing
 from app.shared.analysis_v2 import AnalysisIntentV2, Confirmation, Fact, Provenance
 
 FACTS = {
+    "reliability_group",
     "question",
     "observations",
     "observational_unit",

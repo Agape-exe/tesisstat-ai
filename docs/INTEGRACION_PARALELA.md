@@ -285,3 +285,26 @@ pending/stale antiguas a nota/unknown solo en la vista, conservando su original 
 Aplicación rechaza seleccionar observations en servidor, incluidas solicitudes alteradas.
 Persistencia remota debe preservar esta distinción sin reescribir valores/confirmaciones
 al migrar ni vincular tablas por nombres. S04 comprobará cada comparación concreta.
+
+## Recursos C6 incorporados en S05
+
+La entrega de persistencia debe incluir las clases `instrument`, `mapping`, `score_preview`,
+`score`, `score_request`, `scored_preview`, `score_derived` en el puerto WorkspaceRepository;
+localmente se guardan en `data_workspace_revisions_v2`. `derived_content_v2` guarda todos
+los bytes table-json-v1. Score, contenido completo, metadatos/linaje, diccionario sin
+confirmaciones y recibos idempotentes se publican juntos bajo BEGIN IMMEDIATE. El UNIQUE
+proyecto/preview y CAS se mantienen. Request UUID reutilizado con otro preview/fingerprint
+produce conflicto; reintento de una publicación ya completada recupera el mismo histórico.
+Leer ese recibo no acredita vigencia actual. Fallo antes del commit revierte todo.
+
+Extensión explícita `ScorePublicationPort` / `ScoreDerivedTableV2`, sin receta prepare/join
+ficticia. TableReadPort valida además las dependencias del score, sus fuentes y motor.
+Migración remota debe aplicar scope y RLS a estos registros, fuentes y recibos, e implementar
+transacción/protocolo de publicación equivalente antes de anunciar durabilidad. SQLite local
+no demuestra atomicidad de Storage+Postgres, Auth remoto ni recuperación desde backup remoto.
+
+Intenciones/snapshots/diagnósticos/propuestas/resultados reliability incorporan referencias
+a instrumento/mapeo/regla/recoding. Conservar serialización de snapshots anteriores sin
+rellenar defaults C6 que modifiquen hashes o tokens. `instrument-scoring-v2.0.0` recodifica;
+`cronbach_alpha` del motor S04A ejecuta solo sobre ítems recodificados y aprobación C5.
+Evidencia y alcance exacto: [S05](sesiones/S05.md). No se añadió auth, proveedor ni despliegue.

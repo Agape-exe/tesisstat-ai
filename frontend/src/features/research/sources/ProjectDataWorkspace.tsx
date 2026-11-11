@@ -1,6 +1,7 @@
 import { ProjectDatasets } from '../datasets/ProjectDatasets';
 import { ProjectSources } from './ProjectSources';
 import { TableWorkspace } from '../data/TableWorkspace';
+import { navigateProject } from '../projects/navigation';
 
 export function ProjectDataWorkspace({
   projectId,
@@ -45,6 +46,12 @@ export function ProjectDataWorkspace({
             Herramientas anteriores de datasets
           </button>
         </details>
+        <button
+          className="rp-secondary"
+          onClick={() => navigateProject(projectId, 'instrument')}
+        >
+          Instrumento y puntuaciones (opcional)
+        </button>
       </div>
       {view === 'review' ? (
         <TableWorkspace

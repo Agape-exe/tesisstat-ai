@@ -33,7 +33,7 @@ export const sectionInfo: Record<
   instrument: {
     title: 'Instrumento de investigación',
     description:
-      'Organiza tu instrumento de medición y conoce los próximos pasos.',
+      'Define tu instrumento, relaciona respuestas y crea puntuaciones revisables.',
     icon: 'clipboard',
   },
   datasets: {

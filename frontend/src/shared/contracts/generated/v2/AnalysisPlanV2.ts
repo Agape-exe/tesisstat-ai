@@ -20,6 +20,7 @@ export type Kind =
   | "document"
   | "instrument"
   | "mapping"
+  | "recoding"
   | "score"
   | "plan"
   | "result"
@@ -61,7 +62,8 @@ export type CalculationMethod =
   | "mann_whitney-two-sided-v2"
   | "t_paired-two-sided-v2"
   | "wilcoxon-two-sided-v2"
-  | "cronbach_alpha-two-sided-v2";
+  | "cronbach_alpha-two-sided-v2"
+  | "cronbach-alpha-recoded-v2";
 export type Rationale = string;
 export type EvidenceRefs = SourceRef[];
 export type Technique1 =

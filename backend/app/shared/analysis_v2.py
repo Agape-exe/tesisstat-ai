@@ -36,6 +36,7 @@ class SourceRef(V2Model):
         "document",
         "instrument",
         "mapping",
+        "recoding",
         "score",
         "plan",
         "result",
@@ -160,6 +161,10 @@ class ProjectContextV2(V2Model):
 
 
 class IntentConditions(V2Model):
+    same_construct: Fact[Literal["yes", "no", "unknown"]] = Field(
+        default_factory=lambda: Fact(value="unknown"),
+        exclude_if=lambda v: v.value == "unknown" and v.confirmation is None,
+    )
     inference_reviewed: Fact[Literal["yes", "no", "unknown"]] = Field(
         default_factory=lambda: Fact(value="unknown")
     )
@@ -210,6 +215,13 @@ class AnalysisIntentV2(V2Model):
     revision: Revision
     created_at: AwareDatetime
     updated_at: AwareDatetime
+    instrument_id: ID | None = Field(default=None, exclude_if=lambda v: v is None)
+    instrument_revision: Revision | None = Field(default=None, exclude_if=lambda v: v is None)
+    mapping_revision: Revision | None = Field(default=None, exclude_if=lambda v: v is None)
+    scoring_rule_id: ID | None = Field(default=None, exclude_if=lambda v: v is None)
+    reliability_group: Fact[Text] = Field(
+        default_factory=Fact[Text], exclude_if=lambda v: v.value is None
+    )
     kind: Literal["descriptive", "association", "comparison", "reliability", "unknown"] = "unknown"
     question: Fact[Text] = Field(default_factory=Fact[Text])
     objective_id: ID | None = None
@@ -290,6 +302,7 @@ class AnalysisSnapshotV2(V2Model):
     profile_ref: SourceRef
     diagnostic_refs: list[SourceRef] = Field(default_factory=list)
     instrument_ref: SourceRef | None = None
+    mapping_ref: SourceRef | None = Field(default=None, exclude_if=lambda v: v is None)
     score_ref: SourceRef | None = None
     confirmed_facts: dict[str, Fact[Text]] = Field(default_factory=dict)
     variables: list[SnapshotVariableV2] = Field(min_length=1)
@@ -307,6 +320,7 @@ class AnalysisSnapshotV2(V2Model):
             ("intent_ref", "intent"),
             ("profile_ref", "profile"),
             ("instrument_ref", "instrument"),
+            ("mapping_ref", "mapping"),
             ("score_ref", "score"),
         ):
             ref = getattr(self, field)

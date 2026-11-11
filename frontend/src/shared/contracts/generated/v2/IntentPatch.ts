@@ -6,9 +6,15 @@
  */
 
 export type ExpectedRevision = number;
+export type InstrumentId = string | null;
+export type InstrumentRevision = number | null;
+export type MappingRevision = number | null;
+export type ScoringRuleId = string | null;
+export type ReliabilityGroup = string | null;
 export type ObjectiveId = string | null;
 export type HypothesisId = string | null;
 export type RequestedTechnique = string | null;
+export type SameConstruct = ("yes" | "no" | "unknown") | null;
 export type Linearity = ("yes" | "no" | "unknown") | null;
 export type Monotonicity = ("yes" | "no" | "unknown") | null;
 export type ComparableGroupShapes = ("yes" | "no" | "unknown") | null;
@@ -56,6 +62,11 @@ export interface IntentPatch {
   confirm?: Confirm;
 }
 export interface IntentChanges {
+  instrument_id?: InstrumentId;
+  instrument_revision?: InstrumentRevision;
+  mapping_revision?: MappingRevision;
+  scoring_rule_id?: ScoringRuleId;
+  reliability_group?: ReliabilityGroup;
   objective_id?: ObjectiveId;
   hypothesis_id?: HypothesisId;
   requested_technique?: RequestedTechnique;
@@ -79,6 +90,7 @@ export interface IntentChanges {
   missing_policy?: MissingPolicy;
 }
 export interface ConditionChanges {
+  same_construct?: SameConstruct;
   linearity?: Linearity;
   monotonicity?: Monotonicity;
   comparable_group_shapes?: ComparableGroupShapes;

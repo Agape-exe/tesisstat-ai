@@ -30,6 +30,7 @@ CalculationMethod = Literal[
     "t_paired-two-sided-v2",
     "wilcoxon-two-sided-v2",
     "cronbach_alpha-two-sided-v2",
+    "cronbach-alpha-recoded-v2",
 ]
 
 

@@ -66,6 +66,34 @@ def execute(data: ExecutionInputV2):
     profile, _, _, _ = evaluate(i, ds, dictionary, data.rows, ["complete_cases"])
     counts = case_counts(profile, data.technique)
     metrics, tables, warnings = [], [], []
+    if data.technique == "cronbach_alpha":
+        from app.modules.statistics.instrument_v2 import ReliabilityNotCalculable, alpha_conditions
+
+        matrix = [[r[v.column_ids[0]] for v in selected] for r in effective]
+        reason = alpha_conditions(matrix, item_count=len(selected))
+        if reason:
+            raise ReliabilityNotCalculable(reason)
+        try:
+            result = inferential.cronbach_alpha(matrix)
+        except (inferential.StatisticalCalculationError, ArithmeticError) as exc:
+            raise ReliabilityNotCalculable(str(exc)) from exc
+        return (
+            counts,
+            [
+                ResultMetric(
+                    key=k,
+                    label={
+                        "alpha": "Alfa de Cronbach",
+                        "n": "Casos completos",
+                        "items": "Ítems",
+                    }.get(k, k),
+                    value=value,
+                )
+                for k, value in result.metrics.items()
+            ],
+            [],
+            list(result.warnings),
+        )
     if data.technique == "descriptive_summary":
         for v in selected:
             values = [r[v.column_ids[0]] for r in effective]
