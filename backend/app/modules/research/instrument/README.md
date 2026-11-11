@@ -36,6 +36,15 @@ perfiles, diccionarios y preparación posterior aceptan este derivado real; no t
 prepare/join ficticia. Cambios de instrumento/mapeo/regla/recodificación o fuentes lo dejan
 obsoleto, conservando contenido y recibos. Se impiden ciclos de dependencias del instrumento.
 
+Cada recibo nuevo conserva `instrument_id` asignado por el servidor. Los existentes sin
+ese campo se vinculan mediante su tabla/preview/recibo de publicación persistidos, sin
+migración al leer y aunque el preview haya vencido. Se comprueban la regla y revisión
+histórica revisada del propietario, IDs, proyecto, motor, fingerprint y todas las refs.
+Ni el primer ni el último instrumento de source_refs determina propiedad; un antecesor
+no recibe puntuaciones de sus descendientes en su listado. Un vínculo no verificable falla
+explícitamente. La lectura vigente sigue resolviendo todos los padres, con comprobación
+de identidad/revisión/hash independiente del orden de sus referencias.
+
 Confiabilidad usa Análisis: instrumento/regla elegidos explícitamente, constructo y
 pertinencia revisados, diagnóstico, propuesta, autorización local de fuentes si procede,
 aprobación y ejecución. DiagnosticService.reliability_inputs ofrece la vista autorizada de

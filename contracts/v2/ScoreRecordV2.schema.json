@@ -260,6 +260,20 @@
       "title": "Project Id",
       "type": "string"
     },
+    "instrument_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Instrument Id"
+    },
     "revision": {
       "const": 1,
       "default": 1,

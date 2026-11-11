@@ -1,17 +1,29 @@
 """C6 scoring coordinator; atomic publication via the table workspace write port."""
 
 import hashlib
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from app.modules.research.data_workspace.ports import ScorePublicationPort
 from app.modules.research.data_workspace.service import encoded_table, fail
+from app.modules.research.instrument.v2_service import instrument_ref
 from app.modules.research.sources.repository import missing
 from app.modules.statistics.instrument_v2 import VERSION, recode
 from app.shared.analysis_v2 import SourceRef, canonical_hash
 from app.shared.data_sources_v2 import TableColumnV2
 from app.shared.data_workspace_v2 import ColumnLineageV2, DatasetRefV2
-from app.shared.instruments_v2 import ScoreDerivedTableV2, ScorePreviewV2, ScoreRecordV2
+from app.shared.instruments_v2 import (
+    InstrumentContextV2,
+    ScoreDerivedTableV2,
+    ScorePreviewV2,
+    ScoreRecordV2,
+)
+
+
+def dependencies(refs):
+    """Compare all dependency identities, revisions and hashes, without ordering."""
+    return Counter((r.kind, r.id, r.revision, r.hash) for r in refs)
 
 
 class ScoreServiceV2:
@@ -89,14 +101,69 @@ class ScoreServiceV2:
 
     def records(self, project, id_):
         self.instruments.raw(project, id_)
-        return [
-            ScoreRecordV2.model_validate(s)
-            for s in self.repository.all(project, "score")
-            if any(
-                r.kind == "instrument" and r.id == id_
-                for r in ScoreRecordV2.model_validate(s).source_refs
+        result = []
+        for value in self.repository.all(project, "score"):
+            score = ScoreRecordV2.model_validate(value)
+            if self.owner(project, score) == id_:
+                result.append(score)
+        return result
+
+    def owner(self, project, score, record=None):
+        """Resolve immutable publication links, never infer ownership from ancestors.
+
+        Preview expiry only prevents a new publication; its durable metadata also
+        identifies the owner of pre-existing receipts without rewriting history.
+        Verify the frozen instrument revision, not its possibly edited current state.
+        """
+        self.workspace.sources.require(project)
+        if record is None:
+            payload = self.repository.get(project, "score_derived", score.derived_dataset_ref.id)
+            if not payload:
+                fail("Falta el linaje de la puntuación.", "storage_unavailable", 503)
+            record = ScoreDerivedTableV2.model_validate(payload)
+        payload = self.repository.get(project, "score_preview", record.preview_id)
+        receipt = self.repository.get(project, "scored_preview", record.preview_id)
+        if not payload or not receipt:
+            fail("Falta la relación de publicación de la puntuación.", "storage_unavailable", 503)
+        preview = ScorePreviewV2.model_validate(payload)
+        owner_id = score.instrument_id if score.instrument_id is not None else preview.instrument_id
+        if (
+            score.project_id != project
+            or record.project_id != project
+            or preview.project_id != project
+            or record.score_id != score.id
+            or receipt["score_id"] != score.id
+            or owner_id != preview.instrument_id
+            or score.derived_dataset_ref != record.dataset_ref
+            or score.rule_id != preview.rule_id
+            or score.fingerprint != preview.fingerprint
+            or score.engine_version != preview.scoring_engine_version
+            or dependencies(score.source_refs) != dependencies(preview.source_refs)
+            or dependencies(score.source_refs) != dependencies(record.source_refs)
+        ):
+            fail("La relación de publicación es inconsistente.", "storage_unavailable", 503)
+        owner_refs = {
+            (r.id, r.revision, r.hash)
+            for r in score.source_refs
+            if r.kind == "instrument" and r.id == owner_id
+        }
+        frozen = []
+        for value in self.repository.revisions(project, "instrument", owner_id):
+            candidate = InstrumentContextV2.model_validate(value)
+            reference = instrument_ref(candidate)
+            if (reference.id, reference.revision, reference.hash) in owner_refs:
+                frozen.append(candidate)
+        if (
+            len(owner_refs) != 1
+            or len(frozen) != 1
+            or (
+                frozen[0].project_id != project
+                or frozen[0].status != "reviewed"
+                or not any(r.scoring_rule_id == score.rule_id for r in frozen[0].scoring_rules)
             )
-        ]
+        ):
+            fail("No se puede verificar el instrumento propietario.", "storage_unavailable", 503)
+        return owner_id
 
     def confirm(self, project, id_, body):
         self.instruments.raw(project, id_)
@@ -172,6 +239,7 @@ class ScoreServiceV2:
                 result = ScoreRecordV2(
                     id=score_id,
                     project_id=project,
+                    instrument_id=id_,
                     source_refs=refs,
                     rule_id=rule.scoring_rule_id,
                     engine_version=VERSION,
@@ -239,12 +307,16 @@ class ScoreServiceV2:
         return result
 
     def validate_derived(self, project, record):
-        score = self.repository.get(project, "score", record.score_id)
-        if not score:
+        payload = self.repository.get(project, "score", record.score_id)
+        if not payload:
             fail("Falta el recibo de puntuación.", "storage_unavailable", 503)
-        instrument_id = next(r.id for r in record.source_refs if r.kind == "instrument")
-        *_, refs = self.instruments.resolve(project, instrument_id, score["rule_id"])
-        if refs != record.source_refs or score["engine_version"] != VERSION:
+        score = ScoreRecordV2.model_validate(payload)
+        instrument_id = self.owner(project, score, record)
+        *_, refs = self.instruments.resolve(project, instrument_id, score.rule_id)
+        if (
+            dependencies(refs) != dependencies(record.source_refs)
+            or score.engine_version != VERSION
+        ):
             fail(
                 "Cambió el instrumento, reglas, correspondencia o fuente del derivado.",
                 "source_stale",

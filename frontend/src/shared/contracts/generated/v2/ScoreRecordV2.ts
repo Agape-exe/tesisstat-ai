@@ -8,6 +8,7 @@
 export type SchemaVersion = "2.0.0";
 export type Id = string;
 export type ProjectId = string;
+export type InstrumentId = string | null;
 export type Revision = 1;
 export type Kind =
   | "project"
@@ -70,6 +71,7 @@ export interface ScoreRecordV2 {
   schema_version?: SchemaVersion;
   id: Id;
   project_id: ProjectId;
+  instrument_id?: InstrumentId;
   revision?: Revision;
   source_refs: SourceRefs;
   rule_id: RuleId;

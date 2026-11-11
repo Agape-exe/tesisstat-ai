@@ -652,6 +652,19 @@ puede ser SourceRef de tipo score, cuyo hash identifica el fingerprint de la pub
 TableReadPort, inventario, perfil y diccionario aceptan ambos. El diccionario del score se
 publica sin confirmaciones; no se activa globalmente ni se interpreta como cuantitativo.
 
+Corrección PR #76: ScoreRecordV2 añade `instrument_id` como metadato asignado por servidor
+al publicar. Es opcional únicamente para compatibilidad con recibos existentes y se omite
+al serializar cuando está ausente, conservando hashes/históricos. Para esos recibos, el
+propietario se resuelve mediante la relación persistida score → score_derived.preview_id →
+score_preview.instrument_id y su recibo scored_preview, incluso si el preview venció.
+Se verifican proyecto, IDs de publicación, regla, fingerprint, motor, referencias y la
+revisión histórica revisada del instrumento que contenía esa regla. No se infiere propietario
+por posición de referencias, por antecesores ni por buscar reglas en instrumentos actuales.
+El listado por instrumento utiliza esta misma relación. Vínculo inconsistente o ausente
+falla explícitamente; no se inventa propietario ni se migran registros al leerlos.
+La lectura vigente conserva la revalidación recursiva de todos los padres; se comparan
+identidades/revisiones/hashes de todas las referencias sin que su orden designe propietario.
+
 Nuevo SourceRef `recoding`: id=`instrument_id:rule_id`, revisión del instrumento y hash
 de regla/versión de recodificación. Snapshot/propuesta/diagnóstico de confiabilidad incluyen
 instrumento, mapeo, regla y motor. AnalysisIntentV2 añade instrument_id/instrument_revision,

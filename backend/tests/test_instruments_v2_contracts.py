@@ -6,11 +6,21 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
-from app.shared.instruments_v2 import INSTRUMENT_MODELS, InstrumentStructureV2
+from app.shared.analysis_v2 import canonical_hash
+from app.shared.instruments_v2 import INSTRUMENT_MODELS, InstrumentStructureV2, ScoreRecordV2
 from scripts.export_contracts import schema_text
 from tests.research.test_instruments_v2 import structure
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_existing_score_receipt_retains_its_serialization_and_hash():
+    value = json.loads((ROOT / "contracts/v2/examples/ScoreRecordV2.json").read_text("utf-8"))
+    assert "instrument_id" not in value
+    score = ScoreRecordV2.model_validate(value)
+    assert score.instrument_id is None
+    assert score.model_dump(mode="json") == value
+    assert canonical_hash(score) == canonical_hash(value)
 
 
 @pytest.mark.parametrize("model", INSTRUMENT_MODELS)

@@ -222,6 +222,9 @@ class ScoreRecordV2(V2Model):
     schema_version: Literal["2.0.0"] = "2.0.0"
     id: ID
     project_id: ID
+    # Server-owned publication relationship. Older receipts resolve it through
+    # ScoreDerivedTableV2.preview_id -> ScorePreviewV2.instrument_id.
+    instrument_id: ID | None = Field(default=None, exclude_if=lambda value: value is None)
     revision: Literal[1] = 1
     source_refs: list[SourceRef]
     rule_id: UUID
