@@ -48,43 +48,35 @@ function fixture(configured = false) {
   const api = {
     ...createTutorApi(),
     status: vi.fn().mockResolvedValue(status),
-    consent: vi
-      .fn()
-      .mockResolvedValue({
-        revision: 1,
-        granted: true,
-        consent_scope: 'tutor_context_v3',
-      }),
-    send: vi
-      .fn()
-      .mockResolvedValue({
-        messages: [
-          {
-            id: 'm',
-            role: 'assistant',
-            content: 'Orientación guardada.',
-            sequence: 2,
-          },
-        ],
-      }),
+    consent: vi.fn().mockResolvedValue({
+      revision: 1,
+      granted: true,
+      consent_scope: 'tutor_context_v3',
+    }),
+    send: vi.fn().mockResolvedValue({
+      messages: [
+        {
+          id: 'm',
+          role: 'assistant',
+          content: 'Orientación guardada.',
+          sequence: 2,
+        },
+      ],
+    }),
   };
   const historyApi = {
     ...createConversationApi(),
     list: vi.fn().mockResolvedValue([]),
-    create: vi
-      .fn()
-      .mockResolvedValue({
-        id: 'c',
-        title: 'Nueva conversación',
-        created_at: '2026-11-11',
-      }),
-    get: vi
-      .fn()
-      .mockResolvedValue({
-        conversation: { id: 'c' },
-        messages: [],
-        has_more: false,
-      }),
+    create: vi.fn().mockResolvedValue({
+      id: 'c',
+      title: 'Nueva conversación',
+      created_at: '2026-11-11',
+    }),
+    get: vi.fn().mockResolvedValue({
+      conversation: { id: 'c' },
+      messages: [],
+      has_more: false,
+    }),
   };
   return { api, historyApi, status };
 }
