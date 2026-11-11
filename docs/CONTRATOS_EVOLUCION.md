@@ -741,5 +741,90 @@ recibos de autorización de cálculo local se documentan en [S04B](sesiones/S04B
 GET puede registrar invalidación terminal y recuperar una reserva vencida, sin recalcular
 números ni sobrescribir el payload de propuesta/resultado. Lease de ejecución: 120 segundos;
 un cálculo tardío se conserva como salida histórica. Usados/excluidos de Wilcoxon descuentan
-ceros, con pares completos conservados aparte. Exportaciones y figuras finales v2 quedan
-para S06; históricos y exportaciones v1 conservan sus guardas previas.
+ceros, con pares completos conservados aparte. S06 completa las figuras y exportaciones
+v2 descritas abajo; históricos y exportaciones v1 conservan sus guardas previas.
+
+### Implementación S06 de C5 y C7
+
+Canónicos nuevos en `shared/tutor_v2.py` y `shared/reports_v2.py`; los exportadores existentes
+generan JSON Schema y TypeScript. Se conservan resultados numéricos, versiones y contratos v1.
+`TutorService` reutiliza conversaciones y su repositorio, el adaptador Cloudflare existente,
+C2 SuggestionService y C4–C5. No añade agentes, herramientas de ejecución para el modelo,
+motor estadístico ni otro recomendador. El recorrido manual permanece independiente del chat.
+
+Con `P=/api/v2/research/projects/{project_id}`:
+
+- GET `P/conversations/status` recibe `TutorSelectionV2`: `stage` y, opcionalmente,
+  `dataset_id`, `intent_id`, `plan_id`, `result_id`. Resuelve padres/proyecto en servidor;
+  combinaciones incompatibles producen 422, recursos ajenos/inexistentes 404. Una selección
+  vacía pide aclaración: nunca elige el último resultado global. El inventario de opciones
+  indica `unverified`; solo la selección se revalida. No recalcula diagnósticos ni números.
+- `TutorContextV2` incluye fuentes C2–C6, confirmaciones pertinentes, dudas, escalas/estados,
+  metadatos agregados e instrumento/mapeo/regla/puntuaciones cuando corresponden. Hashes y
+  revisiones se resuelven desde puertos existentes, incluido el linaje A → B. Un resultado
+  desactualizado se referencia en `historical_refs`; `current_result_ref` queda null.
+  Las observaciones históricas no se releen para explicar sus métricas persistidas.
+- GET/PUT `P/conversations/consent`: PUT `TutorConsentV2` exige `expected_revision`,
+  `granted` booleano estricto y `consent_scope=tutor_context_v3`. Recibo durable en EvidenceStore,
+  con actor/fecha del servidor y CAS. Desmarcar revoca. Extracción documental y cálculo local
+  conservan permisos separados. `research_context_v2` no autoriza estos mensajes/fuentes.
+- POST `P/conversations/{id}/messages` acepta `MessageDraftV2`, con selección explícita,
+  `request_id`, contenido acotado, consentimiento y `consent_revision` vigente. CRUD/historial
+  usa las conversaciones existentes. La clave se vincula al body completo: cambiar selección
+  o contenido con la misma clave produce 409. Repetir exactamente recupera el par original,
+  aunque cambien fuentes o se reinicie. Un envío fallido no repite la llamada automáticamente.
+  Reserva SQLite existente; permiso revalidado antes de enviar y dentro de la transacción de
+  entrega. Cada mensaje conserva fingerprint, referencias actuales/históricas, versión,
+  alcance/revisión de consentimiento, referencias de métricas y estados; no payload del proveedor.
+- Las acciones tienen destino y alcance visibles, además de kind/resource_id. Abrir el alcance
+  de diagnóstico/propuesta selecciona la intención en el formulario C4–C5 existente; la solicitud
+  explícita ocurre allí, usando sus mismas revisiones/guardas. Aprobar y ejecutar siguen siendo
+  botones separados. Ningún texto de chat firma esas acciones. Una selección aún en carga no
+  habilita acciones del contexto anterior.
+
+Política externa `closed-topics-v1`: se conserva texto libre localmente y se envían únicamente
+temas de un vocabulario cerrado, enums, conteos y hasta 24 métricas pertinentes bajo alias.
+No se transmiten nombres, categorías, textos de documentos/contexto/instrumento, identificadores,
+filas, UUIDs de recursos ni mensajes/historial literales. El historial externo se reduce a
+temas recientes del mismo fingerprint. Esta decisión prioriza privacidad verificable y limita
+la comprensión de detalles narrativos: no se promete enviar una tesis o reconstruir lo omitido.
+Contexto externo limitado por bytes/tokens de la configuración; una llamada como máximo por envío,
+sin llamadas IA al navegar. No se registra el prompt ni secretos. Cuota 429, timeout 504 y
+proveedor ausente/respuesta inválida 503; historial, ayuda por plantillas y formularios continúan.
+
+El proveedor devuelve un objeto pequeño validado, sin patches, actores, confirmaciones ni IDs.
+Solo puede sugerir `research_question`, `main_objective`, `study_description`, `data_description`
+y `sampling_notes`. Se crea `ContextSuggestion` C2 con procedencia IA, sin aplicar ni confirmar;
+comparación, edición, rechazo, CAS e históricos usan S02B. El enlace abre ese borrador concreto.
+Un cambio de contexto durante la llamada no rebasa silenciosamente la revisión de la sugerencia.
+
+La prosa numérica generada se rechaza; los alias de métricas se validan contra el resultado
+seleccionado y el servidor inserta cifras/etiquetas/unidades con su formato compartido.
+Sin resultado o sin referencias no se publica un hallazgo del modelo: se presenta orientación
+por plantillas identificada, sin simular éxito cuando falla el proveedor. La explicación IA con
+referencias es `ResultExplanationV2`, separada del resultado original e inicialmente draft.
+GET `P/analysis/results/{id}/interpretations`; POST `.../{explanation_id}/review` requiere
+`ExplanationReviewV2` con CAS, texto revisado y confirmación explícita. GET `.../revisions`
+conserva todo el historial. Revisar no altera cifras ni acredita validez científica.
+
+GET `P/analysis/results/{id}/presentation` aplica `es-significant-6-v1`, compartido por UI,
+citas del tutor e informes: etiquetas españolas, unidades conocidas/no declaradas, seis cifras
+significativas, coma decimal, p positivo menor de .001 como límite y p=0 como límite de precisión.
+Conserva signo, grupos/pares, métodos aproximados e IC disponibles del 95 %. `not_executed` se
+presenta separado de failed; errores científicos de cálculo se clasifican como no calculables.
+
+GET `.../{id}/figures` exige autorización local, aprobación exacta, ejecución/resultado completed
+y vigencia, antes y después de generar. Usa TableReadPort con revisión/hash del snapshot y la
+misma selección de casos. Asociación y pares: hasta 500 posiciones deterministas; dos grupos:
+hasta 250 por grupo, orden de aparición conservado. Sin IDs ni categorías personales en las
+series. Frecuencias/figuras de métricas usan valores guardados, con caps y captions explícitos.
+Los diagramas de informes no generan contrastes ni resúmenes estadísticos nuevos.
+
+GET `.../{id}/export?format=txt|docx|pdf` repite las guardas antes de generar y antes de entregar
+bytes; fuente/plan stale 409, autorización ausente 403. TXT UTF-8, DOCX con tablas/cabeceras
+repetidas y PDF textual paginado reutilizan los renderizadores existentes y los mismos DTOs de
+presentación. Gráficos y captions se mantienen juntos. Interpretaciones IA pendientes se rotulan
+como borradores. PDF mantiene WinAnsi y avisa sustituciones fuera de ese alfabeto; DOCX conserva
+Unicode. `Cache-Control:no-store`; exportar no recalcula ni modifica el resultado.
+
+Evidencia, alcance comprobado y límites de S06: [informe](sesiones/S06.md).

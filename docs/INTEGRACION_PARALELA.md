@@ -308,3 +308,33 @@ a instrumento/mapeo/regla/recoding. Conservar serialización de snapshots anteri
 rellenar defaults C6 que modifiquen hashes o tokens. `instrument-scoring-v2.0.0` recodifica;
 `cronbach_alpha` del motor S04A ejecuta solo sobre ítems recodificados y aprobación C5.
 Evidencia y alcance exacto: [S05](sesiones/S05.md). No se añadió auth, proveedor ni despliegue.
+
+## Concreción S06 para la integración posterior
+
+El tutor v2 usa los mismos puertos Research/C4–C6 y las conversaciones existentes. No se
+incorpora otro principal ni proveedor: la demo mantiene loopback/development y actor local.
+La entrega remota debe autorizar el proyecto y todos los hijos antes de resolver selección,
+conversaciones, consentimiento, sugerencias, interpretaciones, figuras y bytes exportados.
+Inventarios del mismo proyecto no son evidencia vigente hasta revalidar la selección.
+
+EvidenceStore incorpora kinds `tutor_consent` y `result_explanation`; preservar sus revisiones,
+actor/fechas de consentimiento, revocación y vínculo con el resultado. No mezclar el alcance
+`tutor_context_v3` con `research_context_v2`, extracción documental o autorización local de datos.
+Las interpretaciones IA no se almacenan dentro del resultado numérico inmutable.
+
+ConversationRepository amplía `claim` con fingerprint del body y contexto de auditoría;
+SQLite añade una columna nullable `conversation_requests.fingerprint` sin reescribir mensajes.
+`complete(...,guard=...)` comprueba el recibo vigente en la MISMA transacción que publica el par
+de mensajes. Un adaptador remoto debe implementar la reserva, idempotencia, revisión del permiso
+y publicación de forma transaccional equivalente; un lock Python o revocación solo en UI no basta.
+Los mensajes anteriores y los request_id sin fingerprint mantienen compatibilidad v1.
+
+Exportaciones/figuras v2 comprueban scope, aprobación/token exacto, autorización, completed y
+vigencia antes de generar y entregar. Figuras leen TableReadPort con hashes esperados; nunca
+preview ni claves Storage recibidas del cliente. Mantener esta doble comprobación al migrar a
+Storage privado. Las llamadas al proveedor usan exclusivamente la proyección cerrada de C7;
+no reutilizar lecturas completas de tablas/documentos como payload externo.
+
+Las verificaciones de S06 acreditan persistencia y aislamiento por proyecto de la demo local,
+no Auth/RLS, revocación de JWT, Storage remoto ni recuperación desde backup remoto. S07 mantiene
+esos gates. No se realizó merge ni despliegue público.

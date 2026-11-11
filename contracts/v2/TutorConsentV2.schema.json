@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "granted": {
+      "title": "Granted",
+      "type": "boolean"
+    },
+    "consent_scope": {
+      "const": "tutor_context_v3",
+      "title": "Consent Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "granted",
+    "consent_scope"
+  ],
+  "title": "TutorConsentV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/TutorConsentV2.schema.json"
+}

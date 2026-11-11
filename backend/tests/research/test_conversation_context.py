@@ -531,7 +531,9 @@ def test_legacy_message_schema_is_migrated_without_data_loss(tmp_path):
             "INSERT INTO conversations VALUES (?, ?, 'Anterior', ?, ?)", (cid, pid, now, now)
         )
         db.execute(
-            "INSERT INTO conversation_requests VALUES (?, ?, 'Pregunta anterior', 'completed', ?)",
+            "INSERT INTO conversation_requests "
+            "(conversation_id,request_id,content,status,created_at) "
+            "VALUES (?, ?, 'Pregunta anterior', 'completed', ?)",
             (cid, rid, now),
         )
     messages = repository.messages(UUID(cid), 50)

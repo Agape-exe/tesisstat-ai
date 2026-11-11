@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   createDataApi,
   type Dataset,
@@ -93,9 +93,11 @@ function difference(draft: Changes, base: Changes): Changes {
 export function DiagnosticWorkspace({
   projectId,
   active = true,
+  initialIntentId = null,
 }: {
   projectId: string;
   active?: boolean;
+  initialIntentId?: string | null;
 }) {
   const [intents, setIntents] = useState<Intent[]>([]),
     [tables, setTables] = useState<Dataset[]>([]);
@@ -119,6 +121,7 @@ export function DiagnosticWorkspace({
   ]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
   const selectedTable = tables.find((t) => t.id === draft.dataset_id);
+  const initialSelectionApplied = useRef(false);
   const key = `s04a:${projectId}:${current?.id ?? 'new'}`;
 
   useEffect(() => {
@@ -129,6 +132,20 @@ export function DiagnosticWorkspace({
         if (live) {
           setIntents(items);
           setTables(sourceTables);
+          const initial = items.find((i) => i.id === initialIntentId);
+          if (initial && !initialSelectionApplied.current) {
+            initialSelectionApplied.current = true;
+            const value = fromIntent(initial);
+            setCurrent(initial);
+            setDraft(value);
+            setBaseline(value);
+            setPendingPair(
+              value.paired_columns ?? {
+                before_column_id: '',
+                after_column_id: '',
+              },
+            );
+          }
         }
       })
       .catch((cause) => {
@@ -137,7 +154,7 @@ export function DiagnosticWorkspace({
     return () => {
       live = false;
     };
-  }, [projectId, active]);
+  }, [projectId, active, initialIntentId]);
 
   useEffect(() => {
     if (!active) return;

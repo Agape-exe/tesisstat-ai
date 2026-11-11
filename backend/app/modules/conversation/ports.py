@@ -26,10 +26,23 @@ class ConversationRepository(Protocol):
         completed_only: bool = False,
     ) -> list[Message]: ...
     def claim(
-        self, conversation_id: UUID, request_id: UUID, content: str, timeout: float
+        self,
+        conversation_id: UUID,
+        request_id: UUID,
+        content: str,
+        timeout: float,
+        *,
+        fingerprint: str | None = None,
+        context: dict | None = None,
     ) -> list[Message] | None: ...
     def complete(
-        self, conversation_id: UUID, request_id: UUID, content: str, context: dict | None = None
+        self,
+        conversation_id: UUID,
+        request_id: UUID,
+        content: str,
+        context: dict | None = None,
+        *,
+        guard=None,
     ) -> list[Message]: ...
     def fail(
         self, conversation_id: UUID, request_id: UUID, context: dict | None = None

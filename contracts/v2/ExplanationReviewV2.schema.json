@@ -1,0 +1,30 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 1,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "text": {
+      "maxLength": 3500,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "confirm": {
+      "const": true,
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "text",
+    "confirm"
+  ],
+  "title": "ExplanationReviewV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ExplanationReviewV2.schema.json"
+}

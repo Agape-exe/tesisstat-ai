@@ -41,6 +41,11 @@ class SQLiteConversationRepository:
             columns = {row[1] for row in db.execute("PRAGMA table_info(conversation_messages)")}
             if "context" not in columns:
                 db.execute("ALTER TABLE conversation_messages ADD COLUMN context TEXT")
+            request_columns = {
+                row[1] for row in db.execute("PRAGMA table_info(conversation_requests)")
+            }
+            if "fingerprint" not in request_columns:
+                db.execute("ALTER TABLE conversation_requests ADD COLUMN fingerprint TEXT")
             if db.execute("SELECT 1 FROM sqlite_master WHERE name='research_projects'").fetchone():
                 db.execute(
                     "CREATE TRIGGER IF NOT EXISTS delete_project_conversations "
@@ -121,7 +126,14 @@ class SQLiteConversationRepository:
         ]
 
     def claim(
-        self, conversation_id: UUID, request_id: UUID, content: str, timeout: float
+        self,
+        conversation_id: UUID,
+        request_id: UUID,
+        content: str,
+        timeout: float,
+        *,
+        fingerprint: str | None = None,
+        context: dict | None = None,
     ) -> list[Message] | None:
         cid, rid = str(conversation_id), str(request_id)
         now = datetime.now(UTC)
@@ -132,7 +144,7 @@ class SQLiteConversationRepository:
                 (cid, rid),
             ).fetchone()
             if row:
-                if row["content"] != content:
+                if row["content"] != content or row["fingerprint"] != fingerprint:
                     raise ConversationError(
                         "idempotency_conflict", "La solicitud ya contiene otro mensaje."
                     )
@@ -156,10 +168,12 @@ class SQLiteConversationRepository:
                     "busy", "Esta conversación ya está generando una respuesta."
                 )
             db.execute(
-                "INSERT INTO conversation_requests VALUES (?, ?, ?, 'pending', ?)",
-                (cid, rid, content, now.isoformat()),
+                "INSERT INTO conversation_requests "
+                "(conversation_id,request_id,content,status,created_at,fingerprint) "
+                "VALUES (?, ?, ?, 'pending', ?, ?)",
+                (cid, rid, content, now.isoformat(), fingerprint),
             )
-            self._append(db, cid, rid, "user", content)
+            self._append(db, cid, rid, "user", content, context)
         return None
 
     def _append(self, db, cid, rid, role, content, context=None):
@@ -187,11 +201,19 @@ class SQLiteConversationRepository:
         db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (now, cid))
 
     def complete(
-        self, conversation_id: UUID, request_id: UUID, content: str, context: dict | None = None
+        self,
+        conversation_id: UUID,
+        request_id: UUID,
+        content: str,
+        context: dict | None = None,
+        *,
+        guard=None,
     ) -> list[Message]:
         cid, rid = str(conversation_id), str(request_id)
         with closing(self._connect()) as db, db:
             db.execute("BEGIN IMMEDIATE")
+            if guard:
+                guard(db)
             changed = db.execute(
                 "UPDATE conversation_requests SET status='completed' "
                 "WHERE conversation_id=? AND request_id=? AND status='pending'",
@@ -202,6 +224,12 @@ class SQLiteConversationRepository:
                     "request_expired", "El envío ya no está activo. Consulta el historial."
                 )
             self._append(db, cid, rid, "assistant", content, context)
+            if context and context.get("consent_scope") == "tutor_context_v3":
+                db.execute(
+                    "UPDATE conversation_messages SET context=? "
+                    "WHERE conversation_id=? AND request_id=? AND role='user'",
+                    (json.dumps(context), cid, rid),
+                )
             return self._pair(db, cid, rid)
 
     def fail(self, conversation_id: UUID, request_id: UUID, context: dict | None = None) -> None:

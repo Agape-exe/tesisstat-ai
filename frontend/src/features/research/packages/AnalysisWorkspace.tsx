@@ -118,9 +118,10 @@ export function AnalysisWorkspace({
   return (
     <section aria-label="Espacio de análisis">
       <DiagnosticWorkspace
-        key={projectId}
+        key={`${projectId}:${view === 'diagnostics' ? item : ''}`}
         projectId={projectId}
         active={active}
+        initialIntentId={view === 'diagnostics' ? item : null}
       />
       <details open={!!view && view !== 'diagnostics'} className="rp-technical">
         <summary>

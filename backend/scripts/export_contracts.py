@@ -13,6 +13,8 @@ from app.shared.data_workspace_v2 import WORKSPACE_MODELS
 from app.shared.diagnostics_v2 import DIAGNOSTIC_MODELS
 from app.shared.instruments_v2 import INSTRUMENT_MODELS
 from app.shared.plans_v2 import ANALYSIS_MODELS
+from app.shared.reports_v2 import REPORT_MODELS
+from app.shared.tutor_v2 import TUTOR_MODELS
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -40,6 +42,8 @@ def main() -> None:
                 *DIAGNOSTIC_MODELS,
                 *ANALYSIS_MODELS,
                 *INSTRUMENT_MODELS,
+                *TUTOR_MODELS,
+                *REPORT_MODELS,
                 IntentPatch,
                 DiagnosticRequest,
             ),

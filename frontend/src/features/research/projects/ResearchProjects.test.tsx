@@ -456,11 +456,27 @@ it('opens Asistente IA, preserves document state and restores the project after 
   vi.stubGlobal(
     'fetch',
     vi.fn().mockImplementation(async (url: string) => {
-      if (url.endsWith('/conversations/status'))
+      if (url.includes('/conversations/status'))
         return new Response(
           JSON.stringify({
             provider_configured: false,
             max_message_characters: 2000,
+            consent: {
+              revision: 0,
+              granted: false,
+              consent_scope: 'tutor_context_v3',
+            },
+            static_help: 'Puedes comenzar sin documento ni hipótesis.',
+            privacy: 'Solo agregados.',
+            context: {
+              context_fingerprint: 'a'.repeat(64),
+              source_refs: [],
+              historical_refs: [],
+              pending_questions: [],
+              warnings: [],
+              allowed_actions: [],
+            },
+            choices: { datasets: [], intents: [], plans: [], results: [] },
           }),
         );
       return new Response('[]');

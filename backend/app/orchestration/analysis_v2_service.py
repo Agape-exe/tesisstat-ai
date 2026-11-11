@@ -509,7 +509,9 @@ class AnalysisServiceV2:
                 )
         except (ValueError, ArithmeticError) as exc:
             failure = str(exc)
-            not_calculable = isinstance(exc, ReliabilityNotCalculable)
+            not_calculable = isinstance(
+                exc, (ReliabilityNotCalculable, StatisticalCalculationError)
+            )
             counts, metrics, tables, warnings = plan.case_counts, [], [], [failure]
         except Exception:
             # Persist failure without exposing internal exception details.
@@ -595,12 +597,15 @@ class AnalysisServiceV2:
         return self.result(project, result.id)
 
     def result(self, project, id_):
+        return self.result_with_plan(project, id_)[0]
+
+    def result_with_plan(self, project, id_):
         result = AnalysisResultV2.model_validate(self._get(project, "result", id_))
         plan = self.get(project, result.analysis_plan_id)
         if plan.validity == "stale":
             result.validity = "stale"
             result.stale_reasons = list(dict.fromkeys([*result.stale_reasons, *plan.stale_reasons]))
-        return result
+        return result, plan
 
     def results(self, project):
         self.workspace.sources.require(project)
