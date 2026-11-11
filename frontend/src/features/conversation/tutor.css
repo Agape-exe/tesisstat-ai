@@ -1,0 +1,84 @@
+.tutor-v2 {
+  min-width: 0;
+  margin-block: 1rem;
+  padding: clamp(0.8rem, 2vw, 1.5rem);
+}
+.tutor-v2 h2 {
+  font-size: 1.25rem;
+}
+.tutor-v2 code,
+.tutor-v2 small,
+.tutor-v2 li {
+  overflow-wrap: anywhere;
+}
+.tutor-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+.tutor-v2 select,
+.tutor-v2 textarea {
+  width: 100%;
+  min-width: 0;
+}
+.tutor-v2 .rp-actions > div {
+  flex: 1 1 220px;
+}
+.tutor-v2 .rp-actions small {
+  display: block;
+  margin-top: 0.35rem;
+}
+.tutor-consent {
+  display: flex;
+  align-items: start;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+.tutor-consent input {
+  flex: 0 0 auto;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.tutor-messages {
+  max-height: 650px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  margin-block: 1rem;
+}
+.tutor-message {
+  padding: 1rem;
+  border: 1px solid #d5dfe7;
+  border-radius: 0.65rem;
+  margin-block: 0.7rem;
+  background: #f4f8fc;
+}
+.tutor-user {
+  background: #fff;
+}
+.tutor-prose {
+  white-space: pre-wrap;
+}
+.result-v2-figure {
+  margin: 1rem 0;
+  padding: 0.6rem;
+  background: #f5f8fb;
+}
+.result-v2-figure svg {
+  width: 100%;
+  max-height: 340px;
+}
+.result-v2-figure figcaption {
+  overflow-wrap: anywhere;
+}
+.result-v2-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.result-v2-card summary {
+  cursor: pointer;
+  padding-block: 0.8rem;
+}
+.result-v2-card textarea {
+  width: 100%;
+}

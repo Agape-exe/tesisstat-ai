@@ -68,6 +68,11 @@ export function createContextApi(
     revisions: (id: string) => request<Context[]>(id, '/revisions'),
     prompt: (id: string) => request<{ prompt: string }>(id, '/import-prompt'),
     suggestions: (id: string) => request<Suggestion[]>(id, '/suggestions'),
+    suggestion: (id: string, suggestionId: string) =>
+      request<Suggestion>(
+        id,
+        `/suggestions/${encodeURIComponent(suggestionId)}`,
+      ),
     suggest: (id: string, response: string, expected_revision: number) =>
       request<Suggestion>(
         id,

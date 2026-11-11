@@ -397,6 +397,11 @@ def render_pdf(
     Keep byte offsets exact, wrap long tokens and never truncate report content.
     """
     report = render_text(result, context=context, observation_figures=observation_figures)
+    return render_pdf_text(report)
+
+
+def render_pdf_text(report: str) -> bytes:
+    """Shared paginated renderer; input is a report, never a calculation request."""
     try:
         report.encode("cp1252")
     except UnicodeEncodeError:
@@ -406,6 +411,34 @@ def render_pdf(
         )
     lines = [part for line in report.splitlines() for part in (wrap(line, 82) or [""])]
     pages = [lines[start : start + 49] for start in range(0, len(lines), 49)]
+    return _render_pdf_pages(pages)
+
+
+def render_pdf_blocks(blocks: Sequence[Sequence[str]]) -> bytes:
+    """Keep bounded figures and captions together; v1 pagination stays unchanged."""
+    blocks = [list(block) for block in blocks]
+    try:
+        "\n".join(line for block in blocks for line in block).encode("cp1252")
+    except UnicodeEncodeError:
+        blocks.append(
+            [
+                "Limitación PDF: caracteres fuera de WinAnsi se sustituyen por ?. "
+                "Descarga DOCX para conservar Unicode completo."
+            ]
+        )
+    pages = [[]]
+    for block in blocks:
+        lines = [part for line in block for part in (wrap(line, 82) or [""])]
+        if len(lines) <= 49 and len(pages[-1]) + len(lines) > 49:
+            pages.append([])
+        for line in lines:
+            if len(pages[-1]) == 49:
+                pages.append([])
+            pages[-1].append(line)
+    return _render_pdf_pages([page for page in pages if page])
+
+
+def _render_pdf_pages(pages) -> bytes:
     kids = " ".join(f"{4 + index * 2} 0 R" for index in range(len(pages)))
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",

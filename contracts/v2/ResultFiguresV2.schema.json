@@ -1,0 +1,200 @@
+{
+  "$defs": {
+    "ResultFigureDataV2": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "scatter",
+            "paired",
+            "groups",
+            "bars",
+            "metric"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "x_label": {
+          "title": "X Label",
+          "type": "string"
+        },
+        "y_label": {
+          "title": "Y Label",
+          "type": "string"
+        },
+        "x": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 500,
+          "title": "X",
+          "type": "array"
+        },
+        "y": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 500,
+          "title": "Y",
+          "type": "array"
+        },
+        "labels": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 500,
+          "title": "Labels",
+          "type": "array"
+        },
+        "caption": {
+          "title": "Caption",
+          "type": "string"
+        },
+        "source_metric_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Metric Keys",
+          "type": "array"
+        },
+        "total_cases": {
+          "title": "Total Cases",
+          "type": "integer"
+        },
+        "displayed_cases": {
+          "title": "Displayed Cases",
+          "type": "integer"
+        },
+        "policy": {
+          "enum": [
+            "persisted-aggregate-v1",
+            "deterministic-complete-cases-500-v1"
+          ],
+          "title": "Policy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "x_label",
+        "y_label",
+        "x",
+        "y",
+        "caption",
+        "total_cases",
+        "displayed_cases",
+        "policy"
+      ],
+      "title": "ResultFigureDataV2",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "recoding",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation",
+            "snapshot"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "result_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Result Id",
+      "type": "string"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "figures": {
+      "items": {
+        "$ref": "#/$defs/ResultFigureDataV2"
+      },
+      "title": "Figures",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "result_id",
+    "source_refs",
+    "figures",
+    "warnings"
+  ],
+  "title": "ResultFiguresV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ResultFiguresV2.schema.json"
+}

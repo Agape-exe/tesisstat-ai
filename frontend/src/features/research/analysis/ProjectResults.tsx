@@ -39,7 +39,7 @@ export function ProjectResults({
           Actualizar resultados
         </button>
       </div>
-      <ResultsV2 projectId={projectId} active={active} />
+      <ResultsV2 projectId={projectId} active={active} selectedId={item} />
       <details open className="rp-technical">
         <summary>Históricos del recorrido documental v1</summary>
         {history.loading && <p role="status">Cargando resultados…</p>}

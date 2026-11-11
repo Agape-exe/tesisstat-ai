@@ -1,5 +1,14 @@
 # Familia v2: contexto, fuentes e intención/snapshot
 
+S06 concreta C7 y la presentación C5 con `TutorContextV2`, `MessageDraftV2`,
+`TutorSelectionV2`, `TutorConsentV2`, `ResultExplanationV2`, `ExplanationReviewV2`,
+`ResultPresentationV2` y `ResultFiguresV2`. Canónicos en `shared/tutor_v2.py` y
+`shared/reports_v2.py`; mismos generadores, sin editar schemas/tipos a mano.
+Las interpretaciones IA se guardan separadas del resultado numérico y conservan revisión.
+El consentimiento `tutor_context_v3` es distinto del anterior `research_context_v2`.
+Detalle ejecutable y límites: [C5/C7](../../docs/CONTRATOS_EVOLUCION.md#implementación-s06-de-c5-y-c7)
+y [evidencia S06](../../docs/sesiones/S06.md).
+
 S05 incorpora C6: InstrumentContextV2, InstrumentMappingV2, ScorePreviewV2,
 ScoreRecordV2 y ScoreDerivedTableV2, con DTOs de edición/confirmación separados. Canónicos
 en `shared/instruments_v2.py`; los diez ejemplos C6 proceden del recorrido sintético real

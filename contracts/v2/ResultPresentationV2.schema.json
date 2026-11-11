@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "DisplayMetricV2": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "formatted": {
+          "title": "Formatted",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "formatted",
+        "unit",
+        "reason"
+      ],
+      "title": "DisplayMetricV2",
+      "type": "object"
+    },
+    "DisplayTableV2": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "columns",
+        "rows"
+      ],
+      "title": "DisplayTableV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "result_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Result Id",
+      "type": "string"
+    },
+    "status_label": {
+      "title": "Status Label",
+      "type": "string"
+    },
+    "technique_label": {
+      "title": "Technique Label",
+      "type": "string"
+    },
+    "metrics": {
+      "items": {
+        "$ref": "#/$defs/DisplayMetricV2"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "tables": {
+      "items": {
+        "$ref": "#/$defs/DisplayTableV2"
+      },
+      "title": "Tables",
+      "type": "array"
+    },
+    "interpretation": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Interpretation"
+    },
+    "interpretation_metric_keys": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Interpretation Metric Keys",
+      "type": "array"
+    },
+    "interpretation_label": {
+      "title": "Interpretation Label",
+      "type": "string"
+    },
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "format_policy": {
+      "const": "es-significant-6-v1",
+      "default": "es-significant-6-v1",
+      "title": "Format Policy",
+      "type": "string"
+    }
+  },
+  "required": [
+    "result_id",
+    "status_label",
+    "technique_label",
+    "metrics",
+    "tables",
+    "interpretation",
+    "interpretation_metric_keys",
+    "interpretation_label"
+  ],
+  "title": "ResultPresentationV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ResultPresentationV2.schema.json"
+}

@@ -16,6 +16,8 @@ from app.modules.conversation.research_context import ResearchContextBuilder
 from app.modules.conversation.routes import create_router as create_conversation_router
 from app.modules.conversation.service import ConversationService, ConversationSettings
 from app.modules.conversation.sqlite_repository import SQLiteConversationRepository
+from app.modules.conversation.tutor_routes import create_router as create_tutor_router
+from app.modules.conversation.tutor_service import TutorService
 from app.modules.research.context.repository import ContextError
 from app.modules.research.context.routes import create_router as create_context_router
 from app.modules.research.context.sqlite_repository import SQLiteContextRepository
@@ -101,6 +103,7 @@ from app.orchestration.analysis_v2_routes import create_router as create_analysi
 from app.orchestration.analysis_v2_service import AnalysisServiceV2
 from app.orchestration.diagnostic_routes import create_router as create_diagnostic_router
 from app.orchestration.diagnostic_service import DiagnosticService
+from app.orchestration.reports_v2_service import ReportsServiceV2
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
 from app.orchestration.scores_v2 import ScoreServiceV2
 from app.orchestration.statistics_routes import create_statistics_router
@@ -574,19 +577,22 @@ def create_app(
         SQLitePreparationRepository(dataset_repository),
     )
     app.state.conversation_context = context
-    app.include_router(
-        create_conversation_router(
-            ConversationService(
-                projects,
-                SQLiteConversationRepository(settings.research_db_path),
-                conversation_provider
-                if conversation_provider is not None
-                else CloudflareLanguageModel(settings),
-                settings,
-                context,
-            )
-        )
+    conversations = ConversationService(
+        projects,
+        SQLiteConversationRepository(settings.research_db_path),
+        conversation_provider
+        if conversation_provider is not None
+        else CloudflareLanguageModel(settings),
+        settings,
+        context,
     )
+    app.include_router(create_conversation_router(conversations))
+    tutor = TutorService(
+        conversations, app.state.analysis_v2, ContextService(projects, contexts, actor_ref="local")
+    )
+    app.state.tutor = tutor
+    app.state.reports_v2 = ReportsServiceV2(app.state.analysis_v2, tutor)
+    app.include_router(create_tutor_router(tutor, app.state.reports_v2))
 
     @app.get("/health")
     def health() -> dict[str, str]:

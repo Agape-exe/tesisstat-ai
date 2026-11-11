@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   createContextApi,
   ContextApiError,
@@ -13,7 +13,7 @@ import {
   directionHelp,
   directionLabels,
 } from './semantics';
-import { navigateProject } from '../projects/navigation';
+import { navigateProject, useProjectRoute } from '../projects/navigation';
 
 const api = createContextApi();
 const labels: Record<string, string> = {
@@ -121,6 +121,40 @@ export function AssistedContext({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [stale, setStale] = useState(false);
+  const route = useProjectRoute();
+  const requestedSuggestion =
+    route.projectId === projectId &&
+    route.section === 'context' &&
+    route.view === 'suggestion'
+      ? route.item
+      : null;
+  useEffect(() => {
+    if (!requestedSuggestion) return;
+    let live = true;
+    api
+      .suggestion(projectId, requestedSuggestion)
+      .then((item) => {
+        if (!live) return;
+        setSuggestion(item);
+        setProposal(item.proposal as ImportProposal);
+        setConfirm(false);
+        setStale(item.state === 'stale');
+        setSelected(
+          importEntries(item.proposal as ImportProposal, current)
+            .filter((e) => !e.current || e.current === 'unknown')
+            .map((e) => e.key),
+        );
+      })
+      .catch((e) => {
+        if (live)
+          setError(
+            e instanceof Error ? e.message : 'No se pudo abrir el borrador.',
+          );
+      });
+    return () => {
+      live = false;
+    };
+  }, [projectId, requestedSuggestion, current]);
   const entries = proposal
     ? importEntries(proposal, current, suggestion?.proposal as ImportProposal)
     : [];
@@ -187,8 +221,15 @@ export function AssistedContext({
     setConfirm(false);
   }
   return (
-    <details className="rc-assisted">
+    <details className="rc-assisted" open={!!requestedSuggestion || undefined}>
       <summary>Completar con ayuda de otro chat</summary>
+      {requestedSuggestion && (
+        <p>
+          Borrador del tutor con procedencia IA. Compara y corrige sus campos
+          antes de aplicar; la confirmación científica y la aprobación de
+          análisis son pasos independientes.
+        </p>
+      )}
       <p>
         Copia el prompt y úsalo con tu tesis en el chat que prefieras. Pega aquí
         su respuesta, revisa y elige qué guardar. No enviamos el contenido a

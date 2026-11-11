@@ -1,0 +1,13 @@
+{
+  "configured": true,
+  "provider_calls": 1,
+  "data": "proyecto sintético vacío; sin filas ni documentos",
+  "consent_scope": "tutor_context_v4",
+  "integration_accredited": true,
+  "explicit_consent_revision": 1,
+  "provider_contract_valid": true,
+  "concept_count": 1,
+  "http_status": 200,
+  "prose_source": "ai_concepts",
+  "response": "Concepto general · Una correlación positiva indica que a medida que una variable aumenta, la otra también tiende a aumentar. Una correlación negativa indica que a medida que una variable aumenta, la otra tiende a disminuir. La correlación no implica causalidad, ya que no establece una relación de causa y efecto entre las variables."
+}

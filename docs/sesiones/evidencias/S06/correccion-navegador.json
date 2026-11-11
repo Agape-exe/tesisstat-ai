@@ -1,0 +1,15 @@
+{
+  "controlled_provider": true,
+  "renewed_v4_before_send": true,
+  "positive_then_negative_follow_up": true,
+  "persisted_history": true,
+  "revoked_consent": true,
+  "keyboard_help": true,
+  "mobile": [
+    390,
+    320
+  ],
+  "no_analysis_mutations": true,
+  "errors": [],
+  "external": []
+}

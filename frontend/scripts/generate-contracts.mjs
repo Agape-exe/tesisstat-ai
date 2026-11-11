@@ -23,6 +23,14 @@ for (const name of names) {
 const v2Output = new URL('v2/', output);
 await mkdir(v2Output, { recursive: true });
 for (const name of [
+  'TutorContextV2',
+  'MessageDraftV2',
+  'TutorSelectionV2',
+  'TutorConsentV2',
+  'ResultExplanationV2',
+  'ExplanationReviewV2',
+  'ResultPresentationV2',
+  'ResultFiguresV2',
   'InstrumentContextV2',
   'InstrumentMappingV2',
   'ScorePreviewV2',

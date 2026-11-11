@@ -1,0 +1,15 @@
+{
+  "errors": [],
+  "external": [],
+  "sameSelectorTechnique": "descriptive_summary",
+  "originalIntent": "b5c73edf-8bb5-4527-b44c-7bbfd4f959d7",
+  "proposalFromTutor": "597fe35c-a544-4a28-910a-e6d8341e5c42",
+  "desktop": true,
+  "mobile": [
+    390,
+    320
+  ],
+  "keyboardHelp": true,
+  "persistedHistory": true,
+  "revokedConsent": true
+}

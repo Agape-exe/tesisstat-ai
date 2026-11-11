@@ -5,6 +5,7 @@ import { EmptyState } from '../projects/ProjectShell';
 import { navigateProject, navigateWorkspace } from '../projects/navigation';
 import { createAnalysisApi } from './api';
 import { useAnalysisHistory } from './useAnalysisHistory';
+import { ResultsV2 } from './ResultsV2';
 import {
   dateLabel,
   recordIsCurrent,
@@ -63,6 +64,7 @@ export function ProjectReports({
   }
   return (
     <section aria-label="Informes de investigación">
+      <ResultsV2 projectId={projectId} active={active} selectedId={item} />
       <div className="rp-section-heading">
         <div>
           <h2>Informes de la investigación</h2>

@@ -14,14 +14,17 @@ El formulario manual sigue disponible. [Entrega y pruebas S02B](docs/sesiones/S0
 Contexto describe la investigación general; qué representa cada fila se define en Datos
 para cada tabla. Relaciones y comparaciones se revisarán por análisis en S04. El prompt 1.1
 conserva relaciones narrativas y no impone una clasificación global ni una prueba unilateral.
-El análisis v2 (S04) y el nuevo tutor siguen pendientes.
+S04–S06 incorporan análisis por intención, instrumentos/puntuaciones, tutor contextual y
+resultados e informes v2. [Entrega y verificaciones S06](docs/sesiones/S06.md).
 
 Demostración local para conectar metodología revisada y datos de un proyecto con un
 análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.
 
-La aplicación principal permite recorrer **Proyecto → Documento → Metodología → Dataset →
-EDA → Preparación → ResearchPackage → Propuesta → Aprobación → Ejecución → Resultados**,
-con descarga TXT/DOCX/PDF de resultados completados y vigentes. El motor cubre descriptiva,
+La aplicación principal permite recorrer **Contexto → Cargar datos → Revisar datos →
+Revisar propuesta → Aprobar y ejecutar → Comprender resultados**, sin documento ni hipótesis
+obligatorios y con ayuda contextual opcional. Ofrece descarga TXT/DOCX/PDF de resultados
+aprobados, completados y vigentes. El recorrido documental v1 se conserva como herramienta
+secundaria. Su motor cubre descriptiva,
 asociación, comparaciones paramétricas y no paramétricas, regresión/ANCOVA y sus métricas,
 supuestos y advertencias reproducibles. Las 19 técnicas del catálogo están conectadas al flujo
 de propuesta, aprobación y ejecución; las conclusiones se limitan explícitamente cuando una
@@ -42,8 +45,9 @@ como borrador; el avance no equivale a completar la investigación ni acredita c
 La navegación principal es **Inicio · Contexto · Datos · Análisis · Resultados**. El chat se
 abre desde **Solicitar ayuda** o las herramientas de apoyo. Contexto introduce el recorrido y
 conserva documentos/metodología e instrumento; Resultados conserva informes/exportaciones.
-Puedes cargar y explorar Datos sin completar Contexto. El contexto manual se guarda y confirma con revisiones desde S02. Para proponer y ejecutar análisis sigue vigente el recorrido
-documental descrito arriba, con sus aprobaciones y controles actuales.
+Puedes cargar y explorar Datos sin completar Contexto. El contexto manual se guarda y confirma
+con revisiones. Análisis v2 utiliza intenciones y tablas concretas con diagnósticos/propuestas;
+autorizar datos, aprobar y ejecutar conservan acciones independientes.
 
 API Research: `POST /api/research/projects` acepta `{"title":"Ensayo provisional"}`.
 Los datos académicos son opcionales y anulables. El `PUT` existente actualiza **solo campos
@@ -73,7 +77,7 @@ No necesitas contexto, documento ni hipótesis para explorar, ni limpiar para co
 Las herramientas v1 de perfil/preparación
 permanecen bajo **Herramientas anteriores de datasets**; sus rutas siguen vigentes y XLSX v1
 continúa leyendo solo la primera hoja. Abrir una tabla v2 no cambia el dataset activo v1.
-El chat/analizador actual todavía no consume el contexto por tabla.
+El tutor v2 resuelve tablas/diccionarios/perfiles seleccionados; no mezcla sus resultados.
 
 Ejemplos: [Excel sintético](fixtures/data/s03a/mediciones-sinteticas.xlsx) y
 [CSV independiente](fixtures/data/s03a/medicion-independiente.csv). Desde backend,
@@ -82,8 +86,9 @@ API, límites y recuperación: [fuentes C3](backend/app/modules/research/sources
 Pruebas y evidencia visual: [S03A](docs/sesiones/S03A.md) y [S03B](docs/sesiones/S03B.md).
 Ejemplos antes/después y claves problemáticas: `fixtures/data/s03b/`.
 [API, persistencia y recursos para S04](backend/app/modules/research/data_workspace/README.md).
-Las propuestas y ejecución para estas tablas nuevas corresponden a S04; el análisis v1
-conserva su recorrido actual. Inicio muestra evidencia y pendientes reales al volver de Datos.
+Las propuestas y ejecución v2 utilizan estas tablas y el mismo selector C4–C5 desde los
+formularios y la ayuda del tutor. El análisis v1 conserva su recorrido. Inicio muestra
+evidencia y pendientes reales al volver de Datos.
 
 ## Iniciar la aplicación
 
@@ -126,9 +131,10 @@ S02 permite guardar contexto manual desde **Contexto** con solo una pregunta u o
 sin documento, dataset ni hipótesis. Guardar y confirmar son acciones separadas; el servidor
 conserva revisiones y detecta ediciones concurrentes. Inicio consulta el contexto real y
 permite continuar a Datos aunque esté incompleto. Documentos y metodología v1 siguen como
-apoyo opcional; el tutor y el análisis actuales conservan sus consumidores legados.
+apoyo opcional; los recursos v1 conservan sus consumidores y rutas anteriores.
 Consulta [S02](docs/sesiones/S02.md), [API C2](backend/app/modules/research/context/README.md)
-y [contratos v2 preparados](contracts/v2/README.md). No hay ejecución v2 todavía.
+y [contratos v2](contracts/v2/README.md). Análisis v2 puede proponer, aprobar y ejecutar
+una intención descriptiva con datos revisados, sin inventar documento ni hipótesis.
 
 La Sesión 17A integra el chat con un grafo LangGraph local de investigación, planificación
 y conversación, con una llamada al proveedor como máximo por turno. Consulta
@@ -195,12 +201,25 @@ los comandos vigentes de demostración y validación están en esta guía. La ma
 limitaciones se encuentran en [STATISTICS_INTEGRANTE2_AUDIT.md](docs/STATISTICS_INTEGRANTE2_AUDIT.md).
 
 La ayuda del proyecto incluye **Asistente IA**, con conversaciones e historial SQLite.
-El envío requiere Cloudflare configurado y consentimiento explícito. Consulta configuración,
+S06 añade **Ayuda contextual para este paso** y selección explícita de análisis/resultado.
+El envío v2 requiere Cloudflare configurado y permiso revocable `tutor_context_v4`; el permiso
+v3 anterior debe renovarse porque cambia lo transmitido. Se envían fragmentos filtrados y ordenados
+de la consulta, hasta cuatro mensajes del mismo contexto y campos narrativos confirmados pertinentes,
+además de estados y agregados bajo alias. Un vocabulario estadístico/gramatical conserva negaciones y
+seguimientos; lo desconocido se marca omitido. No se envían textos originales completos, nombres,
+identificadores, secretos, categorías libres, documentos ni filas. Los conceptos y ejemplos generales
+del proveedor se conservan sin exigir resultados. Los hallazgos solo usan operaciones estructuradas
+verificadas y cifras insertadas por el servidor; una referencia no valida prosa arbitraria.
+Sin proveedor siguen funcionando ayuda estática identificada, historial y formularios.
+Resultados permite figuras explícitas e informes TXT/DOCX/PDF, con formato compartido y doble
+revalidación de aprobación, autorización y vigencia. [Alcance y pruebas S06](docs/sesiones/S06.md).
+Para los antecedentes v1, consulta configuración,
 pruebas y limitaciones en [CHAT_CONVERSACIONAL.md](docs/CHAT_CONVERSACIONAL.md).
-La Sesión 16A incorpora metodología confirmada, metadatos del dataset, planes y
+La Sesión 16A incorporó metodología confirmada, metadatos del dataset, planes y
 resultados persistidos, con vigencia y trazabilidad por respuesta. Requiere aceptar
 el alcance ampliado del consentimiento. Consulta arquitectura, pruebas y validación
 manual en la [guía de contexto de investigación](docs/CONTEXTO_INVESTIGACION_CHAT.md).
 La conexión real del chat anterior fue validada por la usuaria; la validación del
-contexto ampliado con Qwen3 real queda pendiente. La demo reproducible con proveedor
+contexto ampliado anterior con Qwen3 real queda pendiente. S06 verificó una consulta conceptual
+sintética real con consentimiento v4, sin acreditar todos los recorridos. La demo con proveedor
 simulado no necesita credenciales ni realiza solicitudes externas.

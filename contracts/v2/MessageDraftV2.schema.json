@@ -1,0 +1,110 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "stage": {
+      "enum": [
+        "home",
+        "context",
+        "data",
+        "analysis",
+        "results"
+      ],
+      "title": "Stage",
+      "type": "string"
+    },
+    "dataset_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dataset Id"
+    },
+    "intent_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Intent Id"
+    },
+    "plan_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Plan Id"
+    },
+    "result_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result Id"
+    },
+    "content": {
+      "maxLength": 16000,
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "external_ai_consent": {
+      "const": true,
+      "title": "External Ai Consent",
+      "type": "boolean"
+    },
+    "consent_scope": {
+      "const": "tutor_context_v4",
+      "title": "Consent Scope",
+      "type": "string"
+    },
+    "consent_revision": {
+      "minimum": 1,
+      "title": "Consent Revision",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "stage",
+    "content",
+    "request_id",
+    "external_ai_consent",
+    "consent_scope",
+    "consent_revision"
+  ],
+  "title": "MessageDraftV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/MessageDraftV2.schema.json"
+}
