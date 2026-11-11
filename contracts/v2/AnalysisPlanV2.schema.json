@@ -1,0 +1,518 @@
+{
+  "$defs": {
+    "CaseCounts": {
+      "additionalProperties": false,
+      "properties": {
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "used": {
+          "minimum": 0,
+          "title": "Used",
+          "type": "integer"
+        },
+        "excluded": {
+          "minimum": 0,
+          "title": "Excluded",
+          "type": "integer"
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/$defs/GroupCountV2"
+          },
+          "title": "Groups",
+          "type": "array"
+        },
+        "pairs": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pairs"
+        }
+      },
+      "required": [
+        "total",
+        "used",
+        "excluded"
+      ],
+      "title": "CaseCounts",
+      "type": "object"
+    },
+    "Confirmation": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_ref": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Actor Ref",
+          "type": "string"
+        },
+        "confirmed_at": {
+          "format": "date-time",
+          "title": "Confirmed At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "actor_ref",
+        "confirmed_at",
+        "revision"
+      ],
+      "title": "Confirmation",
+      "type": "object"
+    },
+    "GroupCountV2": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "label",
+        "count"
+      ],
+      "title": "GroupCountV2",
+      "type": "object"
+    },
+    "PlanAlternative": {
+      "additionalProperties": false,
+      "properties": {
+        "technique": {
+          "enum": [
+            "descriptive_summary",
+            "pearson",
+            "spearman",
+            "t_welch",
+            "t_independent",
+            "mann_whitney",
+            "t_paired",
+            "wilcoxon",
+            "cronbach_alpha"
+          ],
+          "title": "Technique",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "technique",
+        "reason"
+      ],
+      "title": "PlanAlternative",
+      "type": "object"
+    },
+    "PlanParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "alpha": {
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "alternative": {
+          "enum": [
+            "two-sided",
+            "greater",
+            "less",
+            "unspecified"
+          ],
+          "title": "Alternative",
+          "type": "string"
+        },
+        "missing_policy": {
+          "const": "complete_cases",
+          "default": "complete_cases",
+          "title": "Missing Policy",
+          "type": "string"
+        },
+        "calculation_method": {
+          "enum": [
+            "pending",
+            "descriptive-v2",
+            "pearson-two-sided-v2",
+            "spearman-two-sided-v2",
+            "t_welch-two-sided-v2",
+            "t_independent-two-sided-v2",
+            "mann_whitney-two-sided-v2",
+            "t_paired-two-sided-v2",
+            "wilcoxon-two-sided-v2",
+            "cronbach_alpha-two-sided-v2"
+          ],
+          "title": "Calculation Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alpha",
+        "alternative",
+        "calculation_method"
+      ],
+      "title": "PlanParameters",
+      "type": "object"
+    },
+    "PlanQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "destination": {
+          "default": "analysis",
+          "enum": [
+            "analysis",
+            "datasets",
+            "context",
+            "instrument"
+          ],
+          "title": "Destination",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "field",
+        "question"
+      ],
+      "title": "PlanQuestion",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "project",
+            "context",
+            "dataset",
+            "dictionary",
+            "intent",
+            "profile",
+            "diagnostic",
+            "document",
+            "instrument",
+            "mapping",
+            "score",
+            "plan",
+            "result",
+            "source_file",
+            "source_sheet",
+            "table",
+            "table_context",
+            "preparation",
+            "snapshot"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "revision",
+        "hash"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Project Id",
+      "type": "string"
+    },
+    "revision": {
+      "const": 1,
+      "default": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "snapshot_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "intent_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "dataset_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Dataset Id"
+    },
+    "status": {
+      "enum": [
+        "needs_clarification",
+        "proposed",
+        "approved"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "technique": {
+      "anyOf": [
+        {
+          "enum": [
+            "descriptive_summary",
+            "pearson",
+            "spearman",
+            "t_welch",
+            "t_independent",
+            "mann_whitney",
+            "t_paired",
+            "wilcoxon",
+            "cronbach_alpha"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Technique"
+    },
+    "parameters": {
+      "$ref": "#/$defs/PlanParameters"
+    },
+    "rationale": {
+      "title": "Rationale",
+      "type": "string"
+    },
+    "evidence_refs": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "alternatives": {
+      "items": {
+        "$ref": "#/$defs/PlanAlternative"
+      },
+      "title": "Alternatives",
+      "type": "array"
+    },
+    "pending_questions": {
+      "items": {
+        "$ref": "#/$defs/PlanQuestion"
+      },
+      "title": "Pending Questions",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "source_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Source Fingerprint",
+      "type": "string"
+    },
+    "proposal_token": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Proposal Token",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "approval": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Confirmation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "question": {
+      "title": "Question",
+      "type": "string"
+    },
+    "variable_names": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Variable Names",
+      "type": "array"
+    },
+    "case_counts": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CaseCounts"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy_versions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Policy Versions",
+      "type": "object"
+    },
+    "validity": {
+      "default": "current",
+      "enum": [
+        "current",
+        "stale"
+      ],
+      "title": "Validity",
+      "type": "string"
+    },
+    "invalidated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Invalidated At"
+    },
+    "stale_reasons": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Stale Reasons",
+      "type": "array"
+    },
+    "data_authorization_required": {
+      "default": true,
+      "title": "Data Authorization Required",
+      "type": "boolean"
+    },
+    "data_authorized": {
+      "default": false,
+      "title": "Data Authorized",
+      "type": "boolean"
+    },
+    "execution_status": {
+      "default": "not_started",
+      "enum": [
+        "not_started",
+        "running",
+        "completed",
+        "failed"
+      ],
+      "title": "Execution Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "snapshot_ref",
+    "intent_id",
+    "dataset_id",
+    "status",
+    "technique",
+    "parameters",
+    "rationale",
+    "evidence_refs",
+    "limitations",
+    "source_fingerprint",
+    "proposal_token",
+    "created_at",
+    "question",
+    "variable_names",
+    "case_counts",
+    "policy_versions"
+  ],
+  "title": "AnalysisPlanV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/AnalysisPlanV2.schema.json"
+}

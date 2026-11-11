@@ -19,6 +19,15 @@ const mock = vi.hoisted(() => ({
   profile: vi.fn(),
   tableCompute: vi.fn(),
 }));
+vi.mock('../analysis/v2api', () => ({
+  createAnalysisV2Api: () => ({ plans: async () => [] }),
+  techniqueLabels: {},
+}));
+vi.mock('../context/api', () => ({
+  createContextApi: () => ({
+    get: async () => ({ specific_objectives: [], hypotheses: [] }),
+  }),
+}));
 vi.mock('./api', () => ({ createDiagnosticsApi: () => mock }));
 vi.mock('../data/api', () => ({
   createDataApi: () => ({ ...mock, compute: mock.tableCompute }),
@@ -112,7 +121,7 @@ it('allows an incomplete draft without a document or hypothesis', async () => {
     confirm: false,
     changes: { question: 'Borrador ventas', dataset_id: null },
   });
-  expect(body.changes).not.toHaveProperty('hypothesis_id');
+  expect(body.changes.hypothesis_id).toBeNull();
   expect(mock.compute).not.toHaveBeenCalled();
 });
 

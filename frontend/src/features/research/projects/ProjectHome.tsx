@@ -78,8 +78,7 @@ export function ProjectHome({
       <h3>Recorrido recomendado</h3>
       <p className="rp-hint">
         El estado refleja contexto, archivos, perfiles, propuestas y resultados
-        guardados. Las etapas posteriores usan el recorrido documental actual;
-        puedes explorar Datos sin completar Contexto.
+        guardados por análisis; puedes explorar Datos sin completar Contexto.
       </p>
       <ol className="rp-journey">
         {steps?.map((step, index) => (

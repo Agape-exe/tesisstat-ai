@@ -496,6 +496,18 @@
     "IntentConditions": {
       "additionalProperties": false,
       "properties": {
+        "inference_reviewed": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
+        "influence_reviewed": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
+        "sampling_limit_accepted": {
+          "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
+        },
+        "review_notes": {
+          "$ref": "#/$defs/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MaxLen_max_length_2000_____"
+        },
         "linearity": {
           "$ref": "#/$defs/Fact_Literal__yes____no____unknown___"
         },
@@ -664,7 +676,8 @@
             "source_sheet",
             "table",
             "table_context",
-            "preparation"
+            "preparation",
+            "snapshot"
           ],
           "title": "Kind",
           "type": "string"
@@ -808,6 +821,20 @@
       "pattern": "^[0-9a-f]{64}$",
       "title": "Source Fingerprint",
       "type": "string"
+    },
+    "dependency_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Dependency Fields",
+      "type": "array"
+    },
+    "policy_versions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Policy Versions",
+      "type": "object"
     }
   },
   "required": [

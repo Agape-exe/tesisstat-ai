@@ -277,7 +277,8 @@
             "source_sheet",
             "table",
             "table_context",
-            "preparation"
+            "preparation",
+            "snapshot"
           ],
           "title": "Kind",
           "type": "string"

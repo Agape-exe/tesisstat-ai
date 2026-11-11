@@ -1,0 +1,61 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "intent_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "intent_revision": {
+      "minimum": 1,
+      "title": "Intent Revision",
+      "type": "integer"
+    },
+    "dataset_id": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dataset Id"
+    },
+    "dataset_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dataset Revision"
+    },
+    "diagnostic_ids": {
+      "items": {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Diagnostic Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "intent_id",
+    "intent_revision"
+  ],
+  "title": "PlanRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/PlanRequest.schema.json"
+}

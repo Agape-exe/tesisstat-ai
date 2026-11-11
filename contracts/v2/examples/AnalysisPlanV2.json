@@ -1,0 +1,105 @@
+{
+  "schema_version": "2.0.0",
+  "id": "2733d6f9-1dd2-4388-87d4-c5a67dee9942",
+  "project_id": "2e968867-f89a-4100-8200-dddb6c2d703a",
+  "revision": 1,
+  "snapshot_ref": {
+    "kind": "snapshot",
+    "id": "93fcf024-4fe0-4452-b548-e625e44d86a7",
+    "revision": 1,
+    "hash": "08fbc76b788b734878bfaf4a3d0754859dd1660fa455f80c49ffb851f0482601"
+  },
+  "intent_id": "8ba78d27-8daf-4be6-a7aa-80abdb908f3d",
+  "dataset_id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+  "status": "approved",
+  "technique": "descriptive_summary",
+  "parameters": {
+    "alpha": 0.05,
+    "alternative": "unspecified",
+    "missing_policy": "complete_cases",
+    "calculation_method": "descriptive-v2"
+  },
+  "rationale": "descriptive_summary: seleccionada por pregunta, escalas y condiciones revisadas. Cuantiles Hyndman–Fan 7; varianza n−1; frecuencias sobre presentes.",
+  "evidence_refs": [
+    {
+      "kind": "source_file",
+      "id": "4b6d3e83-1953-483b-a6c0-c3c55c192a3f",
+      "revision": 1,
+      "hash": "a8dc6d3e086f1cdff0fb2dbfdbe3de1a9f53f8de9122b0fdb92d426f3c66e757"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "03e19b22-6931-4169-84a0-a0fcf25b1fc4",
+      "revision": 1,
+      "hash": "35ea37849bc755899e04e0bf2337dc2ef46939411552190778dc7725a79b1ed3"
+    },
+    {
+      "kind": "table",
+      "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+      "revision": 1,
+      "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+    },
+    {
+      "kind": "dataset",
+      "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+      "revision": 1,
+      "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+    },
+    {
+      "kind": "dictionary",
+      "id": "a0062f3a-6329-5f7f-8737-68660f1b6487",
+      "revision": 1,
+      "hash": "c466471321c15867e79e9430c732fa8a8011ddaba9339041c0fe1e58f89c319f"
+    },
+    {
+      "kind": "profile",
+      "id": "e7493b02-c3d9-5b24-a6bc-0de8ab157e75",
+      "revision": 1,
+      "hash": "01fbf4d1a98e249579e1ff29e9cd5c2b7950eca4cb4e191d28538cfd14857995"
+    },
+    {
+      "kind": "intent",
+      "id": "8ba78d27-8daf-4be6-a7aa-80abdb908f3d",
+      "revision": 1,
+      "hash": "7cb25569b4503b2eb23cc47664f5c6bf77ca640c0dec9abc6c93104380d88e38"
+    }
+  ],
+  "alternatives": [],
+  "pending_questions": [],
+  "limitations": [
+    "Los casos completos se seleccionan conjuntamente entre todas las variables elegidas.",
+    "El análisis no demuestra causalidad. Los intervalos disponibles son del 95 %."
+  ],
+  "source_fingerprint": "0e1025b024f57aef51c4e7944a0ac4de8ac1472350470d272e62a1701cf7eedd",
+  "proposal_token": "bb8addc176faf1d4d77358dd4745d86b55e8afc523b3a8fcc621d05c17d7efc4",
+  "created_at": "2026-11-10T19:29:04.092629Z",
+  "approval": {
+    "actor_ref": "local",
+    "confirmed_at": "2026-11-10T19:29:05.080125Z",
+    "revision": 1
+  },
+  "question": "Describir importes y categorías de ventas",
+  "variable_names": [
+    "importe",
+    "categoria"
+  ],
+  "case_counts": {
+    "total": 65,
+    "used": 64,
+    "excluded": 1,
+    "groups": [],
+    "pairs": null
+  },
+  "policy_versions": {
+    "selection": "priority-selection-v2.1.0",
+    "numerical": "priority-numerics-1.0.0",
+    "engine": "statistics-engine-v2.0.0",
+    "methods": "priority-methods-1.0.0"
+  },
+  "validity": "current",
+  "invalidated_at": null,
+  "stale_reasons": [],
+  "data_authorization_required": true,
+  "data_authorized": true,
+  "execution_status": "completed"
+}

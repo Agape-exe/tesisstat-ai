@@ -17,6 +17,8 @@ import {
 import { DiagnosticEvidence } from './DiagnosticEvidence';
 import { checkLabels } from './labels';
 import './diagnostics.css';
+import { IntentConditions } from './IntentConditions';
+import { AnalysisProposals } from '../analysis/AnalysisProposals';
 
 const api = createDiagnosticsApi(),
   dataApi = createDataApi();
@@ -38,6 +40,10 @@ const empty: Changes = {
   alternative: 'unspecified',
   alpha: 0.05,
   missing_policy: 'complete_cases',
+  objective_id: null,
+  hypothesis_id: null,
+  requested_technique: null,
+  conditions: {},
 };
 function fromIntent(i: Intent): Changes {
   return {
@@ -58,6 +64,15 @@ function fromIntent(i: Intent): Changes {
     group_column_id: i.group_column_id,
     alternative: i.alternative,
     alpha: i.alpha,
+    objective_id: i.objective_id,
+    hypothesis_id: i.hypothesis_id,
+    requested_technique: i.requested_technique,
+    conditions: Object.fromEntries(
+      Object.entries(i.conditions ?? {}).map(([key, fact]) => [
+        key,
+        fact.value,
+      ]),
+    ),
   };
 }
 function difference(draft: Changes, base: Changes): Changes {
@@ -256,6 +271,7 @@ export function DiagnosticWorkspace({
     profile?.state === 'current';
   return (
     <section
+      id="intent-review"
       className="diagnostic-workspace"
       aria-label="Diagnósticos por análisis"
     >
@@ -609,6 +625,14 @@ export function DiagnosticWorkspace({
           </>
         )}
       </fieldset>
+      <fieldset disabled={busy}>
+        <IntentConditions
+          projectId={projectId}
+          draft={draft}
+          update={update}
+          variables={selectedVariables}
+        />
+      </fieldset>
       <p>
         Guardar como revisado registra tus respuestas para este análisis. Puedes
         mantener dudas explícitas; no confirma normalidad, independencia ni
@@ -742,6 +766,16 @@ export function DiagnosticWorkspace({
           </button>
         </div>
       </fieldset>
+      {current && (
+        <AnalysisProposals
+          key={current.id}
+          projectId={projectId}
+          intent={current}
+          diagnostics={history}
+          dirty={dirty}
+          active={active}
+        />
+      )}
       {history.length > 0 && (
         <section aria-label="Historial de diagnósticos">
           <h4>Evidencia de este análisis ({history.length})</h4>

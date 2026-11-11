@@ -63,3 +63,34 @@
 .diagnostic-figure figcaption {
   font-weight: 600;
 }
+
+.analysis-v2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin-top: 1.5rem;
+}
+.analysis-v2 > button,
+.analysis-v2 details button {
+  margin: 0.4rem 0.4rem 0.4rem 0;
+}
+.analysis-v2 label {
+  display: block;
+  margin: 0.8rem 0;
+}
+.analysis-v2 details {
+  margin: 0.8rem 0;
+}
+.analysis-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.analysis-v2 table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.analysis-v2 th,
+.analysis-v2 td {
+  padding: 0.6rem;
+  border-bottom: 1px solid #dbe3ea;
+}

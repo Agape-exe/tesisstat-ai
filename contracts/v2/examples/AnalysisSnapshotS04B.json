@@ -1,0 +1,351 @@
+{
+  "schema_version": "2.0.0",
+  "id": "93fcf024-4fe0-4452-b548-e625e44d86a7",
+  "project_id": "2e968867-f89a-4100-8200-dddb6c2d703a",
+  "revision": 1,
+  "created_at": "2026-11-10T19:29:04.092629Z",
+  "source_refs": [
+    {
+      "kind": "source_file",
+      "id": "4b6d3e83-1953-483b-a6c0-c3c55c192a3f",
+      "revision": 1,
+      "hash": "a8dc6d3e086f1cdff0fb2dbfdbe3de1a9f53f8de9122b0fdb92d426f3c66e757"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "03e19b22-6931-4169-84a0-a0fcf25b1fc4",
+      "revision": 1,
+      "hash": "35ea37849bc755899e04e0bf2337dc2ef46939411552190778dc7725a79b1ed3"
+    },
+    {
+      "kind": "table",
+      "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+      "revision": 1,
+      "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+    },
+    {
+      "kind": "dataset",
+      "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+      "revision": 1,
+      "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+    },
+    {
+      "kind": "dictionary",
+      "id": "a0062f3a-6329-5f7f-8737-68660f1b6487",
+      "revision": 1,
+      "hash": "c466471321c15867e79e9430c732fa8a8011ddaba9339041c0fe1e58f89c319f"
+    },
+    {
+      "kind": "profile",
+      "id": "e7493b02-c3d9-5b24-a6bc-0de8ab157e75",
+      "revision": 1,
+      "hash": "01fbf4d1a98e249579e1ff29e9cd5c2b7950eca4cb4e191d28538cfd14857995"
+    },
+    {
+      "kind": "intent",
+      "id": "8ba78d27-8daf-4be6-a7aa-80abdb908f3d",
+      "revision": 1,
+      "hash": "7cb25569b4503b2eb23cc47664f5c6bf77ca640c0dec9abc6c93104380d88e38"
+    }
+  ],
+  "context_ref": null,
+  "dictionary_ref": {
+    "kind": "dictionary",
+    "id": "a0062f3a-6329-5f7f-8737-68660f1b6487",
+    "revision": 1,
+    "hash": "c466471321c15867e79e9430c732fa8a8011ddaba9339041c0fe1e58f89c319f"
+  },
+  "dataset_ref": {
+    "kind": "dataset",
+    "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+    "revision": 1,
+    "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+  },
+  "intent_ref": {
+    "kind": "intent",
+    "id": "8ba78d27-8daf-4be6-a7aa-80abdb908f3d",
+    "revision": 1,
+    "hash": "7cb25569b4503b2eb23cc47664f5c6bf77ca640c0dec9abc6c93104380d88e38"
+  },
+  "profile_ref": {
+    "kind": "profile",
+    "id": "e7493b02-c3d9-5b24-a6bc-0de8ab157e75",
+    "revision": 1,
+    "hash": "01fbf4d1a98e249579e1ff29e9cd5c2b7950eca4cb4e191d28538cfd14857995"
+  },
+  "diagnostic_refs": [],
+  "instrument_ref": null,
+  "score_ref": null,
+  "confirmed_facts": {
+    "question": {
+      "value": "Describir importes y categorías de ventas",
+      "provenance": {
+        "kind": "manual",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": {
+        "actor_ref": "local",
+        "confirmed_at": "2026-11-10T19:29:03.692802Z",
+        "revision": 1
+      }
+    }
+  },
+  "variables": [
+    {
+      "id": "be298eed-cbdd-5041-8384-12ecaa630651",
+      "column_ids": [
+        "709c23ef-a539-4fcd-ad82-b966ff65afae"
+      ],
+      "name": {
+        "value": "importe",
+        "provenance": {
+          "kind": "derived",
+          "source_refs": [
+            {
+              "kind": "dataset",
+              "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+              "revision": 1,
+              "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+            }
+          ],
+          "algorithm_version": "header-suggestion-1"
+        },
+        "confirmation": null
+      },
+      "measurement_scale": {
+        "value": "ratio",
+        "provenance": {
+          "kind": "manual",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": {
+          "actor_ref": "local",
+          "confirmed_at": "2026-11-10T19:29:03.113028Z",
+          "revision": 1
+        }
+      }
+    },
+    {
+      "id": "76ffb878-fc41-5f73-8850-68a8dc382077",
+      "column_ids": [
+        "b7d2fe65-d345-4889-b96e-251eb7d84c45"
+      ],
+      "name": {
+        "value": "categoria",
+        "provenance": {
+          "kind": "derived",
+          "source_refs": [
+            {
+              "kind": "dataset",
+              "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+              "revision": 1,
+              "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+            }
+          ],
+          "algorithm_version": "header-suggestion-1"
+        },
+        "confirmation": null
+      },
+      "measurement_scale": {
+        "value": "nominal",
+        "provenance": {
+          "kind": "manual",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": {
+          "actor_ref": "local",
+          "confirmed_at": "2026-11-10T19:29:03.113028Z",
+          "revision": 1
+        }
+      }
+    }
+  ],
+  "intent": {
+    "schema_version": "2.0.0",
+    "id": "8ba78d27-8daf-4be6-a7aa-80abdb908f3d",
+    "project_id": "2e968867-f89a-4100-8200-dddb6c2d703a",
+    "revision": 1,
+    "created_at": "2026-11-10T19:29:03.692802Z",
+    "updated_at": "2026-11-10T19:29:03.692802Z",
+    "kind": "descriptive",
+    "question": {
+      "value": "Describir importes y categorías de ventas",
+      "provenance": {
+        "kind": "manual",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": {
+        "actor_ref": "local",
+        "confirmed_at": "2026-11-10T19:29:03.692802Z",
+        "revision": 1
+      }
+    },
+    "objective_id": null,
+    "hypothesis_id": null,
+    "variable_ids": [
+      "be298eed-cbdd-5041-8384-12ecaa630651",
+      "76ffb878-fc41-5f73-8850-68a8dc382077"
+    ],
+    "roles": [],
+    "observations": {
+      "value": "unknown",
+      "provenance": {
+        "kind": "manual",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "paired_columns": null,
+    "group_column_id": null,
+    "alternative": "unspecified",
+    "alpha": 0.05,
+    "missing_policy": "complete_cases",
+    "confirmation": {
+      "actor_ref": "local",
+      "confirmed_at": "2026-11-10T19:29:03.692802Z",
+      "revision": 1
+    },
+    "estimand": "summary",
+    "conditions": {
+      "inference_reviewed": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "influence_reviewed": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "sampling_limit_accepted": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "review_notes": {
+        "value": null,
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "linearity": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "monotonicity": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "comparable_group_shapes": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "difference_symmetry": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      },
+      "pooled_variance_justified": {
+        "value": "unknown",
+        "provenance": {
+          "kind": "unknown",
+          "source_refs": [],
+          "algorithm_version": null
+        },
+        "confirmation": null
+      }
+    },
+    "requested_technique": null,
+    "dataset_id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+    "observational_unit": {
+      "value": null,
+      "provenance": {
+        "kind": "manual",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "identification": {
+      "value": null,
+      "provenance": {
+        "kind": "manual",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "comparison_notes": {
+      "value": null,
+      "provenance": {
+        "kind": "manual",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "linkage": {
+      "value": "unknown",
+      "provenance": {
+        "kind": "manual",
+        "source_refs": [],
+        "algorithm_version": null
+      },
+      "confirmation": null
+    },
+    "identifier_column_id": null
+  },
+  "source_fingerprint": "0e1025b024f57aef51c4e7944a0ac4de8ac1472350470d272e62a1701cf7eedd",
+  "dependency_fields": [
+    "/intent",
+    "/dataset",
+    "/dictionary",
+    "/profile",
+    "/diagnostics"
+  ],
+  "policy_versions": {
+    "selection": "priority-selection-v2.1.0",
+    "numerical": "priority-numerics-1.0.0",
+    "engine": "statistics-engine-v2.0.0",
+    "methods": "priority-methods-1.0.0"
+  }
+}

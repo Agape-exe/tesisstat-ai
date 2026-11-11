@@ -24,6 +24,13 @@ function responses({
     vi.fn(async (url: string) => {
       if (fail && url.endsWith(fail))
         return new Response('{}', { status: 503 });
+      if (
+        url.includes('/api/v2/') &&
+        ['/analysis/plans', '/analysis/results', '/intents'].some((path) =>
+          url.endsWith(path),
+        )
+      )
+        return new Response('[]');
       if (url.endsWith('/eda'))
         return new Response('{}', { status: edaStatus });
       return new Response(

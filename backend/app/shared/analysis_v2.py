@@ -44,6 +44,7 @@ class SourceRef(V2Model):
         "table",
         "table_context",
         "preparation",
+        "snapshot",
     ]
     id: ID
     revision: Revision
@@ -159,6 +160,16 @@ class ProjectContextV2(V2Model):
 
 
 class IntentConditions(V2Model):
+    inference_reviewed: Fact[Literal["yes", "no", "unknown"]] = Field(
+        default_factory=lambda: Fact(value="unknown")
+    )
+    influence_reviewed: Fact[Literal["yes", "no", "unknown"]] = Field(
+        default_factory=lambda: Fact(value="unknown")
+    )
+    sampling_limit_accepted: Fact[Literal["yes", "no", "unknown"]] = Field(
+        default_factory=lambda: Fact(value="unknown")
+    )
+    review_notes: Fact[Text] = Field(default_factory=Fact[Text])
     linearity: Fact[Literal["yes", "no", "unknown"]] = Field(
         default_factory=lambda: Fact(value="unknown")
     )
@@ -284,6 +295,8 @@ class AnalysisSnapshotV2(V2Model):
     variables: list[SnapshotVariableV2] = Field(min_length=1)
     intent: AnalysisIntentV2
     source_fingerprint: Hash
+    dependency_fields: list[str] = Field(default_factory=list)
+    policy_versions: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def references(self) -> "AnalysisSnapshotV2":
@@ -314,11 +327,18 @@ class AnalysisSnapshotV2(V2Model):
             raise ValueError("Snapshot variables must match selected variables")
         if any(not f.confirmation for f in self.confirmed_facts.values()):
             raise ValueError("Snapshot facts must be confirmed")
-        if self.source_fingerprint != canonical_hash(
-            [r.model_dump(mode="json") for r in self.source_refs]
-        ):
+        if self.source_fingerprint != snapshot_fingerprint(self.source_refs, self.policy_versions):
             raise ValueError("Source fingerprint mismatch")
         return self
+
+
+def snapshot_fingerprint(refs, versions):
+    values = [r.model_dump(mode="json") for r in refs]
+    return (
+        canonical_hash({"sources": values, "versions": versions})
+        if versions
+        else canonical_hash(values)
+    )
 
 
 def canonical_hash(value: V2Model | list | dict) -> str:

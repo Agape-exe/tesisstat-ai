@@ -650,3 +650,18 @@ regresión v1. S05: procedencia manual real, score e históricos. S06: consentim
 y propuestas separadas. Trabajo paralelo: todos pasan por principal y acceso a proyecto,
 incluidos exports y lectores internos. S07 verifica juntos: una pantalla funcional no
 acredita contrato seguro, ni contrato diseñado acredita funcionalidad implementada.
+
+### Implementación S04B de C4–C5
+
+C5 se implementa en `shared/plans_v2.py` y `orchestration/analysis_v2_service.py` sobre
+EvidenceStore C4. Se añaden `SourceRef.kind=snapshot`, versiones de políticas y
+`dependency_fields` al snapshot. Una propuesta `needs_clarification` puede tener
+snapshot_ref=null si no existen todavía fuentes confirmadas suficientes; no se puede
+aprobar. Propuestas elegibles siempre tienen snapshot completo. Condiciones editables y
+recibos de autorización de cálculo local se documentan en [S04B](sesiones/S04B.md).
+
+GET puede registrar invalidación terminal y recuperar una reserva vencida, sin recalcular
+números ni sobrescribir el payload de propuesta/resultado. Lease de ejecución: 120 segundos;
+un cálculo tardío se conserva como salida histórica. Usados/excluidos de Wilcoxon descuentan
+ceros, con pares completos conservados aparte. Exportaciones y figuras finales v2 quedan
+para S06; históricos y exportaciones v1 conservan sus guardas previas.

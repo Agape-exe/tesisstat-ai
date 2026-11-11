@@ -95,6 +95,8 @@ from app.orchestration.analysis_repository import SQLiteAnalysisRepository
 from app.orchestration.analysis_routes import create_router as create_analysis_router
 from app.orchestration.analysis_routes import local_only
 from app.orchestration.analysis_service import ResearchAnalysisService
+from app.orchestration.analysis_v2_routes import create_router as create_analysis_v2_router
+from app.orchestration.analysis_v2_service import AnalysisServiceV2
 from app.orchestration.diagnostic_routes import create_router as create_diagnostic_router
 from app.orchestration.diagnostic_service import DiagnosticService
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
@@ -427,11 +429,14 @@ def create_app(
     app.state.data_workspace_service = workspace
     app.include_router(create_workspace_router(workspace))
     evidence_store = SQLiteEvidenceStore(settings.research_db_path)
-    intents = IntentService(workspace, evidence_store)
+    contexts = SQLiteContextRepository(settings.research_db_path)
+    intents = IntentService(workspace, evidence_store, contexts)
     diagnostics = DiagnosticService(intents, workspace, evidence_store)
     app.state.intent_service = intents
     app.state.diagnostic_service = diagnostics
     app.include_router(create_diagnostic_router(intents, diagnostics))
+    app.state.analysis_v2 = AnalysisServiceV2(diagnostics, contexts)
+    app.include_router(create_analysis_v2_router(app.state.analysis_v2))
     app.include_router(
         create_context_router(
             ContextService(

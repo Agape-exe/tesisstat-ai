@@ -1,8 +1,217 @@
 {
   "$defs": {
+    "ConditionChanges": {
+      "additionalProperties": false,
+      "properties": {
+        "linearity": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linearity"
+        },
+        "monotonicity": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Monotonicity"
+        },
+        "comparable_group_shapes": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparable Group Shapes"
+        },
+        "difference_symmetry": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Difference Symmetry"
+        },
+        "pooled_variance_justified": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pooled Variance Justified"
+        },
+        "inference_reviewed": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inference Reviewed"
+        },
+        "influence_reviewed": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Influence Reviewed"
+        },
+        "sampling_limit_accepted": {
+          "anyOf": [
+            {
+              "enum": [
+                "yes",
+                "no",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sampling Limit Accepted"
+        },
+        "review_notes": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Review Notes"
+        }
+      },
+      "title": "ConditionChanges",
+      "type": "object"
+    },
     "IntentChanges": {
       "additionalProperties": false,
       "properties": {
+        "objective_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective Id"
+        },
+        "hypothesis_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hypothesis Id"
+        },
+        "requested_technique": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Technique"
+        },
+        "conditions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConditionChanges"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "kind": {
           "anyOf": [
             {

@@ -6,6 +6,8 @@ import type { Section } from './navigation';
 import { createContextApi } from '../context/api';
 import { facts } from '../context/draft';
 import { createSourcesApi } from '../sources/api';
+import { createAnalysisV2Api } from '../analysis/v2api';
+import { createDiagnosticsApi } from '../diagnostics/api';
 import { createDataApi } from '../data/api';
 
 const datasets = createDatasetApi();
@@ -14,6 +16,8 @@ const packages = createPackageApi();
 const contexts = createContextApi();
 const files = createSourcesApi();
 const workspace = createDataApi();
+const v2 = createAnalysisV2Api();
+const intentsApi = createDiagnosticsApi();
 type State = 'Pendiente' | 'En progreso' | 'Completado' | 'No verificable';
 export interface JourneyStep {
   name: string;
@@ -23,15 +27,27 @@ export interface JourneyStep {
   view?: string;
 }
 export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
-  const [data, plans, sources, context, imported, summary] =
-    await Promise.allSettled([
-      datasets.list(projectId),
-      analysis.plans(projectId),
-      packages.status(projectId),
-      contexts.get(projectId),
-      files.files(projectId),
-      workspace.summary(projectId),
-    ]);
+  const [
+    data,
+    plans,
+    sources,
+    context,
+    imported,
+    summary,
+    plansV2,
+    resultsV2,
+    intents,
+  ] = await Promise.allSettled([
+    datasets.list(projectId),
+    analysis.plans(projectId),
+    packages.status(projectId),
+    contexts.get(projectId),
+    files.files(projectId),
+    workspace.summary(projectId),
+    v2.plans(projectId),
+    v2.results(projectId),
+    intentsApi.list(projectId),
+  ]);
   const importedFiles = imported.status === 'fulfilled' ? imported.value : [];
   const importedTables = importedFiles.flatMap((file) =>
     file.sheets.filter((sheet) => sheet.state === 'ready'),
@@ -86,7 +102,7 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
       f.value !== 'unknown',
   );
   const confirmed = knownFacts.filter(([, f]) => f.confirmation).length;
-  return [
+  const steps: JourneyStep[] = [
     {
       name: 'Contexto necesario',
       state:
@@ -194,6 +210,60 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
       section: 'results',
     },
   ];
+  const v2Known =
+    plansV2.status === 'fulfilled' &&
+    resultsV2.status === 'fulfilled' &&
+    intents.status === 'fulfilled';
+  if (v2Known && (intents.value.length || plansV2.value.length)) {
+    const currentPlans = plansV2.value.filter((p) => p.validity === 'current');
+    const results = resultsV2.value.filter(
+      (r) => r.validity === 'current' && r.status === 'completed',
+    );
+    const completedIntents = new Set(
+      results
+        .map(
+          (r) =>
+            currentPlans.find((p) => p.id === r.analysis_plan_id)?.intent_id,
+        )
+        .filter(Boolean),
+    );
+    const approvals = currentPlans.filter((p) => p.status === 'approved');
+    steps[3] = {
+      name: 'Revisar propuesta',
+      state: 'En progreso',
+      evidence: `${intents.value.length} análisis guardados · ${currentPlans.filter((p) => p.status === 'proposed').length} propuestas por revisar · ${currentPlans.filter((p) => p.status === 'needs_clarification').length} con aclaraciones · ${approvals.length} aprobaciones. Cada análisis tiene sus fuentes y revisiones.`,
+      section: 'analysis',
+      view: 'diagnostics',
+    };
+    steps[4] = {
+      name: 'Aprobar y ejecutar',
+      state:
+        completedIntents.size === intents.value.length &&
+        intents.value.length > 0
+          ? 'Completado'
+          : approvals.length
+            ? 'En progreso'
+            : 'Pendiente',
+      evidence: `${completedIntents.size} de ${intents.value.length} análisis con resultado vigente. ${currentPlans.filter((p) => p.execution_status === 'running').length} en ejecución. El proyecto puede requerir otros análisis.`,
+      section: 'analysis',
+      view: 'diagnostics',
+    };
+    steps[5] = {
+      name: 'Comprender resultados',
+      state: results.length ? 'En progreso' : 'Pendiente',
+      evidence: `${results.length} resultados vigentes · ${resultsV2.value.filter((r) => r.validity === 'stale').length} históricos desactualizados. Tener un resultado no completa la investigación.`,
+      section: 'results',
+    };
+  } else if (!v2Known) {
+    for (const index of [3, 4, 5])
+      steps[index] = {
+        ...steps[index],
+        state: 'No verificable',
+        evidence:
+          'No se pudo comprobar la evidencia v2. Reintenta la consulta.',
+      };
+  }
+  return steps;
 }
 
 export function nextJourneyStep(steps: JourneyStep[]): JourneyStep | undefined {

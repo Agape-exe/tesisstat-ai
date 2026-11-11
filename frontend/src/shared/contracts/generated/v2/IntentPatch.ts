@@ -6,6 +6,18 @@
  */
 
 export type ExpectedRevision = number;
+export type ObjectiveId = string | null;
+export type HypothesisId = string | null;
+export type RequestedTechnique = string | null;
+export type Linearity = ("yes" | "no" | "unknown") | null;
+export type Monotonicity = ("yes" | "no" | "unknown") | null;
+export type ComparableGroupShapes = ("yes" | "no" | "unknown") | null;
+export type DifferenceSymmetry = ("yes" | "no" | "unknown") | null;
+export type PooledVarianceJustified = ("yes" | "no" | "unknown") | null;
+export type InferenceReviewed = ("yes" | "no" | "unknown") | null;
+export type InfluenceReviewed = ("yes" | "no" | "unknown") | null;
+export type SamplingLimitAccepted = ("yes" | "no" | "unknown") | null;
+export type ReviewNotes = string | null;
 export type Kind = ("descriptive" | "association" | "comparison" | "reliability" | "unknown") | null;
 export type Question = string | null;
 export type DatasetId = string | null;
@@ -44,6 +56,10 @@ export interface IntentPatch {
   confirm?: Confirm;
 }
 export interface IntentChanges {
+  objective_id?: ObjectiveId;
+  hypothesis_id?: HypothesisId;
+  requested_technique?: RequestedTechnique;
+  conditions?: ConditionChanges | null;
   kind?: Kind;
   question?: Question;
   dataset_id?: DatasetId;
@@ -61,6 +77,17 @@ export interface IntentChanges {
   alpha?: Alpha;
   estimand?: Estimand;
   missing_policy?: MissingPolicy;
+}
+export interface ConditionChanges {
+  linearity?: Linearity;
+  monotonicity?: Monotonicity;
+  comparable_group_shapes?: ComparableGroupShapes;
+  difference_symmetry?: DifferenceSymmetry;
+  pooled_variance_justified?: PooledVarianceJustified;
+  inference_reviewed?: InferenceReviewed;
+  influence_reviewed?: InfluenceReviewed;
+  sampling_limit_accepted?: SamplingLimitAccepted;
+  review_notes?: ReviewNotes;
 }
 export interface IntentRole {
   variable_id: VariableId;
