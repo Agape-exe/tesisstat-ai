@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
+from threading import Event
 from uuid import uuid4
 
 import pytest
@@ -225,6 +226,155 @@ def test_two_intents_and_interrupted_lease(setup):
         service._put_state(db, first["project_id"], "attempt", attempt, state)
     assert client.get(root + f"/analysis/plans/{p1['id']}").json()["execution_status"] == "failed"
     assert execute(client, root, p1).json()["status"] == "completed"
+
+
+@pytest.mark.parametrize(
+    "finish_order,change",
+    [
+        (order, change)
+        for order in ("after_b", "during_b")
+        for change in (None, "intent", "dictionary", "policy")
+    ]
+    + [("before_b", None)],
+)
+def test_expired_attempt_cannot_invalidate_retry(setup, monkeypatch, finish_order, change):
+    from app.orchestration import analysis_v2_service as module
+
+    client, root, app, _ = setup
+    dataset, dictionary = source(client, root)
+    intent = intention(
+        client,
+        root,
+        dataset,
+        dictionary,
+        kind="descriptive",
+        estimand="summary",
+        paired_columns=None,
+    )
+    plan = proposal(client, root, intent)
+    approve(client, root, plan)
+    service, project = app.state.analysis_v2, intent["project_id"]
+    plan_url = root + f"/analysis/plans/{plan['id']}"
+    clock = datetime(2026, 11, 11, tzinfo=UTC)
+    monkeypatch.setattr(module, "now", lambda: clock)
+    original = module.execute
+    started = [Event(), Event()]
+    release = [Event(), Event()]
+    calls = []
+
+    def controlled(data):
+        index = len(calls)
+        calls.append(data)
+        started[index].set()
+        # Only a deadlock guard: the test advances through events, never sleeps.
+        assert release[index].wait(10), "El test no liberó el cálculo"
+        return original(data)
+
+    monkeypatch.setattr(module, "execute", controlled)
+    keys = [str(uuid4()), str(uuid4())]
+    lease_reason = "El intento perdió su reserva; no acredita ejecución vigente."
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        try:
+            old = pool.submit(execute, client, root, plan, keys[0])
+            assert started[0].wait(10)
+            clock += timedelta(seconds=module.LEASE_SECONDS + 1)
+            assert client.get(plan_url).json()["execution_status"] == "failed"
+            recovered = service.store.get(project, "attempt", f"{plan['id']}:{keys[0]}")
+            assert recovered["status"] == "failed"
+            assert "interrupted" in recovered["error"]
+
+            if finish_order == "before_b":
+                release[0].set()
+                assert old.result(timeout=10).json()["validity"] == "stale"
+
+            retry = pool.submit(execute, client, root, plan, keys[1])
+            assert started[1].wait(10)
+            reserved = service.store.get(project, "execution", plan["id"])
+            assert reserved["attempt_id"] == f"{plan['id']}:{keys[1]}"
+            assert reserved["status"] == "running"
+            assert execute(client, root, plan, keys[1]).status_code == 409
+            assert execute(client, root, plan).status_code == 409
+            if finish_order == "after_b":
+                release[1].set()
+                completed = retry.result(timeout=10)
+                assert completed.status_code == 200, completed.text
+                assert completed.json()["validity"] == "current"
+
+            if change == "intent":
+                changed = client.patch(
+                    root + f"/intents/{intent['id']}",
+                    json={"expected_revision": 1, "changes": {"question": "Otra pregunta"}},
+                )
+                assert changed.status_code == 200, changed.text
+            elif change == "dictionary":
+                changed = client.patch(
+                    root + f"/data-tables/{dataset['id']}/dictionary",
+                    json={
+                        "expected_revision": dictionary["revision"],
+                        "dataset_revision": 1,
+                        "dataset_hash": dataset["hash"],
+                        "changes": {intent["variable_ids"][0]: {"measurement_scale": "interval"}},
+                    },
+                )
+                assert changed.status_code == 200, changed.text
+            elif change == "policy":
+                monkeypatch.setattr(module, "VERSIONS", {**module.VERSIONS, "engine": "changed"})
+
+            state_before = service.store.get(project, "execution", plan["id"])
+            release[0].set()
+            old_response = old.result(timeout=10)
+            assert old_response.status_code == 200, old_response.text
+            historical = old_response.json()
+            assert historical["validity"] == "stale"
+            assert lease_reason in historical["stale_reasons"]
+            assert historical["metrics"]
+            # Includes B's lease, result_id and all other reservation fields.
+            assert service.store.get(project, "execution", plan["id"]) == state_before
+            if finish_order != "after_b":
+                assert state_before == reserved
+                release[1].set()
+            completed = retry.result(timeout=10)
+            assert completed.status_code == 200, completed.text
+            result = completed.json()
+        finally:
+            for event in release:
+                event.set()
+
+    expected_validity = "stale" if change else "current"
+    current_plan = client.get(plan_url).json()
+    current_result = client.get(root + f"/analysis/results/{result['id']}").json()
+    assert current_plan["execution_status"] == "completed"
+    assert current_plan["validity"] == current_result["validity"] == expected_validity
+    assert current_result["status"] == "completed"
+    assert lease_reason not in current_plan["stale_reasons"]
+    assert lease_reason not in current_result["stale_reasons"]
+    invalidation = service.store.get(project, "invalidation", plan["id"])
+    if change:
+        assert invalidation["reasons"] == current_plan["stale_reasons"]
+        assert invalidation["reasons"]
+    else:
+        assert invalidation is None
+        assert current_plan["invalidated_at"] is None
+        assert current_result["stale_reasons"] == []
+    attempts = client.get(plan_url + "/attempts").json()
+    assert {a["request_id"]: a["status"] for a in attempts} == {
+        keys[0]: "failed",
+        keys[1]: "completed",
+    }
+    for key, expected_id in (
+        (keys[0], historical["id"]),
+        (keys[1], result["id"]),
+        (str(uuid4()), result["id"]),
+    ):
+        replay = execute(client, root, plan, key)
+        assert replay.status_code == 200, replay.text
+        assert replay.json()["id"] == expected_id
+    assert len(calls) == 2
+    assert len(client.get(plan_url + "/attempts").json()) == 2
+    assert {r["id"] for r in client.get(root + "/analysis/results").json()} == {
+        historical["id"],
+        result["id"],
+    }
 
 
 def test_student_requires_explicit_request_and_justification(setup):

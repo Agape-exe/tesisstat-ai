@@ -530,32 +530,37 @@ class AnalysisServiceV2:
         with self.store.transaction() as db:
             state = self._recover(db, project, plan_id)
             try:
-                reasons = self._reasons(plan)
+                dependency_reasons = self._reasons(plan)
             except ContextError:
-                reasons = [
+                dependency_reasons = [
                     "No se pudo revalidar la fuente al publicar; salida histórica sin "
                     "vigencia acreditada."
                 ]
             owns = state and state["attempt_id"] == attempt_id and state["status"] == "running"
-            if not owns:
-                reasons.append("El intento perdió su reserva; no acredita ejecución vigente.")
-            if reasons:
-                result.validity, result.stale_reasons = "stale", reasons
-                if not self.store.get(project, "invalidation", plan_id, db):
-                    self._put_state(
-                        db,
-                        project,
-                        "invalidation",
-                        plan_id,
-                        {"reasons": reasons, "at": now().isoformat()},
-                    )
+            reservation_error = (
+                None if owns else "El intento perdió su reserva; no acredita ejecución vigente."
+            )
+            # A lost lease belongs to this attempt, not to the plan's dependencies.
+            result_reasons = [*dependency_reasons]
+            if reservation_error:
+                result_reasons.append(reservation_error)
+            if result_reasons:
+                result.validity, result.stale_reasons = "stale", result_reasons
+            if dependency_reasons and not self.store.get(project, "invalidation", plan_id, db):
+                self._put_state(
+                    db,
+                    project,
+                    "invalidation",
+                    plan_id,
+                    {"reasons": dependency_reasons, "at": now().isoformat()},
+                )
             self.store.put(db, project, "result", result.id, result.model_dump(mode="json"), 0)
             finished = {
                 "status": "completed" if not failure and owns else "failed",
                 "attempt_id": attempt_id,
                 "request_id": str(request.request_id),
                 "result_id": result.id,
-                "error": failure,
+                "error": failure or reservation_error,
                 "finished_at": now().isoformat(),
             }
             self._put_state(db, project, "attempt", attempt_id, finished)
