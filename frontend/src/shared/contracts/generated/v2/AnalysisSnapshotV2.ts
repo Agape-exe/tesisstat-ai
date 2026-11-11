@@ -21,6 +21,7 @@ export type Kind =
   | "document"
   | "instrument"
   | "mapping"
+  | "recoding"
   | "score"
   | "plan"
   | "result"
@@ -59,6 +60,10 @@ export type ProjectId1 = string;
 export type Revision3 = number;
 export type CreatedAt1 = string;
 export type UpdatedAt = string;
+export type InstrumentId = string | null;
+export type InstrumentRevision = number | null;
+export type MappingRevision = number | null;
+export type ScoringRuleId = string | null;
 export type Kind2 = "descriptive" | "association" | "comparison" | "reliability" | "unknown";
 export type ObjectiveId = string | null;
 export type HypothesisId = string | null;
@@ -103,6 +108,7 @@ export interface AnalysisSnapshotV2 {
   profile_ref: SourceRef;
   diagnostic_refs?: DiagnosticRefs;
   instrument_ref?: SourceRef | null;
+  mapping_ref?: SourceRef | null;
   score_ref?: SourceRef | null;
   confirmed_facts?: ConfirmedFacts;
   variables: Variables;
@@ -161,6 +167,11 @@ export interface AnalysisIntentV2 {
   revision: Revision3;
   created_at: CreatedAt1;
   updated_at: UpdatedAt;
+  instrument_id?: InstrumentId;
+  instrument_revision?: InstrumentRevision;
+  mapping_revision?: MappingRevision;
+  scoring_rule_id?: ScoringRuleId;
+  reliability_group?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
   kind?: Kind2;
   question?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
   objective_id?: ObjectiveId;
@@ -201,6 +212,7 @@ export interface PairedColumns {
   after_column_id: AfterColumnId;
 }
 export interface IntentConditions {
+  same_construct?: FactLiteralYesNoUnknown;
   inference_reviewed?: FactLiteralYesNoUnknown;
   influence_reviewed?: FactLiteralYesNoUnknown;
   sampling_limit_accepted?: FactLiteralYesNoUnknown;

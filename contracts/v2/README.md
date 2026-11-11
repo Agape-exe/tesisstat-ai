@@ -1,10 +1,21 @@
 # Familia v2: contexto, fuentes e intención/snapshot
 
+S05 incorpora C6: InstrumentContextV2, InstrumentMappingV2, ScorePreviewV2,
+ScoreRecordV2 y ScoreDerivedTableV2, con DTOs de edición/confirmación separados. Canónicos
+en `shared/instruments_v2.py`; los diez ejemplos C6 proceden del recorrido sintético real
+de S05 y se validan con modelos y JSON Schema en `test_instruments_v2_contracts.py`.
+No son datos semilla ni documentos metodológicos ficticios.
+Fuente/puerto y revisión: [API C6](../../backend/app/modules/research/instrument/README.md).
+Alfa usa `cronbach-alpha-recoded-v2`; los controles de aprobación y ejecución son los C5.
+Se mantienen esquemas/tipos/ejemplos v1. Los campos C6 opcionales ausentes no cambian
+hashes/tokens de snapshots S04B; SourceRef añade `recoding` como dependencia explícita.
+
 S04A habilita intenciones y diagnósticos: `DiagnosticV2`, `IntentPatch`, `DiagnosticRequest`
 y extensiones opcionales de AnalysisIntentV2 para tabla/unidad/identificación/vínculo.
 Canónicos en `shared/diagnostics_v2.py` y `research/intents/models.py`, generados por los
 mismos scripts. [API y garantías](../../backend/app/modules/research/intents/README.md).
-Snapshots/propuestas/aprobación/ejecución v2 siguen pendientes de S04B.
+S04B incorporó snapshots/propuestas/aprobación/ejecución v2; S05 completa confiabilidad
+sobre esos mismos controles.
 
 S02B añade `ContextImport`, `ContextSuggestion`, `SuggestionCreate` y `SuggestionApply`,
 canónicos en `research/context/import_models.py`. El formato externo context-import-1.0

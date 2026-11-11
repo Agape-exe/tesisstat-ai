@@ -1,5 +1,14 @@
 # C3 S03B: tablas, variables y preparación opcional
 
+S05 añade el derivado real de puntuación `ScoreDerivedTableV2` y el puerto
+`ScorePublicationPort.publish_score`. `GET /derived-tables/{id}` devuelve ese modelo o
+DerivedTableV2 de preparación. Inventario, TableReadPort, diccionario y perfil aceptan ambos.
+El score no tiene receta prepare/join: referencia recibo score, fuente original y reglas,
+con linaje de ítems/columnas y todas las filas. C6 publica bytes+metadatos+score+diccionario
+sin confirmaciones+recibos juntos en SQLite. No activa datos ni confirma interpretación.
+Se revalidan además instrumento, mapeo, reglas y recodificación al leer sus dependientes.
+Detalle: [API C6](../instrument/README.md).
+
 Local, sin IA externa. Todas las rutas usan
 `P=/api/v2/research/projects/{project_id}` y verifican pertenencia al proyecto.
 `research.dev_app` conserva guardas loopback/development. No implementa autenticación remota.

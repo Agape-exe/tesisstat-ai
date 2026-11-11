@@ -23,6 +23,15 @@ for (const name of names) {
 const v2Output = new URL('v2/', output);
 await mkdir(v2Output, { recursive: true });
 for (const name of [
+  'InstrumentContextV2',
+  'InstrumentMappingV2',
+  'ScorePreviewV2',
+  'ScoreRecordV2',
+  'ScoreDerivedTableV2',
+  'InstrumentEdit',
+  'MappingEdit',
+  'ScorePreviewRequest',
+  'ScoreConfirm',
   'ProjectContextV2',
   'ContextImport',
   'ContextSuggestion',

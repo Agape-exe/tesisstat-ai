@@ -1,5 +1,18 @@
 # C4 S04A: intenciones y diagnósticos
 
+S05 completa reliability dentro de este mismo recorrido. IntentPatch añade instrumento,
+revisión, revisión del mapeo y regla, reliability_group y conditions.same_construct. El
+resolver exige exactamente los ítems/columnas de esa regla; recodifica opciones e invierte
+una vez en una vista autorizada que conserva todas las posiciones de la fuente original.
+La selección explícita del conjunto no supone que todas las dimensiones midan un constructo.
+Contexto/hipótesis no documentales opcionales; la pregunta de consistencia y pertinencia
+del conjunto se confirman en esta intención. Diagnostic/preview/propuesta no calculan alfa.
+Solo ejecución aprobada C5 llama a cronbach_alpha S04A. Sin casos/variación suficientes,
+resultado not_executed con motivo y sin métricas/interpretación. Negativo se conserva.
+Fuentes de evidencia incluyen instrumento/mapeo/regla/recoding; políticas adicionales de
+reliability no invalidan análisis independientes ni cambian tokens históricos S04B.
+[API y contratos C6](../instrument/README.md), [evidencia S05](../../../../../docs/sesiones/S05.md).
+
 Prefijo `P=/api/v2/research/projects/{project_id}`. Solo demo local; no despliegue.
 Sin documento, hipótesis, dataset activo v1 ni proveedor IA. Cada análisis tiene UUID propio.
 

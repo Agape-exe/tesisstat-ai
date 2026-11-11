@@ -1,6 +1,7 @@
 """Reusable deterministic selector; no Research I/O, provider or v1 package."""
 
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 
 from app.modules.statistics.diagnostics import _confirmed, _quantitative, evaluate, select_cases
 from app.modules.statistics.numerical_policy import (
@@ -21,6 +22,17 @@ VERSIONS = {
 }
 METHODS = {name: f"{name}-two-sided-v2" for name in VALIDATED_TECHNIQUES}
 METHODS["descriptive_summary"] = "descriptive-v2"
+METHODS["cronbach_alpha"] = "cronbach-alpha-recoded-v2"
+RELIABILITY_VERSION = "reliability-selection-1.0.0"
+
+
+def versions_for(intent, base_versions=None):
+    versions = VERSIONS if base_versions is None else base_versions
+    if intent.kind == "reliability":
+        from app.modules.statistics.instrument_v2 import VERSION as SCORING_VERSION
+
+        return {**versions, "instrument_selection": RELIABILITY_VERSION, "scoring": SCORING_VERSION}
+    return versions
 
 
 @dataclass
@@ -31,6 +43,7 @@ class PlanningInputV2:
     rows: list
     diagnostics: list
     context: object = None
+    instrument_refs: list = dataclass_field(default_factory=list)
 
 
 @dataclass
@@ -55,6 +68,8 @@ def case_counts(profile, technique=None):
 
 def select(data: PlanningInputV2):
     i, ds, dictionary, rows = data.intent, data.dataset, data.dictionary, data.rows
+    if i.kind == "reliability":
+        return select_reliability(data)
     profile, _, _, _ = evaluate(i, ds, dictionary, rows, ["complete_cases"])
     selected = [next(v for v in dictionary.variables if v.id == id_) for id_ in i.variable_ids]
     questions = []
@@ -317,13 +332,6 @@ def select(data: PlanningInputV2):
                     f"Sentido de la diferencia: {names[i.paired_columns.before_column_id]} "
                     f"menos {names[i.paired_columns.after_column_id]}."
                 )
-    elif i.kind == "reliability":
-        ask(
-            "instrument",
-            "S05 pendiente: revisa instrumento, constructo, ítems recodificados, mapeo y "
-            "reglas antes de calcular alfa. No se fabrica un instrumento.",
-            "instrument",
-        )
     elif i.kind != "descriptive":
         ask("kind", "Selecciona una intención dentro del alcance validado.")
     checks = [c for d in data.diagnostics for c in d.checks]
@@ -437,3 +445,97 @@ def select(data: PlanningInputV2):
         "Responde las aclaraciones y solicita una nueva propuesta."
     )
     return Selection(technique, questions, rationale, limits, case_counts(profile, technique))
+
+
+def select_reliability(data):
+    """Same C5 selector, using the server-resolved, explicitly grouped item view."""
+    from app.modules.statistics.instrument_v2 import alpha_conditions
+
+    i = data.intent
+    profile, _, _, _ = evaluate(i, data.dataset, data.dictionary, data.rows, ["complete_cases"])
+    questions = []
+
+    def ask(field, message):
+        questions.append(
+            PlanQuestion(code=field, field=field, question=message, destination="analysis")
+        )
+
+    for field, message in (
+        ("question", "Explica tu pregunta de consistencia interna."),
+        (
+            "reliability_group",
+            "Describe el constructo y por qué estos ítems forman el conjunto que quieres evaluar.",
+        ),
+    ):
+        if not _confirmed(getattr(i, field)):
+            ask(field, message)
+    if not all(
+        (i.instrument_id, i.instrument_revision, i.mapping_revision, i.scoring_rule_id)
+    ) or not (
+        any(
+            r.kind == "instrument"
+            and r.id == i.instrument_id
+            and r.revision == i.instrument_revision
+            for r in data.instrument_refs
+        )
+        and any(
+            r.kind == "mapping" and r.revision == i.mapping_revision for r in data.instrument_refs
+        )
+        and any(
+            r.kind == "recoding" and r.id == f"{i.instrument_id}:{i.scoring_rule_id}"
+            for r in data.instrument_refs
+        )
+    ):
+        ask(
+            "instrument",
+            "Revisa instrumento, correspondencia y recodificación del conjunto elegido.",
+        )
+    if not i.confirmation:
+        ask("confirmation", "Revisa y confirma esta intención.")
+    if i.estimand != "internal_consistency":
+        ask("estimand", "Selecciona consistencia interna para evaluar estos ítems.")
+    if i.alternative != "unspecified":
+        ask(
+            "alternative",
+            "Alfa es un coeficiente de consistencia; no selecciones una dirección de contraste.",
+        )
+    if not _confirmed(i.conditions.same_construct) or i.conditions.same_construct.value != "yes":
+        ask(
+            "same_construct",
+            "Revisa y confirma que tiene sentido evaluar consistencia interna "
+            "en este conjunto de ítems.",
+        )
+    if i.group_column_id or i.paired_columns:
+        ask(
+            "group",
+            "Retira grupos o comparaciones pareadas de esta pregunta de consistencia interna.",
+        )
+    if i.requested_technique and i.requested_technique != "cronbach_alpha":
+        ask("requested_technique", "La solicitud no corresponde a consistencia interna.")
+    if not any(c.name == "complete_cases" for d in data.diagnostics for c in d.checks):
+        ask(
+            "diagnostics",
+            "Solicita el diagnóstico de casos completos para los ítems recodificados.",
+        )
+    complete, _, _ = select_cases(i, data.dataset, data.dictionary, data.rows)
+    selected = [next(v for v in data.dictionary.variables if v.id == id_) for id_ in i.variable_ids]
+    matrix = [[r[v.column_ids[0]] for v in selected] for _, r in complete]
+    reason = alpha_conditions(matrix, item_count=len(selected))
+    limits = [
+        "Alfa describe consistencia interna; no demuestra validez ni unidimensionalidad.",
+        "Se utilizan los ítems recodificados, con inversión aplicada una vez, "
+        "y casos completos del conjunto elegido.",
+        "No se aplica un umbral universal de instrumento válido o aprobado.",
+    ]
+    if reason:
+        limits.append("No calculable: " + reason + " Al ejecutar se registrará sin métricas.")
+    technique = None if questions else "cronbach_alpha"
+    return Selection(
+        technique,
+        questions,
+        "Alfa de Cronbach para el conjunto de ítems y constructo revisados; nunca sobre el total."
+        if technique
+        else "Revisa las aclaraciones antes de proponer alfa.",
+        limits,
+        case_counts(profile),
+    )

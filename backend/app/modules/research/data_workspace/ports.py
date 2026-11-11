@@ -1,6 +1,7 @@
 from typing import Protocol
 
 from app.shared.data_workspace_v2 import DatasetRefV2
+from app.shared.instruments_v2 import ScoreDerivedTableV2
 
 
 class TableReadPort(Protocol):
@@ -18,3 +19,15 @@ class TableReadPort(Protocol):
         expected_revision: int | None = None,
         expected_hash: str | None = None,
     ) -> tuple[DatasetRefV2, list[list[str | None]]]: ...
+
+
+class ScorePublicationPort(Protocol):
+    """C6 extends C3 with a score-derived table, never a fabricated recipe.
+
+    The transaction belongs to the C6 coordinator: score, request receipt,
+    complete bytes, lineage and unconfirmed dictionary commit together.
+    The local adapter accepts its SQLite transaction; remote adapters must supply
+    an equivalent transaction/publication protocol before announcing readiness.
+    """
+
+    def publish_score(self, transaction, record: ScoreDerivedTableV2, content: bytes) -> None: ...

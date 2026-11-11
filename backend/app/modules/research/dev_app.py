@@ -67,6 +67,8 @@ from app.modules.research.instrument.repository import (
 from app.modules.research.instrument.routes import create_router as create_instrument_router
 from app.modules.research.instrument.service import InstrumentService
 from app.modules.research.instrument.sqlite_repository import SQLiteInstrumentRepository
+from app.modules.research.instrument.v2_routes import create_router as create_instrument_v2_router
+from app.modules.research.instrument.v2_service import InstrumentServiceV2
 from app.modules.research.intents.repository import SQLiteEvidenceStore
 from app.modules.research.intents.service import IntentService
 from app.modules.research.methodology.review import ReviewService
@@ -100,6 +102,7 @@ from app.orchestration.analysis_v2_service import AnalysisServiceV2
 from app.orchestration.diagnostic_routes import create_router as create_diagnostic_router
 from app.orchestration.diagnostic_service import DiagnosticService
 from app.orchestration.research_statistics import ResearchInputError, ResearchStatisticsBridge
+from app.orchestration.scores_v2 import ScoreServiceV2
 from app.orchestration.statistics_routes import create_statistics_router
 from app.shared.adapters.cloudflare import CloudflareLanguageModel
 
@@ -430,8 +433,14 @@ def create_app(
     app.include_router(create_workspace_router(workspace))
     evidence_store = SQLiteEvidenceStore(settings.research_db_path)
     contexts = SQLiteContextRepository(settings.research_db_path)
+    instruments_v2 = InstrumentServiceV2(workspace, contexts)
+    scores_v2 = ScoreServiceV2(instruments_v2)
+    workspace.score_reader = scores_v2
+    app.state.instruments_v2 = instruments_v2
+    app.state.scores_v2 = scores_v2
+    app.include_router(create_instrument_v2_router(instruments_v2, scores_v2))
     intents = IntentService(workspace, evidence_store, contexts)
-    diagnostics = DiagnosticService(intents, workspace, evidence_store)
+    diagnostics = DiagnosticService(intents, workspace, evidence_store, instruments_v2)
     app.state.intent_service = intents
     app.state.diagnostic_service = diagnostics
     app.include_router(create_diagnostic_router(intents, diagnostics))

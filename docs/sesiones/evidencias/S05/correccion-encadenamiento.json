@@ -1,0 +1,66 @@
+{
+  "project_id": "2e627f66-069b-4af4-b638-a6abaa1fbaa3",
+  "source": "prepared -> score A -> score B",
+  "instrument_a": "c5c2a4c6-c233-4faf-a6e2-e263d296ec0e",
+  "instrument_b": "ffadbac4-e294-4e9c-b155-b9bca5cabe1d",
+  "score_b": "3687d861-60d0-4f62-911f-abfe72af8555",
+  "score_b_owner": "ffadbac4-e294-4e9c-b155-b9bca5cabe1d",
+  "table_b": "983aa3d5-9f61-45b3-a4b3-3cfbecb31aab",
+  "read_status": 200,
+  "rows": [
+    [
+      "a",
+      "1",
+      "5",
+      "",
+      "2.0",
+      "1.0"
+    ],
+    [
+      "b",
+      "2",
+      "4",
+      "3",
+      "4.0",
+      "2.0"
+    ],
+    [
+      "c",
+      "3",
+      "2",
+      "1",
+      "7.0",
+      "3.5"
+    ],
+    [
+      "d",
+      "4",
+      "1",
+      "2",
+      "9.0",
+      "4.5"
+    ],
+    [
+      "e",
+      "",
+      "3",
+      "4",
+      null,
+      null
+    ]
+  ],
+  "result_id": "46a121a1-f672-408e-83e2-0b146e6c8956",
+  "result_status": "completed",
+  "result_validity": "current",
+  "mean_b": 2.75,
+  "score_lists": {
+    "A": [
+      "fef3e17f-0bdf-4516-9676-c8a606001889"
+    ],
+    "B": [
+      "3687d861-60d0-4f62-911f-abfe72af8555"
+    ]
+  },
+  "retries_same_publication": true,
+  "preexisting_db_unchanged_on_restart": true
+}

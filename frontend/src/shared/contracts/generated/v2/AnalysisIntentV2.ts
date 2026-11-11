@@ -11,10 +11,13 @@ export type ProjectId = string;
 export type Revision = number;
 export type CreatedAt = string;
 export type UpdatedAt = string;
-export type Kind = "descriptive" | "association" | "comparison" | "reliability" | "unknown";
+export type InstrumentId = string | null;
+export type InstrumentRevision = number | null;
+export type MappingRevision = number | null;
+export type ScoringRuleId = string | null;
 export type Value = string | null;
-export type Kind1 = "manual" | "document" | "ai_suggestion" | "derived" | "unknown";
-export type Kind2 =
+export type Kind = "manual" | "document" | "ai_suggestion" | "derived" | "unknown";
+export type Kind1 =
   | "project"
   | "context"
   | "dataset"
@@ -25,6 +28,7 @@ export type Kind2 =
   | "document"
   | "instrument"
   | "mapping"
+  | "recoding"
   | "score"
   | "plan"
   | "result"
@@ -42,6 +46,7 @@ export type AlgorithmVersion = string | null;
 export type ActorRef = string;
 export type ConfirmedAt = string;
 export type Revision2 = number;
+export type Kind2 = "descriptive" | "association" | "comparison" | "reliability" | "unknown";
 export type ObjectiveId = string | null;
 export type HypothesisId = string | null;
 export type VariableIds = string[];
@@ -76,7 +81,12 @@ export interface AnalysisIntentV2 {
   revision: Revision;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
-  kind?: Kind;
+  instrument_id?: InstrumentId;
+  instrument_revision?: InstrumentRevision;
+  mapping_revision?: MappingRevision;
+  scoring_rule_id?: ScoringRuleId;
+  reliability_group?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
+  kind?: Kind2;
   question?: FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadataMaxLenMaxLength2000;
   objective_id?: ObjectiveId;
   hypothesis_id?: HypothesisId;
@@ -105,12 +115,12 @@ export interface FactAnnotatedStrFieldInfoAnnotationNoneTypeRequiredTrueMetadata
   confirmation?: Confirmation | null;
 }
 export interface Provenance {
-  kind?: Kind1;
+  kind?: Kind;
   source_refs?: SourceRefs;
   algorithm_version?: AlgorithmVersion;
 }
 export interface SourceRef {
-  kind: Kind2;
+  kind: Kind1;
   id: Id1;
   revision: Revision1;
   hash: Hash;
@@ -137,6 +147,7 @@ export interface PairedColumns {
   after_column_id: AfterColumnId;
 }
 export interface IntentConditions {
+  same_construct?: FactLiteralYesNoUnknown;
   inference_reviewed?: FactLiteralYesNoUnknown;
   influence_reviewed?: FactLiteralYesNoUnknown;
   sampling_limit_accepted?: FactLiteralYesNoUnknown;

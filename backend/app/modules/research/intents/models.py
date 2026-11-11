@@ -15,6 +15,7 @@ from app.shared.diagnostics_v2 import CheckName
 
 
 class ConditionChanges(V2Model):
+    same_construct: Literal["yes", "no", "unknown"] | None = None
     linearity: Literal["yes", "no", "unknown"] | None = None
     monotonicity: Literal["yes", "no", "unknown"] | None = None
     comparable_group_shapes: Literal["yes", "no", "unknown"] | None = None
@@ -27,6 +28,11 @@ class ConditionChanges(V2Model):
 
 
 class IntentChanges(V2Model):
+    instrument_id: ID | None = None
+    instrument_revision: Annotated[int, Field(strict=True, ge=1)] | None = None
+    mapping_revision: Annotated[int, Field(strict=True, ge=1)] | None = None
+    scoring_rule_id: ID | None = None
+    reliability_group: Text | None = None
     objective_id: ID | None = None
     hypothesis_id: ID | None = None
     requested_technique: ID | None = None

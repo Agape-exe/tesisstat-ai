@@ -12,7 +12,8 @@ from app.shared.diagnostics_v2 import DiagnosticScopeV2, DiagnosticV2
 
 
 class DiagnosticService:
-    def __init__(self, intents, workspace, store):
+    def __init__(self, intents, workspace, store, instruments=None):
+        self.instruments = instruments
         self.intents, self.workspace, self.store = intents, workspace, store
 
     def resolve(self, project_id, intent_id):
@@ -66,7 +67,73 @@ class DiagnosticService:
         ]
         # All references are reconstructed from server resources, never supplied by caller.
         refs = list({(r.kind, r.id): r for r in refs}.values())
+        if intent.kind == "reliability":
+            dictionary, rows, instrument_refs = self.reliability_inputs(
+                project_id, intent, dataset, dictionary, rows
+            )
+            refs += instrument_refs
+            refs = list({(r.kind, r.id): r for r in refs}.values())
         return intent, dataset, dictionary, rows, refs
+
+    def reliability_inputs(self, project, intent, dataset, dictionary, rows):
+        from app.modules.statistics.instrument_v2 import VERSION as SCORING_VERSION
+        from app.modules.statistics.instrument_v2 import recode
+        from app.shared.analysis_v2 import Fact, Provenance
+
+        if not self.instruments or not all(
+            (
+                intent.instrument_id,
+                intent.instrument_revision,
+                intent.mapping_revision,
+                intent.scoring_rule_id,
+            )
+        ):
+            fail("Elige instrumento, revisión, correspondencia y conjunto de ítems en Análisis.")
+        instrument, mapping, ds, _, _, rule, refs = self.instruments.resolve(
+            project, intent.instrument_id, intent.scoring_rule_id
+        )
+        if (
+            instrument.revision != intent.instrument_revision
+            or mapping.revision != intent.mapping_revision
+            or ds.id != dataset.id
+        ):
+            fail(
+                "Cambió el instrumento o la correspondencia; revisa esta intención.",
+                "source_stale",
+                409,
+            )
+        mapped = {m.item_id: m.column_id for m in mapping.item_columns}
+        wanted = {mapped[id_] for id_ in rule.item_ids}
+        selected = [v for v in dictionary.variables if v.id in intent.variable_ids]
+        if {c for v in selected for c in v.column_ids} != wanted or len(selected) != len(wanted):
+            fail("Selecciona exactamente las columnas de los ítems de esta regla; nunca el total.")
+        computed = recode(instrument, mapping, dataset, dictionary, rows, rule)
+        output = [list(r) for r in rows]
+        positions = {c.id: c.position for c in ds.columns}
+        for row_index, values in enumerate(computed.rows):
+            for n, item_id in enumerate(rule.item_ids):
+                value = values[n]
+                state = computed.states[row_index][n]
+                output[row_index][positions[mapped[item_id]]] = (
+                    str(value)
+                    if state == "valid"
+                    else None
+                    if state == "missing"
+                    else "invalid-response"
+                )
+        # A scoped recoded-item view, never scientific confirmation of the dataset.
+        view = dictionary.model_copy(deep=True)
+        for variable in view.variables:
+            if variable.id in intent.variable_ids:
+                variable.measurement_scale = Fact(
+                    value="interval",
+                    confirmation=instrument.confirmation,
+                    provenance=Provenance(
+                        kind="derived", source_refs=refs, algorithm_version=SCORING_VERSION
+                    ),
+                )
+                variable.category_order, variable.missing_markers = [], []
+        return view, output, refs
 
     def create(self, project_id, request):
         intent, dataset, dictionary, rows, refs = self.resolve(project_id, request.intent_id)

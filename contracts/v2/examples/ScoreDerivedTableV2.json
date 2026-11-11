@@ -1,0 +1,207 @@
+{
+  "schema_version": "2.0.0",
+  "id": "7aad4a48-441b-481e-a7b6-652adad9f94f",
+  "project_id": "d126330b-5bc5-489c-aedc-fdb92ee59c22",
+  "revision": 1,
+  "hash": "89986c6cf01cc2e55d1618ca25690789e9227612d833d10ad0dd8faf7e673153",
+  "dataset_ref": {
+    "schema_version": "2.0.0",
+    "id": "7aad4a48-441b-481e-a7b6-652adad9f94f",
+    "project_id": "d126330b-5bc5-489c-aedc-fdb92ee59c22",
+    "revision": 1,
+    "hash": "89986c6cf01cc2e55d1618ca25690789e9227612d833d10ad0dd8faf7e673153",
+    "hash_algorithm": "table-json-v1",
+    "format": "table_json",
+    "kind": "derived",
+    "name": "puntuacion",
+    "row_count": 5,
+    "columns": [
+      {
+        "id": "7003b264-2a84-43a1-be12-6b48d1e8c56b",
+        "name": "respuesta_uno",
+        "position": 0
+      },
+      {
+        "id": "6b13da45-d6bf-483d-b820-a0dde13d7bc0",
+        "name": "respuesta_dos",
+        "position": 1
+      },
+      {
+        "id": "b7bab7ae-0ce4-4d6f-8d8a-02ced23593aa",
+        "name": "respuesta_extra",
+        "position": 2
+      },
+      {
+        "id": "47b12038-a7d8-4702-a121-6a872045cd16",
+        "name": "puntuacion",
+        "position": 3
+      }
+    ],
+    "synthetic": null,
+    "source_refs": [
+      {
+        "kind": "source_file",
+        "id": "63800fe8-4aa6-45f1-89ee-072ca94240c7",
+        "revision": 1,
+        "hash": "91433cda022147707cea2c2d6f2e2b842a2a2252e0039893ca9cdcfcc5a782a1"
+      },
+      {
+        "kind": "source_sheet",
+        "id": "2e65eb3a-118d-48bc-8c5d-ef8707c113ae",
+        "revision": 1,
+        "hash": "83838f0841db8ccb536b976b553905f543b1dd08efbc3aa28f32d12b1ab91739"
+      },
+      {
+        "kind": "table",
+        "id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+        "revision": 1,
+        "hash": "4dce44c1fae37619bc1f2de49ae56c4871f6722639478be6dbf5a633f240b5cc"
+      },
+      {
+        "kind": "dataset",
+        "id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+        "revision": 1,
+        "hash": "4dce44c1fae37619bc1f2de49ae56c4871f6722639478be6dbf5a633f240b5cc"
+      },
+      {
+        "kind": "dictionary",
+        "id": "512a60f1-6511-5aa2-a69f-250408c675e8",
+        "revision": 1,
+        "hash": "5f970f9b9df87a933a10a6e619d296d4c14ace61badc684952e16a45cb1a33ff"
+      },
+      {
+        "kind": "instrument",
+        "id": "686b2c3a-b6e3-4aea-8df9-bef979a29686",
+        "revision": 2,
+        "hash": "f0a2042becc13bce3cf3754b6b145dafefce88e7331334f758fc04a3cceed392"
+      },
+      {
+        "kind": "mapping",
+        "id": "60e9b165-1953-4493-aabf-6fe4fa5b70d6",
+        "revision": 1,
+        "hash": "8dd284e368ea7a79b6558d712e97801798854f943fcd5f10a1668456ec249acd"
+      },
+      {
+        "kind": "context",
+        "id": "d126330b-5bc5-489c-aedc-fdb92ee59c22",
+        "revision": 1,
+        "hash": "ba86a8197eb7e3c7bf2de0f0cbc1769600e89c5b388175ddae7209af1d486a46"
+      },
+      {
+        "kind": "recoding",
+        "id": "686b2c3a-b6e3-4aea-8df9-bef979a29686:c945125b-dc56-44e9-a8f7-383dba837b86",
+        "revision": 2,
+        "hash": "7b0d66b274e23413ffaf44f983b1818287955a2a1d1314e2511642d9a0d37de5"
+      }
+    ],
+    "preparation_ref": {
+      "kind": "score",
+      "id": "6031a3ae-30d5-4c61-a5d9-882922adfac7",
+      "revision": 1,
+      "hash": "48d12d2b8edb3c8164190964430b21b5f3e69f5710b61b7ec0a8b81a489001cb"
+    }
+  },
+  "preview_id": "58d16e6a-5597-4337-bd42-b333a82e743b",
+  "score_id": "6031a3ae-30d5-4c61-a5d9-882922adfac7",
+  "source_table_id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+  "source_refs": [
+    {
+      "kind": "source_file",
+      "id": "63800fe8-4aa6-45f1-89ee-072ca94240c7",
+      "revision": 1,
+      "hash": "91433cda022147707cea2c2d6f2e2b842a2a2252e0039893ca9cdcfcc5a782a1"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "2e65eb3a-118d-48bc-8c5d-ef8707c113ae",
+      "revision": 1,
+      "hash": "83838f0841db8ccb536b976b553905f543b1dd08efbc3aa28f32d12b1ab91739"
+    },
+    {
+      "kind": "table",
+      "id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "revision": 1,
+      "hash": "4dce44c1fae37619bc1f2de49ae56c4871f6722639478be6dbf5a633f240b5cc"
+    },
+    {
+      "kind": "dataset",
+      "id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "revision": 1,
+      "hash": "4dce44c1fae37619bc1f2de49ae56c4871f6722639478be6dbf5a633f240b5cc"
+    },
+    {
+      "kind": "dictionary",
+      "id": "512a60f1-6511-5aa2-a69f-250408c675e8",
+      "revision": 1,
+      "hash": "5f970f9b9df87a933a10a6e619d296d4c14ace61badc684952e16a45cb1a33ff"
+    },
+    {
+      "kind": "instrument",
+      "id": "686b2c3a-b6e3-4aea-8df9-bef979a29686",
+      "revision": 2,
+      "hash": "f0a2042becc13bce3cf3754b6b145dafefce88e7331334f758fc04a3cceed392"
+    },
+    {
+      "kind": "mapping",
+      "id": "60e9b165-1953-4493-aabf-6fe4fa5b70d6",
+      "revision": 1,
+      "hash": "8dd284e368ea7a79b6558d712e97801798854f943fcd5f10a1668456ec249acd"
+    },
+    {
+      "kind": "context",
+      "id": "d126330b-5bc5-489c-aedc-fdb92ee59c22",
+      "revision": 1,
+      "hash": "ba86a8197eb7e3c7bf2de0f0cbc1769600e89c5b388175ddae7209af1d486a46"
+    },
+    {
+      "kind": "recoding",
+      "id": "686b2c3a-b6e3-4aea-8df9-bef979a29686:c945125b-dc56-44e9-a8f7-383dba837b86",
+      "revision": 2,
+      "hash": "7b0d66b274e23413ffaf44f983b1818287955a2a1d1314e2511642d9a0d37de5"
+    }
+  ],
+  "column_lineage": [
+    {
+      "source_table_id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "source_column_id": "7003b264-2a84-43a1-be12-6b48d1e8c56b",
+      "result_column_id": "7003b264-2a84-43a1-be12-6b48d1e8c56b"
+    },
+    {
+      "source_table_id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "source_column_id": "6b13da45-d6bf-483d-b820-a0dde13d7bc0",
+      "result_column_id": "6b13da45-d6bf-483d-b820-a0dde13d7bc0"
+    },
+    {
+      "source_table_id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "source_column_id": "b7bab7ae-0ce4-4d6f-8d8a-02ced23593aa",
+      "result_column_id": "b7bab7ae-0ce4-4d6f-8d8a-02ced23593aa"
+    },
+    {
+      "source_table_id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "source_column_id": "7003b264-2a84-43a1-be12-6b48d1e8c56b",
+      "result_column_id": "47b12038-a7d8-4702-a121-6a872045cd16"
+    },
+    {
+      "source_table_id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "source_column_id": "6b13da45-d6bf-483d-b820-a0dde13d7bc0",
+      "result_column_id": "47b12038-a7d8-4702-a121-6a872045cd16"
+    }
+  ],
+  "row_lineage": [
+    {
+      "680f7fb9-48b5-405d-9975-ddb8d605af8d": 1
+    },
+    {
+      "680f7fb9-48b5-405d-9975-ddb8d605af8d": 2
+    },
+    {
+      "680f7fb9-48b5-405d-9975-ddb8d605af8d": 3
+    },
+    {
+      "680f7fb9-48b5-405d-9975-ddb8d605af8d": 4
+    },
+    {
+      "680f7fb9-48b5-405d-9975-ddb8d605af8d": 5
+    }
+  ]
+}

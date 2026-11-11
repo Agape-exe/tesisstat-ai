@@ -9,6 +9,7 @@ from app.shared.data_workspace_v2 import (
     TableRecipeV2,
     VariableDictionaryV2,
 )
+from app.shared.instruments_v2 import ScoreDerivedTableV2
 
 
 def create_router(service):
@@ -65,7 +66,7 @@ def create_router(service):
     def apply(project_id: str, body: ApplyRequest):
         return service.apply(project_id, body)
 
-    @router.get("/derived-tables/{table_id}", response_model=DerivedTableV2)
+    @router.get("/derived-tables/{table_id}", response_model=DerivedTableV2 | ScoreDerivedTableV2)
     def derived(project_id: str, table_id: str):
         return service.derived(project_id, table_id)
 

@@ -11,6 +11,7 @@ from app.shared.contracts import CONTRACT_MODELS
 from app.shared.data_sources_v2 import DATA_SOURCE_MODELS
 from app.shared.data_workspace_v2 import WORKSPACE_MODELS
 from app.shared.diagnostics_v2 import DIAGNOSTIC_MODELS
+from app.shared.instruments_v2 import INSTRUMENT_MODELS
 from app.shared.plans_v2 import ANALYSIS_MODELS
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +39,7 @@ def main() -> None:
                 *IMPORT_MODELS,
                 *DIAGNOSTIC_MODELS,
                 *ANALYSIS_MODELS,
+                *INSTRUMENT_MODELS,
                 IntentPatch,
                 DiagnosticRequest,
             ),

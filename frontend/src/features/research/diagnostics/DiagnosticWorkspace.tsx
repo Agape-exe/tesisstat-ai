@@ -19,6 +19,7 @@ import { checkLabels } from './labels';
 import './diagnostics.css';
 import { IntentConditions } from './IntentConditions';
 import { AnalysisProposals } from '../analysis/AnalysisProposals';
+import { ReliabilityInputs } from '../instrument/ReliabilityInputs';
 
 const api = createDiagnosticsApi(),
   dataApi = createDataApi();
@@ -48,6 +49,11 @@ const empty: Changes = {
 function fromIntent(i: Intent): Changes {
   return {
     ...empty,
+    instrument_id: i.instrument_id,
+    instrument_revision: i.instrument_revision,
+    mapping_revision: i.mapping_revision,
+    scoring_rule_id: i.scoring_rule_id,
+    reliability_group: i.reliability_group?.value ?? '',
     kind: i.kind,
     estimand: i.estimand,
     question: i.question.value ?? '',
@@ -397,7 +403,17 @@ export function DiagnosticWorkspace({
           mediciones están en tablas distintas, revisa en Datos si pueden
           combinarse por identificadores; no se emparejan por el orden.
         </p>
-        <div className="diagnostic-options">
+        {draft.kind === 'reliability' && (
+          <ReliabilityInputs
+            projectId={projectId}
+            draft={draft}
+            update={update}
+          />
+        )}
+        <div
+          className="diagnostic-options"
+          hidden={draft.kind === 'reliability'}
+        >
           {dictionary?.variables.map((v) => (
             <label key={v.id}>
               <input
@@ -470,7 +486,7 @@ export function DiagnosticWorkspace({
             ))}
           </select>
         </label>
-        {draft.kind !== 'descriptive' && (
+        {draft.kind !== 'descriptive' && draft.kind !== 'reliability' && (
           <>
             <p>
               Personas distintas pueden pertenecer a una misma familia o aula.

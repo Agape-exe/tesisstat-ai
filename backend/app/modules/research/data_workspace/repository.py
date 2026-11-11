@@ -90,9 +90,9 @@ class WorkspaceRepository:
         ).fetchone()
         return self.get(project_id, "derived", row[0], db) if row else None
 
-    def publish(self, db, record, content):
+    def publish(self, db, record, content, kind="derived"):
         db.execute(
             "INSERT INTO derived_content_v2 VALUES (?,?,?,?)",
             (record.project_id, record.id, record.preview_id, content),
         )
-        self.put(db, record.project_id, "derived", record.id, record.model_dump(mode="json"), 0)
+        self.put(db, record.project_id, kind, record.id, record.model_dump(mode="json"), 0)

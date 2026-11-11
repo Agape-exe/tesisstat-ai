@@ -645,9 +645,12 @@ it('keeps methodology and the previous package URL accessible', async () => {
   ).not.toBeInTheDocument();
 });
 
-it('labels Instrumento as pending without invoking any extraction endpoint', async () => {
+it('opens the optional manual instrument without invoking extraction', async () => {
   const service = mockService();
-  vi.stubGlobal('fetch', vi.fn());
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(JSON.stringify([]))),
+  );
   window.history.replaceState(
     null,
     '',
@@ -655,12 +658,18 @@ it('labels Instrumento as pending without invoking any extraction endpoint', asy
   );
   render(<ResearchProjects service={service} />);
   expect(
-    await screen.findByRole('heading', { name: 'Instrumento: próximamente' }),
+    await screen.findByRole('heading', { name: 'Instrumento y puntuaciones' }),
   ).toBeInTheDocument();
-  expect(fetch).not.toHaveBeenCalled();
   expect(
-    screen.queryByRole('button', { name: /extraer|validar|confiabilidad/i }),
-  ).not.toBeInTheDocument();
+    screen.getByRole('button', { name: 'Guardar borrador del instrumento' }),
+  ).toBeEnabled();
+  expect(screen.getByText(/Este recorrido es opcional/)).toBeInTheDocument();
+  await waitFor(() => expect(fetch).toHaveBeenCalled());
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.every(([url]) => !String(url).includes('extract')),
+  ).toBe(true);
 });
 
 it('discards a late response for a different project when navigating browser history', async () => {

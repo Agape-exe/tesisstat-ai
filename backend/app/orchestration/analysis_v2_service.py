@@ -14,12 +14,14 @@ from app.modules.research.data_workspace.service import fail
 from app.modules.research.sources.repository import missing
 from app.modules.statistics.execution_v2 import ExecutionInputV2, execute
 from app.modules.statistics.inferential import StatisticalCalculationError
+from app.modules.statistics.instrument_v2 import ReliabilityNotCalculable
 from app.modules.statistics.planning_v2 import (
     METHODS,
     VERSIONS,
     PlanningInputV2,
     case_counts,
     select,
+    versions_for,
 )
 from app.shared.analysis_v2 import (
     AnalysisSnapshotV2,
@@ -135,10 +137,19 @@ class AnalysisServiceV2:
                 fail("Actualiza los diagnósticos de esta intención.", "source_stale", 409)
             diagnostics.append(diagnostic)
             refs.append(reference("diagnostic", diagnostic))
-        return PlanningInputV2(intent, dataset, dictionary, rows, diagnostics, context), refs
+        return PlanningInputV2(
+            intent,
+            dataset,
+            dictionary,
+            rows,
+            diagnostics,
+            context,
+            [r for r in refs if r.kind in {"instrument", "mapping", "recoding"}],
+        ), refs
 
     def propose(self, project, request):
         intent = self.intents.get(project, request.intent_id)
+        versions = versions_for(intent, VERSIONS)
         if intent.revision != request.intent_revision or (
             request.dataset_id is not None and request.dataset_id != intent.dataset_id
         ):
@@ -173,6 +184,8 @@ class AnalysisServiceV2:
                     created_at=now(),
                     source_refs=refs,
                     context_ref=by_kind.get("context"),
+                    instrument_ref=by_kind.get("instrument"),
+                    mapping_ref=by_kind.get("mapping"),
                     dictionary_ref=by_kind["dictionary"],
                     dataset_ref=by_kind["dataset"],
                     intent_ref=by_kind["intent"],
@@ -180,7 +193,7 @@ class AnalysisServiceV2:
                     diagnostic_refs=[r for r in refs if r.kind == "diagnostic"],
                     variables=variables,
                     intent=intent,
-                    source_fingerprint=snapshot_fingerprint(refs, VERSIONS),
+                    source_fingerprint=snapshot_fingerprint(refs, versions),
                     dependency_fields=[
                         "/intent",
                         "/dataset",
@@ -188,8 +201,13 @@ class AnalysisServiceV2:
                         "/profile",
                         "/diagnostics",
                     ]
-                    + (["/context"] if data.context else []),
-                    policy_versions=VERSIONS,
+                    + (["/context"] if data.context else [])
+                    + (
+                        ["/instrument", "/mapping", "/scoring_rules", "/recoding"]
+                        if intent.kind == "reliability"
+                        else []
+                    ),
+                    policy_versions=versions,
                     confirmed_facts={
                         name: getattr(intent, name)
                         for name in (
@@ -238,7 +256,7 @@ class AnalysisServiceV2:
             evidence_refs=refs,
             pending_questions=questions,
             limitations=decision.limitations if decision else [],
-            source_fingerprint=snapshot_fingerprint(refs, VERSIONS),
+            source_fingerprint=snapshot_fingerprint(refs, versions),
             proposal_token="0" * 64,
             created_at=now(),
             question=intent.question.value or "Resumen descriptivo",
@@ -250,7 +268,7 @@ class AnalysisServiceV2:
             if data
             else [],
             case_counts=decision.counts if decision else None,
-            policy_versions=VERSIONS,
+            policy_versions=versions,
             data_authorization_required=not data or data.dataset.synthetic is not True,
         )
         plan.proposal_token = token(plan, snapshot)
@@ -285,7 +303,9 @@ class AnalysisServiceV2:
         invalid = self.store.get(plan.project_id, "invalidation", plan.id)
         if invalid:
             return invalid["reasons"]
-        if plan.policy_versions != VERSIONS:
+        if plan.policy_versions != versions_for(
+            self.intents.get(plan.project_id, plan.intent_id), VERSIONS
+        ):
             return ["Cambió la política de selección o la versión del motor."]
         try:
             if any(r.kind == "dataset" for r in plan.evidence_refs):
@@ -296,7 +316,7 @@ class AnalysisServiceV2:
                 )
             else:
                 refs = [reference("intent", self.intents.get(plan.project_id, plan.intent_id))]
-            if snapshot_fingerprint(refs, VERSIONS) != plan.source_fingerprint:
+            if snapshot_fingerprint(refs, plan.policy_versions) != plan.source_fingerprint:
                 return [
                     "Cambió la intención, sus fuentes, diccionario, perfil o evidencia vinculada."
                 ]
@@ -476,6 +496,7 @@ class AnalysisServiceV2:
         if result_id:
             return self.result(project, result_id)
         failure = None
+        not_calculable = False
         try:
             counts, metrics, tables, warnings = execute(
                 ExecutionInputV2(snapshot, data.dataset, data.dictionary, data.rows, plan.technique)
@@ -488,6 +509,7 @@ class AnalysisServiceV2:
                 )
         except (ValueError, ArithmeticError) as exc:
             failure = str(exc)
+            not_calculable = isinstance(exc, ReliabilityNotCalculable)
             counts, metrics, tables, warnings = plan.case_counts, [], [], [failure]
         except Exception:
             # Persist failure without exposing internal exception details.
@@ -501,7 +523,7 @@ class AnalysisServiceV2:
             analysis_plan_id=plan.id,
             snapshot_ref=plan.snapshot_ref,
             dataset_id=plan.dataset_id,
-            status="failed" if failure else "completed",
+            status=("not_executed" if not_calculable else "failed") if failure else "completed",
             created_at=now(),
             engine_version=VERSIONS["engine"],
             method_version=plan.parameters.calculation_method + ":" + VERSIONS["methods"],
@@ -520,7 +542,11 @@ class AnalysisServiceV2:
             if failure
             else ResultInterpretation(
                 text=(
-                    f"Se analizaron {counts.used} de {counts.total} casos "
+                    f"Se evaluó consistencia interna mediante alfa de Cronbach en "
+                    f"{counts.used} de {counts.total} casos. El coeficiente no demuestra "
+                    "validez ni unidimensionalidad."
+                    if plan.technique == "cronbach_alpha"
+                    else f"Se analizaron {counts.used} de {counts.total} casos "
                     f"mediante {plan.technique}. "
                     "Consulta las métricas y sus límites; este resultado no establece causalidad."
                 ),

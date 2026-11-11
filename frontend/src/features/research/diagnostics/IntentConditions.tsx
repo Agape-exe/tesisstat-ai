@@ -4,6 +4,8 @@ import type { Changes } from './api';
 import { techniqueLabels } from '../analysis/v2api';
 const contexts = createContextApi();
 const conditionLabels = {
+  same_construct:
+    'Tiene sentido evaluar consistencia interna en este conjunto y constructo',
   linearity: 'La dispersión es compatible con una relación lineal',
   monotonicity: 'Una relación monótona responde a la pregunta',
   comparable_group_shapes:
@@ -51,6 +53,8 @@ export function IntentConditions({
     draft.kind === 'descriptive'
       ? []
       : Object.entries(conditionLabels).filter(([key]) => {
+          if (key === 'same_construct') return draft.kind === 'reliability';
+          if (draft.kind === 'reliability') return false;
           if (key === 'linearity')
             return draft.estimand === 'linear_association';
           if (key === 'monotonicity')
@@ -144,7 +148,7 @@ export function IntentConditions({
           </select>
         </label>
       ))}
-      {draft.kind !== 'descriptive' && (
+      {draft.kind !== 'descriptive' && draft.kind !== 'reliability' && (
         <label className="rp-field">
           Dirección del contraste
           <select

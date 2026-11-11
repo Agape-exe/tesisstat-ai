@@ -26,6 +26,13 @@ alcance único de S03, sin ampliar ahora instrumentos, diagnósticos, tutor ni d
 
 ## Producto y límites
 
+S05 implementa instrumento manual opcional, revisión, correspondencia explícita con tablas,
+preview sin alfa, puntuaciones derivadas durables y confiabilidad en el recorrido C4–C5.
+No exige documento ni hipótesis. La estructura mínima sin desglose se declara por el usuario;
+ninguna puntuación activa datos o confirma su interpretación científica automáticamente.
+Las entradas documentales v1 siguen disponibles; no se amplía ahora la extracción v2.
+Acuerdos técnicos actualizados en C6; evidencia y límites en [S05](sesiones/S05.md).
+
 Ampliación aprobada S02B: Contexto ofrece prompt maestro versionado e importación JSON
 determinista con borrador persistido, comparación, selección y aplicación humana con CAS.
 Funciona sin credenciales/proveedor IA; formulario manual siempre disponible. No carga

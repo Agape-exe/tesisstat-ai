@@ -611,6 +611,84 @@ not_executed con razones; alfa negativo es valor posible con advertencia, no se 
 Ejemplo conceptual de recodificación: límites 1/5, reverse_scored=true,
 reverse_rule=min_plus_max_minus_value: respuesta 2 produce 4 antes de sumar/promediar.
 
+### C6 implementado en S05
+
+Canónicos en `shared/instruments_v2.py`; esquemas y TypeScript generados con los
+exportadores existentes. Entrada `InstrumentEdit` separa `expected_revision`, `structure`
+y `context_field`. UUIDs de estructura desconocidos son claves temporales: el servidor
+asigna los persistentes y traduce las referencias internas. Los ya guardados sobreviven
+a las ediciones. No se aceptan actor, estado, procedencia ni confirmaciones del cliente.
+Las invariantes estructurales v1 se reutilizan sin revisión metodológica documental.
+
+Revisar añade una revisión y confirma estructura/reglas juntas. `context_field` elige una
+pregunta, objetivo principal, descripción del estudio o de datos confirmada; solo se consume
+ese Fact y su revisión de confirmación. No exige un contexto completo, hipótesis ni documento.
+La UI permite declarar expresamente una estructura mínima sin desglose; no atribuye
+dimensiones científicas por defecto. Entrada documental v2 queda opcional pendiente; no se
+adopta automáticamente la extracción v1 ni su procedencia metodológica.
+
+`InstrumentMappingV2` incorpora `project_id` y `dictionary_ref`. PUT admite borrador parcial;
+confirmar exige instrumento revisado, cobertura total y correspondencia 1:1 en tabla real
+del proyecto. Identificadores confirmados no se puntúan; una posible identificación necesita
+revisar explícitamente que no cumple ese papel en Datos. Se conservan revisiones de mapeo
+en `GET /{id}/mapping/revisions`. Cambiar la estructura crea un nuevo borrador; mapeos previos
+se leen como stale, sin reescribir sus históricos.
+
+`ScorePreviewRequest` añade `column_name` (por defecto `puntuacion`). Colisión con columna de
+la fuente: 422, elegir otro nombre. Preview dura 30 minutos y muestra hasta 20 puntuaciones,
+20 explicaciones de exclusión, inversiones y conteos sobre todas las filas. `counts` añade
+`unknown` y `out_of_range`; `missing` cuenta filas con ausencias reales. Los conteos de
+problemas pueden solaparse; `valid` cuenta filas completas para la regla. Errores de código,
+rango y ausencias producen null, nunca cero ni imputación. Opción única recodifica códigos
+exactos mediante numeric_value; numérica usa valores directos y límites explícitos. Solo
+participan los ítems seleccionados por esa regla. El preview no llama a cronbach_alpha.
+
+Extensión explícita del puerto C3: `ScorePublicationPort.publish_score` y
+`ScoreDerivedTableV2`. La tabla de puntuación tiene fuente, recibo score, hashes, linaje de
+columnas (incluidos los ítems que aportan al total) y todas las posiciones de filas. Carece
+de receta prepare/join: no se fabrica una receta o archivo. `DatasetRefV2.preparation_ref`
+puede ser SourceRef de tipo score, cuyo hash identifica el fingerprint de la publicación.
+`GET /derived-tables/{id}` discrimina ambos tipos por `score_id` o `recipe`.
+TableReadPort, inventario, perfil y diccionario aceptan ambos. El diccionario del score se
+publica sin confirmaciones; no se activa globalmente ni se interpreta como cuantitativo.
+
+Corrección PR #76: ScoreRecordV2 añade `instrument_id` como metadato asignado por servidor
+al publicar. Es opcional únicamente para compatibilidad con recibos existentes y se omite
+al serializar cuando está ausente, conservando hashes/históricos. Para esos recibos, el
+propietario se resuelve mediante la relación persistida score → score_derived.preview_id →
+score_preview.instrument_id y su recibo scored_preview, incluso si el preview venció.
+Se verifican proyecto, IDs de publicación, regla, fingerprint, motor, referencias y la
+revisión histórica revisada del instrumento que contenía esa regla. No se infiere propietario
+por posición de referencias, por antecesores ni por buscar reglas en instrumentos actuales.
+El listado por instrumento utiliza esta misma relación. Vínculo inconsistente o ausente
+falla explícitamente; no se inventa propietario ni se migran registros al leerlos.
+La lectura vigente conserva la revalidación recursiva de todos los padres; se comparan
+identidades/revisiones/hashes de todas las referencias sin que su orden designe propietario.
+
+Nuevo SourceRef `recoding`: id=`instrument_id:rule_id`, revisión del instrumento y hash
+de regla/versión de recodificación. Snapshot/propuesta/diagnóstico de confiabilidad incluyen
+instrumento, mapeo, regla y motor. AnalysisIntentV2 añade instrument_id/instrument_revision,
+mapping_revision/scoring_rule_id, reliability_group y condición same_construct revisada.
+El servidor exige exactamente las columnas de esa regla; ninguna columna total sustituye
+a los ítems. El usuario elige explícitamente su agrupación y pregunta de consistencia.
+No se seleccionan todas las dimensiones automáticamente.
+
+El resolver C4 ofrece una vista autorizada de los ítems recodificados a partir de las
+fuentes originales, estructura y mapeo versionados; no usa el total ni publica otro archivo.
+Se congela su evidencia y se revalida al diagnosticar, proponer, aprobar, reservar y publicar.
+Recodificación `instrument-scoring-v2.0.0`; selección de confiabilidad
+`reliability-selection-1.0.0`; método `cronbach-alpha-recoded-v2` (sin dirección bilateral).
+Las versiones adicionales son propias de reliability; las versiones y tokens de análisis
+independientes se conservan. Campos C6 ausentes no añaden defaults a la serialización/hash
+de snapshots anteriores de S04B. Se mantiene el literal legado de método para leer históricos.
+
+Se verifican número de ítems, casos completos y variación/precisión sin calcular alfa al
+proponer. Una operación no calculable conserva una propuesta con el motivo visible y,
+tras aprobación/solicitud de ejecución, resultado `not_executed`, sin métricas/interpretación.
+No se fabrican ceros ni se recorta alfa negativo. La ejecución reutiliza cronbach_alpha
+validado en S04A y las reservas/publicación C5, incluida separación de pérdida de reserva
+y cambio efectivo de dependencias. Informe/evidencia: [S05](sesiones/S05.md).
+
 ## C7 — Contexto del tutor (Conversation/Orchestration → proveedor/UI; S06)
 
 `TutorContextV2`: schema_version, project_id, stage=home|context|data|analysis|results,
