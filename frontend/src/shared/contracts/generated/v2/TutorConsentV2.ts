@@ -7,7 +7,7 @@
 
 export type ExpectedRevision = number;
 export type Granted = boolean;
-export type ConsentScope = "tutor_context_v3";
+export type ConsentScope = "tutor_context_v4";
 
 export interface TutorConsentV2 {
   expected_revision: ExpectedRevision;

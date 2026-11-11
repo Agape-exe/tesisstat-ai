@@ -28,7 +28,7 @@ export type TutorTrace = {
   actions: Action[];
   suggestion_id?: string;
   error?: string;
-  prose_source?: 'template' | 'ai_draft';
+  prose_source?: 'template' | 'ai_draft' | 'ai_concepts' | 'ai_grounded_draft';
   context_changed_during_response?: boolean;
 };
 export type TutorMessage = Omit<Message, 'context'> & {
@@ -41,7 +41,8 @@ export interface TutorStatus {
   consent: {
     revision: number;
     granted: boolean;
-    consent_scope: 'tutor_context_v3';
+    consent_scope: 'tutor_context_v4';
+    renewal_required?: boolean;
   };
   context: Required<TutorContextV2>;
   static_help: string;
@@ -114,7 +115,7 @@ export function createTutorApi(
       request<TutorStatus['consent']>(p, '/consent', 'PUT', {
         expected_revision: revision,
         granted,
-        consent_scope: 'tutor_context_v3',
+        consent_scope: 'tutor_context_v4',
       }),
     send: (p: string, cid: string, body: MessageDraftV2) =>
       request<{ messages: TutorMessage[] }>(

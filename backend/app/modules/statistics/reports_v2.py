@@ -68,13 +68,25 @@ def sections(result, display, figures, explanations):
         [display.interpretation_label, display.interpretation or "Sin interpretación concluyente."],
     )
     for explanation in explanations:
+        if explanation.evidence_policy != "structured-findings-v1":
+            yield (
+                "Interpretación histórica no verificada",
+                [
+                    "Se conserva en el historial. Su prosa no se exporta porque la versión "
+                    "anterior no verificaba el respaldo de cada hallazgo."
+                ],
+            )
+            continue
         yield (
             "Interpretación IA",
             [
                 "Borrador IA pendiente de revisión"
                 if explanation.review_status == "draft"
                 else "Interpretación IA revisada por el usuario; no certifica validez científica",
+                "Conceptos y comentarios generales (no son hallazgos del estudio):",
                 explanation.text,
+                "Hallazgos reproducidos por el servidor:",
+                explanation.grounded_text or "Sin hallazgos verificados.",
                 "Referencias: " + ", ".join(explanation.metric_keys),
                 f"Borrador {explanation.id}, revisión {explanation.revision}.",
             ],

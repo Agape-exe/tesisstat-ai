@@ -36,6 +36,8 @@ export type Hash = string;
 export type ContextFingerprint = string;
 export type Text = string;
 export type MetricKeys = string[];
+export type EvidencePolicy = "legacy-unverified" | "structured-findings-v1";
+export type GroundedText = string | null;
 export type Source = "ai";
 export type ReviewStatus = "draft" | "reviewed";
 export type CreatedAt = string;
@@ -50,6 +52,8 @@ export interface ResultExplanationV2 {
   context_fingerprint: ContextFingerprint;
   text: Text;
   metric_keys: MetricKeys;
+  evidence_policy?: EvidencePolicy;
+  grounded_text?: GroundedText;
   source?: Source;
   review_status?: ReviewStatus;
   created_at: CreatedAt;

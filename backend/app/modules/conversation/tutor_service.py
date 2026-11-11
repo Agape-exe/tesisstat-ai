@@ -13,12 +13,12 @@ from pydantic import ValidationError
 from app.modules.conversation.models import ConversationError
 from app.modules.conversation.service import ERRORS
 from app.modules.conversation.tutor_context import HELP, TutorContextBuilder, digest
+from app.modules.conversation.tutor_grounding import render_findings, validate_general_prose
 from app.modules.conversation.tutor_privacy import (
     SYSTEM,
-    orientation,
     outbound_context,
+    project_text,
     topics,
-    validate_prose,
 )
 from app.modules.research.context.import_models import SuggestionCreate
 from app.modules.research.context.repository import ContextError
@@ -39,10 +39,14 @@ class TutorService:
 
     def consent(self, project):
         self.analysis.workspace.sources.require(project)
-        return self.store.get(project, "tutor_consent", project) or {
-            "revision": 0,
+        stored = self.store.get(project, "tutor_consent", project)
+        if stored and stored.get("consent_scope") == "tutor_context_v4":
+            return stored
+        return {
+            "revision": stored["revision"] if stored else 0,
             "granted": False,
-            "consent_scope": "tutor_context_v3",
+            "consent_scope": "tutor_context_v4",
+            "renewal_required": bool(stored),
         }
 
     def set_consent(self, project, body):
@@ -60,10 +64,14 @@ class TutorService:
 
     def _consent(self, project, revision):
         value = self.consent(project)
-        if not value["granted"] or value["revision"] != revision:
+        if (
+            not value["granted"]
+            or value["revision"] != revision
+            or value["consent_scope"] != "tutor_context_v4"
+        ):
             raise ConversationError(
                 "consent_required",
-                "Autoriza el alcance tutor_context_v3 vigente. "
+                "Autoriza el nuevo alcance tutor_context_v4 vigente. "
                 "El consentimiento anterior o revocado no permite enviar a IA.",
                 403,
             )
@@ -82,9 +90,14 @@ class TutorService:
             "context": context,
             "static_help": HELP[selection.stage],
             "max_message_characters": self.settings.conversation_max_message_characters,
-            "privacy": "Se envían etapa, temas estadísticos detectados, escalas, estados y "
-            "métricas agregadas pertinentes bajo alias. El texto libre de mensajes, historial, "
-            "contexto, nombres y categorías permanece local. No se envían filas ni documentos.",
+            "privacy": "Ahora se envían fragmentos filtrados y ordenados de tu pregunta, hasta "
+            "cuatro mensajes recientes del mismo contexto y campos narrativos confirmados "
+            "pertinentes, además de etapa, escalas, estados y métricas agregadas bajo alias. "
+            "Solo se conservan palabras de un vocabulario estadístico y gramatical; nombres, "
+            "cifras escritas, términos desconocidos e identificadores se omiten. No se envían "
+            "filas, documentos, categorías libres, credenciales ni textos originales completos. "
+            "Los fragmentos pueden perder detalles: el tutor debe preguntar y no reconstruirlos. "
+            "El permiso v3 anterior no autoriza este cambio; debes renovarlo como v4.",
             "choices": {
                 "datasets": [
                     {"id": d.id, "label": d.name} for d in self.analysis.workspace.datasets(project)
@@ -135,19 +148,19 @@ class TutorService:
             (r.revision for r in context.source_refs if r.kind == "context" and r.id == project), 0
         )
         trace = {
-            "tutor_version": "contextual-2.0.0",
+            "tutor_version": "contextual-2.1.0",
             "provider_kind": "cloudflare_workers_ai"
             if isinstance(self.conversations.provider, CloudflareLanguageModel)
             else "controlled_test",
             "consent_revision": draft.consent_revision,
-            "consent_scope": "tutor_context_v3",
+            "consent_scope": "tutor_context_v4",
             "snapshot": context.context_fingerprint,
             "stage": context.stage,
             "sources": [r.model_dump(mode="json") for r in context.source_refs],
             "historical_refs": [r.model_dump(mode="json") for r in context.historical_refs],
             "result_ref": reference("result", result).model_dump(mode="json") if result else None,
             "provider_calls": 0,
-            "privacy_policy": "closed-topics-v1",
+            "privacy_policy": "ordered-lexical-projection-v2",
             "metric_refs": [],
             "actions": [],
         }
@@ -171,19 +184,21 @@ class TutorService:
             query_topics = topics(draft.content)
             payload, metric_map = outbound_context(context, result, query_topics)
             payload["query_topics"] = query_topics
+            payload["question"] = project_text(draft.content)
             trace["metrics_omitted"] = payload["metrics_omitted"]
             # Old source conversations do not contribute claims about a new analysis.
             history = self.repository.messages(
                 conversation_id, self.settings.conversation_history_turns * 2, completed_only=True
             )
-            payload["history_topics"] = [
-                topics(m.content)
+            payload["history"] = [
+                {"role": m.role, **project_text(m.content, 100)}
                 for m in history
-                if m.role == "user"
+                if m.role in {"user", "assistant"}
                 and m.context
                 and m.context.get("snapshot") == context.context_fingerprint
+                and m.context.get("consent_scope") == "tutor_context_v4"
             ][-4:]
-            payload["history_omitted"] = bool(history and not payload["history_topics"])
+            payload["history_omitted"] = bool(history and not payload["history"])
             messages = [
                 {"role": "system", "content": SYSTEM},
                 {
@@ -213,33 +228,50 @@ class TutorService:
             except ValidationError:
                 raise AIError("invalid_response") from None
             if (
-                not validate_prose(answer.explanation)
-                or any(not validate_prose(u.value) for u in answer.updates)
-                or any(k not in metric_map for k in answer.metric_keys)
+                not (answer.concepts or answer.examples or answer.findings or answer.updates)
+                or any(not validate_general_prose(t) for t in answer.concepts)
+                or any(not validate_general_prose(t, example=True) for t in answer.examples)
+                or any(not validate_general_prose(u.value) for u in answer.updates)
                 or any(n >= len(context.allowed_actions) for n in answer.action_indices)
                 or len({u.field for u in answer.updates}) != len(answer.updates)
             ):
+                raise AIError("invalid_response")
+            grounded_text, metric_keys = render_findings(answer.findings, metric_map, result)
+            general_text = "\n\n".join(
+                [
+                    *("Concepto general · " + t for t in answer.concepts),
+                    *(
+                        "Ejemplo hipotético; no son datos del estudio · " + t
+                        for t in answer.examples
+                    ),
+                ]
+            )
+            if len(general_text) > 3500:
                 raise AIError("invalid_response")
             self._consent(project, draft.consent_revision)
             current, _ = self.builder.build(project, selection)
             trace["context_changed_during_response"] = (
                 current.context_fingerprint != context.context_fingerprint
             )
-            trace["metric_refs"] = [
-                {"result_id": result.id, "key": metric_map[k].key}
-                for k in dict.fromkeys(answer.metric_keys)
-            ]
+            trace["metric_refs"] = [{"result_id": result.id, "key": k} for k in metric_keys]
+            trace["finding_kinds"] = [f.kind for f in answer.findings]
             trace["actions"] = [
                 context.allowed_actions[n].model_dump(mode="json")
                 for n in dict.fromkeys(answer.action_indices)
             ]
-            text = answer.explanation
-            if not result or result.status != "completed" or not answer.metric_keys:
-                # Without metric references no model-written finding is released.
-                text = orientation(HELP[context.stage], payload["query_topics"])
-                trace["prose_source"] = "template"
-            else:
-                trace["prose_source"] = "ai_draft"
+            # Concepts remain provider-written even before an analysis exists. Study claims
+            # never inherit permission from a citation: only render_findings writes them.
+            text = general_text
+            if grounded_text:
+                text += "\n\nHallazgos del resultado guardado ·\n" + grounded_text
+            trace["prose_source"] = "ai_grounded_draft" if grounded_text else "ai_concepts"
+            trace["evidence_policy"] = "structured-findings-v1"
+            trace["question_omitted"] = payload["question"]["omitted"]
+            if payload["question"]["omitted"]:
+                text += (
+                    "\n\nParte de la consulta se omitió por privacidad; "
+                    "no se presupone su contenido."
+                )
             if result and result.validity == "stale":
                 text = "Resultado histórico desactualizado. " + text
             if trace["context_changed_during_response"]:
@@ -271,18 +303,34 @@ class TutorService:
                         "scope": "Revisa el borrador en Contexto antes de aplicar o confirmar.",
                     }
                 )
-            if result and result.status == "completed" and answer.metric_keys:
+            explanation = None
+            if result and grounded_text:
                 explanation = ResultExplanationV2(
                     id=str(uuid4()),
                     project_id=project,
                     revision=1,
                     result_ref=reference("result", result),
                     context_fingerprint=context.context_fingerprint,
-                    text=text,
-                    metric_keys=[r["key"] for r in trace["metric_refs"]],
+                    text=general_text or "Consulta los hallazgos verificados por el servidor.",
+                    metric_keys=metric_keys,
+                    evidence_policy="structured-findings-v1",
+                    grounded_text=grounded_text,
                     created_at=datetime.now(UTC),
                 )
-                with self.store.transaction() as db:
+                trace["explanation_id"] = explanation.id
+
+            def delivery_guard(db):
+                receipt = self.store.get(project, "tutor_consent", project, db)
+                if (
+                    not receipt
+                    or not receipt["granted"]
+                    or receipt.get("consent_scope") != "tutor_context_v4"
+                    or receipt["revision"] != draft.consent_revision
+                ):
+                    raise ConversationError(
+                        "consent_required", "El permiso del tutor fue revocado o cambió.", 403
+                    )
+                if explanation:
                     self.store.put(
                         db,
                         project,
@@ -290,37 +338,6 @@ class TutorService:
                         explanation.id,
                         explanation.model_dump(mode="json"),
                         0,
-                    )
-                trace["explanation_id"] = explanation.id
-            # Digits in generated prose were rejected. Only the server inserts cited values.
-            from app.modules.statistics.presentation_v2 import (
-                format_number,
-                metric_label,
-                metric_unit,
-            )
-
-            if answer.metric_keys:
-                text += (
-                    "\n\nMétricas del resultado "
-                    + result.id
-                    + ":\n"
-                    + "\n".join(
-                        f"• {metric_label(metric_map[k])}: "
-                        f"{format_number(metric_map[k].value, metric_map[k].key)}"
-                        f" {metric_unit(metric_map[k]) or ''}"
-                        for k in dict.fromkeys(answer.metric_keys)
-                    )
-                )
-
-            def delivery_guard(db):
-                receipt = self.store.get(project, "tutor_consent", project, db)
-                if (
-                    not receipt
-                    or not receipt["granted"]
-                    or receipt["revision"] != draft.consent_revision
-                ):
-                    raise ConversationError(
-                        "consent_required", "El permiso del tutor fue revocado o cambió.", 403
                     )
 
             return {
@@ -364,10 +381,18 @@ class TutorService:
             raise ContextError(
                 "source_stale", "El borrador corresponde a un resultado histórico.", 409
             )
-        if not validate_prose(body.text):
+        if value.evidence_policy != "structured-findings-v1":
+            raise ContextError(
+                "unverified_legacy",
+                "Este borrador antiguo no tiene hallazgos verificados. "
+                "Se conserva como histórico; solicita una nueva explicación.",
+                409,
+            )
+        if not validate_general_prose(body.text):
             raise ContextError(
                 "invalid_payload",
-                "Usa las referencias de métricas para las cifras; edita solo la explicación.",
+                "Edita conceptos y comentarios generales; los hallazgos y sus cifras "
+                "se conservan separados y solo los redacta el servidor.",
             )
         value.text, value.review_status = body.text, "reviewed"
         value.reviewed_at, value.revision = datetime.now(UTC), body.expected_revision + 1

@@ -153,6 +153,14 @@ class TutorContextBuilder:
                 "confirmed": bool(intent.confirmation),
                 "observations": intent.observations.value,
                 "observations_confirmed": bool(intent.observations.confirmation),
+                "question": result.question
+                if result
+                else plan.question
+                if plan
+                else intent.question.value,
+                "question_confirmed": bool(
+                    intent.question.confirmation or (plan and plan.status == "approved")
+                ),
             }
             for field in (
                 "instrument_id",

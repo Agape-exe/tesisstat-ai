@@ -51,14 +51,14 @@ class MessageDraftV2(TutorSelectionV2):
     content: Annotated[StrictStr, Field(min_length=1, max_length=16000)]
     request_id: UUID
     external_ai_consent: Literal[True]
-    consent_scope: Literal["tutor_context_v3"]
+    consent_scope: Literal["tutor_context_v4"]
     consent_revision: Annotated[int, Field(strict=True, ge=1)]
 
 
 class TutorConsentV2(V2Model):
     expected_revision: Annotated[int, Field(strict=True, ge=0)]
     granted: StrictBool
-    consent_scope: Literal["tutor_context_v3"]
+    consent_scope: Literal["tutor_context_v4"]
 
 
 class TutorUpdateV2(V2Model):
@@ -66,11 +66,20 @@ class TutorUpdateV2(V2Model):
     value: Annotated[StrictStr, Field(min_length=1, max_length=1500)]
 
 
+class TutorFindingV2(V2Model):
+    kind: Literal["metric", "association_direction", "p_value", "case_counts"]
+    metric_key: Annotated[StrictStr, Field(pattern=r"^m[0-9]{1,3}$")] | None = None
+
+
 class TutorAnswerV2(V2Model):
-    explanation: Annotated[StrictStr, Field(min_length=1, max_length=3500)]
-    metric_keys: list[Annotated[StrictStr, Field(pattern=r"^m[0-9]{1,3}$")]] = Field(
-        default_factory=list, max_length=25
+    response_version: Literal["tutor-2.1"]
+    concepts: list[Annotated[StrictStr, Field(min_length=1, max_length=1800)]] = Field(
+        default_factory=list, max_length=3
     )
+    examples: list[Annotated[StrictStr, Field(min_length=1, max_length=1000)]] = Field(
+        default_factory=list, max_length=2
+    )
+    findings: list[TutorFindingV2] = Field(default_factory=list, max_length=12)
     action_indices: list[Annotated[StrictInt, Field(ge=0, le=20)]] = Field(
         default_factory=list, max_length=6
     )
@@ -86,6 +95,8 @@ class ResultExplanationV2(V2Model):
     context_fingerprint: Hash
     text: Annotated[str, Field(min_length=1, max_length=3500)]
     metric_keys: list[str]
+    evidence_policy: Literal["legacy-unverified", "structured-findings-v1"] = "legacy-unverified"
+    grounded_text: Annotated[str, Field(max_length=12000)] | None = None
     source: Literal["ai"] = "ai"
     review_status: Literal["draft", "reviewed"] = "draft"
     created_at: AwareDatetime

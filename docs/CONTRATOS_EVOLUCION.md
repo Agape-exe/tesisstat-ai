@@ -704,8 +704,8 @@ en texto no reemplazan las verificadas del servidor.
 
 MessageDraftV2 en `POST P/conversations/{id}/messages`: content string 1–16000,
 request_id:UUID, stage (enum anterior), external_ai_consent=true,
-consent_scope="tutor_context_v3". El v2 de familia de contratos no es el antiguo alcance
-`research_context_v2`: no asumir consentimiento previo para nuevas fuentes/instrumento.
+consent_scope="tutor_context_v4". El v2 de familia de contratos no es el antiguo alcance
+`research_context_v2` ni `tutor_context_v3`: no asumir consentimiento previo para contenido nuevo.
 Requiere consentimiento revocable del dueño; respuesta contiene mensaje y contexto usado,
 refs de métricas/fuentes y acciones propuestas. Sin consentimiento se informa 403 al enviar
 al proveedor; ayuda estática y formularios continúan. Proveedor ausente 503/cuota 429 con
@@ -714,8 +714,9 @@ mensaje claro, sin simulación de respuesta exitosa.
 Una actualización IA produce SuggestionV2 separado, nunca PATCH directo al contexto.
 Aceptar valores usa C2/C3 y confirmación humana; diagnósticos/propuesta usan botones que
 explican alcance; aprobación/ejecución solo C5. «Sí» escrito al chat no firma aprobación.
-Explicaciones basadas en ResultV2 citan metric keys existentes; sin resultado no presentar
-números inventados. Mantener consentimiento de extracción documental separado. Redactar
+Los hallazgos basados en ResultV2 usan operaciones tipadas y referencias pertinentes; una key
+existente no valida prosa libre. Sin resultado se permiten conceptos y ejemplos hipotéticos,
+incluidas cantidades generales, sin inventar hallazgos. Mantener consentimiento de extracción separado. Redactar
 identificadores/nombres/categorías sensibles antes de enviar, limitar tokens y no enviar
 dataset completo. Auditoría registra refs/versiones, no secretos ni prompts con PII.
 
@@ -765,9 +766,11 @@ Con `P=/api/v2/research/projects/{project_id}`:
   desactualizado se referencia en `historical_refs`; `current_result_ref` queda null.
   Las observaciones históricas no se releen para explicar sus métricas persistidas.
 - GET/PUT `P/conversations/consent`: PUT `TutorConsentV2` exige `expected_revision`,
-  `granted` booleano estricto y `consent_scope=tutor_context_v3`. Recibo durable en EvidenceStore,
+  `granted` booleano estricto y `consent_scope=tutor_context_v4`. Recibo durable en EvidenceStore,
   con actor/fecha del servidor y CAS. Desmarcar revoca. Extracción documental y cálculo local
-  conservan permisos separados. `research_context_v2` no autoriza estos mensajes/fuentes.
+  conservan permisos separados. `research_context_v2` y `tutor_context_v3` no autorizan el envío.
+  Un recibo v3 se conserva con su revisión e historial, pero GET devuelve `granted:false`,
+  `renewal_required:true` y alcance v4. Renovar requiere PUT explícito y CAS sobre esa revisión.
 - POST `P/conversations/{id}/messages` acepta `MessageDraftV2`, con selección explícita,
   `request_id`, contenido acotado, consentimiento y `consent_revision` vigente. CRUD/historial
   usa las conversaciones existentes. La clave se vincula al body completo: cambiar selección
@@ -782,12 +785,15 @@ Con `P=/api/v2/research/projects/{project_id}`:
   botones separados. Ningún texto de chat firma esas acciones. Una selección aún en carga no
   habilita acciones del contexto anterior.
 
-Política externa `closed-topics-v1`: se conserva texto libre localmente y se envían únicamente
-temas de un vocabulario cerrado, enums, conteos y hasta 24 métricas pertinentes bajo alias.
-No se transmiten nombres, categorías, textos de documentos/contexto/instrumento, identificadores,
-filas, UUIDs de recursos ni mensajes/historial literales. El historial externo se reduce a
-temas recientes del mismo fingerprint. Esta decisión prioriza privacidad verificable y limita
-la comprensión de detalles narrativos: no se promete enviar una tesis o reconstruir lo omitido.
+Política externa `ordered-lexical-projection-v2`, que reemplaza `closed-topics-v1` y exige v4:
+fragmentos filtrados de consulta (hasta 140 tokens), cuatro mensajes del mismo fingerprint
+(100 tokens cada uno), cinco campos narrativos confirmados pertinentes (70 tokens cada uno) y
+pregunta seleccionada confirmada (100 tokens). Solo se emiten palabras canónicas de un vocabulario
+estadístico/gramatical, en orden y con negaciones, interrogativas y anáforas; lo desconocido queda
+`[omitido]`. Antes se eliminan spans URL/email, UUID, tokens con dígitos/underscore y citas literales.
+No se envían filas, nombres, categorías libres, documentos/instrumentos completos, identificadores,
+credenciales ni mensajes originales completos. Se incluyen enums/conteos y hasta 24 métricas bajo
+alias. La proyección sigue siendo incompleta: no reconstruir lo omitido y preguntar si falta sentido.
 Contexto externo limitado por bytes/tokens de la configuración; una llamada como máximo por envío,
 sin llamadas IA al navegar. No se registra el prompt ni secretos. Cuota 429, timeout 504 y
 proveedor ausente/respuesta inválida 503; historial, ayuda por plantillas y formularios continúan.
@@ -798,14 +804,25 @@ y `sampling_notes`. Se crea `ContextSuggestion` C2 con procedencia IA, sin aplic
 comparación, edición, rechazo, CAS e históricos usan S02B. El enlace abre ese borrador concreto.
 Un cambio de contexto durante la llamada no rebasa silenciosamente la revisión de la sugerencia.
 
-La prosa numérica generada se rechaza; los alias de métricas se validan contra el resultado
-seleccionado y el servidor inserta cifras/etiquetas/unidades con su formato compartido.
-Sin resultado o sin referencias no se publica un hallazgo del modelo: se presenta orientación
-por plantillas identificada, sin simular éxito cuando falla el proveedor. La explicación IA con
-referencias es `ResultExplanationV2`, separada del resultado original e inicialmente draft.
+Protocolo del proveedor `TutorAnswerV2.response_version=tutor-2.1`: `concepts` (hasta tres textos),
+`examples` (hasta dos, rotulados hipotéticos), `findings`, `action_indices` y `updates`. Los conceptos
+se conservan antes de ejecutar y sin metric keys; cantidades generales como «dos mediciones» son
+válidas. La ayuda estática se muestra separada, nunca reemplaza una respuesta conceptual válida.
+`findings` no acepta texto ni valores: `metric` valida alias, `association_direction` exige r/rho
+de Pearson/Spearman, `p_value` exige esa métrica, `case_counts` usa conteos persistidos sin alias.
+No existen operaciones para afirmar causalidad/significación. El servidor reproduce cifras con
+su formato y añade límites pertinentes. Keys inválidas, tipos incompatibles y campos extra fallan.
+La prosa conceptual se comprueba por ámbito sujeto/predicado para rechazar afirmaciones empíricas;
+no se bloquean números en general. Es defensa adicional, no certificación de corrección pedagógica.
+Los hallazgos nunca se toman de prosa libre aunque cite una métrica válida.
+`ResultExplanationV2` separa `text` (comentario general revisable) y `grounded_text` (hallazgos
+del servidor, inmutables por revisión), con `evidence_policy=structured-findings-v1` e inicialmente
+draft. Solo se guarda interpretación de resultado cuando hay hallazgos estructurados.
 GET `P/analysis/results/{id}/interpretations`; POST `.../{explanation_id}/review` requiere
 `ExplanationReviewV2` con CAS, texto revisado y confirmación explícita. GET `.../revisions`
-conserva todo el historial. Revisar no altera cifras ni acredita validez científica.
+conserva todo el historial. Revisar no altera cifras ni acredita validez científica. Borradores
+anteriores sin policy son `legacy-unverified`: historial conservado y advertido, sin revisión ni
+exportación de su prosa; se solicita una explicación nueva, sin reescribir datos anteriores.
 
 GET `P/analysis/results/{id}/presentation` aplica `es-significant-6-v1`, compartido por UI,
 citas del tutor e informes: etiquetas españolas, unidades conocidas/no declaradas, seis cifras

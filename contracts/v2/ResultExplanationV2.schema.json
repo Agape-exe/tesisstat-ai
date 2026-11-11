@@ -102,6 +102,28 @@
       "title": "Metric Keys",
       "type": "array"
     },
+    "evidence_policy": {
+      "default": "legacy-unverified",
+      "enum": [
+        "legacy-unverified",
+        "structured-findings-v1"
+      ],
+      "title": "Evidence Policy",
+      "type": "string"
+    },
+    "grounded_text": {
+      "anyOf": [
+        {
+          "maxLength": 12000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Grounded Text"
+    },
     "source": {
       "const": "ai",
       "default": "ai",

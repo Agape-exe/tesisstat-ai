@@ -94,6 +94,8 @@ it('keeps a draft editable after a review conflict', async () => {
       id: 'e',
       result_ref: { id: 'r' },
       metric_keys: ['p_value'],
+      evidence_policy: 'structured-findings-v1',
+      grounded_text: 'Valor p reproducido por el servidor.',
       text: 'Borrador previo.',
       review_status: 'draft',
       revision: 1,
@@ -116,4 +118,27 @@ it('keeps a draft editable after a review conflict', async () => {
   expect(screen.getByLabelText('Explicación editable')).toHaveValue(
     'Mi revisión con límites.',
   );
+});
+
+it('quarantines historical prose without verified evidence instead of enabling review', async () => {
+  api.interpretations.mockResolvedValue([
+    {
+      id: 'legacy',
+      result_ref: { id: 'r' },
+      metric_keys: ['p_value'],
+      text: 'Contenido histórico.',
+      review_status: 'draft',
+      revision: 1,
+      evidence_policy: 'legacy-unverified',
+      grounded_text: null,
+    },
+  ]);
+  render(<ResultsV2 projectId="proyecto" active selectedId="r" />);
+  expect(
+    await screen.findByText(/Interpretación histórica sin respaldo/),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Guardar revisión de interpretación' }),
+  ).toBeDisabled();
+  expect(api.review).not.toHaveBeenCalled();
 });

@@ -202,10 +202,15 @@ limitaciones se encuentran en [STATISTICS_INTEGRANTE2_AUDIT.md](docs/STATISTICS_
 
 La ayuda del proyecto incluye **Asistente IA**, con conversaciones e historial SQLite.
 S06 añade **Ayuda contextual para este paso** y selección explícita de análisis/resultado.
-El envío v2 requiere Cloudflare configurado y permiso revocable `tutor_context_v3`; el permiso
-anterior no basta. Solo se envían temas, estados y agregados pertinentes: texto libre, nombres,
-categorías, documentos y filas permanecen locales. Las explicaciones IA son borradores revisables,
-separados de las métricas. Sin proveedor siguen funcionando ayuda estática, historial y formularios.
+El envío v2 requiere Cloudflare configurado y permiso revocable `tutor_context_v4`; el permiso
+v3 anterior debe renovarse porque cambia lo transmitido. Se envían fragmentos filtrados y ordenados
+de la consulta, hasta cuatro mensajes del mismo contexto y campos narrativos confirmados pertinentes,
+además de estados y agregados bajo alias. Un vocabulario estadístico/gramatical conserva negaciones y
+seguimientos; lo desconocido se marca omitido. No se envían textos originales completos, nombres,
+identificadores, secretos, categorías libres, documentos ni filas. Los conceptos y ejemplos generales
+del proveedor se conservan sin exigir resultados. Los hallazgos solo usan operaciones estructuradas
+verificadas y cifras insertadas por el servidor; una referencia no valida prosa arbitraria.
+Sin proveedor siguen funcionando ayuda estática identificada, historial y formularios.
 Resultados permite figuras explícitas e informes TXT/DOCX/PDF, con formato compartido y doble
 revalidación de aprobación, autorización y vigencia. [Alcance y pruebas S06](docs/sesiones/S06.md).
 Para los antecedentes v1, consulta configuración,
@@ -215,5 +220,6 @@ resultados persistidos, con vigencia y trazabilidad por respuesta. Requiere acep
 el alcance ampliado del consentimiento. Consulta arquitectura, pruebas y validación
 manual en la [guía de contexto de investigación](docs/CONTEXTO_INVESTIGACION_CHAT.md).
 La conexión real del chat anterior fue validada por la usuaria; la validación del
-contexto ampliado con Qwen3 real queda pendiente. La demo reproducible con proveedor
+contexto ampliado anterior con Qwen3 real queda pendiente. S06 verificó una consulta conceptual
+sintética real con consentimiento v4, sin acreditar todos los recorridos. La demo con proveedor
 simulado no necesita credenciales ni realiza solicitudes externas.

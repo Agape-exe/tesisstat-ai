@@ -323,7 +323,13 @@ function ResultCard({
                 Revisión {e.revision} ·{' '}
                 {e.review_status === 'draft' ? 'Borrador' : 'Revisada'}
               </h5>
+              {e.evidence_policy !== 'structured-findings-v1' && (
+                <p>
+                  Histórico sin respaldo verificado; no se exporta esta prosa.
+                </p>
+              )}
               <p>{e.text}</p>
+              {e.grounded_text && <p>{e.grounded_text}</p>}
               <small>
                 Resultado {e.result_ref.id}; métricas {e.metric_keys.join(', ')}
                 .
@@ -390,6 +396,18 @@ function Explanation({
         Resultado {e.result_ref.id}. Referencias: {e.metric_keys.join(', ')}.
         Revisar no certifica validez científica.
       </p>
+      {e.evidence_policy !== 'structured-findings-v1' ? (
+        <p role="status">
+          Interpretación histórica sin respaldo verificado de sus afirmaciones.
+          Se conserva para consulta, no se exporta ni puede validarse con esta
+          versión. Solicita una nueva explicación.
+        </p>
+      ) : (
+        <div>
+          <h5>Hallazgos reproducidos por el servidor</h5>
+          <p className="tutor-prose">{e.grounded_text}</p>
+        </div>
+      )}
       <label className="rp-field">
         Explicación editable
         <textarea
@@ -408,8 +426,8 @@ function Explanation({
       </label>
       <p>
         <small>
-          Las cifras proceden de las métricas referenciadas; edita aquí solo la
-          explicación.
+          Este texto contiene conceptos y comentarios generales. Los hallazgos y
+          cifras guardados se muestran separados y no cambian al editarlo.
         </small>
       </p>
       <details>
@@ -418,7 +436,11 @@ function Explanation({
         <p>Revisión {e.revision}.</p>
       </details>
       <button
-        disabled={disabled || !text.trim()}
+        disabled={
+          disabled ||
+          !text.trim() ||
+          e.evidence_policy !== 'structured-findings-v1'
+        }
         onClick={() => onReview(text)}
       >
         Guardar revisión de interpretación

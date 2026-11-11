@@ -319,7 +319,10 @@ Inventarios del mismo proyecto no son evidencia vigente hasta revalidar la selec
 
 EvidenceStore incorpora kinds `tutor_consent` y `result_explanation`; preservar sus revisiones,
 actor/fechas de consentimiento, revocación y vínculo con el resultado. No mezclar el alcance
-`tutor_context_v3` con `research_context_v2`, extracción documental o autorización local de datos.
+`tutor_context_v4` con `research_context_v2`, `tutor_context_v3`, extracción documental o autorización
+local de datos. Un recibo v3 no autoriza las nuevas proyecciones narrativas: conservarlo y exigir
+renovación v4 con CAS. Conservar `grounded_text` y `evidence_policy` de interpretaciones; los textos
+antiguos sin policy quedan como históricos no verificados y no se exporta su prosa.
 Las interpretaciones IA no se almacenan dentro del resultado numérico inmutable.
 
 ConversationRepository amplía `claim` con fingerprint del body y contexto de auditoría;

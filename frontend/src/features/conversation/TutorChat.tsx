@@ -198,7 +198,7 @@ export function TutorChat({
           request_id: pending.current.requestId,
           consent_revision: status.consent.revision,
           external_ai_consent: true,
-          consent_scope: 'tutor_context_v3',
+          consent_scope: 'tutor_context_v4',
         });
         setMessages((old) => [
           ...old.filter((m) => !response.messages.some((n) => n.id === m.id)),
@@ -326,6 +326,9 @@ export function TutorChat({
       </div>
       {status && (
         <>
+          <p>
+            <small>Ayuda estática por etapa · sin proveedor IA</small>
+          </p>
           <p role="status">{status.static_help}</p>
           {status.provider_kind === 'controlled_test' && (
             <p className="rp-warning">
@@ -377,6 +380,14 @@ export function TutorChat({
               {status.context.historical_refs.length} históricas.
             </p>
           </details>
+          {status.consent.renewal_required && (
+            <p role="status">
+              Cambió lo que se transmite: ahora incluye fragmentos filtrados de
+              la consulta, contexto confirmado y seguimiento. El permiso
+              anterior no basta; revisa la descripción y renueva tu
+              autorización.
+            </p>
+          )}
           <label className="tutor-consent">
             <input
               type="checkbox"
@@ -397,7 +408,8 @@ export function TutorChat({
               }}
             />
             Autorizo el envío acotado a Cloudflare Workers AI
-            (tutor_context_v3). Desmarcar revoca el permiso.
+            (tutor_context_v4), incluidos fragmentos filtrados de consulta,
+            contexto e historial. Desmarcar revoca el permiso.
           </label>
           {consentPending != null && (
             <p role="status">Guardando el cambio de permiso…</p>
@@ -485,7 +497,9 @@ export function TutorChat({
                 ? 'Tú'
                 : message.context?.prose_source === 'template'
                   ? 'Orientación básica · acciones sugeridas por IA'
-                  : 'Borrador IA · revisa su alcance'}
+                  : message.context?.prose_source === 'ai_concepts'
+                    ? 'Conceptos generales de IA · no son hallazgos del estudio'
+                    : 'Borrador IA · revisa su alcance'}
             </strong>
             <p className="tutor-prose">{message.content}</p>
             {message.context?.error && (

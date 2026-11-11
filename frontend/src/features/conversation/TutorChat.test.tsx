@@ -7,7 +7,7 @@ import { createConversationApi } from './api';
 function fixture(configured = false) {
   const status: TutorStatus = {
     provider_configured: configured,
-    consent: { revision: 0, granted: false, consent_scope: 'tutor_context_v3' },
+    consent: { revision: 0, granted: false, consent_scope: 'tutor_context_v4' },
     static_help: 'Puedes comenzar sin documento ni hipótesis.',
     privacy: 'Solo agregados pertinentes.',
     max_message_characters: 2000,
@@ -51,7 +51,7 @@ function fixture(configured = false) {
     consent: vi.fn().mockResolvedValue({
       revision: 1,
       granted: true,
-      consent_scope: 'tutor_context_v3',
+      consent_scope: 'tutor_context_v4',
     }),
     send: vi.fn().mockResolvedValue({
       messages: [
@@ -85,6 +85,31 @@ afterEach(() => {
   window.history.replaceState(null, '', '/');
 });
 describe('Tutor contextual C7', () => {
+  it('requires renewed consent when the server reports the changed disclosure', async () => {
+    const { api, historyApi, status } = fixture(true);
+    status.consent = {
+      revision: 1,
+      granted: false,
+      consent_scope: 'tutor_context_v4',
+      renewal_required: true,
+    };
+    status.privacy =
+      'Ahora se envían fragmentos filtrados de pregunta, contexto e historial.';
+    render(<TutorChat projectId="p" api={api} historyApi={historyApi} />);
+    expect(
+      await screen.findByText(/Cambió lo que se transmite/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: /Autorizo el envío acotado/ }),
+    ).not.toBeChecked();
+    fireEvent.change(screen.getByLabelText('Tu consulta'), {
+      target: { value: 'Explica correlación negativa' },
+    });
+    expect(
+      screen.getByRole('button', { name: 'Enviar consulta' }),
+    ).toBeDisabled();
+    expect(api.send).not.toHaveBeenCalled();
+  });
   it('keeps empty-project guidance and explicit actions without a provider', async () => {
     const { api, historyApi } = fixture();
     render(<TutorChat projectId="p" api={api} historyApi={historyApi} />);
@@ -138,7 +163,7 @@ describe('Tutor contextual C7', () => {
         content: 'sí, hazlo',
         stage: 'results',
         result_id: 'r',
-        consent_scope: 'tutor_context_v3',
+        consent_scope: 'tutor_context_v4',
         consent_revision: 1,
       }),
     );
