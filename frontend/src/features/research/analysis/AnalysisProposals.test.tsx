@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   approve: vi.fn(),
   authorize: vi.fn(),
   execute: vi.fn(),
+  results: vi.fn(),
 }));
 vi.mock('./v2api', () => ({
   createAnalysisV2Api: () => api,
@@ -82,6 +83,9 @@ it('requires explicit review, then a separate execution action', async () => {
     name: 'Aprobar esta propuesta',
   });
   expect(approve).toBeDisabled();
+  expect(
+    screen.getByText(/no requiere dirección de contraste/),
+  ).toBeInTheDocument();
   expect(api.execute).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('checkbox'));
   const approved = { ...plan, status: 'approved' };
@@ -99,6 +103,28 @@ it('requires explicit review, then a separate execution action', async () => {
   expect(
     await screen.findByRole('button', { name: 'Consultar resultado guardado' }),
   ).toBeInTheDocument();
+});
+it('opens the result belonging to the completed plan rather than the last analysis', async () => {
+  api.plans.mockResolvedValue([
+    { ...plan, status: 'approved', execution_status: 'completed' },
+  ]);
+  api.results.mockResolvedValue([
+    { id: 'other', analysis_plan_id: 'another', validity: 'current' },
+    { id: 'correct', analysis_plan_id: plan.id, validity: 'current' },
+  ]);
+  render(
+    <AnalysisProposals
+      projectId="p"
+      intent={intent}
+      diagnostics={[]}
+      dirty={false}
+      active
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Consultar resultado guardado' }),
+  );
+  await waitFor(() => expect(window.location.hash).toContain('item=correct'));
 });
 it('keeps clarification actionable and never exposes approval', async () => {
   api.plans.mockResolvedValue([

@@ -235,8 +235,8 @@ export function TableContextEditor({
         </div>
         <p className="rp-hint">
           Guardar conserva lo no modificado. Marca únicamente los campos que has
-          revisado. Este contexto estará disponible para los análisis futuros;
-          el chat actual todavía no lo consume.
+          revisado. Este contexto describe esta tabla; las relaciones y
+          comparaciones se revisan por separado en cada análisis.
         </p>
         {error && (
           <p role="alert" className="rp-error">

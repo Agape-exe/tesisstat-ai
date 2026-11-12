@@ -151,6 +151,8 @@ it('only counts current completed results and never assumes comprehension', asyn
   expect(steps[3].state).toBe('Completado');
   expect(steps[4].state).toBe('Completado');
   expect(steps[5].state).toBe('En progreso');
+  expect(steps[0].state).toBe('Pendiente');
+  expect(nextJourneyStep(steps)?.section).toBe('results');
   responses({
     plans: [{ ...record, invalidated_at: '2026-11-09' }],
     status: { state: 'generated', package_id: 'pack' },

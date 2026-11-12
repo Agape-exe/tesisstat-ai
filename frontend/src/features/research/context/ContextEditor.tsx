@@ -565,8 +565,8 @@ export function ContextEditor({
         </button>
       </div>
       <p className="rp-hint">
-        Puedes explorar los datos con contexto incompleto. El tutor y el
-        análisis documental conservan su alcance anterior.
+        Puedes explorar los datos con contexto incompleto y realizar un
+        descriptivo sin documento ni hipótesis. La ayuda contextual es opcional.
       </p>
       <details>
         <summary>Documentos y herramientas de apoyo</summary>

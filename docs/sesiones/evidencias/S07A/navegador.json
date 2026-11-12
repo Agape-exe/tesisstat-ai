@@ -1,0 +1,48 @@
+{
+  "principal": "Decisiones introducidas exclusivamente por interfaz desde proyecto nuevo",
+  "project": "a9115507-c384-423d-9106-089a7950b86f",
+  "result": "cfd2fb0b-a4b9-4849-ba8f-149729b04d9f",
+  "counts": {
+    "total": 6,
+    "used": 5,
+    "excluded": 1
+  },
+  "mean": 14,
+  "median": 14,
+  "desktop": true,
+  "mobile": [
+    {
+      "width": 390,
+      "scrollWidth": 375
+    },
+    {
+      "width": 320,
+      "scrollWidth": 305
+    }
+  ],
+  "keyboard": "Abrir ayuda con Enter",
+  "helpStages": [
+    {
+      "stage": "Contexto",
+      "selected": "Contexto"
+    },
+    {
+      "stage": "Datos",
+      "selected": "Datos"
+    },
+    {
+      "stage": "Análisis",
+      "selected": "Análisis"
+    },
+    {
+      "stage": "Resultados",
+      "selected": "Resultados"
+    }
+  ],
+  "conflict": "Dos pestañas: 409, comparación y guardado explícito sobre revisión nueva; revisión final 4",
+  "unsaved": "Objetivo conservado al ir a Datos y volver",
+  "restart": "Error de conexión visible; Reintentar detalle recupera contexto revisión 4",
+  "navigation": "Consultar resultado guardado abre item exacto; Inicio propone comprender resultados",
+  "consoleErrors": [],
+  "manualUserAcceptance": "pendiente"
+}

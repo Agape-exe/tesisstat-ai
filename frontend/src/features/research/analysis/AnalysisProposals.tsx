@@ -133,10 +133,10 @@ export function AnalysisProposals({
           )}
           <p>
             Método: {p.parameters.calculation_method} ·{' '}
-            {p.parameters.alternative === 'two-sided'
-              ? 'bilateral'
-              : 'dirección por revisar'}{' '}
-            · alfa {p.parameters.alpha}. IC disponibles: 95 %.
+            {p.technique === 'descriptive_summary' ||
+            p.technique === 'cronbach_alpha'
+              ? 'no requiere dirección de contraste.'
+              : `${p.parameters.alternative === 'two-sided' ? 'bilateral' : 'dirección por revisar'} · alfa ${p.parameters.alpha}. IC disponibles: 95 %.`}
           </p>
           <ul>
             {p.limitations.map((l, n) => (
@@ -280,7 +280,24 @@ export function AnalysisProposals({
               </>
             )}
           {p.execution_status === 'completed' && (
-            <button onClick={() => navigateProject(projectId, 'results')}>
+            <button
+              disabled={busy}
+              onClick={() =>
+                void work(async () => {
+                  const results = await api.results(projectId);
+                  const result =
+                    results.find(
+                      (r) =>
+                        r.analysis_plan_id === p.id && r.validity === 'current',
+                    ) ?? results.find((r) => r.analysis_plan_id === p.id);
+                  if (!result)
+                    throw new Error(
+                      'No se encontró la salida de esta propuesta. Actualiza su estado.',
+                    );
+                  navigateWorkspace(projectId, 'results', 'detail', result.id);
+                })
+              }
+            >
               Consultar resultado guardado
             </button>
           )}

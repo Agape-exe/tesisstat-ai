@@ -341,3 +341,21 @@ no reutilizar lecturas completas de tablas/documentos como payload externo.
 Las verificaciones de S06 acreditan persistencia y aislamiento por proyecto de la demo local,
 no Auth/RLS, revocación de JWT, Storage remoto ni recuperación desde backup remoto. S07 mantiene
 esos gates. No se realizó merge ni despliegue público.
+
+## S07A: verificación local sin sustituir la integración remota
+
+[S07A](sesiones/S07A.md) registra el recorrido principal completo por formularios, escenarios
+integrados por API, controles de concurrencia y una copia consistente restaurada en otra carpeta.
+Esto acredita la demo local y el aislamiento entre sus proyectos, no aislamiento entre usuarios.
+
+La inspección del código encuentra `app.main` limitado a salud y el adaptador Supabase de
+Storage/Auth/persistencia todavía con `NotImplementedError`. El composition root
+`research.dev_app` mantiene su restricción a desarrollo y `local_only`. No hay una aplicación
+remota autenticada integrada que pueda darse por aceptada en S07A.
+
+La entrega remota debe aportar y verificar JWT/identidad, pertenencia transitiva de recursos,
+RLS real y Storage privado con dos usuarios, persistencia de todos los recursos C1–C7 y v1,
+CAS/idempotencia y revalidación transaccional equivalentes a SQLite, migración autorizada,
+backup consistente DB/objetos y restauración en destino aislado, además del composition root
+de producción con autorización fail-closed. La copia local de S07A no demuestra recuperación
+remota. Estos requisitos mantienen abierto S07 y bloquean declarar listo el despliegue.

@@ -105,9 +105,9 @@ export function TableWorkspace({
         <h3>Continuar a Análisis</h3>
         <p>
           No necesitas transformar datos que ya están listos. Análisis permite
-          guardar preguntas y solicitar diagnósticos para estas tablas. Las
-          nuevas propuestas y ejecución llegarán en S04B; el análisis actual
-          conserva su recorrido documental v1.
+          guardar preguntas, revisar diagnósticos y solicitar propuestas para
+          estas tablas. Después podrás aprobar y ejecutar cada propuesta por
+          separado, sin documento ni hipótesis para un descriptivo.
         </p>
         <button onClick={() => navigateProject(projectId, 'analysis')}>
           Ir a Análisis

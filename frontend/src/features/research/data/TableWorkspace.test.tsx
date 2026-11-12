@@ -231,7 +231,7 @@ it('reads persisted evidence without computing and computes only on explicit act
     screen.getByRole('region', { name: 'Perfil exploratorio completo' }),
   ).toHaveTextContent('30');
   expect(
-    screen.getByText(/solicitar diagnósticos para estas tablas/),
+    screen.getByText(/solicitar propuestas para estas tablas/),
   ).toBeInTheDocument();
 });
 
