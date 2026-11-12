@@ -285,14 +285,16 @@ export function AnalysisProposals({
               onClick={() =>
                 void work(async () => {
                   const results = await api.results(projectId);
+                  const completed = results.filter(
+                    (r) =>
+                      r.analysis_plan_id === p.id && r.status === 'completed',
+                  );
                   const result =
-                    results.find(
-                      (r) =>
-                        r.analysis_plan_id === p.id && r.validity === 'current',
-                    ) ?? results.find((r) => r.analysis_plan_id === p.id);
+                    completed.find((r) => r.validity === 'current') ??
+                    completed[0];
                   if (!result)
                     throw new Error(
-                      'No se encontró la salida de esta propuesta. Actualiza su estado.',
+                      'No se encontró la salida completada de esta propuesta. Actualiza su estado.',
                     );
                   navigateWorkspace(projectId, 'results', 'detail', result.id);
                 })
