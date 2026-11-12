@@ -19,6 +19,7 @@ from app.modules.conversation.tutor_grounding import (
     render_findings,
     validate_general_prose,
 )
+from app.modules.conversation.tutor_orientation import render_options, render_step
 from app.modules.conversation.tutor_privacy import (
     fit_payload,
     outbound_context,
@@ -32,7 +33,17 @@ from app.modules.research.context.suggestions import SuggestionService
 from app.orchestration.analysis_v2_service import reference
 from app.shared.adapters.cloudflare import CloudflareLanguageModel
 from app.shared.ai_errors import AIError
-from app.shared.tutor_v2 import ResultExplanationV2, TutorAnswerV2, TutorSelectionV2
+from app.shared.tutor_v2 import (
+    ResultExplanationV2,
+    TutorAnswerV2,
+    TutorSelectionV2,
+    TutorWireAnswerV1,
+)
+
+
+def provider_answer_schema():
+    """Flat generation transport; domain constraints are enforced independently on return."""
+    return TutorWireAnswerV1.model_json_schema()
 
 
 class TutorService:
@@ -104,12 +115,13 @@ class TutorService:
             "recientes del mismo contexto; las declaraciones confirmadas pertinentes y un resumen "
             "de la tabla: encabezados depurados, significados y escalas confirmados, tipos "
             "detectados, "
-            "cantidades de registros/columnas y recuentos locales de faltantes o errores. "
+            "cantidades de registros/columnas, faltantes, errores y variables sin variación. "
             "Se distinguen "
             "detecciones, declaraciones y cálculos. Los resultados seleccionados solo "
             "aportan métricas "
-            "agregadas bajo alias. No se envían archivos, documentos, filas, valores individuales, "
-            "categorías libres, nombres de proyectos/archivos, UUID ni credenciales. La supresión "
+            "agregadas bajo alias. No se adjuntan archivos, documentos, filas, "
+            "valores individuales, listas de categorías, nombres de proyectos/archivos, "
+            "UUID ni credenciales. La supresión "
             "local detecta patrones de identificadores, secretos, posibles nombres "
             "completos y valores "
             "de columnas identificadoras; no es un detector universal de datos personales: escribe "
@@ -204,7 +216,6 @@ class TutorService:
             payload, metric_map = outbound_context(
                 context, result, query_topics, private_terms=denied
             )
-            payload["query_topics"] = query_topics
             payload["question"] = project_text(draft.content, private_terms=denied)
             trace["metrics_omitted"] = payload["metrics_omitted"]
             # Old source conversations do not contribute claims about a new analysis.
@@ -224,7 +235,7 @@ class TutorService:
                 self.settings.conversation_max_output_tokens,
                 self.settings.cloudflare_max_output_tokens,
             )
-            response_schema = TutorAnswerV2.model_json_schema()
+            response_schema = provider_answer_schema()
             # The provider also bounds schema/framing bytes. Count them before fitting
             # optional evidence; input and output have independent configured limits.
             schema_bytes = len(json.dumps(response_schema, ensure_ascii=False).encode())
@@ -253,8 +264,12 @@ class TutorService:
             if not isinstance(raw, str) or len(raw.encode()) > 16000:
                 raise AIError("invalid_response")
             try:
-                answer = TutorAnswerV2.model_validate_json(raw)
-            except ValidationError:
+                answer = (
+                    TutorWireAnswerV1.model_validate_json(raw).as_answer()
+                    if isinstance(self.conversations.provider, CloudflareLanguageModel)
+                    else TutorAnswerV2.model_validate_json(raw)
+                )
+            except (ValidationError, ValueError):
                 raise AIError("invalid_response") from None
             if (
                 not (
@@ -276,7 +291,9 @@ class TutorService:
                 raise AIError("invalid_response")
             grounded_text, metric_keys = render_findings(answer.findings, metric_map, result)
             paragraphs, fact_keys = [], []
+            procedural_text = []
             prose = list(answer.concepts)
+            action_indices = list(answer.action_indices)
             if answer.orientation:
                 orientation = answer.orientation
                 if "?" not in orientation.clarification:
@@ -284,9 +301,13 @@ class TutorService:
                 if sent_evidence and not orientation.basis_keys:
                     raise AIError("invalid_response")
                 basis = " ".join("{{" + key + "}}" for key in orientation.basis_keys)
+                procedural_text = [
+                    render_options(orientation.option_indices, context),
+                    render_step(orientation.next_step, context),
+                ]
+                paragraphs.extend(procedural_text)
+                action_indices.extend(orientation.option_indices)
                 prose = [
-                    orientation.possibilities,
-                    orientation.first_step,
                     basis + " " + orientation.reason,
                     *prose,
                     orientation.clarification,
@@ -303,11 +324,13 @@ class TutorService:
             general_text = "\n\n".join(paragraphs)
             # Result review edits only provider prose. Context facts stay in the chat's
             # source-bound trace; metric findings remain separately immutable on exports.
-            reviewable_text = "\n\n".join(filter(None, (prose_without_facts(t) for t in prose)))
+            reviewable_text = "\n\n".join(
+                [*procedural_text, *filter(None, (prose_without_facts(t) for t in prose))]
+            )
             trace["evidence_refs"] = [
                 f.model_dump(mode="json") for f in context.evidence if f.key in fact_keys
             ]
-            if len(general_text) > 3500:
+            if len(reviewable_text) > 3500 or len(general_text) > 16000:
                 raise AIError("invalid_response")
             self._consent(project, draft.consent_revision)
             current, _ = self.builder.build(project, selection)
@@ -318,7 +341,7 @@ class TutorService:
             trace["finding_kinds"] = [f.kind for f in answer.findings]
             trace["actions"] = [
                 context.allowed_actions[n].model_dump(mode="json")
-                for n in dict.fromkeys(answer.action_indices)
+                for n in dict.fromkeys(action_indices)
             ]
             # Concepts remain provider-written even before an analysis exists. Study claims
             # never inherit permission from a citation: only render_findings writes them.

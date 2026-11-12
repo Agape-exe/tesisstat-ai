@@ -15,10 +15,17 @@ def table_summary(workspace, project, selection, dataset, rows, dictionary, sele
     denied = table_private_terms(dataset, rows, dictionary)
     evidence, data = [], []
 
-    def add(kind, text, source, variable=None):
+    def add(kind, text, source, variable=None, context_field=None):
         key = f"f{len(evidence)}"
         evidence.append(
-            {"key": key, "kind": kind, "text": text, "source_ref": source, "variable": variable}
+            {
+                "key": key,
+                "kind": kind,
+                "text": text,
+                "source_ref": source,
+                "variable": variable,
+                "context_field": context_field,
+            }
         )
         return key
 
@@ -40,7 +47,8 @@ def table_summary(workspace, project, selection, dataset, rows, dictionary, sele
             dataset, dictionary
         )
         alias = f"Variable {n + 1}"
-        name = alias if identifier else project_text(column.name, private_terms=denied)["text"]
+        projected_name = project_text(column.name, private_terms=denied)
+        name = alias if identifier or projected_name["omitted"] else projected_name["text"]
         scale_confirmed = bool(variable.measurement_scale.confirmation)
         scale = variable.measurement_scale.value if scale_confirmed else "unknown"
         key = add(
@@ -58,11 +66,16 @@ def table_summary(workspace, project, selection, dataset, rows, dictionary, sele
         data.append(
             {
                 "variable": alias,
+                "variable_id": variable.id,
                 "name": name,
                 "detected_type": detection["detected_type"],
                 "scale": scale,
                 "scale_confirmed": scale_confirmed,
                 "identifier": identifier,
+                "meaning_confirmed": bool(variable.description.confirmation),
+                "missing": detection["missing"],
+                "formula_errors": detection["formula_errors"],
+                "constant": detection["constant"],
                 "evidence_key": key,
             }
         )
@@ -87,12 +100,17 @@ def table_summary(workspace, project, selection, dataset, rows, dictionary, sele
                 ref("dictionary", dictionary),
                 alias,
             )
-        if detection["missing"] or detection["formula_errors"]:
+        if detection["missing"] or detection["formula_errors"] or detection["constant"]:
             add(
                 "calculated",
                 f"La comprobación local de «{name}» cuenta "
                 f"{detection['missing']} faltantes y {detection['formula_errors']} "
-                "errores de fórmula; no es un resultado inferencial.",
+                "errores de fórmula; no es un resultado inferencial."
+                + (
+                    " Entre los valores presentes no hay variación."
+                    if detection["constant"]
+                    else ""
+                ),
                 source,
                 alias,
             )
@@ -121,5 +139,6 @@ def table_summary(workspace, project, selection, dataset, rows, dictionary, sele
                             revision=table_context.revision,
                             hash=table_context.hash,
                         ),
+                        context_field=f"/table/{field}",
                     )
     return data, evidence

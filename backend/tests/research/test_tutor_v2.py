@@ -246,7 +246,7 @@ def test_closed_privacy_for_names_categories_context_messages_and_history(setup)
         ds["id"],
     ]:
         assert sensitive not in outbound
-    assert "mean" in outbound
+    assert "Explica media y datos" in outbound
 
 
 def test_ai_suggestion_reuses_c2_review_cas_and_never_approves_by_text(setup):

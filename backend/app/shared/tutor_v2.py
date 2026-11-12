@@ -3,7 +3,15 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, Field, StrictBool, StrictInt, StrictStr
+from pydantic import (
+    AwareDatetime,
+    ConfigDict,
+    Field,
+    StrictBool,
+    StrictInt,
+    StrictStr,
+    model_validator,
+)
 
 from app.shared.analysis_v2 import ID, Hash, SourceRef, V2Model
 
@@ -104,49 +112,55 @@ class TutorFindingV2(V2Model):
 
 
 class TutorOrientationV2(V2Model):
-    possibilities: Annotated[
-        StrictStr,
-        Field(
-            min_length=60,
-            max_length=800,
-            description="Una explicación en oraciones completas, citando las medidas pertinentes "
-            "y condiciones para describir, relacionar o comparar. No una lista de verbos; "
-            "sin elegir prueba ni afirmar resultados.",
-        ),
-    ]
-    first_step: Annotated[
-        StrictStr,
-        Field(
-            min_length=10,
-            max_length=1000,
-            description="Consejo concreto en primera persona; sin propiedades observadas.",
-        ),
+    option_indices: list[Annotated[StrictInt, Field(ge=0, le=20)]] = Field(
+        min_length=1, max_length=3
+    )
+    next_step: Literal[
+        "clarify_observations",
+        "review_variables",
+        "review_quality",
+        "review_analysis",
+        "review_result",
+        "select_data",
     ]
     reason: Annotated[
         StrictStr,
         Field(
             min_length=10,
-            max_length=1000,
-            description="Por qué sirve ese paso. No repitas hechos: se insertan desde basis_keys.",
+            max_length=400,
+            pattern=r"^[^{}]*$",
+            description="Explica el beneficio o el error que ese paso evita para el objetivo. "
+            "No repitas la instrucción del paso ni hechos: se insertan desde basis_keys.",
         ),
     ]
     clarification: Annotated[
         StrictStr,
         Field(
             min_length=10,
-            max_length=600,
-            pattern=r"^¿[^¿?]+\?$",
-            description="Una pregunta concreta para avanzar; sin pedir identificadores.",
+            max_length=240,
+            pattern=r"^(?:¿[^¿?{}]+\?\s*){1,2}$",
+            description="Escribe una pregunta al usuario entre ¿ y ?. No una instrucción "
+            "ni una explicación; sin pedir identificadores.",
         ),
     ]
     basis_keys: list[Annotated[StrictStr, Field(pattern=r"^f[0-9]{1,3}$")]] = Field(
-        default_factory=list,
         max_length=3,
         description="Hechos pertinentes que el servidor intercalará: al menos uno si hay evidence.",
     )
 
 
 class TutorAnswerV2(V2Model):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "anyOf": [
+                {"required": ["orientation"], "properties": {"orientation": {"type": "object"}}},
+                *(
+                    {"required": [field], "properties": {field: {"minItems": 1}}}
+                    for field in ("concepts", "examples", "findings", "updates")
+                ),
+            ]
+        }
+    )
     response_version: Literal["tutor-2.2"]
     orientation: TutorOrientationV2 | None = None
     concepts: list[Annotated[StrictStr, Field(min_length=1, max_length=1800)]] = Field(
@@ -160,6 +174,69 @@ class TutorAnswerV2(V2Model):
         default_factory=list, max_length=6
     )
     updates: list[TutorUpdateV2] = Field(default_factory=list, max_length=3)
+
+    @model_validator(mode="after")
+    def nonempty(self):
+        if not (
+            self.orientation or self.concepts or self.examples or self.findings or self.updates
+        ):
+            raise ValueError(
+                "La respuesta debe orientar, explicar o aportar hallazgos verificados."
+            )
+        return self
+
+
+class TutorWireAnswerV1(V2Model):
+    """Flat provider transport; domain validation and rendering remain independent."""
+
+    response_version: Literal["tutor-wire-1.0"]
+    mode: Literal["orientation", "explanation"]
+    text: Annotated[StrictStr, Field(min_length=10, max_length=1800)]
+    next_step: Literal[
+        "none",
+        "clarify_observations",
+        "review_variables",
+        "review_quality",
+        "review_analysis",
+        "review_result",
+        "select_data",
+    ]
+    option_indices: list[Annotated[StrictInt, Field(ge=0, le=20)]] = Field(max_length=3)
+    question: Annotated[StrictStr, Field(max_length=240)]
+    basis_keys: list[Annotated[StrictStr, Field(pattern=r"^f[0-9]{1,3}$")]] = Field(max_length=3)
+    examples: list[Annotated[StrictStr, Field(min_length=1, max_length=1000)]] = Field(
+        default_factory=list, max_length=2
+    )
+    findings: list[TutorFindingV2] = Field(default_factory=list, max_length=12)
+    action_indices: list[Annotated[StrictInt, Field(ge=0, le=20)]] = Field(
+        default_factory=list, max_length=6
+    )
+    updates: list[TutorUpdateV2] = Field(default_factory=list, max_length=3)
+
+    def as_answer(self):
+        if "{{" in self.text or "}}" in self.text:
+            raise ValueError("Los hechos se seleccionan mediante claves, no dentro de la prosa.")
+        values = {
+            "response_version": "tutor-2.2",
+            "examples": self.examples,
+            "findings": self.findings,
+            "action_indices": self.action_indices,
+            "updates": self.updates,
+        }
+        if self.mode == "orientation":
+            values["orientation"] = TutorOrientationV2(
+                option_indices=self.option_indices,
+                next_step=self.next_step,
+                reason=self.text,
+                clarification=self.question,
+                basis_keys=self.basis_keys,
+            )
+        else:
+            if self.next_step != "none" or self.option_indices or self.question:
+                raise ValueError("Una explicación no declara pasos operativos.")
+            basis = " ".join("{{" + key + "}}" for key in self.basis_keys)
+            values["concepts"] = [(basis + " " + self.text).strip()]
+        return TutorAnswerV2.model_validate(values)
 
 
 class ResultExplanationV2(V2Model):

@@ -1,13 +1,17 @@
 """C02 acceptance regressions: meaning, selected evidence and useful orientation."""
 
 import json
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from app.modules.conversation.tutor_grounding import render_contextual_prose, validate_general_prose
-from app.modules.conversation.tutor_privacy import project_text
+from app.modules.conversation.tutor_orientation import option_indices, render_step
+from app.modules.conversation.tutor_privacy import outbound_context, project_text
 from app.shared.ai_errors import AIError
+from app.shared.tutor_v2 import TutorWireAnswerV1
 from tests.research.test_analysis_workflow_v2 import approve, descriptive, execute, proposal
 from tests.research.test_diagnostics_v2 import setup as setup
 from tests.research.test_diagnostics_v2 import source
@@ -32,6 +36,9 @@ ACCEPTANCE_QUERY = (
         '¿Qué significa "unidad experimental" y cómo afecta al pseudorreplicado?',
         "Evaluar adsorción, sin presumir causalidad.\n"
         "Describir las réplicas, conservando su unidad experimental.",
+        "¿Cómo describir puntuacion_satisfaccion_laboral_pretest_2026 sin asumir causalidad?",
+        "Comparar Rendimiento Académico y Puntuación Total, sin asumir independencia.",
+        "Explorar Electroadsorción Fotoelectrocatalítica con unidades por confirmar.",
     ],
 )
 def test_selective_projection_preserves_full_nonpersonal_meaning(text):
@@ -56,6 +63,13 @@ def test_projection_removes_identifiers_secrets_and_known_local_names_without_er
     ):
         assert private not in projected["text"]
     assert "¿Debo revisar el pseudorreplicado primero?" in projected["text"]
+
+
+def test_opaque_credentials_are_removed_without_classifying_variable_codes_as_secrets():
+    token = "aB7kP2zQ9mT4wF6rH8sV3xN5cL1dJ0yG"
+    safe = project_text(token + " ¿Cómo describir puntuacion_satisfaccion_laboral_pretest_2026?")
+    assert token not in safe["text"]
+    assert "puntuacion_satisfaccion_laboral_pretest_2026" in safe["text"]
 
 
 def test_pasted_observations_never_cross_text_projection():
@@ -153,6 +167,10 @@ def test_provider_budget_counts_schema_and_bounds_whole_variable_facts_not_query
 
 def test_legitimate_recommendations_are_not_confused_with_empirical_findings():
     assert validate_general_prose(
+        "¿Tus datos contienen mediciones repetidas de las mismas unidades?"
+    )
+    assert not validate_general_prose("Los resultados son significativos. ¿Qué significan?")
+    assert validate_general_prose(
         "Para revisar los datos, la dispersión muestra cuánto varía una medida."
     )
     assert validate_general_prose(
@@ -166,6 +184,8 @@ def test_legitimate_recommendations_are_not_confused_with_empirical_findings():
         assert not validate_general_prose(claim)
     with pytest.raises(AIError):
         render_contextual_prose("La tabla tiene 999 registros. {{f0}}", [])
+    with pytest.raises(AIError):
+        render_contextual_prose("Las mediciones de {{f0}} se podrían describir.", [])
 
 
 def test_safe_summary_uses_detection_and_confirmed_meaning_not_drafts_or_rows(setup):
@@ -221,6 +241,8 @@ def test_safe_summary_uses_detection_and_confirmed_meaning_not_drafts_or_rows(se
     )
     payload = json.loads(provider.calls[0][1]["content"].split("\n", 1)[1])
     assert payload["question"]["text"] == ACCEPTANCE_QUERY
+    assert provider.calls[0][-1] == {"role": "user", "content": ACCEPTANCE_QUERY}
+    assert "query_topics" not in payload and "confirmed_topics" not in payload
     assert (
         payload["confirmed_context"]["/main_objective"]["text"]
         == "Examinar adsorción sin asumir causalidad"
@@ -252,9 +274,8 @@ def test_orientation_renders_coherently_from_server_facts_and_does_not_prepare_o
         {
             "response_version": "tutor-2.2",
             "orientation": {
-                "possibilities": "Podríamos describir las medidas y, tras aclarar el diseño, "
-                "explorar relaciones o comparaciones.",
-                "first_step": "Primero revisaría el significado de las medidas elegidas.",
+                "option_indices": [0],
+                "next_step": "clarify_observations",
                 "reason": "Esto permite elegir un resumen que responda a tu pregunta.",
                 "basis_keys": ["f0"],
                 "clarification": "¿Cada fila representa una unidad distinta "
@@ -305,3 +326,135 @@ def test_context_facts_in_result_chat_do_not_enter_the_editable_result_prose(set
     )
     assert reviewed.status_code == 200, reviewed.text
     assert reviewed.json()["grounded_text"] == explanation["grounded_text"]
+
+
+def test_short_local_codes_do_not_erase_negations_or_years():
+    safe = project_text(
+        "No asumas independencia en 2026. Caso NO; id=2026.", private_terms={"NO", "2026"}
+    )
+    assert safe["text"].startswith("No asumas independencia en 2026.")
+    assert "Caso NO" not in safe["text"] and "id=2026" not in safe["text"]
+
+
+def test_personal_headers_are_aliased_but_unfamiliar_variable_meanings_survive(setup):
+    client, root, _, _ = setup
+    ds, _ = source(
+        client, root, "María Reservada,Electroadsorción Fotoelectrocatalítica\n2,4\n3,8\n"
+    )
+    client, root, provider, cid = tutor(setup)
+    response = send(
+        client,
+        root,
+        cid,
+        stage="data",
+        dataset_id=ds["id"],
+        content="¿Cómo empiezo con María Reservada y la electroadsorción?",
+    )
+    assert response.status_code == 200, response.text
+    transmitted = json.dumps(provider.calls, ensure_ascii=False)
+    assert "María" not in transmitted and "Reservada" not in transmitted
+    payload = json.loads(provider.calls[0][1]["content"].split("\n", 1)[1])
+    assert any(v.get("name") == "Electroadsorción Fotoelectrocatalítica" for v in payload["data"])
+    assert all("variable_id" not in v for v in payload["data"])
+
+
+def test_metric_aliases_keep_safe_variable_meaning_and_exclude_identifier_metrics():
+    context = SimpleNamespace(
+        intent_summary={},
+        evidence=[],
+        stage="results",
+        confirmed_summary={},
+        source_refs=[],
+        historical_refs=[],
+        allowed_actions=[],
+        data_summary=[
+            {"variable_id": "local-id", "variable": "Variable 1", "name": "id", "identifier": True},
+            {
+                "variable_id": "local-measure",
+                "variable": "Variable 2",
+                "name": "conductividad",
+                "detected_type": "numérico",
+                "private_extra": "never-send",
+            },
+        ],
+    )
+    result = SimpleNamespace(
+        metrics=[
+            SimpleNamespace(key="local-id.mean", value=12345678),
+            SimpleNamespace(key="local-measure.mean", value=3.5),
+        ]
+    )
+    payload, metric_map = outbound_context(context, result)
+    assert payload["metrics"] == [
+        {
+            "key": "m0",
+            "kind": "mean",
+            "value": 3.5,
+            "variable": "Variable 2",
+            "variable_name": "conductividad",
+        }
+    ]
+    assert payload["metrics_omitted"] == 1 and list(metric_map) == ["m0"]
+    transmitted = json.dumps(payload)
+    for private in ("local-id", "local-measure", "private_extra", "never-send", "12345678"):
+        assert private not in transmitted
+
+
+def test_orientation_rejects_unavailable_analysis_routes_and_result_steps():
+    def action(kind):
+        return SimpleNamespace(kind=kind, destination="analysis")
+
+    context = SimpleNamespace(
+        data_summary=[
+            {
+                "variable": "Variable 1",
+                "name": "grupo",
+                "detected_type": "texto",
+                "scale": "nominal",
+                "scale_confirmed": True,
+            }
+        ],
+        intent_summary={},
+        allowed_actions=[
+            action("prepare_descriptive"),
+            action("start_association"),
+            action("start_comparison"),
+        ],
+        evidence=[],
+    )
+    assert option_indices(context) == [0]
+    with pytest.raises(AIError):
+        render_step("review_result", context)
+
+
+def test_flat_provider_transport_still_enforces_domain_orientation_and_fact_boundaries():
+    wire = {
+        "response_version": "tutor-wire-1.0",
+        "mode": "orientation",
+        "text": "Aclarar el significado evita resumir magnitudes incompatibles.",
+        "next_step": "review_variables",
+        "option_indices": [0],
+        "question": "¿Qué representa conductividad en tu estudio?",
+        "basis_keys": ["f1"],
+    }
+    answer = TutorWireAnswerV1.model_validate(wire).as_answer()
+    assert answer.response_version == "tutor-2.2" and answer.orientation.basis_keys == ["f1"]
+    for changes in (
+        {"next_step": "none"},
+        {"option_indices": []},
+        {"question": "Confirma la escala."},
+        {"text": "Considera {{f1}} primero."},
+        {"mode": "explanation"},
+    ):
+        with pytest.raises((ValueError, ValidationError)):
+            TutorWireAnswerV1.model_validate({**wire, **changes}).as_answer()
+    explanation = {
+        **wire,
+        "mode": "explanation",
+        "next_step": "none",
+        "option_indices": [],
+        "question": "",
+    }
+    assert TutorWireAnswerV1.model_validate(explanation).as_answer().concepts == [
+        "{{f1}} " + wire["text"]
+    ]

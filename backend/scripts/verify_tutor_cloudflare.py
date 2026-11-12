@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from app.modules.research.dev_app import ResearchDevSettings, create_app
 from app.shared.adapters.cloudflare import CloudflareLanguageModel
-from app.shared.tutor_v2 import TutorAnswerV2
+from app.shared.tutor_v2 import TutorWireAnswerV1
 
 QUERY = (
     "He cargado mis datos y no sé por dónde empezar. ¿Qué puedo analizar con esta tabla y "
@@ -53,6 +53,7 @@ def verify(output):
             assert private not in serialized
         payload = json.loads(messages[1]["content"].split("\n", 1)[1])
         assert payload["question"] == {"text": QUERY, "omitted": False}
+        assert messages[-1] == {"role": "user", "content": QUERY}
         assert not payload["metrics"]
         assert not payload["history"]
         assert any(v.get("detected_type") == "numérico" for v in payload["data"])
@@ -69,16 +70,22 @@ def verify(output):
         (output / f"outbound-{current['name']}.json").write_text(
             json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        answer = TutorAnswerV2.model_validate_json(raw)
+        answer = TutorWireAnswerV1.model_validate_json(raw).as_answer()
         assert answer.orientation is not None, "La respuesta vuelve a dar conceptos sin orientación"
         # Do not equate usefulness with one preferred word (e.g. "describir").
         # The full answers remain in evidence.json for the semantic review.
         assert not answer.findings and not answer.examples and not answer.updates
         assert "?" in answer.orientation.clarification
-        assert any(
+        concrete_topic = any(
             cue in answer.orientation.clarification.casefold()
             for cue in ("fila", "unidad", "persona", "medici", "mismo", "representa", "grupo")
         )
+        named_variable = any(
+            v.get("name", "").casefold() in answer.orientation.clarification.casefold()
+            for v in payload["data"]
+            if v.get("variable")
+        )
+        assert concrete_topic or named_variable
         assert answer.orientation.basis_keys
         selected = [f for f in payload["evidence"] if f["key"] in answer.orientation.basis_keys]
         assert len(selected) == len(set(answer.orientation.basis_keys))
