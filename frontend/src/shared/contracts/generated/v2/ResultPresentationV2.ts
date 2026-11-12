@@ -24,6 +24,7 @@ export type Interpretation = string | null;
 export type InterpretationMetricKeys = string[];
 export type InterpretationLabel = string;
 export type Assumptions = string[];
+export type Limitations = string[];
 export type FormatPolicy = "es-significant-6-v1";
 
 export interface ResultPresentationV2 {
@@ -37,6 +38,7 @@ export interface ResultPresentationV2 {
   interpretation_metric_keys: InterpretationMetricKeys;
   interpretation_label: InterpretationLabel;
   assumptions?: Assumptions;
+  limitations?: Limitations;
   format_policy?: FormatPolicy;
 }
 export interface DisplayMetricV2 {

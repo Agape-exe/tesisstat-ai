@@ -159,3 +159,15 @@ it('quarantines historical prose without verified evidence instead of enabling r
   ).toBeDisabled();
   expect(api.review).not.toHaveBeenCalled();
 });
+it('updates the result route when another visible result is opened', async () => {
+  window.history.replaceState(null, '', '/');
+  api.results.mockResolvedValue([
+    result,
+    { ...result, id: 'r2', question: 'Consumo de agua' },
+  ]);
+  render(<ResultsV2 projectId="proyecto" active selectedId="r" />);
+  const summary = await screen.findByText(/Consumo de agua · Vigente/);
+  fireEvent.click(summary);
+  await waitFor(() => expect(window.location.hash).toContain('item=r2'));
+  expect(window.location.hash).toContain('section=results');
+});

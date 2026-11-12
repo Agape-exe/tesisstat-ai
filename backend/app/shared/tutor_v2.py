@@ -22,7 +22,15 @@ class TutorSelectionV2(V2Model):
 
 
 class TutorActionV2(V2Model):
-    kind: Literal["open", "propose_update", "request_diagnostic", "request_proposal"]
+    kind: Literal[
+        "open",
+        "propose_update",
+        "request_diagnostic",
+        "request_proposal",
+        "prepare_descriptive",
+        "start_association",
+        "start_comparison",
+    ]
     resource_id: ID | None = None
     label: Annotated[str, Field(max_length=300)]
     destination: Literal["home", "context", "datasets", "analysis", "results", "instrument"]
@@ -59,6 +67,20 @@ class TutorConsentV2(V2Model):
     expected_revision: Annotated[int, Field(strict=True, ge=0)]
     granted: StrictBool
     consent_scope: Literal["tutor_context_v4"]
+
+
+class GuidedVariableV2(V2Model):
+    variable_id: ID
+    measurement_scale: Literal["nominal", "ordinal", "interval", "ratio"]
+
+
+class GuidedDescriptiveRequestV2(V2Model):
+    kind: Literal["prepare_descriptive"]
+    selection: TutorSelectionV2
+    context_fingerprint: Hash
+    request_id: UUID
+    variables: list[GuidedVariableV2] = Field(min_length=1, max_length=200)
+    confirm: Literal[True]
 
 
 class TutorUpdateV2(V2Model):
@@ -116,4 +138,5 @@ TUTOR_MODELS = (
     TutorConsentV2,
     ResultExplanationV2,
     ExplanationReviewV2,
+    GuidedDescriptiveRequestV2,
 )

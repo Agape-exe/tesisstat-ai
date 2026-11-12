@@ -52,11 +52,14 @@ def evaluate(intent, dataset, dictionary, rows, requested):
     selected = [by_id[v] for v in intent.variable_ids]
     columns = {c.id: c for c in dataset.columns}
     variables = {v.column_ids[0]: v for v in selected if len(v.column_ids) == 1}
-    notes = [
-        "Compatible no demuestra normalidad ni independencia. Revisa cómo se obtuvieron los datos.",
-        "Estos diagnósticos no eligen una técnica ni contrastan la pregunta final.",
-    ]
-    if not _confirmed(intent.observational_unit):
+    notes = ["Estos diagnósticos no eligen una técnica ni contrastan la pregunta final."]
+    if intent.kind != "descriptive":
+        notes.insert(
+            0,
+            "Compatible no demuestra normalidad ni independencia. "
+            "Revisa cómo se obtuvieron los datos.",
+        )
+    if intent.kind != "descriptive" and not _confirmed(intent.observational_unit):
         notes.append(
             "¿Qué representa una observación en este análisis? Revísalo y confírmalo aquí."
         )
@@ -64,7 +67,7 @@ def evaluate(intent, dataset, dictionary, rows, requested):
         notes.append(
             "¿Se midieron entidades distintas o las mismas? El contexto general no lo decide."
         )
-    if not _confirmed(intent.identification):
+    if intent.kind != "descriptive" and not _confirmed(intent.identification):
         notes.append("Explica cómo reconoces cada entidad y si puede aparecer en varias filas.")
     complete, missing_count, invalid_count = select_cases(intent, dataset, dictionary, rows)
     effective = [r for _, r in complete]

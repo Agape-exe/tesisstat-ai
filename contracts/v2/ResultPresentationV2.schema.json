@@ -154,6 +154,13 @@
       "title": "Assumptions",
       "type": "array"
     },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
     "format_policy": {
       "const": "es-significant-6-v1",
       "default": "es-significant-6-v1",

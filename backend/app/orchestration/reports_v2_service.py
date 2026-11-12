@@ -139,8 +139,12 @@ class ReportsServiceV2:
                         f"{len(effective)} casos completos. "
                         "Selección determinista por posiciones; en grupos, estratificada. "
                         "No cambia el contraste ni prueba causalidad. "
-                        "Pares: primera menos segunda; "
-                        "rangos ordinales usan el orden confirmado.",
+                        + ("Pares confirmados: primera menos segunda. " if kind == "paired" else "")
+                        + (
+                            "Los rangos ordinales usan el orden confirmado."
+                            if any(v.measurement_scale.value == "ordinal" for v in variables)
+                            else ""
+                        ),
                         total_cases=len(effective),
                         displayed_cases=len(points),
                         policy="deterministic-complete-cases-500-v1",
@@ -167,7 +171,47 @@ class ReportsServiceV2:
                         policy="persisted-aggregate-v1",
                     )
                 )
-        for metric in result.metrics:
+        if result.technique == "descriptive_summary":
+            summaries = [
+                m
+                for m in result.metrics
+                if m.key.rsplit(".", 1)[-1] in {"mean", "median"} and m.value is not None
+            ]
+            low = min([0, *[m.value for m in summaries]])
+            high = max([0, *[m.value for m in summaries]])
+            if high == low:
+                high = low + 1
+            units = {m.unit for m in summaries if m.unit}
+            unit_label = (
+                f"Valor ({next(iter(units))})"
+                if len(units) == 1 and all(m.unit for m in summaries)
+                else "Valor guardado · unidades en la tabla"
+                if units
+                else "Valor guardado · unidades no declaradas"
+            )
+            for offset in range(0, len(summaries), 12):
+                selected = summaries[offset : offset + 12]
+                figures.append(
+                    ResultFigureDataV2(
+                        id=f"{result.id}-summaries-{offset}",
+                        kind="bars",
+                        x_label="Variable y estadística",
+                        y_label=unit_label,
+                        x=[float(n + 1) for n in range(len(selected))],
+                        y=[m.value for m in selected],
+                        labels=[m.label + (f" ({m.unit})" if m.unit else "") for m in selected],
+                        source_metric_keys=[m.key for m in selected],
+                        axis_min=low,
+                        axis_max=high,
+                        caption="Medias y medianas persistidas, con una escala común desde cero. "
+                        "Compara magnitudes solo si sus unidades son compatibles. "
+                        "Estas barras no representan distribuciones ni cambios por sujeto.",
+                        total_cases=result.case_counts.used,
+                        displayed_cases=result.case_counts.used,
+                        policy="persisted-aggregate-v1",
+                    )
+                )
+        for metric in result.metrics if result.technique != "descriptive_summary" else []:
             suffix = metric.key.rsplit(".", 1)[-1]
             if suffix in {"mean", "median", "r", "rho", "alpha"} and metric.value is not None:
                 figures.append(
@@ -179,8 +223,14 @@ class ReportsServiceV2:
                         x=[1],
                         y=[metric.value],
                         source_metric_keys=[metric.key],
-                        caption="Valor guardado; consulta unidades e intervalos de la tabla. "
-                        "No evalúa relevancia práctica, causalidad ni validez del instrumento.",
+                        axis_min=-1 if suffix in {"r", "rho"} else min(0, metric.value),
+                        axis_max=1 if suffix in {"r", "rho", "alpha"} else max(0, metric.value),
+                        caption="Valor guardado; consulta su alcance en la tabla. "
+                        + (
+                            "Alfa no demuestra validez ni unidimensionalidad."
+                            if suffix == "alpha"
+                            else "La asociación no demuestra causalidad."
+                        ),
                         total_cases=result.case_counts.used,
                         displayed_cases=result.case_counts.used,
                         policy="persisted-aggregate-v1",

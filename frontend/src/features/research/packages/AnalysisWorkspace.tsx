@@ -118,12 +118,23 @@ export function AnalysisWorkspace({
   return (
     <section aria-label="Espacio de análisis">
       <DiagnosticWorkspace
-        key={`${projectId}:${view === 'diagnostics' ? item : ''}`}
+        key={`${projectId}:${view}:${item}`}
         projectId={projectId}
         active={active}
         initialIntentId={view === 'diagnostics' ? item : null}
+        initialTableId={
+          view === 'association' || view === 'comparison' ? item : null
+        }
+        initialKind={
+          view === 'association' || view === 'comparison' ? view : 'descriptive'
+        }
       />
-      <details open={!!view && view !== 'diagnostics'} className="rp-technical">
+      <details
+        open={
+          !!view && ['links', 'plan', 'execution', 'preparation'].includes(view)
+        }
+        className="rp-technical"
+      >
         <summary>
           Recorrido documental anterior: propuestas y ejecución v1
         </summary>

@@ -65,21 +65,21 @@ class CloudflareLanguageModel:
         }
         return self._request(payload)
 
-    def chat(self, messages: list[dict[str, str]], *, max_tokens: int) -> str:
-        """Free text operation; extraction retains its separate JSON contract."""
+    def chat(self, messages: list[dict[str, str]], *, max_tokens: int, response_schema=None) -> str:
+        """Bounded chat; the tutor may request its closed response schema explicitly."""
         if not self.configured:
             raise AIError("not_configured")
         if not 1 <= max_tokens <= self.limits.cloudflare_max_output_tokens:
             raise AIError("output_limit")
-        value = self._request(
-            {
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": 0.3,
-                "stream": False,
-            },
-            structured=False,
-        )
+        payload = {
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": 0.3,
+            "stream": False,
+        }
+        if response_schema is not None:
+            payload["response_format"] = {"type": "json_schema", "json_schema": response_schema}
+        value = self._request(payload, structured=response_schema is not None)
         # Some Qwen deployments include thinking inline rather than separately.
         if "</think>" in value:
             value = value.split("</think>", 1)[1]

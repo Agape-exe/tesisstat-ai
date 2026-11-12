@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -42,9 +43,9 @@ class IntentService:
         self.get(project_id, intent_id)
         return self.repository.revisions(project_id, "intent", intent_id)
 
-    def save(self, project_id, patch, intent_id=None):
+    def save(self, project_id, patch, intent_id=None, db=None):
         self.workspace.sources.require(project_id)
-        with self.repository.transaction() as db:
+        with nullcontext(db) if db is not None else self.repository.transaction() as db:
             now = datetime.now(UTC)
             current = (
                 self.get(project_id, intent_id)
@@ -105,7 +106,7 @@ class IntentService:
                 fail("La hipótesis debe existir en el Contexto de este proyecto.")
             if current.dataset_id:
                 dataset, _ = self.workspace.read_table(project_id, current.dataset_id)
-                dictionary = self.workspace.dictionary(project_id, dataset.id, dataset)
+                dictionary = self.workspace.dictionary(project_id, dataset.id, dataset, db)
                 selected = {v.id: v for v in dictionary.variables if v.id in current.variable_ids}
                 if set(selected) != set(current.variable_ids):
                     fail("Selecciona variables del diccionario de esta tabla.")

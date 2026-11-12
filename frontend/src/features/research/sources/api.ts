@@ -3,6 +3,7 @@ import type { SourceSheetV2 } from '../../../shared/contracts/generated/v2/Sourc
 import type { ImportedTableV2 } from '../../../shared/contracts/generated/v2/ImportedTableV2';
 import type { TableContextV2 } from '../../../shared/contracts/generated/v2/TableContextV2';
 import type { TablePreviewV2 } from '../../../shared/contracts/generated/v2/TablePreviewV2';
+import { resourcesChanged } from '../projects/resourceEvents';
 
 export type Sheet = Required<SourceSheetV2>;
 export type SourceFile = Omit<
@@ -79,7 +80,9 @@ export function createSourcesApi(
         body?.error?.current_revision ?? null,
       );
     }
-    return response.json() as Promise<T>;
+    const data = (await response.json()) as T;
+    if (init?.method && init.method !== 'GET') resourcesChanged(projectId);
+    return data;
   }
   const patch = (body: object): RequestInit => ({
     method: 'PATCH',

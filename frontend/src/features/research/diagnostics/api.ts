@@ -3,6 +3,7 @@ import type { DiagnosticV2 } from '../../../shared/contracts/generated/v2/Diagno
 import type { IntentPatch } from '../../../shared/contracts/generated/v2/IntentPatch';
 import type { DiagnosticRequest } from '../../../shared/contracts/generated/v2/DiagnosticRequest';
 import { SourcesError } from '../sources/api';
+import { resourcesChanged } from '../projects/resourceEvents';
 
 export type Intent = Required<AnalysisIntentV2>;
 export type Diagnostic = Required<DiagnosticV2>;
@@ -39,7 +40,9 @@ export function createDiagnosticsApi(
         value?.error?.current_revision ?? null,
       );
     }
-    return response.json();
+    const data = await response.json();
+    if (body) resourcesChanged(project);
+    return data;
   }
   return {
     list: (p: string) => request<Intent[]>(p, '/intents'),

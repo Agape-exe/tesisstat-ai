@@ -93,6 +93,49 @@ def format_number(value, key=""):
     return format(value, ".6g").replace(".", ",")
 
 
+def descriptive_tables(result):
+    if result.technique != "descriptive_summary":
+        return []
+    groups = {}
+    for metric in result.metrics:
+        variable, _, suffix = metric.key.rpartition(".")
+        row = groups.setdefault(variable, {"name": metric.label.split(" · ")[0]})
+        row[suffix] = format_number(metric.value)
+        if metric.unit:
+            row["unit"] = metric.unit
+    tables = []
+    for index, (title, keys, labels) in enumerate(
+        (
+            (
+                "Métricas descriptivas principales",
+                ["mean", "median", "sample_standard_deviation", "minimum", "maximum"],
+                ["Media", "Mediana", "DE", "Mínimo", "Máximo"],
+            ),
+            (
+                "Métricas descriptivas complementarias",
+                ["sample_variance", "p25", "p50", "p75"],
+                ["Varianza", "P25", "P50", "P75"],
+            ),
+        )
+    ):
+        if groups:
+            tables.append(
+                DisplayTableV2(
+                    id=f"{result.id}-descriptive-{index}",
+                    title=title,
+                    columns=["Variable", *labels],
+                    rows=[
+                        [
+                            row["name"] + (" (" + row["unit"] + ")" if "unit" in row else ""),
+                            *[row.get(k, "No calculable") for k in keys],
+                        ]
+                        for row in groups.values()
+                    ],
+                )
+            )
+    return tables
+
+
 def present(result):
     text = None
     if result.status == "completed":
@@ -100,14 +143,53 @@ def present(result):
             f"Se utilizaron {result.case_counts.used} de {result.case_counts.total} casos "
             f"mediante {TECHNIQUES[result.technique]}. "
         )
+        if result.technique != "descriptive_summary":
+            for metric in result.metrics:
+                if metric.key in {"r", "rho", "alpha", "mean_difference", "p_value"}:
+                    text += f"{metric_label(metric)}: {format_number(metric.value, metric.key)}. "
         if result.technique == "cronbach_alpha":
             text += "El coeficiente no demuestra validez ni unidimensionalidad. "
         if result.technique == "descriptive_summary":
+            summaries = {}
+            for metric in result.metrics:
+                variable, _, suffix = metric.key.rpartition(".")
+                if suffix in {"mean", "median", "minimum", "maximum", "sample_standard_deviation"}:
+                    summaries.setdefault(variable, []).append(metric)
+            for metrics in summaries.values():
+                name = metrics[0].label.split(" · ")[0]
+                text += (
+                    name
+                    + ": "
+                    + "; ".join(
+                        f"{m.label.split(' · ')[-1].lower()} {format_number(m.value)}"
+                        + (f" {m.unit}" if m.unit else "")
+                        for m in metrics
+                        if m.value is not None
+                    )
+                    + ". "
+                )
+            for table in result.tables:
+                if table.rows and "count" in table.rows[0]:
+                    text += f"{table.title}: {len(table.rows)} categorías observadas. "
             text += (
                 " Los resúmenes describen los casos completos conjuntos "
                 "de las variables seleccionadas; "
             )
             text += "no prueban hipótesis ni representan necesariamente a toda la población."
+            text += (
+                " La media resume el nivel promedio; la mediana es el valor central y DE "
+                "es la desviación estándar muestral, que indica dispersión. "
+                if summaries
+                else " Las frecuencias cuentan las observaciones por categoría; los porcentajes "
+                "usan como denominador los casos utilizados. "
+            )
+            text += (
+                "Esto responde a una pregunta descriptiva; no establece diferencias entre "
+                "grupos ni relaciones entre variables. Como siguiente paso puedes explorar "
+                "una relación o comparación, revisando antes qué representan las observaciones."
+            )
+            if summaries and not any(m.unit for m in result.metrics):
+                text += " Las unidades de las medidas no se han declarado."
         elif result.technique in {"pearson", "spearman"}:
             text += (
                 " El signo indica el sentido de la asociación; su magnitud no demuestra causalidad."
@@ -118,12 +200,10 @@ def present(result):
             text += " Revisa el orden de los grupos guardado en advertencias."
         if result.technique in {"mann_whitney", "wilcoxon"}:
             text += " El contraste de rangos no equivale por sí solo a una diferencia de medianas."
-        if result.technique != "descriptive_summary":
+        if any(m.key == "p_value" for m in result.metrics):
             text += " La significación estadística no determina relevancia práctica."
-        text += (
-            " Los intervalos disponibles se identifican como IC del 95 %; "
-            "consulta sus límites y aproximaciones."
-        )
+        if any("_ci_95_" in m.key for m in result.metrics):
+            text += " Los intervalos disponibles son IC del 95 %; revisa sus aproximaciones."
     return ResultPresentationV2(
         result_id=result.id,
         status_label={
@@ -142,7 +222,8 @@ def present(result):
             )
             for m in result.metrics
         ],
-        tables=[
+        tables=descriptive_tables(result)
+        + [
             DisplayTableV2(
                 id=t.id,
                 title=t.title,
@@ -160,16 +241,23 @@ def present(result):
             for t in result.tables
         ],
         interpretation=text.strip() if text else None,
-        interpretation_metric_keys=result.interpretation.metric_keys
-        if result.interpretation
-        else [],
-        interpretation_label="Orientación básica por plantilla; requiere criterio académico",
+        interpretation_metric_keys=[m.key for m in result.metrics],
+        interpretation_label="Explicación determinista basada en cifras guardadas · sin IA",
+        limitations=list(
+            dict.fromkeys(
+                text
+                if any("_ci_95_" in m.key for m in result.metrics)
+                else text.replace(" Los intervalos disponibles son del 95 %.", "")
+                for text in result.limitations
+            )
+        ),
         assumptions=[
             f"{CHECKS[c.name]} / {c.target}: "
             f"{CHECK_STATES[c.status]}. "
-            f"{c.method} ({c.method_version}). Casos: {c.case_count}; "
-            f"estadístico: {format_number(c.statistic)}; p: {format_number(c.p_value, 'p_value')}. "
-            f"{c.details}"
+            f"{c.method}. Casos: {c.case_count}. "
+            + (f"Estadístico: {format_number(c.statistic)}. " if c.statistic is not None else "")
+            + (f"p: {format_number(c.p_value, 'p_value')}. " if c.p_value is not None else "")
+            + f"{c.details}"
             for c in result.assumptions
         ],
     )

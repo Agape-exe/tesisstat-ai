@@ -78,6 +78,30 @@
           ],
           "title": "Policy",
           "type": "string"
+        },
+        "axis_min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axis Min"
+        },
+        "axis_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Axis Max"
         }
       },
       "required": [
