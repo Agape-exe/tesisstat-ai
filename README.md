@@ -20,13 +20,15 @@ S07A verifica el recorrido local integrado, corrige navegación y orientación y
 reinicio y restauración aislada. [Evidencia y guía de aceptación en cinco pasos](docs/sesiones/S07A.md).
 La aceptación manual sigue pendiente. Auth, propiedad de recursos, persistencia remota y
 composition root de producción siguen siendo requisitos abiertos de S07; no está listo para desplegar.
+C02 incorpora el recorrido acompañado desde los datos, la revisión breve del descriptivo y
+gráficos reales en DOCX/PDF. [Entrega, evidencia y límites C02](docs/sesiones/C02.md).
 
 Demostración local para conectar metodología revisada y datos de un proyecto con un
 análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.
 
-La aplicación principal permite recorrer **Contexto → Cargar datos → Revisar datos →
-Revisar propuesta → Aprobar y ejecutar → Comprender resultados**, sin documento ni hipótesis
-obligatorios y con ayuda contextual opcional. Ofrece descarga TXT/DOCX/PDF de resultados
+La aplicación principal permite recorrer **Cargar datos → Orientación → Revisar variables →
+Revisar propuesta → Aprobar y ejecutar → Comprender resultados**, con Contexto opcional,
+sin documento ni hipótesis obligatorios y con tutor plegable. Ofrece descarga TXT/DOCX/PDF de resultados
 aprobados, completados y vigentes. El recorrido documental v1 se conserva como herramienta
 secundaria. Su motor cubre descriptiva,
 asociación, comparaciones paramétricas y no paramétricas, regresión/ANCOVA y sus métricas,
@@ -46,8 +48,9 @@ es opcional, hasta 2000 caracteres. Crear o abrir normalmente un proyecto muestr
 con las seis etapas recomendadas y evidencia de recursos guardados. El proyecto permanece
 como borrador; el avance no equivale a completar la investigación ni acredita comprensión.
 
-La navegación principal es **Inicio · Contexto · Datos · Análisis · Resultados**. El chat se
-abre desde **Solicitar ayuda** o las herramientas de apoyo. Contexto introduce el recorrido y
+La navegación principal es **Inicio · Contexto · Datos · Análisis · Resultados**. Inicio ofrece
+**Subir datos** como acción principal. El tutor aparece como panel plegable en Datos, Análisis
+y Resultados, vinculado al recurso visible; también conserva su sección e historial. Contexto
 conserva documentos/metodología e instrumento; Resultados conserva informes/exportaciones.
 Puedes cargar y explorar Datos sin completar Contexto. El contexto manual se guarda y confirma
 con revisiones. Análisis v2 utiliza intenciones y tablas concretas con diagnósticos/propuestas;
@@ -211,7 +214,12 @@ los comandos vigentes de demostración y validación están en esta guía. La ma
 limitaciones se encuentran en [STATISTICS_INTEGRANTE2_AUDIT.md](docs/STATISTICS_INTEGRANTE2_AUDIT.md).
 
 La ayuda del proyecto incluye **Asistente IA**, con conversaciones e historial SQLite.
-S06 añade **Ayuda contextual para este paso** y selección explícita de análisis/resultado.
+S06 incorporó la ayuda contextual. C02 enlaza automáticamente la selección del espacio de
+trabajo, muestra un resumen local identificado y permite **Describir estos datos** o
+**No sé por dónde empezar**. Revisa únicamente las escalas de las variables elegidas;
+**Guardar variables revisadas y preparar descriptivo** guarda perfil e intención de manera
+atómica. En Análisis solicita diagnósticos y propuesta, autoriza el cálculo local, aprueba
+y ejecuta mediante acciones separadas. Relaciones y comparaciones conservan sus aclaraciones.
 El envío v2 requiere Cloudflare configurado y permiso revocable `tutor_context_v4`; el permiso
 v3 anterior debe renovarse porque cambia lo transmitido. Se envían fragmentos filtrados y ordenados
 de la consulta, hasta cuatro mensajes del mismo contexto y campos narrativos confirmados pertinentes,
@@ -231,5 +239,7 @@ el alcance ampliado del consentimiento. Consulta arquitectura, pruebas y validac
 manual en la [guía de contexto de investigación](docs/CONTEXTO_INVESTIGACION_CHAT.md).
 La conexión real del chat anterior fue validada por la usuaria; la validación del
 contexto ampliado anterior con Qwen3 real queda pendiente. S06 verificó una consulta conceptual
-sintética real con consentimiento v4, sin acreditar todos los recorridos. La demo con proveedor
+sintética real con consentimiento v4; C02 comprobó dos turnos reales con datos sintéticos,
+contexto confirmado y reintentos sin duplicar llamadas. El tutor solicita su esquema cerrado
+al proveedor y valida de nuevo la respuesta. La demo con proveedor
 simulado no necesita credenciales ni realiza solicitudes externas.

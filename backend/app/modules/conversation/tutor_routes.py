@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Response
 from app.modules.statistics.presentation_v2 import present
 from app.shared.tutor_v2 import (
     ExplanationReviewV2,
+    GuidedDescriptiveRequestV2,
     MessageDraftV2,
     ResultExplanationV2,
     TutorConsentV2,
@@ -19,6 +20,12 @@ def create_router(tutor, reports):
     @router.get("/conversations/status")
     def status(project_id: str, selection: Annotated[TutorSelectionV2, Depends()]):
         return tutor.status(project_id, selection)
+
+    @router.post("/conversations/actions")
+    def action(project_id: str, body: GuidedDescriptiveRequestV2):
+        from app.modules.conversation.guided_service import prepare_descriptive
+
+        return prepare_descriptive(tutor, project_id, body)
 
     @router.get("/conversations/consent")
     def consent(project_id: str):

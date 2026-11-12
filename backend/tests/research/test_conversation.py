@@ -465,3 +465,31 @@ def test_chat_limits_prevent_network_and_deadline_stops_read(monkeypatch):
     monkeypatch.setattr("app.shared.adapters.cloudflare.build_opener", lambda *args: Transport())
     with pytest.raises(AIError, match="timeout"):
         model.chat([], max_tokens=1024)
+
+
+def test_tutor_structured_chat_uses_closed_schema_and_same_bounded_transport(monkeypatch):
+    from app.shared.tutor_v2 import TutorAnswerV2
+
+    schema = TutorAnswerV2.model_json_schema()
+
+    class Transport:
+        def open(self, request, timeout):
+            payload = json.loads(request.data)
+            assert payload["response_format"] == {"type": "json_schema", "json_schema": schema}
+            assert "tools" not in payload and payload["max_tokens"] == 1024
+            return Response(
+                {
+                    "result": {
+                        "response": {
+                            "response_version": "tutor-2.1",
+                            "concepts": ["La mediana es el valor central."],
+                        }
+                    }
+                }
+            )
+
+    monkeypatch.setattr("app.shared.adapters.cloudflare.build_opener", lambda *args: Transport())
+    answer = configured_model().chat(
+        [{"role": "user", "content": "Pregunta sintética"}], max_tokens=1024, response_schema=schema
+    )
+    assert TutorAnswerV2.model_validate_json(answer).concepts == ["La mediana es el valor central."]

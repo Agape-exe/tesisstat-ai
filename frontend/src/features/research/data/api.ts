@@ -5,6 +5,7 @@ import type { TableRecipeV2 } from '../../../shared/contracts/generated/v2/Table
 import type { PreparationPreviewV2 } from '../../../shared/contracts/generated/v2/PreparationPreviewV2';
 import type { DerivedTableV2 } from '../../../shared/contracts/generated/v2/DerivedTableV2';
 import { SourcesError } from '../sources/api';
+import { resourcesChanged } from '../projects/resourceEvents';
 
 export type Dataset = Required<DatasetRefV2>;
 export type Dictionary = Required<VariableDictionaryV2>;
@@ -69,7 +70,9 @@ export function createDataApi(
         value?.error?.current_revision ?? null,
       );
     }
-    return response.json() as Promise<T>;
+    const data = (await response.json()) as T;
+    if (body) resourcesChanged(project);
+    return data;
   }
   const table = (id: string) => `/data-tables/${encodeURIComponent(id)}`;
   return {

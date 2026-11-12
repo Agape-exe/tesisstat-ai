@@ -1,6 +1,7 @@
 import { ProjectHome } from './ProjectHome';
 import { ProjectContext } from './ProjectContext';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { WorkspaceFocus } from './workspaceFocus';
 import { TutorChat } from '../../conversation/TutorChat';
 import type { Selection } from '../../conversation/tutorApi';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
@@ -28,7 +29,11 @@ export function ProjectWorkspace({
   item?: string | null;
 }) {
   const routeKey = JSON.stringify([section, view, item]);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState<boolean | null>(null);
+  const accompanied = ['datasets', 'analysis', 'results', 'reports'].includes(
+    section,
+  );
+  const tutorOpen = helpOpen ?? accompanied;
   const helpStage =
     (
       {
@@ -40,6 +45,32 @@ export function ProjectWorkspace({
       } as Record<string, Selection['stage']>
     )[section] ??
     ((section === 'assistant' ? 'home' : section) as Selection['stage']);
+  const [focus, setFocus] = useState<{
+    key: string;
+    selection: Selection;
+  } | null>(null);
+  const publish = useCallback(
+    (selection: Selection) => {
+      setFocus({ key: routeKey, selection });
+    },
+    [routeKey],
+  );
+  const baseSelection: Selection = {
+    stage: helpStage,
+    ...(section === 'datasets' &&
+    ['table', 'review'].includes(view ?? '') &&
+    item
+      ? { dataset_id: item }
+      : {}),
+    ...(section === 'analysis' && view === 'diagnostics' && item
+      ? { intent_id: item }
+      : {}),
+    ...(['results', 'reports'].includes(section) && item
+      ? { result_id: item }
+      : {}),
+  };
+  const boundSelection =
+    focus?.key === routeKey ? focus.selection : baseSelection;
   const [cache, setCache] = useState<{
     key: string;
     routes: Partial<Record<Section, WorkspaceRoute>>;
@@ -56,47 +87,52 @@ export function ProjectWorkspace({
       tutorStage: section === 'assistant' ? cache.tutorStage : helpStage,
     });
   return (
-    <div
-      className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : ''}`}
-      aria-label="Sección del proyecto"
-    >
-      {section !== 'assistant' && (
-        <>
-          <button
-            className="rp-secondary"
-            aria-expanded={helpOpen}
-            onClick={() => setHelpOpen((value) => !value)}
+    <WorkspaceFocus.Provider value={publish}>
+      <div
+        className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : accompanied ? 'rp-guided-workspace' : ''}`}
+        aria-label="Sección del proyecto"
+      >
+        {section !== 'assistant' && (
+          <aside
+            className="rp-tutor-sidebar"
+            aria-label="Tutor del trabajo actual"
           >
-            {helpOpen
-              ? 'Cerrar ayuda contextual'
-              : 'Ayuda contextual para este paso'}
-          </button>
-          {helpOpen && (
-            <TutorChat
-              key={`${projectId}:${helpStage}`}
-              projectId={projectId}
-              stage={helpStage}
-            />
-          )}
-        </>
-      )}
-      {(Object.entries(cache.routes) as [Section, WorkspaceRoute][]).map(
-        ([id, route]) => (
-          <div key={id} hidden={id !== section}>
-            <SectionContent
-              projectId={projectId}
-              projectTitle={projectTitle}
-              projectDescription={projectDescription}
-              section={id}
-              view={route.view}
-              item={route.item}
-              active={id === section}
-              tutorStage={cache.tutorStage}
-            />
-          </div>
-        ),
-      )}
-    </div>
+            <button
+              className="rp-secondary"
+              aria-expanded={tutorOpen}
+              onClick={() => setHelpOpen(!tutorOpen)}
+            >
+              {tutorOpen ? 'Plegar tutor' : 'Abrir tutor para este paso'}
+            </button>
+            {tutorOpen && (
+              <TutorChat
+                key={`${projectId}:${JSON.stringify(boundSelection)}`}
+                projectId={projectId}
+                projectTitle={projectTitle}
+                stage={helpStage}
+                boundSelection={boundSelection}
+              />
+            )}
+          </aside>
+        )}
+        {(Object.entries(cache.routes) as [Section, WorkspaceRoute][]).map(
+          ([id, route]) => (
+            <div className="rp-guided-content" key={id} hidden={id !== section}>
+              <SectionContent
+                projectId={projectId}
+                projectTitle={projectTitle}
+                projectDescription={projectDescription}
+                section={id}
+                view={route.view}
+                item={route.item}
+                active={id === section}
+                tutorStage={cache.tutorStage}
+              />
+            </div>
+          ),
+        )}
+      </div>
+    </WorkspaceFocus.Provider>
   );
 }
 function SectionContent({

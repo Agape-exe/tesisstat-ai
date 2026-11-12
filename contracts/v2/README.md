@@ -115,3 +115,15 @@ conteos/filas de combinación se contrastan con resultados esperados escritos a 
 `test_data_workspace_v2.py`, independientes del algoritmo productivo.
 Puerto completo, operaciones PATCH, hashes/políticas y límites exactos:
 [API S03B](../../backend/app/modules/research/data_workspace/README.md).
+
+## C02 — preparación descriptiva desde el tutor
+
+`GuidedDescriptiveRequestV2` cierra la acción `prepare_descriptive` con selección, huella,
+request_id UUID, variables/escalas revisadas y confirmación explícita. El servidor valida
+recursos y vigencia antes de guardar diccionario parcial, perfil, intención y recibo en la
+misma transacción. No aprueba ni ejecuta. Consumidores: rutas del tutor, servicios C3/C4,
+TutorChat/GuidedReview y el formulario de diagnósticos existente. El recibo guided_action se
+conserva en analysis_evidence_v2; un adaptador remoto deberá preservar su atomicidad.
+ResultFiguresV2 añade límites opcionales de eje para escalas compartidas; ResultPresentationV2
+incluye limitaciones de presentación. Los contratos v1 no cambian. Detalle y verificación:
+[C02](../../docs/sesiones/C02.md).

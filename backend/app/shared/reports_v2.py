@@ -33,6 +33,7 @@ class ResultPresentationV2(V2Model):
     interpretation_metric_keys: list[str]
     interpretation_label: str
     assumptions: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
     format_policy: Literal["es-significant-6-v1"] = "es-significant-6-v1"
 
 
@@ -49,6 +50,8 @@ class ResultFigureDataV2(V2Model):
     total_cases: int
     displayed_cases: int
     policy: Literal["persisted-aggregate-v1", "deterministic-complete-cases-500-v1"]
+    axis_min: float | None = None
+    axis_max: float | None = None
 
 
 class ResultFiguresV2(V2Model):

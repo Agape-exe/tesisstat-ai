@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReadResource } from '../projects/useReadResource';
-import { navigateWorkspace } from '../projects/navigation';
+import { navigateProject, navigateWorkspace } from '../projects/navigation';
 import { createAnalysisV2Api, techniqueLabels, type Result } from './v2api';
 import type { ResultPresentationV2 } from '../../../shared/contracts/generated/v2/ResultPresentationV2';
 import type {
@@ -135,7 +135,14 @@ function ResultCard({
     <details
       className="rp-surface result-v2-card"
       open={open}
-      onToggle={(e) => setOpen(e.currentTarget.open)}
+      onToggle={(e) => {
+        const expanded = e.currentTarget.open;
+        setOpen(expanded);
+        if (active && expanded && !initiallyOpen)
+          navigateWorkspace(projectId, 'results', 'detail', r.id);
+        else if (active && !expanded && initiallyOpen)
+          navigateProject(projectId, 'results');
+      }}
     >
       <summary>
         {r.question} ·{' '}
@@ -143,9 +150,7 @@ function ResultCard({
         {states[r.status]}
       </summary>
       <h4>{techniqueLabels[r.technique] ?? r.technique}</h4>
-      <p>
-        Variables: {r.variable_names.join(', ')}. Fuente: tabla {r.dataset_id}.
-      </p>
+      <p>Variables: {r.variable_names.join(', ')}.</p>
       <p>
         {r.case_counts.used} casos utilizados y {r.case_counts.excluded}{' '}
         excluidos de {r.case_counts.total}.{' '}
@@ -167,30 +172,40 @@ function ResultCard({
       {display && (
         <>
           <p>{display.status_label}</p>
+          {display.interpretation && (
+            <>
+              <h4>Qué se encontró y qué significa</h4>
+              <p>{display.interpretation}</p>
+              <small>{display.interpretation_label}</small>
+            </>
+          )}
           {display.metrics.length > 0 && (
-            <div className="analysis-table-scroll">
-              <table>
-                <caption>Métricas guardadas del resultado {r.id}</caption>
-                <thead>
-                  <tr>
-                    <th>Métrica</th>
-                    <th>Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {display.metrics.map((m) => (
-                    <tr key={m.key}>
-                      <th scope="row">{m.label}</th>
-                      <td>
-                        {m.formatted}
-                        {m.unit && ` ${m.unit}`}
-                        {m.reason && ` · ${m.reason}`}
-                      </td>
+            <details open={r.technique !== 'descriptive_summary'}>
+              <summary>Todas las métricas guardadas y sus unidades</summary>
+              <div className="analysis-table-scroll">
+                <table>
+                  <caption>Estadísticas del análisis</caption>
+                  <thead>
+                    <tr>
+                      <th>Métrica</th>
+                      <th>Valor</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {display.metrics.map((m) => (
+                      <tr key={m.key}>
+                        <th scope="row">{m.label}</th>
+                        <td>
+                          {m.formatted}
+                          {m.unit && ` ${m.unit}`}
+                          {m.reason && ` · ${m.reason}`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
           )}
           {display.tables.map((t) => (
             <div key={t.id} className="analysis-table-scroll">
@@ -215,13 +230,6 @@ function ResultCard({
               </table>
             </div>
           ))}
-          {display.interpretation && (
-            <>
-              <h4>Cómo comprender esta salida</h4>
-              <p>{display.interpretation}</p>
-              <small>{display.interpretation_label}</small>
-            </>
-          )}
         </>
       )}
       <div className="rp-actions">
@@ -345,7 +353,12 @@ function ResultCard({
       )}
       <h4>Advertencias y limitaciones</h4>
       <ul>
-        {[...r.warnings, ...r.limitations].map((w, n) => (
+        {[
+          ...new Set([
+            ...r.warnings.filter((w) => !w.includes('cuantiles tipo 7')),
+            ...(display?.limitations ?? r.limitations),
+          ]),
+        ].map((w, n) => (
           <li key={n}>{w}</li>
         ))}
       </ul>
@@ -358,6 +371,11 @@ function ResultCard({
           Plan: {r.analysis_plan_id}. Resultado: {r.id}.
         </p>
         <p>{new Date(r.created_at).toLocaleString('es-PE')}</p>
+        {r.warnings
+          .filter((w) => w.includes('cuantiles tipo 7'))
+          .map((w, n) => (
+            <p key={n}>{w}</p>
+          ))}
         {display?.assumptions?.map((text, n) => (
           <p key={n}>{text}</p>
         ))}
@@ -458,11 +476,67 @@ export function ResultFigure({ figure: f }: { figure: ResultFigureDataV2 }) {
   if (!f.x.length || !f.y.length) return null;
   const minX = Math.min(...f.x),
     maxX = Math.max(...f.x);
-  const minY = Math.min(0, ...f.y),
-    maxY = Math.max(0, ...f.y);
+  const minY = f.axis_min ?? Math.min(0, ...f.y),
+    maxY = f.axis_max ?? Math.max(0, ...f.y);
   const position = (v: number, min: number, max: number) =>
     max === min ? 0.5 : (v / 2 - min / 2) / (max / 2 - min / 2);
   const py = (v: number) => 220 - 190 * position(v, minY, maxY);
+  if (f.kind === 'bars' || f.kind === 'metric') {
+    const height = 90 + f.y.length * 30;
+    const px = (v: number) => 230 + 240 * position(v, minY, maxY);
+    return (
+      <figure className="result-v2-figure">
+        <svg
+          viewBox={`0 0 540 ${height}`}
+          role="img"
+          aria-label={`${f.x_label} frente a ${f.y_label}`}
+        >
+          <title>{f.caption}</title>
+          {[0, 1, 2, 3, 4].map((n) => {
+            const value = minY * (1 - n / 4) + (maxY * n) / 4;
+            return (
+              <g key={n}>
+                <path d={`M${px(value)} 10V${height - 45}`} stroke="#cbd5df" />
+                <text
+                  x={px(value)}
+                  y={height - 26}
+                  textAnchor="middle"
+                  fontSize={10}
+                >
+                  {Number(value.toPrecision(4)).toLocaleString('es-PE')}
+                </text>
+              </g>
+            );
+          })}
+          {f.y.map((value, n) => (
+            <g key={n}>
+              <text x={0} y={30 + n * 30} fontSize={10}>
+                {(f.labels?.[n] ?? f.x_label).slice(0, 38)}
+              </text>
+              <rect
+                x={Math.min(px(0), px(value))}
+                y={18 + n * 30}
+                width={Math.abs(px(value) - px(0))}
+                height={17}
+                fill="#376d8c"
+              />
+              <text
+                x={Math.max(px(0), px(value)) + 4}
+                y={30 + n * 30}
+                fontSize={10}
+              >
+                {Number(value.toPrecision(6)).toLocaleString('es-PE')}
+              </text>
+            </g>
+          ))}
+          <text x={230} y={height - 4} fontSize={10}>
+            {f.y_label.slice(0, 60)}
+          </text>
+        </svg>
+        <figcaption>{f.caption}</figcaption>
+      </figure>
+    );
+  }
   return (
     <figure className="result-v2-figure">
       <svg

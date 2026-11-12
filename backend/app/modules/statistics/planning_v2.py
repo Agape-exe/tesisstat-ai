@@ -75,7 +75,7 @@ def select(data: PlanningInputV2):
     questions = []
     limits = [
         "Los casos completos se seleccionan conjuntamente entre todas las variables elegidas.",
-        "El análisis no demuestra causalidad. Los intervalos disponibles son del 95 %.",
+        "El análisis no demuestra causalidad.",
     ]
     technique = None
 

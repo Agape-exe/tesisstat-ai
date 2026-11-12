@@ -20,6 +20,7 @@ import './diagnostics.css';
 import { IntentConditions } from './IntentConditions';
 import { AnalysisProposals } from '../analysis/AnalysisProposals';
 import { ReliabilityInputs } from '../instrument/ReliabilityInputs';
+import { useWorkspaceFocus } from '../projects/workspaceFocus';
 
 const api = createDiagnosticsApi(),
   dataApi = createDataApi();
@@ -94,16 +95,30 @@ export function DiagnosticWorkspace({
   projectId,
   active = true,
   initialIntentId = null,
+  initialTableId = null,
+  initialKind = 'descriptive',
 }: {
   projectId: string;
   active?: boolean;
   initialIntentId?: string | null;
+  initialTableId?: string | null;
+  initialKind?: 'descriptive' | 'association' | 'comparison';
 }) {
   const [intents, setIntents] = useState<Intent[]>([]),
     [tables, setTables] = useState<Dataset[]>([]);
   const [current, setCurrent] = useState<Intent | null>(null),
-    [draft, setDraft] = useState<Changes>(empty);
-  const [baseline, setBaseline] = useState<Changes>(empty);
+    [draft, setDraft] = useState<Changes>({
+      ...empty,
+      dataset_id: initialTableId,
+      kind: initialKind,
+      estimand: initialKind === 'descriptive' ? 'summary' : 'unknown',
+    });
+  const [baseline, setBaseline] = useState<Changes>({
+    ...empty,
+    dataset_id: initialTableId,
+    kind: initialKind,
+    estimand: initialKind === 'descriptive' ? 'summary' : 'unknown',
+  });
   const [pendingPair, setPendingPair] = useState({
     before_column_id: '',
     after_column_id: '',
@@ -120,6 +135,12 @@ export function DiagnosticWorkspace({
     'distribution',
   ]);
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+  useWorkspaceFocus(
+    current && !dirty
+      ? { stage: 'analysis', intent_id: current.id }
+      : { stage: 'analysis', dataset_id: draft.dataset_id },
+    active,
+  );
   const selectedTable = tables.find((t) => t.id === draft.dataset_id);
   const initialSelectionApplied = useRef(false);
   const key = `s04a:${projectId}:${current?.id ?? 'new'}`;
@@ -477,7 +498,7 @@ export function DiagnosticWorkspace({
           revisa en Datos antes de obtener diagnósticos numéricos.
         </p>
       </fieldset>
-      <fieldset disabled={busy}>
+      <fieldset disabled={busy} hidden={draft.kind === 'descriptive'}>
         <legend>2. ¿Qué representan estas observaciones?</legend>
         <label className="rp-field">
           Unidad de observación en este análisis
@@ -668,7 +689,7 @@ export function DiagnosticWorkspace({
           </>
         )}
       </fieldset>
-      <fieldset disabled={busy}>
+      <fieldset disabled={busy} hidden={draft.kind === 'descriptive'}>
         <IntentConditions
           projectId={projectId}
           draft={draft}
@@ -719,7 +740,9 @@ export function DiagnosticWorkspace({
         </aside>
       )}
       <fieldset disabled={busy}>
-        <legend>3. Solicitar diagnósticos</legend>
+        <legend>
+          {draft.kind === 'descriptive' ? '2' : '3'}. Solicitar diagnósticos
+        </legend>
         <p>
           Se revisarán únicamente las comprobaciones elegidas con todas las
           filas y casos completos conjuntos. Se mostrarán exclusiones, límites y
@@ -727,29 +750,37 @@ export function DiagnosticWorkspace({
           enviarán datos a IA.
         </p>
         <div className="diagnostic-options">
-          {(Object.keys(checkLabels) as Check[]).map((c) => (
-            <label key={c}>
-              <input
-                type="checkbox"
-                checked={checks.includes(c)}
-                onChange={(e) =>
-                  setChecks(
-                    e.target.checked
-                      ? [...checks, c]
-                      : checks.filter((k) => k !== c),
-                  )
-                }
-              />
-              {checkLabels[c]}
-            </label>
-          ))}
+          {(Object.keys(checkLabels) as Check[])
+            .filter(
+              (c) =>
+                draft.kind !== 'descriptive' ||
+                ['complete_cases', 'distribution', 'influence'].includes(c),
+            )
+            .map((c) => (
+              <label key={c}>
+                <input
+                  type="checkbox"
+                  checked={checks.includes(c)}
+                  onChange={(e) =>
+                    setChecks(
+                      e.target.checked
+                        ? [...checks, c]
+                        : checks.filter((k) => k !== c),
+                    )
+                  }
+                />
+                {checkLabels[c]}
+              </label>
+            ))}
         </div>
-        <p>
-          Normalidad: Shapiro–Wilk en 3–5000 casos no constantes, por grupo o
-          sobre diferencias pareadas. Variabilidad: Brown–Forsythe solo para dos
-          grupos independientes revisados. Los checks que no correspondan
-          explicarán por qué se omiten.
-        </p>
+        {draft.kind !== 'descriptive' && (
+          <p>
+            Normalidad: Shapiro–Wilk en 3–5000 casos no constantes, por grupo o
+            sobre diferencias pareadas. Variabilidad: Brown–Forsythe solo para
+            dos grupos independientes revisados. Los checks que no correspondan
+            explicarán por qué se omiten.
+          </p>
+        )}
         {dirty && (
           <p className="rp-warning">Guarda tus cambios antes de calcular.</p>
         )}

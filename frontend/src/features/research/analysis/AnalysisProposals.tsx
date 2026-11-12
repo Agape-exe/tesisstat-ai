@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { WorkspaceFocus } from '../projects/workspaceFocus';
 import type { PlanRequest } from '../../../shared/contracts/generated/v2/PlanRequest';
 import type { Intent, Diagnostic } from '../diagnostics/api';
 import { createAnalysisV2Api, techniqueLabels, type Plan } from './v2api';
@@ -17,6 +18,7 @@ export function AnalysisProposals({
   dirty: boolean;
   active: boolean;
 }) {
+  const publish = useContext(WorkspaceFocus);
   const [plans, setPlans] = useState<Plan[]>([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -67,7 +69,10 @@ export function AnalysisProposals({
   }
   return (
     <section aria-label="Propuestas y ejecución" className="analysis-v2">
-      <h3>4. Revisar propuesta, aprobar y ejecutar</h3>
+      <h3>
+        {intent.kind === 'descriptive' ? '3' : '4'}. Revisar propuesta, aprobar
+        y ejecutar
+      </h3>
       <p>
         La propuesta se explica antes de aprobarla. Aprobar y ejecutar son
         acciones separadas. Cada propuesta conserva su evidencia.
@@ -105,7 +110,15 @@ export function AnalysisProposals({
         <p>Guarda la intención para proponer o aprobar su versión exacta.</p>
       )}
       {plans.map((p, index) => (
-        <details key={p.id} open={index === 0} className="rp-surface">
+        <details
+          key={p.id}
+          open={index === 0}
+          className="rp-surface"
+          onToggle={(e) => {
+            if (active && !dirty && e.currentTarget.open)
+              publish?.({ stage: 'analysis', plan_id: p.id });
+          }}
+        >
           <summary>
             {techniqueLabels[p.technique ?? ''] ?? 'Requiere aclaraciones'} ·{' '}
             {p.validity === 'stale'

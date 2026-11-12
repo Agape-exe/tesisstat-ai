@@ -77,11 +77,14 @@ class TutorService:
             )
 
     def status(self, project, selection):
+        from app.modules.conversation.guided_service import guidance
+
         context, selected_result = self.builder.build(project, selection)
         selected_plan_id = selection.plan_id or (
             selected_result.analysis_plan_id if selected_result else None
         )
         return {
+            "guidance": guidance(self.analysis.workspace, project, selection),
             "provider_configured": self.conversations.provider.configured,
             "provider_kind": "cloudflare_workers_ai"
             if isinstance(self.conversations.provider, CloudflareLanguageModel)
@@ -218,7 +221,14 @@ class TutorService:
                 raise AIError("input_limit")
             self._consent(project, draft.consent_revision)
             trace["provider_calls"] = 1
-            raw = self.conversations.provider.chat(messages, max_tokens=output_tokens)
+            if isinstance(self.conversations.provider, CloudflareLanguageModel):
+                raw = self.conversations.provider.chat(
+                    messages,
+                    max_tokens=output_tokens,
+                    response_schema=TutorAnswerV2.model_json_schema(),
+                )
+            else:
+                raw = self.conversations.provider.chat(messages, max_tokens=output_tokens)
             if monotonic() - started > self.settings.cloudflare_timeout_seconds:
                 raise AIError("timeout")
             if not isinstance(raw, str) or len(raw.encode()) > 16000:
@@ -230,6 +240,10 @@ class TutorService:
             if (
                 not (answer.concepts or answer.examples or answer.findings or answer.updates)
                 or any(not validate_general_prose(t) for t in answer.concepts)
+                or any(
+                    t.casefold().strip(" .") in {"explicación general", "explicacion general"}
+                    for t in answer.concepts
+                )
                 or any(not validate_general_prose(t, example=True) for t in answer.examples)
                 or any(not validate_general_prose(u.value) for u in answer.updates)
                 or any(n >= len(context.allowed_actions) for n in answer.action_indices)

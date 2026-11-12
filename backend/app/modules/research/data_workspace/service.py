@@ -1,6 +1,7 @@
 import hashlib
 import json
 from collections import Counter
+from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, DecimalException
 from statistics import mean, median, stdev
@@ -194,9 +195,9 @@ class WorkspaceService:
             ],
         )
 
-    def dictionary(self, project_id, table_id, dataset=None):
+    def dictionary(self, project_id, table_id, dataset=None, db=None):
         self.history_access(project_id, table_id)
-        payload = self.repository.get(project_id, "dictionary", table_id)
+        payload = self.repository.get(project_id, "dictionary", table_id, db)
         if payload:
             return VariableDictionaryV2.model_validate(payload)
         dataset = dataset or self.dataset(project_id, table_id)
@@ -212,12 +213,12 @@ class WorkspaceService:
         ):
             self.sources.table(project_id, table_id)
 
-    def patch_dictionary(self, project_id, table_id, patch: DictionaryPatch):
-        with self.repository.transaction() as db:
+    def patch_dictionary(self, project_id, table_id, patch: DictionaryPatch, db=None):
+        with nullcontext(db) if db is not None else self.repository.transaction() as db:
             dataset, rows = self.read_table(
                 project_id, table_id, patch.dataset_revision, patch.dataset_hash
             )
-            previous = self.dictionary(project_id, table_id, dataset)
+            previous = self.dictionary(project_id, table_id, dataset, db)
             current = previous.model_copy(deep=True)
             current.revision += 1
             current.dataset_ref = dataset
@@ -354,12 +355,12 @@ class WorkspaceService:
             result.state = "stale"
         return result
 
-    def compute_profile(self, project_id, table_id, request):
-        with self.repository.transaction() as db:
+    def compute_profile(self, project_id, table_id, request, db=None):
+        with nullcontext(db) if db is not None else self.repository.transaction() as db:
             dataset, rows = self.read_table(
                 project_id, table_id, request.dataset_revision, request.dataset_hash
             )
-            dictionary = self.dictionary(project_id, table_id, dataset)
+            dictionary = self.dictionary(project_id, table_id, dataset, db)
             calculated_source = dataset.kind == "imported" and bool(
                 self.sources.table(project_id, table_id).calculation_version
             )

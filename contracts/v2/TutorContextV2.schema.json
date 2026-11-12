@@ -63,7 +63,10 @@
             "open",
             "propose_update",
             "request_diagnostic",
-            "request_proposal"
+            "request_proposal",
+            "prepare_descriptive",
+            "start_association",
+            "start_comparison"
           ],
           "title": "Kind",
           "type": "string"

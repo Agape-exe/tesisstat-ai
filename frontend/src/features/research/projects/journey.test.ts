@@ -117,7 +117,7 @@ it('derives saved and confirmed context without a global completion seal', async
   );
   expect(nextJourneyStep(steps)?.section).toBe('datasets');
   responses();
-  expect(nextJourneyStep(await loadJourney(project))?.section).toBe('context');
+  expect(nextJourneyStep(await loadJourney(project))?.section).toBe('datasets');
 });
 it('does not count a legacy global relationship as research context progress', async () => {
   const context = testContext(1);

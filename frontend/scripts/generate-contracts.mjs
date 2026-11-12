@@ -26,6 +26,7 @@ for (const name of [
   'TutorContextV2',
   'MessageDraftV2',
   'TutorSelectionV2',
+  'GuidedDescriptiveRequestV2',
   'TutorConsentV2',
   'ResultExplanationV2',
   'ExplanationReviewV2',

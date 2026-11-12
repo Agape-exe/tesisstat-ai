@@ -53,6 +53,8 @@ export type SourceMetricKeys = string[];
 export type TotalCases = number;
 export type DisplayedCases = number;
 export type Policy = "persisted-aggregate-v1" | "deterministic-complete-cases-500-v1";
+export type AxisMin = number | null;
+export type AxisMax = number | null;
 export type Figures = ResultFigureDataV2[];
 export type Warnings = string[];
 
@@ -82,4 +84,6 @@ export interface ResultFigureDataV2 {
   total_cases: TotalCases;
   displayed_cases: DisplayedCases;
   policy: Policy;
+  axis_min?: AxisMin;
+  axis_max?: AxisMax;
 }

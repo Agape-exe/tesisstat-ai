@@ -19,7 +19,7 @@ def digest(value):
 
 
 HELP = {
-    "home": "Puedes comenzar por Contexto o cargar una tabla en Datos. El documento y las "
+    "home": "Comienza cargando una tabla en Datos. Contexto, el documento y las "
     "hipótesis son opcionales; describir datos no los requiere.",
     "context": "Guarda lo que sabes de la pregunta y objetivo. Confirma solo lo revisado. "
     "Qué representa cada fila se describe para cada tabla en Datos.",
@@ -73,7 +73,18 @@ class TutorContextBuilder:
                     hash=canonical_hash(context),
                 )
             )
-        pending += [q.question for q in context.pending_questions]
+        if selection.stage == "context":
+            pending += [q.question for q in context.pending_questions]
+        draft_count = sum(
+            f.value not in (None, "", "unknown") and not f.confirmation
+            for path, f in context_facts(context).items()
+            if path != "/observations"
+        )
+        if draft_count:
+            warnings.append(
+                f"Hay {draft_count} campos de contexto en borrador; "
+                "no se usan como información confirmada ni se envían al proveedor."
+            )
         intent = plan = result = None
         if selection.result_id:
             result, plan = self.analysis.result_with_plan(project, selection.result_id)
@@ -128,6 +139,27 @@ class TutorContextBuilder:
                     }
                 )
             data.insert(0, {"rows": ds.row_count, "columns": len(ds.columns), "kind": ds.kind})
+            if not intent:
+                actions = [
+                    TutorActionV2(
+                        kind=kind,
+                        label=label,
+                        resource_id=ds.id,
+                        destination="analysis",
+                        scope="Tabla seleccionada; las sugerencias requieren tu revisión.",
+                    )
+                    for kind, label in (
+                        ("prepare_descriptive", "Describir estos datos"),
+                        ("start_association", "Explorar relaciones"),
+                        ("start_comparison", "Comparar grupos o mediciones"),
+                    )
+                ] + [
+                    TutorActionV2(
+                        kind="open",
+                        label="Revisar ítems de un instrumento",
+                        destination="instrument",
+                    )
+                ]
             if len(variables) > 30:
                 warnings.append("Resumen limitado a treinta variables; selecciona un análisis.")
             try:
@@ -147,6 +179,7 @@ class TutorContextBuilder:
             refs.append(reference("intent", intent))
             summary = {
                 "id": intent.id,
+                "dataset_id": intent.dataset_id,
                 "kind": intent.kind,
                 "estimand": intent.estimand,
                 "revision": intent.revision,
@@ -217,18 +250,17 @@ class TutorContextBuilder:
                     resource_id=intent.id,
                     label=label,
                     destination="analysis",
-                    scope=f"Intención {intent.id}, revisión {intent.revision}; "
-                    f"tabla {intent.dataset_id}. " + scope,
+                    scope=f"Intención seleccionada, revisión {intent.revision}. " + scope,
                 )
                 for kind, label, scope in (
                     (
                         "request_diagnostic",
-                        "Revisar alcance y solicitar diagnósticos",
+                        "Abrir esta intención para revisar diagnósticos",
                         "Elige las comprobaciones antes de calcular.",
                     ),
                     (
                         "request_proposal",
-                        "Revisar alcance y solicitar propuesta",
+                        "Abrir esta intención para revisar su propuesta",
                         "Usa el selector C4–C5; no aprueba ni ejecuta.",
                     ),
                 )

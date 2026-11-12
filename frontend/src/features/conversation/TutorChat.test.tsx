@@ -225,3 +225,203 @@ describe('Tutor contextual C7', () => {
     expect(await screen.findByText('Respuesta histórica.')).toBeInTheDocument();
   });
 });
+
+it('binds the tutor to the visible table and blocks a stale selection while loading', async () => {
+  const { api, historyApi, status } = fixture(true);
+  status.consent = {
+    revision: 1,
+    granted: true,
+    consent_scope: 'tutor_context_v4',
+  };
+  const view = render(
+    <TutorChat
+      projectId="p"
+      boundSelection={{ stage: 'data', dataset_id: 'a' }}
+      api={api}
+      historyApi={historyApi}
+    />,
+  );
+  await screen.findByText(/Trabajando en/);
+  expect(screen.queryByLabelText('Tabla pertinente')).not.toBeInTheDocument();
+  expect(api.status).toHaveBeenLastCalledWith(
+    'p',
+    { stage: 'data', dataset_id: 'a' },
+    expect.any(AbortSignal),
+  );
+  api.status.mockImplementationOnce(() => new Promise(() => {}));
+  view.rerender(
+    <TutorChat
+      projectId="p"
+      boundSelection={{ stage: 'data', dataset_id: 'b' }}
+      api={api}
+      historyApi={historyApi}
+    />,
+  );
+  fireEvent.change(screen.getByLabelText('Tu consulta'), {
+    target: { value: 'Describir' },
+  });
+  expect(
+    screen.getByRole('button', { name: 'Enviar consulta' }),
+  ).toBeDisabled();
+  expect(api.send).not.toHaveBeenCalled();
+});
+
+it('reviews suggested scales and prepares a persistent analysis on the selected table', async () => {
+  const { api, historyApi, status } = fixture();
+  status.guidance = {
+    table_count: 2,
+    selected_table: { id: 'b', name: 'Tabla B', rows: 5, columns: 2 },
+    variables: [
+      {
+        variable_id: 'v',
+        name: 'Medida',
+        detected_type: 'numérico',
+        missing: 1,
+        formula_errors: 0,
+        possible_identifier: false,
+        scale_confirmed: false,
+        suggested_scale: 'interval',
+        selected: true,
+      },
+      {
+        variable_id: 'id',
+        name: 'Código',
+        detected_type: 'numérico',
+        missing: 0,
+        formula_errors: 0,
+        possible_identifier: true,
+        scale_confirmed: false,
+        suggested_scale: 'nominal',
+        selected: false,
+      },
+    ],
+  };
+  status.context.allowed_actions = [
+    {
+      kind: 'prepare_descriptive',
+      resource_id: 'b',
+      label: 'Describir estos datos',
+      destination: 'analysis',
+      scope: 'Tabla B',
+    },
+  ];
+  api.prepareDescriptive = vi.fn().mockResolvedValue({
+    intent_id: 'prepared-b',
+    dataset_id: 'b',
+    replayed: false,
+  });
+  render(
+    <TutorChat
+      projectId="p"
+      boundSelection={{ stage: 'data', dataset_id: 'b' }}
+      api={api}
+      historyApi={historyApi}
+    />,
+  );
+  await screen.findByRole('heading', { name: 'Resumen del servidor · sin IA' });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Describir estos datos' }),
+  );
+  expect(api.prepareDescriptive).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText('Cómo resumir Medida'), {
+    target: { value: 'nominal' },
+  });
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: 'Guardar variables revisadas y preparar descriptivo',
+    }),
+  );
+  await waitFor(() =>
+    expect(window.location.hash).toContain('item=prepared-b'),
+  );
+  expect(api.prepareDescriptive).toHaveBeenCalledWith(
+    'p',
+    expect.objectContaining({
+      selection: { stage: 'data', dataset_id: 'b' },
+      variables: [{ variable_id: 'v', measurement_scale: 'nominal' }],
+      confirm: true,
+      context_fingerprint: 'a'.repeat(64),
+    }),
+  );
+  expect(api.send).not.toHaveBeenCalled();
+});
+it('recovers the exact pending preparation after a reload without creating a new request', async () => {
+  const { api, historyApi, status } = fixture();
+  status.guidance = {
+    table_count: 1,
+    selected_table: { id: 'b', name: 'Tabla B', rows: 5, columns: 1 },
+    variables: [
+      {
+        variable_id: 'v',
+        name: 'Medida',
+        detected_type: 'numérico',
+        missing: 0,
+        formula_errors: 0,
+        possible_identifier: false,
+        scale_confirmed: false,
+        suggested_scale: 'interval',
+        selected: true,
+      },
+    ],
+  };
+  status.context.allowed_actions = [
+    {
+      kind: 'prepare_descriptive',
+      resource_id: 'b',
+      label: 'Describir estos datos',
+      destination: 'analysis',
+      scope: 'Tabla B',
+    },
+  ];
+  api.prepareDescriptive = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('Respuesta de red perdida'))
+    .mockResolvedValue({
+      intent_id: 'same-intent',
+      dataset_id: 'b',
+      replayed: true,
+    });
+  const view = render(
+    <TutorChat
+      projectId="p"
+      boundSelection={{ stage: 'data', dataset_id: 'b' }}
+      api={api}
+      historyApi={historyApi}
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Describir estos datos' }),
+  );
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: 'Guardar variables revisadas y preparar descriptivo',
+    }),
+  );
+  await screen.findByText('Respuesta de red perdida');
+  const first = vi.mocked(api.prepareDescriptive).mock.calls[0][1];
+  view.unmount();
+  status.context.context_fingerprint = 'b'.repeat(64);
+  render(
+    <TutorChat
+      projectId="p"
+      boundSelection={{ stage: 'data', dataset_id: 'b' }}
+      api={api}
+      historyApi={historyApi}
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Describir estos datos' }),
+  );
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: 'Guardar variables revisadas y preparar descriptivo',
+    }),
+  );
+  await waitFor(() =>
+    expect(window.location.hash).toContain('item=same-intent'),
+  );
+  expect(vi.mocked(api.prepareDescriptive).mock.calls[1][1]).toEqual(first);
+  expect(
+    sessionStorage.getItem('tesisstat:guided-descriptive:v1:p:b'),
+  ).toBeNull();
+});

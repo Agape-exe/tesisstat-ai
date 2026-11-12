@@ -5,6 +5,7 @@ import { SourcesError } from '../sources/api';
 import type { ResultPresentationV2 } from '../../../shared/contracts/generated/v2/ResultPresentationV2';
 import type { ResultFiguresV2 } from '../../../shared/contracts/generated/v2/ResultFiguresV2';
 import type { ResultExplanationV2 } from '../../../shared/contracts/generated/v2/ResultExplanationV2';
+import { resourcesChanged } from '../projects/resourceEvents';
 export type Plan = Required<AnalysisPlanV2>;
 export type Result = Required<AnalysisResultV2>;
 export function createAnalysisV2Api(
@@ -33,6 +34,7 @@ export function createAnalysisV2Api(
       );
     }
     const data = await response.json();
+    if (body) resourcesChanged(p);
     if (!body && ['/plans', '/results'].includes(path) && !Array.isArray(data))
       throw new Error('Respuesta de evidencia no válida. Reintenta.');
     return data;

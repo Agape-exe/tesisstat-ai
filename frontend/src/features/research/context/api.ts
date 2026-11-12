@@ -1,6 +1,7 @@
 import type { ProjectContextV2 } from '../../../shared/contracts/generated/v2/ProjectContextV2';
 import type { ContextSuggestion } from '../../../shared/contracts/generated/v2/ContextSuggestion';
 import type { ContextImport } from '../../../shared/contracts/generated/v2/ContextImport';
+import { resourcesChanged } from '../projects/resourceEvents';
 export type ImportProposal = Omit<
   Required<ContextImport>,
   'complementary_notes'
@@ -59,7 +60,9 @@ export function createContextApi(
         result?.error?.current_revision ?? null,
       );
     }
-    return response.json() as Promise<T>;
+    const data = (await response.json()) as T;
+    if (method !== 'GET') resourcesChanged(projectId);
+    return data;
   }
   return {
     get: (id: string) => request<Context>(id),

@@ -5,8 +5,17 @@ import type {
 import type { TutorSelectionV2 } from '../../shared/contracts/generated/v2/TutorSelectionV2';
 import type { MessageDraftV2 } from '../../shared/contracts/generated/v2/MessageDraftV2';
 import type { Message } from './api';
+import type { GuidedDescriptiveRequestV2 } from '../../shared/contracts/generated/v2/GuidedDescriptiveRequestV2';
 export type Selection = TutorSelectionV2;
 export type Action = TutorActionV2;
+export class TutorApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
+}
 export type TutorTrace = {
   snapshot: string;
   stage: string;
@@ -36,6 +45,29 @@ export type TutorMessage = Omit<Message, 'context'> & {
 };
 type Choice = { id: string; label: string; validity?: string };
 export interface TutorStatus {
+  guidance?: {
+    table_count: number;
+    selected_table: {
+      id: string;
+      name: string;
+      rows: number;
+      columns: number;
+      identical_rows?: number;
+    } | null;
+    variables: {
+      variable_id: string;
+      name: string;
+      detected_type: string;
+      missing: number;
+      formula_errors: number;
+      possible_identifier: boolean;
+      scale_confirmed: boolean;
+      suggested_scale: 'nominal' | 'ordinal' | 'interval' | 'ratio';
+      constant?: boolean;
+      selected: boolean;
+    }[];
+    warnings?: string[];
+  };
   provider_kind?: 'cloudflare_workers_ai' | 'controlled_test';
   provider_configured: boolean;
   consent: {
@@ -78,14 +110,22 @@ export function createTutorApi(
     );
     const data = await response.json().catch(() => null);
     if (!response.ok)
-      throw new Error(
+      throw new TutorApiError(
         data?.error?.message ??
           data?.detail ??
           'No se pudo completar la operación del tutor.',
+        response.status,
       );
     return data;
   }
   return {
+    prepareDescriptive: (p: string, body: GuidedDescriptiveRequestV2) =>
+      request<{ intent_id: string; dataset_id: string; replayed: boolean }>(
+        p,
+        '/actions',
+        'POST',
+        body,
+      ),
     status: async (p: string, selection: Selection, signal?: AbortSignal) => {
       const query = new URLSearchParams(
         Object.entries(selection).filter(([, v]) => v != null) as [

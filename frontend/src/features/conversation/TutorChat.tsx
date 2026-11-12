@@ -12,6 +12,7 @@ import {
   navigateWorkspace,
 } from '../research/projects/navigation';
 import './tutor.css';
+import { GuidedReview } from './GuidedReview';
 
 const conversations = createConversationApi();
 const tutor = createTutorApi();
@@ -37,6 +38,7 @@ export function TutorChat({
   active = true,
   stage = 'home',
   resultId,
+  boundSelection,
   api = tutor,
   historyApi = conversations,
 }: {
@@ -45,13 +47,16 @@ export function TutorChat({
   active?: boolean;
   stage?: Selection['stage'];
   resultId?: string;
+  boundSelection?: Selection;
   api?: typeof tutor;
   historyApi?: typeof conversations;
 }) {
-  const [selection, setSelection] = useState<Selection>({
+  const [manualSelection, setSelection] = useState<Selection>({
     stage,
     result_id: resultId,
   });
+  const selection = boundSelection ?? manualSelection;
+  const [review, setReview] = useState(false);
   const [status, setStatus] = useState<TutorStatus | null>(null);
   const [statusSelectionKey, setStatusSelectionKey] = useState('');
   const [items, setItems] = useState<Conversation[]>([]);
@@ -69,6 +74,21 @@ export function TutorChat({
   const storageKey = `tesisstat:tutor-conversation:v2:${projectId}`;
   const selectionKey = JSON.stringify(selection);
   const contextCurrent = statusSelectionKey === selectionKey;
+  const workingTable = status?.choices.datasets.find(
+    (d) =>
+      d.id ===
+      (selection.dataset_id ?? status.context.intent_summary?.dataset_id),
+  );
+  useEffect(() => {
+    const update = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== projectId) return;
+      setStatusSelectionKey('');
+      setRefresh((n) => n + 1);
+    };
+    window.addEventListener('tesisstat:resources-changed', update);
+    return () =>
+      window.removeEventListener('tesisstat:resources-changed', update);
+  }, [projectId]);
   useEffect(() => {
     if (!active) return;
     const controller = new AbortController();
@@ -216,8 +236,26 @@ export function TutorChat({
       }
     });
   }
-  function open(action: Action) {
+  function open(action: Action, fingerprint?: string) {
     if (!contextCurrent) return;
+    if (fingerprint && fingerprint !== status?.context.context_fingerprint)
+      return;
+    if (action.kind === 'prepare_descriptive') {
+      setReview(true);
+      return;
+    }
+    if (
+      action.kind === 'start_association' ||
+      action.kind === 'start_comparison'
+    ) {
+      navigateWorkspace(
+        projectId,
+        'analysis',
+        action.kind === 'start_association' ? 'association' : 'comparison',
+        action.resource_id ?? undefined,
+      );
+      return;
+    }
     if (
       action.kind === 'request_proposal' ||
       action.kind === 'request_diagnostic'
@@ -235,7 +273,9 @@ export function TutorChat({
   return (
     <section
       className="tutor-v2 rp-surface"
-      aria-label={projectTitle ? 'Asistente IA' : 'Tutor contextual'}
+      aria-label={
+        projectTitle && !boundSelection ? 'Asistente IA' : 'Tutor contextual'
+      }
     >
       {projectTitle && (
         <div className="chat-breadcrumb">
@@ -258,78 +298,187 @@ export function TutorChat({
       >
         Actualizar fuentes y permiso
       </button>
-      <div className="tutor-selection">
-        <label className="rp-field">
-          Etapa de la consulta
-          <select
-            aria-label="Etapa de la consulta"
-            disabled={busy}
-            value={selection.stage}
-            onChange={(e) =>
-              setSelection({
-                ...selection,
-                stage: e.target.value as Selection['stage'],
-              })
-            }
-          >
-            {Object.entries(stages).map(([value, label]) => (
-              <option value={value} key={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {status &&
-          (['datasets', 'intents', 'plans', 'results'] as const).map((kind) => {
-            const field = {
-              datasets: 'dataset_id',
-              intents: 'intent_id',
-              plans: 'plan_id',
-              results: 'result_id',
-            } as const;
-            return (
-              <label className="rp-field" key={kind}>
-                {
-                  {
-                    datasets: 'Tabla pertinente',
-                    intents: 'Análisis pertinente',
-                    plans: 'Propuesta pertinente',
-                    results: 'Resultado pertinente',
-                  }[kind]
+      {!boundSelection && (
+        <details>
+          <summary>Cambiar la selección de la consulta</summary>
+          <div className="tutor-selection">
+            <label className="rp-field">
+              Etapa de la consulta
+              <select
+                aria-label="Etapa de la consulta"
+                disabled={busy}
+                value={selection.stage}
+                onChange={(e) =>
+                  setSelection({
+                    ...selection,
+                    stage: e.target.value as Selection['stage'],
+                  })
                 }
-                <select
-                  aria-label={selectionLabels[kind]}
-                  disabled={busy}
-                  value={selection[field[kind]] ?? ''}
-                  onChange={(e) =>
-                    setSelection({
-                      stage: selection.stage,
-                      [field[kind]]: e.target.value || null,
-                    })
-                  }
-                >
-                  <option value="">Seleccionar explícitamente</option>
-                  {status.choices[kind].map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.label || item.id}
-                      {item.validity === 'stale'
-                        ? ' · histórico desactualizado'
-                        : item.validity === 'unverified'
-                          ? ' · vigencia al seleccionar'
-                          : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            );
-          })}
-      </div>
+              >
+                {Object.entries(stages).map(([value, label]) => (
+                  <option value={value} key={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {status &&
+              (['datasets', 'intents', 'plans', 'results'] as const).map(
+                (kind) => {
+                  const field = {
+                    datasets: 'dataset_id',
+                    intents: 'intent_id',
+                    plans: 'plan_id',
+                    results: 'result_id',
+                  } as const;
+                  return (
+                    <label className="rp-field" key={kind}>
+                      {
+                        {
+                          datasets: 'Tabla pertinente',
+                          intents: 'Análisis pertinente',
+                          plans: 'Propuesta pertinente',
+                          results: 'Resultado pertinente',
+                        }[kind]
+                      }
+                      <select
+                        aria-label={selectionLabels[kind]}
+                        disabled={busy}
+                        value={selection[field[kind]] ?? ''}
+                        onChange={(e) =>
+                          setSelection({
+                            stage: selection.stage,
+                            [field[kind]]: e.target.value || null,
+                          })
+                        }
+                      >
+                        <option value="">Seleccionar explícitamente</option>
+                        {status.choices[kind].map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.label || item.id}
+                            {item.validity === 'stale'
+                              ? ' · histórico desactualizado'
+                              : item.validity === 'unverified'
+                                ? ' · vigencia al seleccionar'
+                                : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                },
+              )}
+          </div>
+        </details>
+      )}
       {status && (
         <>
           <p>
             <small>Ayuda estática por etapa · sin proveedor IA</small>
           </p>
           <p role="status">{status.static_help}</p>
+          {boundSelection && (
+            <p>
+              Trabajando en: {stages[selection.stage ?? 'home']}
+              {' · '}
+              {status.guidance?.selected_table?.name ??
+                status.choices.results.find((r) => r.id === selection.result_id)
+                  ?.label ??
+                status.choices.plans.find((r) => r.id === selection.plan_id)
+                  ?.label ??
+                status.choices.intents.find((r) => r.id === selection.intent_id)
+                  ?.label ??
+                'sin recurso seleccionado'}
+            </p>
+          )}
+          {boundSelection &&
+            workingTable &&
+            !status.guidance?.selected_table && (
+              <p>Tabla de este análisis: {workingTable.label}.</p>
+            )}
+          {Object.keys(status.context.confirmed_summary ?? {}).length > 0 && (
+            <details>
+              <summary>Contexto confirmado utilizado</summary>
+              <ul>
+                {Object.entries(status.context.confirmed_summary ?? {}).map(
+                  ([path, value]) => (
+                    <li key={path}>
+                      {(
+                        {
+                          '/main_objective': 'Objetivo principal',
+                          '/research_question': 'Pregunta de investigación',
+                          '/study_description': 'Descripción del estudio',
+                          '/data_description': 'Descripción de datos',
+                          '/sampling_notes': 'Población y muestreo',
+                        } as Record<string, string>
+                      )[path] ?? 'Información confirmada'}
+                      : {value}
+                    </li>
+                  ),
+                )}
+              </ul>
+              <p>
+                Es información declarada; no demuestra independencia,
+                correspondencia entre sujetos ni cumplimiento de objetivos.
+              </p>
+            </details>
+          )}
+          {status.guidance && (
+            <section aria-label="Resumen local de datos">
+              <h3>Resumen del servidor · sin IA</h3>
+              <p>
+                {status.guidance.table_count} tablas disponibles.
+                {status.guidance.selected_table &&
+                  ` Tabla seleccionada: ${status.guidance.selected_table.name}. ${status.guidance.selected_table.rows} registros y ${status.guidance.selected_table.columns} columnas.`}
+              </p>
+              {(status.guidance.selected_table?.identical_rows ?? 0) > 0 && (
+                <p>
+                  Hay {status.guidance.selected_table?.identical_rows} filas
+                  idénticas; no se eliminan automáticamente.
+                </p>
+              )}
+              {status.guidance.warnings?.map((w) => (
+                <p key={w}>{w}</p>
+              ))}
+              <details>
+                <summary>Tipos detectados y problemas por columna</summary>
+                <ul>
+                  {status.guidance.variables.map((v) => (
+                    <li key={v.variable_id}>
+                      {v.name}: {v.detected_type}; {v.missing} faltantes
+                      {v.formula_errors
+                        ? `; ${v.formula_errors} errores de fórmula`
+                        : ''}
+                      {v.possible_identifier ? '; posible identificador' : ''}.{' '}
+                      {v.constant
+                        ? 'Sin variación entre los valores presentes. '
+                        : ''}
+                      {v.scale_confirmed
+                        ? 'Escala confirmada.'
+                        : 'Significado y escala por revisar.'}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+              {status.guidance.selected_table && (
+                <button
+                  className="rp-secondary"
+                  onClick={() => setReview(true)}
+                >
+                  No sé por dónde empezar
+                </button>
+              )}
+            </section>
+          )}
+          {review && contextCurrent && (
+            <GuidedReview
+              key={status.context.context_fingerprint}
+              projectId={projectId}
+              status={status}
+              selection={selection}
+              api={api}
+            />
+          )}
           {status.provider_kind === 'controlled_test' && (
             <p className="rp-warning">
               Proveedor controlado de verificación, sin llamadas externas. Esta
@@ -511,7 +660,15 @@ export function TutorChat({
               message.context?.actions?.map((action, n) => (
                 <div key={n}>
                   <p>{action.scope}</p>
-                  <button className="rp-secondary" onClick={() => open(action)}>
+                  <button
+                    className="rp-secondary"
+                    disabled={
+                      !contextCurrent ||
+                      message.context?.snapshot !==
+                        status?.context.context_fingerprint
+                    }
+                    onClick={() => open(action, message.context?.snapshot)}
+                  >
                     {action.label}
                   </button>
                 </div>

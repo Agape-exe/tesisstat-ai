@@ -79,13 +79,16 @@ export function ProjectSources({
     const remaining = [];
     const messages = [];
     let imported = 0;
+    let selectedTable: string | null = null;
     for (const file of queue) {
       try {
         if (!/\.(csv|xlsx)$/i.test(file.name))
           throw new Error(`${file.name}: adjunta CSV o XLSX.`);
         if (!file.size || file.size > 10 * 1024 * 1024)
           throw new Error(`${file.name}: usa un archivo de 1 byte a 10 MiB.`);
-        await api.upload(projectId, file);
+        const uploaded = await api.upload(projectId, file);
+        selectedTable ??=
+          uploaded.sheets.find((s) => s.state === 'ready')?.table_id ?? null;
         imported += 1;
       } catch (cause) {
         remaining.push(file);
@@ -102,6 +105,10 @@ export function ProjectSources({
         `${imported} archivo(s) guardado(s). Revisa las hojas pendientes; los anteriores se conservan.`,
       );
     resource.reload();
+    if (selectedTable) {
+      setSelected(selectedTable);
+      onSelect?.(selectedTable);
+    }
     setBusy(false);
   }
   function update(file: SourceFile) {

@@ -39,7 +39,14 @@ export type DataSummary = {
   [k: string]: string | number | boolean | null;
 }[];
 export type HistoricalRefs = SourceRef[];
-export type Kind1 = "open" | "propose_update" | "request_diagnostic" | "request_proposal";
+export type Kind1 =
+  | "open"
+  | "propose_update"
+  | "request_diagnostic"
+  | "request_proposal"
+  | "prepare_descriptive"
+  | "start_association"
+  | "start_comparison";
 export type ResourceId = string | null;
 export type Label = string;
 export type Destination = "home" | "context" | "datasets" | "analysis" | "results" | "instrument";

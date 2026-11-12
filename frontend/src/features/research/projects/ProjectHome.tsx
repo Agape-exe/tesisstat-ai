@@ -31,8 +31,9 @@ export function ProjectHome({
           {description || 'Puedes añadir una descripción cuando lo necesites.'}
         </p>
         <p>
-          TesisStat AI te orienta para organizar tus datos, revisar una
-          propuesta estadística y comprender los resultados, paso a paso.
+          Sube tus datos, conoce qué puedes analizar, aclara lo necesario y
+          revisa una propuesta. Después podrás aprobarla, ejecutarla y
+          comprender sus resultados. El contexto de la tesis es opcional.
         </p>
       </div>
       <div className="rp-home-next">
@@ -51,8 +52,13 @@ export function ProjectHome({
           </p>
         )}
         <div className="rp-actions">
+          <button onClick={() => navigateProject(projectId, 'datasets')}>
+            Subir datos
+          </button>
           {next && next.state !== 'No verificable' && (
-            <button onClick={() => open(next)}>Continuar: {next.name}</button>
+            <button className="rp-secondary" onClick={() => open(next)}>
+              Continuar: {next.name}
+            </button>
           )}
           <button
             className="rp-secondary"
