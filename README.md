@@ -16,6 +16,10 @@ para cada tabla. Relaciones y comparaciones se revisarán por análisis en S04. 
 conserva relaciones narrativas y no impone una clasificación global ni una prueba unilateral.
 S04–S06 incorporan análisis por intención, instrumentos/puntuaciones, tutor contextual y
 resultados e informes v2. [Entrega y verificaciones S06](docs/sesiones/S06.md).
+S07A verifica el recorrido local integrado, corrige navegación y orientación y comprueba
+reinicio y restauración aislada. [Evidencia y guía de aceptación en cinco pasos](docs/sesiones/S07A.md).
+La aceptación manual sigue pendiente. Auth, propiedad de recursos, persistencia remota y
+composition root de producción siguen siendo requisitos abiertos de S07; no está listo para desplegar.
 
 Demostración local para conectar metodología revisada y datos de un proyecto con un
 análisis estadístico persistido. React/TypeScript/Vite y FastAPI/Python 3.12 con SQLite.

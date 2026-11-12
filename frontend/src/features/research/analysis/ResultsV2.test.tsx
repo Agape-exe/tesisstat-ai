@@ -50,6 +50,23 @@ beforeEach(() => {
     interpretation_label: 'Plantilla básica',
   });
 });
+it('opens the explicitly linked result after another result was already viewed', async () => {
+  api.results.mockResolvedValue([
+    result,
+    { ...result, id: 'r2', question: 'Consumo de agua' },
+  ]);
+  const view = render(<ResultsV2 projectId="proyecto" active selectedId="r" />);
+  await waitFor(() =>
+    expect(api.presentation).toHaveBeenCalledWith('proyecto', 'r'),
+  );
+  view.rerender(<ResultsV2 projectId="proyecto" active selectedId="r2" />);
+  await waitFor(() =>
+    expect(api.presentation).toHaveBeenCalledWith('proyecto', 'r2'),
+  );
+  expect(
+    screen.getByText(/Consumo de agua · Vigente/).closest('details'),
+  ).toHaveAttribute('open');
+});
 it('uses server formatting and explicit guarded downloads', async () => {
   render(<ResultsV2 projectId="proyecto" active selectedId="r" />);
   expect(

@@ -80,6 +80,11 @@ function ResultCard({
   initiallyOpen: boolean;
 }) {
   const [open, setOpen] = useState(initiallyOpen);
+  const [linked, setLinked] = useState(initiallyOpen);
+  if (linked !== initiallyOpen) {
+    setLinked(initiallyOpen);
+    if (initiallyOpen) setOpen(true);
+  }
   const [display, setDisplay] = useState<ResultPresentationV2 | null>(null);
   const [figures, setFigures] = useState<ResultFiguresV2 | null>(null);
   const [explanations, setExplanations] = useState<ResultExplanationV2[]>([]);

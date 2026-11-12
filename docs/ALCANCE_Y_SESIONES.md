@@ -204,4 +204,19 @@ Implementados selector determinista por intención, propuestas C5 persistidas, a
 local de fuentes, aprobación humana y ejecución separada con resultados/historial.
 Análisis y Resultados permiten completar el recorrido sin documento ni hipótesis;
 Inicio deriva evidencia de varios análisis. Evidencia y límites en [S04B](sesiones/S04B.md).
-Revisión de instrumentos S05 y tutor/presentación/exportaciones unificadas S06 siguen pendientes.
+La revisión de instrumentos S05 y tutor/presentación/exportaciones unificadas S06 se documentan
+en sus entregas posteriores.
+
+## Subdivisión S07: cierre local y requisitos remotos
+
+S07A verifica y corrige el recorrido integrado **local**, con datos sintéticos, las suites
+completas, revisión visual, reinicio y restauración aislada de SQLite y objetos. Su evidencia y
+la única guía de aceptación manual están en [S07A](sesiones/S07A.md). La aceptación del usuario
+queda pendiente; no se sustituye por estas comprobaciones técnicas.
+
+S07 conserva los criterios originales: identidad verificada, propiedad de todos los recursos,
+Auth/RLS real con dos usuarios, repositorios y objetos remotos, migración explícita sin adoptar
+datos locales sin dueño, restauración remota y composition root autenticado de producción.
+S07A no acredita esos criterios mediante dobles de prueba, no modifica las guardas locales y
+no autoriza despliegue. La publicación continúa fuera de esta entrega y requiere el cierre real
+de esos requisitos y su autorización correspondiente.

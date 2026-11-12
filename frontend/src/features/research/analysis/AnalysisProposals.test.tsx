@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   approve: vi.fn(),
   authorize: vi.fn(),
   execute: vi.fn(),
+  results: vi.fn(),
 }));
 vi.mock('./v2api', () => ({
   createAnalysisV2Api: () => api,
@@ -65,6 +66,7 @@ const intent = { id: 'i', revision: 1, dataset_id: 't' } as Intent;
 beforeEach(() => {
   vi.resetAllMocks();
   sessionStorage.clear();
+  window.location.hash = '#project=p&section=analysis';
   api.plans.mockResolvedValue([plan]);
 });
 afterEach(cleanup);
@@ -82,6 +84,9 @@ it('requires explicit review, then a separate execution action', async () => {
     name: 'Aprobar esta propuesta',
   });
   expect(approve).toBeDisabled();
+  expect(
+    screen.getByText(/no requiere dirección de contraste/),
+  ).toBeInTheDocument();
   expect(api.execute).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('checkbox'));
   const approved = { ...plan, status: 'approved' };
@@ -99,6 +104,131 @@ it('requires explicit review, then a separate execution action', async () => {
   expect(
     await screen.findByRole('button', { name: 'Consultar resultado guardado' }),
   ).toBeInTheDocument();
+});
+it('opens the result belonging to the completed plan rather than the last analysis', async () => {
+  api.plans.mockResolvedValue([
+    { ...plan, status: 'approved', execution_status: 'completed' },
+  ]);
+  api.results.mockResolvedValue([
+    {
+      id: 'other',
+      analysis_plan_id: 'another',
+      status: 'completed',
+      validity: 'current',
+    },
+    {
+      id: 'correct',
+      analysis_plan_id: plan.id,
+      status: 'completed',
+      validity: 'current',
+    },
+  ]);
+  render(
+    <AnalysisProposals
+      projectId="p"
+      intent={intent}
+      diagnostics={[]}
+      dirty={false}
+      active
+    />,
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Consultar resultado guardado' }),
+  );
+  await waitFor(() => expect(window.location.hash).toContain('item=correct'));
+});
+it.each(['current', 'stale'])(
+  'opens the completed retry (%s) after a failed current attempt',
+  async (validity) => {
+    api.plans.mockResolvedValue([
+      { ...plan, status: 'approved', execution_status: 'completed' },
+    ]);
+    api.results.mockResolvedValue([
+      {
+        id: 'failed-attempt',
+        analysis_plan_id: plan.id,
+        status: 'failed',
+        validity: 'current',
+      },
+      {
+        id: 'foreign-success',
+        analysis_plan_id: 'another',
+        status: 'completed',
+        validity: 'current',
+      },
+      ...(validity === 'current'
+        ? [
+            {
+              id: 'historical-success',
+              analysis_plan_id: plan.id,
+              status: 'completed',
+              validity: 'stale',
+            },
+          ]
+        : []),
+      {
+        id: 'successful-retry',
+        analysis_plan_id: plan.id,
+        status: 'completed',
+        validity,
+      },
+    ]);
+    render(
+      <AnalysisProposals
+        projectId="p"
+        intent={intent}
+        diagnostics={[]}
+        dirty={false}
+        active
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Consultar resultado guardado',
+      }),
+    );
+    await waitFor(() =>
+      expect(window.location.hash).toContain('item=successful-retry'),
+    );
+    expect(api.execute).not.toHaveBeenCalled();
+  },
+);
+it('reports a missing completed output without opening a failed or foreign result', async () => {
+  api.plans.mockResolvedValue([
+    { ...plan, status: 'approved', execution_status: 'completed' },
+  ]);
+  api.results.mockResolvedValue([
+    {
+      id: 'failed',
+      analysis_plan_id: plan.id,
+      status: 'failed',
+      validity: 'current',
+    },
+    {
+      id: 'other',
+      analysis_plan_id: 'another',
+      status: 'completed',
+      validity: 'current',
+    },
+  ]);
+  render(
+    <AnalysisProposals
+      projectId="p"
+      intent={intent}
+      diagnostics={[]}
+      dirty={false}
+      active
+    />,
+  );
+  const previousHash = window.location.hash;
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Consultar resultado guardado' }),
+  );
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    /No se encontró la salida completada de esta propuesta/,
+  );
+  expect(window.location.hash).toBe(previousHash);
+  expect(api.execute).not.toHaveBeenCalled();
 });
 it('keeps clarification actionable and never exposes approval', async () => {
   api.plans.mockResolvedValue([

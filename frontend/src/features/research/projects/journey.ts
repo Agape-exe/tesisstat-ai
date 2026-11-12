@@ -269,6 +269,9 @@ export async function loadJourney(projectId: string): Promise<JourneyStep[]> {
 export function nextJourneyStep(steps: JourneyStep[]): JourneyStep | undefined {
   return (
     steps.find((s) => s.state === 'No verificable') ??
+    (steps[4]?.state === 'Completado' && steps[5]?.state === 'En progreso'
+      ? steps[5]
+      : undefined) ??
     (steps[0]?.state === 'Pendiente' ? steps[0] : undefined) ??
     steps.slice(1).find((s) => s.state !== 'Completado') ??
     steps[0]

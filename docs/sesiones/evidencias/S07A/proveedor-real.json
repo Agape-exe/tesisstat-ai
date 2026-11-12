@@ -1,0 +1,142 @@
+{
+  "provider": "Cloudflare, adaptador configurado de la aplicación",
+  "synthetic": true,
+  "result_id": "cfd2fb0b-a4b9-4849-ba8f-149729b04d9f",
+  "calls_attempted": 1,
+  "consent_scope": "tutor_context_v4",
+  "consent_revision": 1,
+  "no_automatic_retry": true,
+  "http_status": 200,
+  "response": "Concepto general · La media es un valor promedio de un conjunto de datos.\n\nConcepto general · Los casos utilizados son las observaciones incluidas en el análisis.\n\nParte de la consulta se omitió por privacidad; no se presupone su contenido.",
+  "trace": {
+    "tutor_version": "contextual-2.1.0",
+    "provider_kind": "cloudflare_workers_ai",
+    "consent_revision": 1,
+    "consent_scope": "tutor_context_v4",
+    "snapshot": "084a89482fa553f4dfce684243c38fc13835429a23cdcf6974da0e1e5825bd9c",
+    "stage": "results",
+    "sources": [
+      {
+        "kind": "project",
+        "id": "a9115507-c384-423d-9106-089a7950b86f",
+        "revision": 1,
+        "hash": "3377157024ab56611e9e9f392095f846670488c23f2e5225563c2f76187359a9"
+      },
+      {
+        "kind": "source_file",
+        "id": "5b4ea53c-fc57-4a57-a7a6-016d8f8e8a9d",
+        "revision": 1,
+        "hash": "034df13436b108d47dfced98a8a1697616119dd6cca18f98f7954882a5f4eb06"
+      },
+      {
+        "kind": "source_sheet",
+        "id": "192668be-8d47-4172-bf69-eaab153110d9",
+        "revision": 1,
+        "hash": "b82bb74e0a61708afd9a0dafed5b0b3b4f1c7635ff7b9b935a56cedd4dc77042"
+      },
+      {
+        "kind": "table",
+        "id": "bef5b89b-8d8a-44c7-a423-9914ba3c7e28",
+        "revision": 1,
+        "hash": "ef757b82d7a6c1d4c7cd151bb1ffa550f8a1371330f9cb17525b402117dbe3f5"
+      },
+      {
+        "kind": "dataset",
+        "id": "bef5b89b-8d8a-44c7-a423-9914ba3c7e28",
+        "revision": 1,
+        "hash": "ef757b82d7a6c1d4c7cd151bb1ffa550f8a1371330f9cb17525b402117dbe3f5"
+      },
+      {
+        "kind": "dictionary",
+        "id": "143a5a7d-2de0-5ffd-997e-426368f11f1d",
+        "revision": 1,
+        "hash": "2c7c9b82c0a058e0da256ec9187d4d96cc6a1df8e217eeb4229309d7b492fa4a"
+      },
+      {
+        "kind": "profile",
+        "id": "6b1c51ae-c164-5be5-8a11-194e2506e6a2",
+        "revision": 1,
+        "hash": "8564d095a5d8d660b8a346ae378774ab20afd00666dd66c68d939bba4f63522e"
+      },
+      {
+        "kind": "intent",
+        "id": "80d72034-5878-4f88-9f4f-05546fa656e5",
+        "revision": 1,
+        "hash": "ab9fb8c9870643b5e6d81222470697fc5a61c527c7bc08e2c066f691affe81f3"
+      },
+      {
+        "kind": "plan",
+        "id": "69c84ff2-fc0e-473c-b831-e6b786614992",
+        "revision": 1,
+        "hash": "4d5fafb79cf39c5421346fd21214e1748c1b5d744ca822b9a53a6880e68d88f9"
+      },
+      {
+        "kind": "result",
+        "id": "cfd2fb0b-a4b9-4849-ba8f-149729b04d9f",
+        "revision": 1,
+        "hash": "39b1fa0cd1f69593cf1abb56c6743527c53c6b61ce03df15c363fedbc55e4003"
+      }
+    ],
+    "historical_refs": [],
+    "result_ref": {
+      "kind": "result",
+      "id": "cfd2fb0b-a4b9-4849-ba8f-149729b04d9f",
+      "revision": 1,
+      "hash": "39b1fa0cd1f69593cf1abb56c6743527c53c6b61ce03df15c363fedbc55e4003"
+    },
+    "provider_calls": 1,
+    "privacy_policy": "ordered-lexical-projection-v2",
+    "metric_refs": [],
+    "actions": [
+      {
+        "kind": "open",
+        "resource_id": null,
+        "label": "Revisar contexto",
+        "destination": "context",
+        "scope": ""
+      },
+      {
+        "kind": "open",
+        "resource_id": null,
+        "label": "Cargar o revisar datos",
+        "destination": "datasets",
+        "scope": ""
+      },
+      {
+        "kind": "open",
+        "resource_id": null,
+        "label": "Revisar análisis",
+        "destination": "analysis",
+        "scope": ""
+      },
+      {
+        "kind": "open",
+        "resource_id": null,
+        "label": "Comprender resultados",
+        "destination": "results",
+        "scope": ""
+      },
+      {
+        "kind": "request_diagnostic",
+        "resource_id": "80d72034-5878-4f88-9f4f-05546fa656e5",
+        "label": "Revisar alcance y solicitar diagnósticos",
+        "destination": "analysis",
+        "scope": "Intención 80d72034-5878-4f88-9f4f-05546fa656e5, revisión 1; tabla bef5b89b-8d8a-44c7-a423-9914ba3c7e28. Elige las comprobaciones antes de calcular."
+      },
+      {
+        "kind": "request_proposal",
+        "resource_id": "80d72034-5878-4f88-9f4f-05546fa656e5",
+        "label": "Revisar alcance y solicitar propuesta",
+        "destination": "analysis",
+        "scope": "Intención 80d72034-5878-4f88-9f4f-05546fa656e5, revisión 1; tabla bef5b89b-8d8a-44c7-a423-9914ba3c7e28. Usa el selector C4–C5; no aprueba ni ejecuta."
+      }
+    ],
+    "metrics_omitted": 10,
+    "context_changed_during_response": false,
+    "finding_kinds": [],
+    "prose_source": "ai_concepts",
+    "evidence_policy": "structured-findings-v1",
+    "question_omitted": true
+  },
+  "revoked_after_check": true
+}
