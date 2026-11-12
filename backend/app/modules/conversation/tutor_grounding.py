@@ -32,16 +32,18 @@ def validate_general_prose(text, *, example=False):
         subject = (
             r"\b(?:mi|mis|tu|tus|su|sus|nuestr[oa]s?|est[ea]s?|el|la|los|las)\s+"
             r"(?:muestra|estudio|investigacion|analisis|datos|resultados|pacientes|"
-            r"participantes|sujetos|casos)\b"
+            r"participantes|sujetos|casos|tabla|tablas|columna|columnas|variables)\b"
         )
-        subject_match = re.search(subject, sentence)
-        if subject_match and re.search(
-            r"\b(?:tiene|tienen|hay|incluye|incluyen|contiene|contienen|participaron|"
-            r"fue|fueron|eran|mostro|muestra|presenta|presentan|demuestra|confirma|"
-            r"significativ[oa]s?|causalidad|causal|positiv[oa]|negativ[oa])\b",
-            sentence[subject_match.end() :],
-        ):
-            return False
+        for subject_match in re.finditer(subject, sentence):
+            if re.match(
+                r"\s+(?:(?:ya|tambien|solo|claramente|estadisticamente|son|es|estan|esta)\s+){0,3}"
+                r"(?:tiene|tienen|hay|incluye|incluyen|contiene|contienen|participaron|"
+                r"fue|fueron|eran|mostro|muestra|presenta|presentan|demuestra|confirma|"
+                r"significativ[oa]s?|causalidad|causal|positiv[oa]|negativ[oa]|"
+                r"numeric[oa]s?|normal(?:es)?|independientes?|paread[oa]s?)\b",
+                sentence[subject_match.end() :],
+            ):
+                return False
         if re.search(
             r"\b(?:el|la)\s+(?:correlacion|coeficiente|valor\s+p|diferencia|alfa)\s+"
             r"(?:es|fue|resulta|resulto)\s+(?:positiv[oa]|negativ[oa]|significativ[oa]|\d)",
@@ -58,6 +60,23 @@ def validate_general_prose(text, *, example=False):
         ):
             return False
     return True
+
+
+def prose_without_facts(text):
+    return re.sub(r"\{\{f\d+\}\}", "", text).strip()
+
+
+def render_contextual_prose(text, evidence):
+    """Validate prose BEFORE inserting server facts, never grant a whole paragraph a citation."""
+    by_key = {f.key: f for f in evidence}
+    keys = re.findall(r"\{\{(f\d+)\}\}", text)
+    plain = prose_without_facts(text)
+    if "{{" in plain or "}}" in plain or any(key not in by_key for key in keys):
+        raise AIError("invalid_response")
+    if not validate_general_prose(plain):
+        raise AIError("invalid_response")
+    rendered = re.sub(r"\{\{(f\d+)\}\}", lambda m: by_key[m[1]].text, text)
+    return rendered, list(dict.fromkeys(keys))
 
 
 def render_findings(findings, metric_map, result):

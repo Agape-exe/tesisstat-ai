@@ -1,5 +1,9 @@
 # Contratos y estrategia de evolución
 
+Estado vigente del tutor tras la aceptación de C02: [corrección C02B](sesiones/C02B.md).
+Los nuevos envíos usan consentimiento `tutor_context_v5`, resumen seguro de hechos con
+procedencia y respuesta `tutor-2.2`. Los apartados v4 posteriores se conservan como antecedentes.
+
 Normativo S00 (9 de noviembre de 2026), **diseño pendiente de implementación**.
 Alcance/aceptación: [acuerdo de sesiones](ALCANCE_Y_SESIONES.md).
 Identidad/durabilidad: [integración](INTEGRACION_PARALELA.md).

@@ -220,14 +220,19 @@ trabajo, muestra un resumen local identificado y permite **Describir estos datos
 **Guardar variables revisadas y preparar descriptivo** guarda perfil e intención de manera
 atómica. En Análisis solicita diagnósticos y propuesta, autoriza el cálculo local, aprueba
 y ejecuta mediante acciones separadas. Relaciones y comparaciones conservan sus aclaraciones.
-El envío v2 requiere Cloudflare configurado y permiso revocable `tutor_context_v4`; el permiso
-v3 anterior debe renovarse porque cambia lo transmitido. Se envían fragmentos filtrados y ordenados
-de la consulta, hasta cuatro mensajes del mismo contexto y campos narrativos confirmados pertinentes,
-además de estados y agregados bajo alias. Un vocabulario estadístico/gramatical conserva negaciones y
-seguimientos; lo desconocido se marca omitido. No se envían textos originales completos, nombres,
-identificadores, secretos, categorías libres, documentos ni filas. Los conceptos y ejemplos generales
-del proveedor se conservan sin exigir resultados. Los hallazgos solo usan operaciones estructuradas
-verificadas y cifras insertadas por el servidor; una referencia no valida prosa arbitraria.
+El envío v2 requiere Cloudflare configurado y permiso revocable `tutor_context_v5`; los permisos
+anteriores deben renovarse porque cambia lo transmitido. C02B sustituye el vocabulario permitido
+por supresión selectiva local: conserva redacción, vocabulario metodológico, negaciones y preguntas.
+Se envían la consulta depurada, hasta cuatro mensajes del mismo contexto, declaraciones confirmadas
+pertinentes y un resumen seguro de variables: encabezados, significados/escala confirmados, tipos
+detectados y recuentos agregados de calidad. No se adjuntan filas, documentos, categorías, archivos
+ni credenciales; los identificadores se excluyen. El detector local de patrones y posibles nombres
+no es universal: escribe consultas sin personas ni secretos. El alcance se explica antes de consentir.
+La orientación combina posibilidades condicionales, primer paso, razón y una aclaración concreta.
+Los hechos del servidor usan claves verificadas, con su procedencia; no se convierten detecciones
+en confirmaciones ni declaraciones en resultados. Los hallazgos siguen usando operaciones cerradas
+y cifras persistidas insertadas por el servidor; una referencia no valida prosa arbitraria.
+Consulta [la corrección y su aceptación](docs/sesiones/C02B.md).
 Sin proveedor siguen funcionando ayuda estática identificada, historial y formularios.
 Resultados permite figuras explícitas e informes TXT/DOCX/PDF, con formato compartido y doble
 revalidación de aprobación, autorización y vigencia. [Alcance y pruebas S06](docs/sesiones/S06.md).

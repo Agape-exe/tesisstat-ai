@@ -464,7 +464,7 @@ it('opens Asistente IA, preserves document state and restores the project after 
             consent: {
               revision: 0,
               granted: false,
-              consent_scope: 'tutor_context_v4',
+              consent_scope: 'tutor_context_v5',
             },
             static_help: 'Puedes comenzar sin documento ni hipótesis.',
             privacy: 'Solo agregados.',

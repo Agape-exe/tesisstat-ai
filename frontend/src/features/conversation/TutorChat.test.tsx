@@ -7,7 +7,7 @@ import { createConversationApi } from './api';
 function fixture(configured = false) {
   const status: TutorStatus = {
     provider_configured: configured,
-    consent: { revision: 0, granted: false, consent_scope: 'tutor_context_v4' },
+    consent: { revision: 0, granted: false, consent_scope: 'tutor_context_v5' },
     static_help: 'Puedes comenzar sin documento ni hipótesis.',
     privacy: 'Solo agregados pertinentes.',
     max_message_characters: 2000,
@@ -20,6 +20,7 @@ function fixture(configured = false) {
       confirmed_summary: {},
       pending_questions: ['Selecciona un resultado concreto.'],
       data_summary: [],
+      evidence: [],
       intent_summary: {},
       current_plan_ref: null,
       current_result_ref: null,
@@ -51,7 +52,7 @@ function fixture(configured = false) {
     consent: vi.fn().mockResolvedValue({
       revision: 1,
       granted: true,
-      consent_scope: 'tutor_context_v4',
+      consent_scope: 'tutor_context_v5',
     }),
     send: vi.fn().mockResolvedValue({
       messages: [
@@ -90,7 +91,7 @@ describe('Tutor contextual C7', () => {
     status.consent = {
       revision: 1,
       granted: false,
-      consent_scope: 'tutor_context_v4',
+      consent_scope: 'tutor_context_v5',
       renewal_required: true,
     };
     status.privacy =
@@ -129,7 +130,7 @@ describe('Tutor contextual C7', () => {
       screen.getByText('Tabla A e intención A; sin aprobar ni ejecutar.'),
     ).toBeInTheDocument();
   });
-  it('requires revocable v3 consent and preserves the selected result in the message', async () => {
+  it('requires revocable v5 consent and preserves the selected result in the message', async () => {
     const { api, historyApi } = fixture(true);
     render(
       <TutorChat
@@ -163,7 +164,7 @@ describe('Tutor contextual C7', () => {
         content: 'sí, hazlo',
         stage: 'results',
         result_id: 'r',
-        consent_scope: 'tutor_context_v4',
+        consent_scope: 'tutor_context_v5',
         consent_revision: 1,
       }),
     );
@@ -171,6 +172,65 @@ describe('Tutor contextual C7', () => {
     await waitFor(() =>
       expect(api.consent).toHaveBeenLastCalledWith('p', 1, false),
     );
+  });
+  it('presents contextual advice as continuous prose and keeps evidence details collapsed', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const prose =
+      'Primero revisaría el significado de las medidas. Esto permite elegir un resumen útil. ¿Qué representa cada fila?';
+    status.consent = {
+      revision: 1,
+      granted: true,
+      consent_scope: 'tutor_context_v5',
+    };
+    api.send.mockResolvedValueOnce({
+      messages: [
+        {
+          id: 'm',
+          role: 'assistant',
+          sequence: 2,
+          content: prose,
+          context: {
+            snapshot: 'a'.repeat(64),
+            stage: 'data',
+            prose_source: 'ai_guidance',
+            sources: [],
+            historical_refs: [],
+            metric_refs: [],
+            actions: [],
+            evidence_refs: [
+              {
+                key: 'f0',
+                kind: 'detected',
+                text: 'Formato numérico detectado.',
+                source_ref: {
+                  kind: 'dataset',
+                  id: 'fuente-interna',
+                  revision: 1,
+                  hash: 'b'.repeat(64),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+    render(<TutorChat projectId="p" api={api} historyApi={historyApi} />);
+    await screen.findByLabelText(/Autorizo el envío/);
+    fireEvent.change(screen.getByLabelText('Tu consulta'), {
+      target: { value: 'No sé por dónde empezar' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar consulta' }));
+    expect(await screen.findByText(prose)).toBeInTheDocument();
+    expect(
+      screen.getByText('Orientación de IA · revisa antes de avanzar'),
+    ).toBeInTheDocument();
+    const details = screen
+      .getByText('Referencias de este mensaje')
+      .closest('details');
+    expect(details).not.toHaveAttribute('open');
+    expect(details).toHaveTextContent('fuente-interna');
+    fireEvent.click(screen.getByText('Referencias de este mensaje'));
+    expect(screen.queryByText(/Concepto general ·/)).not.toBeInTheDocument();
   });
   it('clears incompatible selections and reconstructs context without provider calls', async () => {
     const { api, historyApi } = fixture();
@@ -231,7 +291,7 @@ it('binds the tutor to the visible table and blocks a stale selection while load
   status.consent = {
     revision: 1,
     granted: true,
-    consent_scope: 'tutor_context_v4',
+    consent_scope: 'tutor_context_v5',
   };
   const view = render(
     <TutorChat

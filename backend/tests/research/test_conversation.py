@@ -481,7 +481,7 @@ def test_tutor_structured_chat_uses_closed_schema_and_same_bounded_transport(mon
                 {
                     "result": {
                         "response": {
-                            "response_version": "tutor-2.1",
+                            "response_version": "tutor-2.2",
                             "concepts": ["La mediana es el valor central."],
                         }
                     }

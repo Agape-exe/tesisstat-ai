@@ -37,6 +37,15 @@ class TutorActionV2(V2Model):
     scope: Annotated[str, Field(max_length=600)] = ""
 
 
+class TutorEvidenceV2(V2Model):
+    key: Annotated[StrictStr, Field(pattern=r"^f[0-9]{1,3}$")]
+    kind: Literal["detected", "confirmed", "calculated"]
+    text: Annotated[StrictStr, Field(min_length=1, max_length=4000)]
+    source_ref: SourceRef
+    variable: Annotated[StrictStr, Field(max_length=30)] | None = None
+    context_field: Annotated[StrictStr, Field(max_length=200)] | None = None
+
+
 class TutorContextV2(V2Model):
     schema_version: Literal["2.0.0"] = "2.0.0"
     project_id: ID
@@ -52,6 +61,7 @@ class TutorContextV2(V2Model):
     historical_refs: list[SourceRef]
     allowed_actions: list[TutorActionV2]
     warnings: list[str]
+    evidence: list[TutorEvidenceV2] = Field(default_factory=list, max_length=100)
 
 
 class MessageDraftV2(TutorSelectionV2):
@@ -59,14 +69,14 @@ class MessageDraftV2(TutorSelectionV2):
     content: Annotated[StrictStr, Field(min_length=1, max_length=16000)]
     request_id: UUID
     external_ai_consent: Literal[True]
-    consent_scope: Literal["tutor_context_v4"]
+    consent_scope: Literal["tutor_context_v5"]
     consent_revision: Annotated[int, Field(strict=True, ge=1)]
 
 
 class TutorConsentV2(V2Model):
     expected_revision: Annotated[int, Field(strict=True, ge=0)]
     granted: StrictBool
-    consent_scope: Literal["tutor_context_v4"]
+    consent_scope: Literal["tutor_context_v5"]
 
 
 class GuidedVariableV2(V2Model):
@@ -93,8 +103,52 @@ class TutorFindingV2(V2Model):
     metric_key: Annotated[StrictStr, Field(pattern=r"^m[0-9]{1,3}$")] | None = None
 
 
+class TutorOrientationV2(V2Model):
+    possibilities: Annotated[
+        StrictStr,
+        Field(
+            min_length=60,
+            max_length=800,
+            description="Una explicación en oraciones completas, citando las medidas pertinentes "
+            "y condiciones para describir, relacionar o comparar. No una lista de verbos; "
+            "sin elegir prueba ni afirmar resultados.",
+        ),
+    ]
+    first_step: Annotated[
+        StrictStr,
+        Field(
+            min_length=10,
+            max_length=1000,
+            description="Consejo concreto en primera persona; sin propiedades observadas.",
+        ),
+    ]
+    reason: Annotated[
+        StrictStr,
+        Field(
+            min_length=10,
+            max_length=1000,
+            description="Por qué sirve ese paso. No repitas hechos: se insertan desde basis_keys.",
+        ),
+    ]
+    clarification: Annotated[
+        StrictStr,
+        Field(
+            min_length=10,
+            max_length=600,
+            pattern=r"^¿[^¿?]+\?$",
+            description="Una pregunta concreta para avanzar; sin pedir identificadores.",
+        ),
+    ]
+    basis_keys: list[Annotated[StrictStr, Field(pattern=r"^f[0-9]{1,3}$")]] = Field(
+        default_factory=list,
+        max_length=3,
+        description="Hechos pertinentes que el servidor intercalará: al menos uno si hay evidence.",
+    )
+
+
 class TutorAnswerV2(V2Model):
-    response_version: Literal["tutor-2.1"]
+    response_version: Literal["tutor-2.2"]
+    orientation: TutorOrientationV2 | None = None
     concepts: list[Annotated[StrictStr, Field(min_length=1, max_length=1800)]] = Field(
         default_factory=list, max_length=3
     )

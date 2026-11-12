@@ -117,7 +117,7 @@ def test_restore_complete_local_tree_in_another_directory(env, tmp_path):
     _, _, provider, cid = tutor(
         env,
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["La media resume valores cuantitativos."],
             "findings": [{"kind": "case_counts"}],
         },

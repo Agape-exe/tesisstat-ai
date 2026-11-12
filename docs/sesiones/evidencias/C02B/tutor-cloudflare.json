@@ -1,0 +1,57 @@
+{
+  "synthetic_only": true,
+  "consent_scope": "tutor_context_v5",
+  "query": "He cargado mis datos y no sé por dónde empezar. ¿Qué puedo analizar con esta tabla y qué me recomiendas hacer primero? Explica por qué y pregúntame lo necesario antes de preparar una propuesta.",
+  "provider_calls": 2,
+  "cases": [
+    {
+      "name": "sin-contexto",
+      "status": 200,
+      "answer": "Si las mediciones están relacionadas entre sí, podrías explorar cómo cambia la tensión_previa con la tensión_posterior. Si las filas representan grupos distintos, podrías comparar las tensiones entre ellos. Si solo necesitas describir la tabla, podrías resumir las características de cada columna.\n\nRevisa la columna «grupo» para entender qué representan las filas y cómo se organizan las mediciones.\n\nEl encabezado «tension_previa» corresponde a formato numérico detectado localmente; su formato no confirma significado ni escala. El encabezado «tension_posterior» corresponde a formato numérico detectado localmente; su formato no confirma significado ni escala. Comprender cómo se agrupan los datos te ayudará a decidir si debes relacionar variables dentro de cada grupo o comparar grupos entre sí.\n\n¿Qué significan los valores en la columna «grupo» y cómo se vinculan las mediciones dentro de cada fila?",
+      "orientation": {
+        "possibilities": "Si las mediciones están relacionadas entre sí, podrías explorar cómo cambia la tensión_previa con la tensión_posterior. Si las filas representan grupos distintos, podrías comparar las tensiones entre ellos. Si solo necesitas describir la tabla, podrías resumir las características de cada columna.",
+        "first_step": "Revisa la columna «grupo» para entender qué representan las filas y cómo se organizan las mediciones.",
+        "reason": "Comprender cómo se agrupan los datos te ayudará a decidir si debes relacionar variables dentro de cada grupo o comparar grupos entre sí.",
+        "clarification": "¿Qué significan los valores en la columna «grupo» y cómo se vinculan las mediciones dentro de cada fila?",
+        "basis_keys": [
+          "f2",
+          "f3"
+        ]
+      },
+      "question_preserved": true,
+      "contract_valid": true,
+      "useful_orientation": true,
+      "clarification_concrete": true,
+      "evidence_kinds": [
+        "detected"
+      ],
+      "no_mutations": true,
+      "retry_without_new_call": true
+    },
+    {
+      "name": "con-contexto",
+      "status": 200,
+      "answer": "Si las mediciones de tensión arterial previa y posterior están relacionadas con el mismo grupo de pacientes, podrías describir los cambios en cada grupo. Si los grupos son diferentes, podrías comparar las tendencias de cambio entre ellos. Si las mediciones se tomaron en momentos específicos, podrías analizar la evolución temporal de las lecturas.\n\nRevisa la columna «grupo» para entender cómo se organizan las mediciones de tensión arterial previa y posterior en la tabla.\n\nObjetivo que has confirmado: Evaluar el cambio de tensión arterial tras una intervención, sin afirmar causalidad a partir de la tabla. Para «tension_previa», has confirmado significado: Tensión arterial sistólica previa en mmHg; escala: ratio. Entender cómo están agrupados los datos te ayudará a decidir si debes describir, relacionar o comparar las mediciones de tensión arterial.\n\n¿Qué representa la columna «grupo» en tu tabla?",
+      "orientation": {
+        "possibilities": "Si las mediciones de tensión arterial previa y posterior están relacionadas con el mismo grupo de pacientes, podrías describir los cambios en cada grupo. Si los grupos son diferentes, podrías comparar las tendencias de cambio entre ellos. Si las mediciones se tomaron en momentos específicos, podrías analizar la evolución temporal de las lecturas.",
+        "first_step": "Revisa la columna «grupo» para entender cómo se organizan las mediciones de tensión arterial previa y posterior en la tabla.",
+        "reason": "Entender cómo están agrupados los datos te ayudará a decidir si debes describir, relacionar o comparar las mediciones de tensión arterial.",
+        "clarification": "¿Qué representa la columna «grupo» en tu tabla?",
+        "basis_keys": [
+          "f7",
+          "f3"
+        ]
+      },
+      "question_preserved": true,
+      "contract_valid": true,
+      "useful_orientation": true,
+      "clarification_concrete": true,
+      "evidence_kinds": [
+        "confirmed"
+      ],
+      "no_mutations": true,
+      "retry_without_new_call": true
+    }
+  ],
+  "complete": true
+}
