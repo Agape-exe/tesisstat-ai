@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, ConfigDict, Field, StrictStr, model_validator
+from pydantic import AwareDatetime, ConfigDict, Field, StrictStr, model_serializer, model_validator
 
 from app.shared.analysis_v2 import ID, Confirmation, Fact, Hash, Revision, Text, V2Model
 
@@ -14,7 +14,7 @@ Count = Annotated[int, Field(strict=True, ge=0)]
 class ExtractionV2(V2Model):
     header_row: Annotated[int, Field(strict=True, ge=1)]
     range: Annotated[str, Field(pattern=r"^[A-Z]+[1-9][0-9]*:[A-Z]+[1-9][0-9]*$")]
-    algorithm_version: Literal["tabular-v1"] = "tabular-v1"
+    algorithm_version: Literal["tabular-v1", "tabular-v2"] = "tabular-v1"
     confirmation: Confirmation | None = None
 
 
@@ -22,6 +22,37 @@ class TableColumnV2(V2Model):
     id: ID
     name: Name
     position: Count
+    source_column: Annotated[str, Field(pattern=r"^[A-Z]+$")] | None = None
+    formula_count: Count = 0
+    formula_error_count: Count = 0
+
+    @model_serializer(mode="wrap")
+    def compatible_payload(self, handler):
+        # Keep hashes/tokens of persisted pre-C01 dictionaries and snapshots exact.
+        payload = handler(self)
+        for key in ("source_column", "formula_count", "formula_error_count"):
+            if payload.get(key) in (None, 0):
+                payload.pop(key, None)
+        return payload
+
+
+class FormulaValueV2(V2Model):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    coordinate: str
+    formula: str
+    value: StrictStr | None
+    status: Literal["calculated", "error"]
+    error: str | None
+    dependencies: list[str]
+
+
+class FormulaAuditV2(V2Model):
+    engine_version: Literal["excel-subset-1"]
+    cache_policy: Literal["ignored"] = "ignored"
+    formulas: list[FormulaValueV2]
+    cell_types: list[
+        list[Literal["blank", "text", "number", "boolean", "date", "formula", "error"]]
+    ]
 
 
 class ImportedTableV2(V2Model):
@@ -40,6 +71,8 @@ class ImportedTableV2(V2Model):
     column_count: Annotated[int, Field(strict=True, ge=1)]
     columns: list[TableColumnV2]
     warnings: list[str] = Field(default_factory=list)
+    omitted_columns: list[str] = Field(default_factory=list)
+    calculation_version: str | None = None
 
     @model_validator(mode="after")
     def columns_match(self):
@@ -83,6 +116,7 @@ class SourceFileV2(V2Model):
     updated_at: AwareDatetime
     state: Literal["complete", "needs_clarification"]
     sheets: list[SourceSheetV2]
+    reimported_from: ID | None = None
 
     @model_validator(mode="after")
     def parents(self):
@@ -98,6 +132,7 @@ class TablePreviewV2(V2Model):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False, str_strip_whitespace=False)
     table: ImportedTableV2
     rows: list[list[StrictStr | None]]
+    formula_cells: list[FormulaValueV2] = Field(default_factory=list)
 
 
 class TableContextV2(V2Model):
@@ -124,6 +159,7 @@ class TableContextV2(V2Model):
 
 
 DATA_SOURCE_MODELS = (
+    FormulaAuditV2,
     SourceFileV2,
     SourceSheetV2,
     ImportedTableV2,

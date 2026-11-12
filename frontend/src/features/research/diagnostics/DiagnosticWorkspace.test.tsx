@@ -101,6 +101,30 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+it('marks columns with unresolved formulas as unavailable for analysis', async () => {
+  mock.tables.mockResolvedValue([
+    {
+      ...table,
+      columns: table.columns.map((c) => ({
+        ...c,
+        formula_error_count: c.id === 'a' ? 2 : 0,
+      })),
+    },
+  ]);
+  render(<DiagnosticWorkspace projectId="p" />);
+  await screen.findByRole('option', { name: /Mediciones de plantas/ });
+  fireEvent.change(screen.getByLabelText('Análisis guardado'), {
+    target: { value: 'i' },
+  });
+  const invalid = await screen.findByRole('checkbox', {
+    name: /Altura inicial.*No está lista/,
+  });
+  expect(invalid).toBeDisabled();
+  expect(
+    screen.getByRole('checkbox', { name: /Altura final.*escala/ }),
+  ).toBeEnabled();
+});
+
 it('allows an incomplete draft without a document or hypothesis', async () => {
   mock.save.mockResolvedValue({
     ...intent('Borrador ventas'),

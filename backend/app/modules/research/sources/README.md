@@ -29,8 +29,11 @@ por servidor. Se rechazan IDs de columna ajenos, campos extra y fechas/actor del
 No hay objetivos/hipótesis duplicados ni relaciones ejecutables. La UI compara 409 y permite
 conservar su borrador sobre la revisión actual sin sobrescribir campos no editados.
 
-La detección `tabular-v1` exige encabezados únicos, textuales, no vacíos y un bloque continuo
-con datos. Encabezados numéricos, celdas combinadas, una única columna, bloques separados, encabezados repetidos,
+La detección XLSX `tabular-v2` exige encabezados únicos, textuales y no vacíos para columnas
+con información. Omite columnas completamente vacías dentro del rango y publica sus letras;
+conserva datos a ambos lados y coordenadas originales por columna. Una columna con datos
+sin encabezado pide aclaración y corrección del original; nunca se descarta silenciosamente.
+Encabezados numéricos, celdas combinadas, una única columna, bloques separados por filas, encabezados repetidos,
 títulos previos y hojas llamadas instrucciones/resumen piden aclaración. Una tabla de una
 columna se admite mediante rango explícito. No se interpreta cualquier diseño libre.
 El libro no exige selección hoja por hoja: las claras entran por defecto, incluidas ocultas.
@@ -44,8 +47,8 @@ completas y filas con anchura constante; faltante CSV se conserva como `""`, XLS
 Valores se representan como texto/null, sin imputación, inferencia de escala o conversión
 de códigos. Texto `0001` conserva ceros; formatos visuales de celdas numéricas no se convierten
 en texto con ceros. Fechas disponibles usan ISO; se conservan cadenas y booleanos como texto.
-Fórmulas XLSX se conservan como fuente textual, con advertencia; no se ejecutan ni se usan
-resultados en caché. Encabezados con fórmulas requieren corrección/rango válido.
+Fórmulas XLSX nuevas se conservan con su cálculo acotado y procedencia, sin caché (C01).
+Encabezados con fórmulas requieren corrección/rango válido. CSV y XLSX v1 conservan su lector.
 
 Límites por archivo: 10 MiB, 50 MiB descomprimidos, 1000 entradas ZIP; sin macros/cifrado.
 Por hoja/tabla: 50 000 filas de datos y 200 columnas. Por libro: 30 hojas, 150 000 filas
@@ -120,3 +123,54 @@ v1. Expone DatasetRefV2 table_json, diccionario, perfil completo y preparación 
 incluida combinación exacta uno a uno. Conserva las rutas/metadatos/originales anteriores;
 `WorkspaceService.read_table` amplía el puerto de lectura a derivados y valida todos los
 padres. La creación de derivados no escribe objetos sobre las fuentes S03A.
+
+
+## C01: cálculo local y reimportación
+
+`excel-subset-1` interpreta tokens con gramática cerrada y resultados IEEE-754 finitos.
+No usa eval/exec, IA, Excel, LibreOffice, caché ni carga de complementos. Soporta números
+literales, signos unarios, + - * /, paréntesis, A1/$A$1 y rangos rectangulares; referencias
+a otras hojas del mismo libro (nombres entre comillas y apóstrofos escapados incluidos).
+Funciones XLSX en inglés: AVERAGE, SUM, MIN, MAX y COUNT sobre números/referencias/rangos.
+En rangos se ignoran texto, booleanos y blancos para agregados, sin modificar los datos.
+AVERAGE/MIN/MAX/SUM sin números dan NO_NUMBERS (decisión conservadora; SUM vacío no se
+convierte en cero); COUNT devuelve su recuento real. Aritmética sobre blancos o texto
+produce VALUE; no se coacciona un faltante a cero ni texto numérico a cantidad. Fechas
+referenciadas no se calculan en este subconjunto. No hay redondeo visual de Excel.
+
+Referencias estructuradas: NombreTabla[[#This Row],[columna]] y rangos
+NombreTabla[[#This Row],[primera]:[última]]. Las tablas deben tener encabezado y no fila
+de totales. Se resuelve por fila física actual dentro del cuerpo de la tabla referida,
+incluso en otra hoja, tal como expresa #This Row; esto no demuestra que sean los mismos
+sujetos ni une por nombres/IDs. No se presupone orden de estudiantes para análisis pareado.
+El cálculo utiliza el original completo, incluidas las hojas pendientes o excluidas de la
+vista de tablas; no depende de recortes de importación. Cambiar la selección de hojas
+conserva el cálculo inmutable e invalida evidencia según la revisión de archivo existente.
+Nombres y columnas se resuelven sin distinguir mayúsculas; caracteres de escape especiales
+en encabezados estructurados, otras formas abreviadas @, nombres definidos, matrices,
+3D, fechas, potencias, funciones volátiles y el resto de Excel quedan no soportados.
+
+Errores: UNSUPPORTED, REFERENCE, VALUE, SOURCE_ERROR, DIV_ZERO, CYCLE, NON_FINITE,
+NO_NUMBERS y LIMIT. Las dependencias propagan errores; jamás se usa un valor previo,
+caché o cero para ocultarlos. Marcadores #C01! y advertencias muestran el estado. La
+propuesta queda needs_clarification y no se puede aprobar/ejecutar. No se ofrecen esos
+errores como categorías. Corrige el original y carga el libro completo nuevamente.
+
+Cotas: 8192 caracteres/fórmula, 1024 tokens, 64 niveles entre celdas, 10000 celdas/rango,
+un millón de visitas por libro; más los límites globales existentes. Los excesos quedan
+explícitos como LIMIT (sin resultado fiable); el exceso de bytes de materialización
+rechaza la publicación completa. No se siguen relaciones externas: solo miembros
+xl/tables/ del ZIP para metadatos internos. No se habilitan macros, conexiones o red.
+
+`calculation` forma parte del contenido inmutable verificado por SHA256. GET
+/tables/{id}/calculation da toda la auditoría local; preview muestra solo sus fórmulas
+visibles. Cada expresión, resultado, código de error, dependencias y tipo original quedan
+ligados a libro/hoja/coordenada/versión. El perfil cuenta las fórmulas calculadas y usa
+sus mismos valores. Derivados mantienen linaje a las fuentes sin editar su auditoría.
+
+POST /files/{id}/reimport y el botón Reimportar original con cálculo actual crean una
+importación nueva desde los bytes originales guardados. No corrigen un original con
+fórmulas no soportadas: en tal caso edítalo externamente y vuelve a cargarlo. Nuevos IDs,
+variables por revisar y reimported_from explícito; no reemplazan tablas ni análisis,
+ni copian contexto/confirmaciones sin revisión. Los históricos mantienen su política;
+abrirlos o reiniciar la API nunca vuelve a evaluar fórmulas.

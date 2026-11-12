@@ -102,7 +102,9 @@ class TableProfileV2(V2Model):
     method: Literal["complete-table-descriptive"] = "complete-table-descriptive"
     engine_version: str
     missing_policy: dict[str, list[str]]
-    formula_policy: Literal["text-no-evaluation"] = "text-no-evaluation"
+    formula_policy: Literal["text-no-evaluation", "calculated-subset-cache-ignored"] = (
+        "text-no-evaluation"
+    )
     created_at: AwareDatetime
     state: Literal["current", "stale"] = "current"
     rows: Count

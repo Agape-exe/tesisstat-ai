@@ -18,6 +18,7 @@ from app.modules.research.eda.analyzer import (
 )
 from app.modules.research.preparation.engine import InvalidPlan, _missing, transform_rows
 from app.modules.research.preparation.models import Operation, Plan
+from app.modules.research.sources.formulas import ERROR_PREFIX
 from app.modules.research.sources.repository import missing as not_found
 from app.shared.analysis_v2 import Confirmation, Fact, Provenance, SourceRef, canonical_hash
 from app.shared.data_sources_v2 import TableColumnV2
@@ -359,6 +360,9 @@ class WorkspaceService:
                 project_id, table_id, request.dataset_revision, request.dataset_hash
             )
             dictionary = self.dictionary(project_id, table_id, dataset)
+            calculated_source = dataset.kind == "imported" and bool(
+                self.sources.table(project_id, table_id).calculation_version
+            )
             by_column = {c: v for v in dictionary.variables for c in v.column_ids}
             policies = {
                 i: ProfilePolicy(
@@ -372,7 +376,8 @@ class WorkspaceService:
             formulas = {
                 i
                 for i in range(len(dataset.columns))
-                if any(r[i] and r[i].lstrip().startswith("=") for r in rows)
+                if not calculated_source
+                and any(r[i] and r[i].lstrip().startswith("=") for r in rows)
             }
             analyzer = ExploratoryAnalyzer()
             raw = analyzer.analyze_rows(
@@ -392,6 +397,12 @@ class WorkspaceService:
                 values = [r[i] for r in rows if not missing(r[i], policies.get(i, analyzer.policy))]
                 frequencies = Counter(values)
                 warnings = [w["message"] for w in item["warnings"]]
+                errors = sum(bool(r[i] and r[i].startswith(ERROR_PREFIX)) for r in rows)
+                if errors:
+                    warnings.append(
+                        f"{errors} celdas con errores de Excel o fórmulas sin valor fiable. "
+                        "Esta columna no está lista para analizar; corrige el original y reimporta."
+                    )
                 numeric_summary = None
                 quantitative = (
                     variable
@@ -434,9 +445,9 @@ class WorkspaceService:
                         distinct=item["distinct"],
                         constant=item["constant"],
                         possible_identifier=item["possible_identifier"],
-                        formula_count=sum(
-                            bool(r[i] and r[i].lstrip().startswith("=")) for r in rows
-                        ),
+                        formula_count=column.formula_count
+                        if calculated_source
+                        else sum(bool(r[i] and r[i].lstrip().startswith("=")) for r in rows),
                         frequencies=[
                             FrequencyV2(
                                 value=value, count=count, percentage=100 * count / len(values)
@@ -461,6 +472,9 @@ class WorkspaceService:
                 source_refs=dataset.source_refs,
                 configuration_hash=self.configuration(dataset, dictionary),
                 engine_version=f"{VERSION}/{analyzer.version}",
+                formula_policy="calculated-subset-cache-ignored"
+                if calculated_source
+                else "text-no-evaluation",
                 missing_policy={
                     c.id: by_column[c.id].missing_markers if c.id in by_column else MARKERS
                     for c in dataset.columns
@@ -475,8 +489,9 @@ class WorkspaceService:
                 columns=columns,
                 warnings=[
                     "Las advertencias no modifican datos. Un duplicado puede ser legítimo.",
-                    "Fórmulas conservadas como texto; no se evalúan. No se realizan "
-                    "pruebas inferenciales.",
+                    "Las fórmulas nuevas usan cálculo acotado sin caché; las importaciones "
+                    "históricas conservan su política. Los errores requieren corregir y reimportar."
+                    " No se realizan pruebas inferenciales.",
                 ],
             )
             result.hash = canonical_hash(result)
@@ -790,7 +805,14 @@ class WorkspaceService:
                 fail("Resuelve las claves duplicadas antes de combinar.", "source_stale", 409)
             now, table_id = datetime.now(UTC), str(uuid4())
             columns = [
-                TableColumnV2(id=str(uuid4()), name=name, position=i)
+                TableColumnV2(
+                    id=str(uuid4()),
+                    name=name,
+                    position=i,
+                    formula_error_count=sum(
+                        bool(r[i] and r[i].startswith(ERROR_PREFIX)) for r in result["rows"]
+                    ),
+                )
                 for i, name in enumerate(result["names"])
             ]
             lineage = [

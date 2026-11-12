@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from app.modules.research.context.repository import ContextError
 from app.modules.research.data_workspace.service import fail, ref
+from app.modules.research.sources.formulas import ERROR_PREFIX
 from app.modules.research.sources.repository import missing
 from app.modules.statistics.diagnostics import ENGINE, VERSION, evaluate
 from app.shared.analysis_v2 import SourceRef, canonical_hash
@@ -45,6 +46,17 @@ class DiagnosticService:
         ):
             fail("Cambió el vínculo de las variables; revisa la intención.", "source_stale", 409)
         selected_columns = {c for v in selected.values() for c in v.column_ids}
+        for column in dataset.columns:
+            if column.id in selected_columns and any(
+                row[column.position] and row[column.position].startswith(ERROR_PREFIX)
+                for row in rows
+            ):
+                fail(
+                    f"La columna {column.name} contiene errores de Excel "
+                    "o fórmulas sin valor fiable. "
+                    "Corrige el original y reimporta; no puede analizarse ni excluir esos errores "
+                    "como faltantes."
+                )
         required = {intent.group_column_id} if intent.group_column_id else set()
         if intent.paired_columns:
             required.update(

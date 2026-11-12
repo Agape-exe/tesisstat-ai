@@ -6,6 +6,7 @@ from app.modules.research.sources.models import SheetPatch, TableContextPatch
 from app.modules.research.sources.readers import limit
 from app.modules.research.sources.service import SourceService
 from app.shared.data_sources_v2 import (
+    FormulaAuditV2,
     ImportedTableV2,
     SourceFileV2,
     TableContextV2,
@@ -39,6 +40,10 @@ def create_router(service: SourceService):
             headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(source.name)}"},
         )
 
+    @router.post("/files/{file_id}/reimport", response_model=SourceFileV2, status_code=201)
+    def reimport(project_id: str, file_id: str):
+        return service.reimport(project_id, file_id)
+
     @router.patch("/files/{file_id}/sheets/{sheet_id}", response_model=SourceFileV2)
     def sheet(project_id: str, file_id: str, sheet_id: str, body: SheetPatch):
         return service.change_sheet(project_id, file_id, sheet_id, body)
@@ -58,6 +63,10 @@ def create_router(service: SourceService):
     @router.get("/tables/{table_id}/preview", response_model=TablePreviewV2)
     def preview(project_id: str, table_id: str):
         return service.preview(project_id, table_id)
+
+    @router.get("/tables/{table_id}/calculation", response_model=FormulaAuditV2 | None)
+    def calculation(project_id: str, table_id: str):
+        return service.calculation(project_id, table_id)
 
     @router.get("/tables/{table_id}/context", response_model=TableContextV2)
     def context(project_id: str, table_id: str):

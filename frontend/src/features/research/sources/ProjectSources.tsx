@@ -114,6 +114,23 @@ export function ProjectSources({
       contexts: resource.data?.contexts ?? [],
     });
   }
+  async function reimport(file: SourceFile) {
+    setBusy(true);
+    setError('');
+    try {
+      await api.reimport(projectId, file.id);
+      setNotice(
+        'Nueva importación creada. Se conservan las tablas y resultados anteriores. Revisa las variables nuevas y selecciónalas al crear otro análisis.',
+      );
+      resource.reload();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'No se pudo reimportar.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <section
       className="rp-documents source-workspace"
@@ -161,9 +178,10 @@ export function ProjectSources({
           </p>
           <p>
             Conservamos los originales. No rellenamos faltantes con cero ni
-            convertimos códigos en cantidades. Las fórmulas se guardan como
-            texto, sin calcular ni usar resultados en caché. Los archivos y
-            filas permanecen en este servidor local.
+            convertimos códigos en cantidades. Las fórmulas compatibles se
+            recalculan localmente sin caché; conservamos su expresión y
+            procedencia. Las no compatibles y los errores se señalan para
+            revisión. Los archivos y filas permanecen en este servidor local.
           </p>
         </details>
       </div>
@@ -231,6 +249,23 @@ export function ProjectSources({
                   Descargar original
                 </a>
               </div>
+              <p>
+                Para actualizar una importación anterior, puedes reprocesar el
+                original guardado. Se crearán tablas nuevas, con variables por
+                revisar; los análisis anteriores se conservan.
+              </p>
+              <button
+                className="rp-secondary"
+                disabled={busy}
+                onClick={() => void reimport(file)}
+              >
+                Reimportar original con cálculo actual
+              </button>
+              {file.reimported_from && (
+                <p className="rp-hint">
+                  Reimportación explícita de un original anterior.
+                </p>
+              )}
               <ul className="source-sheet-list">
                 {file.sheets
                   .filter(
@@ -498,6 +533,7 @@ function TablePanel({
                     {data.preview.table.columns.map((c) => (
                       <th key={c.id} scope="col">
                         {c.name}
+                        {c.source_column ? ` (${c.source_column})` : ''}
                       </th>
                     ))}
                   </tr>
@@ -539,7 +575,39 @@ function TablePanel({
               <p className="source-hash">
                 Contenido: {data.preview.table.content_hash}
               </p>
+              {data.preview.table.calculation_version && (
+                <>
+                  <p>
+                    Cálculo: {data.preview.table.calculation_version}. Caché
+                    ignorada. Los valores calculados se utilizan también en el
+                    perfil, diagnósticos y análisis.
+                  </p>
+                  <a
+                    href={api.calculationUrl(projectId, tableId)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Consultar trazabilidad completa de fórmulas (JSON local)
+                  </a>
+                </>
+              )}
             </details>
+            {!!data.preview.formula_cells?.length && (
+              <details>
+                <summary>Revisar fórmulas de la vista previa</summary>
+                <ul>
+                  {data.preview.formula_cells.map((f) => (
+                    <li key={f.coordinate}>
+                      <strong>{f.coordinate}</strong>: <code>{f.formula}</code>{' '}
+                      →{' '}
+                      {f.status === 'calculated'
+                        ? f.value
+                        : `Sin valor fiable: ${f.error}`}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
             <TableContextEditor
               initial={data.context}
               table={data.preview.table as Table}

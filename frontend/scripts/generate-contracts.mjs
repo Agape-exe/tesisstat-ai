@@ -60,6 +60,7 @@ for (const name of [
   'ImportedTableV2',
   'TableContextV2',
   'TablePreviewV2',
+  'FormulaAuditV2',
   'DatasetRefV2',
   'VariableDictionaryV2',
   'TableProfileV2',

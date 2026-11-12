@@ -83,7 +83,10 @@ No hay lectura heurística de v2 por consumidores v1 ni reutilización de aproba
 `SourceFileV2` agrupa `SourceSheetV2`; cada hoja lista apunta a `ImportedTableV2`, con
 original_hash, extracción, columnas UUID y content_hash independiente de `TableContextV2`.
 `TablePreviewV2` contiene una ventana de esa misma extracción; no materializa otra tabla.
-Las fórmulas son texto, los faltantes se conservan y ninguna fila llega al proveedor IA.
+Desde C01 las nuevas importaciones XLSX calculan el subconjunto `excel-subset-1`, ignoran
+la caché y conservan fórmula/procedencia/errores. Los históricos mantienen su política;
+los faltantes se conservan y ninguna fila llega al proveedor IA. Véase
+[el contrato de cálculo](../../backend/app/modules/research/sources/README.md#c01-cálculo-local-y-reimportación).
 
 `python -m scripts.export_source_examples` regenera los cinco ejemplos C3 y el CSV real
 enlazado; tests verifican modelos/esquemas y hashes/conteos/referencias con sus bytes.

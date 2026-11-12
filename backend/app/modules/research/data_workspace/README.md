@@ -24,11 +24,15 @@ CSV/XLSX descargable. Original y extracción S03A se conservan con sus contratos
 `WorkspaceService.read_table(project_id,table_id,expected_revision?,expected_hash?)`
 implementa `TableReadPort`: devuelve `(DatasetRefV2,todas_las_filas)`; valida proyecto,
 bytes/hash, revisión/hash esperados, inclusión y vigencia de todos los antecesores.
-No usa el preview, no activa el dataset v1 y no convierte texto/códigos/fórmulas.
+No usa el preview ni activa el dataset v1. Consume los valores ya materializados:
+desde C01 las fórmulas XLSX compatibles llegan calculadas, con auditoría en la fuente;
+texto, códigos, faltantes y errores se conservan. No recalcula fórmulas al leer.
 Los derivados pueden ser fuentes de otras preparaciones/combinaciones.
 
 `table-json-v1` sigue siendo SHA-256 del JSON UTF-8 compacto con claves, en este orden,
-`columns` y `rows`, Unicode sin escape y celdas `string|null`. Es compatible con S03A.
+`columns` y `rows`, Unicode sin escape y celdas `string|null`. C01 añade `calculation`
+al JSON de importadas XLSX; su auditoría también queda cubierta por el hash. Los derivados
+conservan el JSON de columnas/filas y el linaje al original; los bytes históricos no cambian.
 `SourceRef(kind=dataset)` apunta al hash de contenido de esa tabla; para estos recursos no
 es `research-dataset-v1`. Referencias de metadatos/diccionario/perfil usan `json-sort-v1`;
 la nueva referencia `preparation` usa el hash canónico de la receta inmutable, sin ciclos.
@@ -108,7 +112,8 @@ Preparación reutiliza `transform_rows` del motor v1 para renombrar/eliminar col
 la política común de faltantes; eliminación explícita de filas con faltantes/duplicados y
 reemplazo constante conservan correspondencia de filas. No hay catálogo nuevo ilimitado.
 La receta usa IDs de columnas, también tras renombrar; una columna eliminada no se reutiliza.
-Se preservan null, texto, espacios y fórmulas inertes porque el resultado es JSON, no CSV.
+Se preservan null, texto, espacios, fórmulas históricas inertes y valores C01 ya calculados
+con linaje al origen. El resultado es JSON; ninguna preparación evalúa texto como fórmula.
 
 Confirmar revalida fuentes, diccionarios, receta, versión, vencimiento y hash de resultado
 bajo bloqueo de escritura SQLite. Genera IDs propios, todas las fuentes, conteos, linaje

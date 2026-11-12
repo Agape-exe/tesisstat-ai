@@ -14,6 +14,12 @@ function mockApi() {
   let files = [source()];
   const api: SourcesApi = {
     files: vi.fn(async () => files),
+    reimport: vi.fn(async () => {
+      const next = { ...source(), id: 'new-file', reimported_from: 'file' };
+      files = [...files, next];
+      return next;
+    }),
+    calculationUrl: vi.fn(() => '/calculation'),
     contexts: vi.fn(async () => [context(1, 'Notas iniciales')]),
     upload: vi.fn(async (_, file) => {
       const next = { ...source(), id: file.name, name: file.name, sheets: [] };
@@ -105,6 +111,62 @@ it('uploads multiple and successive files while retaining existing files', async
   fireEvent.click(screen.getByRole('button', { name: 'Importar archivos' }));
   await screen.findByRole('article', { name: 'Archivo cuarto.csv' });
   expect(screen.getAllByRole('article')).toHaveLength(4);
+});
+
+it('explicitly reimports into a new source while retaining the original', async () => {
+  const api = mockApi();
+  render(<ProjectSources projectId="project" api={api} />);
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: 'Reimportar original con cálculo actual',
+    }),
+  );
+  expect(await screen.findByText(/Nueva importación creada/)).toBeVisible();
+  await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(2));
+  expect(api.reimport).toHaveBeenCalledExactlyOnceWith('project', 'file');
+  expect(api.upload).not.toHaveBeenCalled();
+});
+
+it('shows calculated values together with source formula, coordinate and errors', async () => {
+  const api = mockApi();
+  api.preview = vi.fn(async () => ({
+    table: {
+      ...table,
+      calculation_version: 'excel-subset-1',
+      warnings: ['Columnas completamente vacías omitidas: E.'],
+    },
+    rows: [['001', '3.0']],
+    formula_cells: [
+      {
+        coordinate: 'F2',
+        formula: '=AVERAGE(B2:D2)',
+        value: '3.0',
+        status: 'calculated' as const,
+        error: null,
+        dependencies: [],
+      },
+      {
+        coordinate: 'F3',
+        formula: '=UNKNOWN(B3)',
+        value: null,
+        status: 'error' as const,
+        error: 'UNSUPPORTED',
+        dependencies: [],
+      },
+    ],
+  }));
+  render(<ProjectSources projectId="project" api={api} />);
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Abrir Notas iniciales' }),
+  );
+  expect(await screen.findByText('3.0')).toBeVisible();
+  fireEvent.click(screen.getByText('Revisar fórmulas de la vista previa'));
+  expect(screen.getByText('=AVERAGE(B2:D2)')).toBeVisible();
+  expect(screen.getByText(/Sin valor fiable: UNSUPPORTED/)).toBeVisible();
+  fireEvent.click(screen.getByText('Procedencia de la tabla'));
+  expect(
+    screen.getByRole('link', { name: /trazabilidad completa/ }),
+  ).toHaveAttribute('href', '/calculation');
 });
 
 it('filters pending sheets and excludes/reincludes without uploading again', async () => {

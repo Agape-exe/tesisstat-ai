@@ -73,6 +73,12 @@ Puedes reincorporarlas sin subir el original otra vez. Cada tabla tiene vista pr
 completos y contexto opcional editable, con confirmación explícita y conflicto recuperable.
 Los originales se conservan y se pueden descargar con su hash verificado.
 
+C01 conserva las columnas a ambos lados de separadores vacíos y recalcula las fórmulas
+compatibles localmente, sin caché: promedios, aritmética y referencias del mismo libro,
+incluidas tablas con `#This Row`. Fórmulas, errores y coordenadas se pueden revisar en la
+tabla. **Reimportar original con cálculo actual** crea nuevas tablas por revisar sin cambiar
+los históricos. [Subconjunto y límites](backend/app/modules/research/sources/README.md#c01-cálculo-local-y-reimportación).
+
 Desde **Revisar datos y variables** puedes calcular un perfil completo por tabla, guardar
 un diccionario parcial y confirmar sus campos. En **Preparar o combinar (opcional)** puedes
 crear derivados o combinar antes/después por identificador exacto, con conteos, vista previa

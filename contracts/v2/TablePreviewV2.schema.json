@@ -42,8 +42,11 @@
           "type": "string"
         },
         "algorithm_version": {
-          "const": "tabular-v1",
           "default": "tabular-v1",
+          "enum": [
+            "tabular-v1",
+            "tabular-v2"
+          ],
           "title": "Algorithm Version",
           "type": "string"
         },
@@ -64,6 +67,66 @@
         "range"
       ],
       "title": "ExtractionV2",
+      "type": "object"
+    },
+    "FormulaValueV2": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinate": {
+          "title": "Coordinate",
+          "type": "string"
+        },
+        "formula": {
+          "title": "Formula",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "status": {
+          "enum": [
+            "calculated",
+            "error"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "coordinate",
+        "formula",
+        "value",
+        "status",
+        "error",
+        "dependencies"
+      ],
+      "title": "FormulaValueV2",
       "type": "object"
     },
     "ImportedTableV2": {
@@ -152,6 +215,25 @@
           },
           "title": "Warnings",
           "type": "array"
+        },
+        "omitted_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Omitted Columns",
+          "type": "array"
+        },
+        "calculation_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calculation Version"
         }
       },
       "required": [
@@ -189,6 +271,31 @@
           "minimum": 0,
           "title": "Position",
           "type": "integer"
+        },
+        "source_column": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Z]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Column"
+        },
+        "formula_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Formula Count",
+          "type": "integer"
+        },
+        "formula_error_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Formula Error Count",
+          "type": "integer"
         }
       },
       "required": [
@@ -220,6 +327,13 @@
         "type": "array"
       },
       "title": "Rows",
+      "type": "array"
+    },
+    "formula_cells": {
+      "items": {
+        "$ref": "#/$defs/FormulaValueV2"
+      },
+      "title": "Formula Cells",
       "type": "array"
     }
   },

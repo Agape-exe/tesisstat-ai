@@ -17,7 +17,7 @@ export type ContentHash = string;
 export type HashAlgorithm = "table-json-v1";
 export type HeaderRow = number;
 export type Range = string;
-export type AlgorithmVersion = "tabular-v1";
+export type AlgorithmVersion = "tabular-v1" | "tabular-v2";
 export type ActorRef = string;
 export type ConfirmedAt = string;
 export type Revision1 = number;
@@ -26,13 +26,26 @@ export type ColumnCount = number;
 export type Id1 = string;
 export type Name = string;
 export type Position = number;
+export type SourceColumn = string | null;
+export type FormulaCount = number;
+export type FormulaErrorCount = number;
 export type Columns = TableColumnV2[];
 export type Warnings = string[];
+export type OmittedColumns = string[];
+export type CalculationVersion = string | null;
 export type Rows = (string | null)[][];
+export type Coordinate = string;
+export type Formula = string;
+export type Value = string | null;
+export type Status = "calculated" | "error";
+export type Error = string | null;
+export type Dependencies = string[];
+export type FormulaCells = FormulaValueV2[];
 
 export interface TablePreviewV2 {
   table: ImportedTableV2;
   rows: Rows;
+  formula_cells?: FormulaCells;
 }
 export interface ImportedTableV2 {
   schema_version?: SchemaVersion;
@@ -50,6 +63,8 @@ export interface ImportedTableV2 {
   column_count: ColumnCount;
   columns: Columns;
   warnings?: Warnings;
+  omitted_columns?: OmittedColumns;
+  calculation_version?: CalculationVersion;
 }
 export interface ExtractionV2 {
   header_row: HeaderRow;
@@ -66,4 +81,15 @@ export interface TableColumnV2 {
   id: Id1;
   name: Name;
   position: Position;
+  source_column?: SourceColumn;
+  formula_count?: FormulaCount;
+  formula_error_count?: FormulaErrorCount;
+}
+export interface FormulaValueV2 {
+  coordinate: Coordinate;
+  formula: Formula;
+  value: Value;
+  status: Status;
+  error: Error;
+  dependencies: Dependencies;
 }

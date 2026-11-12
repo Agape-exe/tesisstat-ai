@@ -251,7 +251,8 @@ generadores existentes. Los seis contratos v1 y `compute_dataset_hash` quedan in
   row_count, column_count, warnings, extraction, original_hash, content_hash y fecha.
   `content_hash` usa `table-json-v1`: SHA256 del JSON compacto UTF-8 de nombres de columnas
   y todas las filas (valores string|null). No es el hash de datasets legados. Las celdas se
-  conservan como texto/null sin inferir escala, imputar ni ejecutar fórmulas.
+  conservan como texto/null sin inferir escala ni imputar. C01 añade cálculo acotado
+  de fórmulas para importaciones XLSX nuevas, según la extensión descrita al final.
 - `TableContextV2`: schema_version=2.0.0, project_id, table_id, revision (0 virtual),
   hash, updated_at y facts opcionales: name, description, purpose, row_meaning,
   measurement_moment (`before|after|other|unknown`), population, identifier_column_id,
@@ -309,7 +310,8 @@ recuperable por proyecto/tabla. GET de históricos conserva revisiones/ref aun c
 consulta 20 filas reales. GET perfil consulta evidencia persistida; POST `.../{id}/profile`
 con `{dataset_revision,dataset_hash,confirm:true}` calcula todas las filas mediante adaptador
 del motor EDA existente. GET `.../dictionary/revisions` y `.../profile/revisions` conserva
-históricos. El perfil almacena versiones/método, política por columna, fórmula como texto,
+históricos. El perfil almacena versiones/método, política por columna y política de fórmulas
+(texto histórico o cálculo acotado C01 con procedencia),
 fuentes/hash y configuración/diccionario. Confirmar escalas no equivale a perfil vigente:
 una revisión de diccionario o de fuentes lo vuelve stale hasta cálculo explícito. No hay
 normalidad, inferencia, IA ni recomendaciones nuevas. Desconocidos/nominales/ordinales se
@@ -845,3 +847,41 @@ como borradores. PDF mantiene WinAnsi y avisa sustituciones fuera de ese alfabet
 Unicode. `Cache-Control:no-store`; exportar no recalcula ni modifica el resultado.
 
 Evidencia, alcance comprobado y límites de S06: [informe](sesiones/S06.md).
+
+
+## Extensión C3 C01 — Excel calculado (12 de noviembre de 2026)
+
+Motivo: conservar separadores de columnas y obtener promedios/ganancias numéricos sin
+confundir caché con evidencia. Solo nuevas importaciones XLSX usan `tabular-v2` y
+`excel-subset-1`. CSV/v1 e históricos no se recalculan ni migran al leerlos.
+`TableColumnV2` añade source_column opcional, formula_count/formula_error_count (0 por
+defecto). Los campos nuevos vacíos no se serializan: se conservan los hashes canónicos
+de diccionarios/perfiles/snapshots anteriores. ImportedTable añade omitted_columns y
+calculation_version; los objetos publicados siguen inmutables. Las coordenadas de fila
+se obtienen de header_row + índice de fila + 1; nunca se reordenan ni eliminan filas.
+
+El contenido XLSX JSON añade `calculation` con versión, política de caché ignorada,
+fórmulas originales/valores/estado/error/dependencias y matriz de tipos originales.
+content_hash SHA256 cubre el JSON completo persistido, incluida esta procedencia; no
+se modifica el algoritmo histórico para bytes anteriores. Los valores de la tabla
+siguen siendo string|null por compatibilidad con TableReadPort, preparación y cálculo;
+la matriz distingue números fuente, textos numéricos, booleanos, fechas, fórmulas,
+blancos y errores. Un valor calculado fiable es texto numérico consumido uniformemente.
+Un error es `#C01!CODIGO`, distinto de null y cero; no se permite analizar columnas con
+estos errores, incluso si se declaran marcadores de faltantes. Preparaciones conservan
+los marcadores; su linaje lleva a la auditoría original. La revisión humana de escala,
+identificador, intención, aprobación y vigencia sigue siendo obligatoria según el flujo.
+
+GET /tables/{id}/calculation devuelve FormulaAuditV2 (null para tablas históricas/CSV).
+Preview añade formula_cells de las filas visibles; TableProfile admite formula_policy
+`calculated-subset-cache-ignored`, con conteos y avisos. Nuevos esquemas/tipos/ejemplos
+se generan desde los modelos. Ninguno de los seis contratos v1 cambia.
+POST /files/{id}/reimport relee el original verificado y publica archivo/tablas nuevos,
+con reimported_from y diccionarios sin confirmar. Conserva originales, proyectos,
+contexto, selecciones y resultados anteriores. Elegir las tablas nuevas exige intención,
+perfil y aprobación nuevos; excluir una fuente antigua mantiene la invalidación existente.
+No se trasladan confirmaciones ni se resucitan resultados invalidados.
+
+Consumidores revisados: fuentes/preview, workspace/perfil/preparación, diagnósticos y
+AnalysisServiceV2 mediante TableReadPort; UI de Datos y selección de Análisis. Límites
+exactos y semántica en sources/README; verificaciones y pendientes en sesiones/C01.md.

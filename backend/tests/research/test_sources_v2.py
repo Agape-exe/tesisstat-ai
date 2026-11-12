@@ -92,7 +92,8 @@ def test_all_sheets_defaults_complete_rows_values_and_original(setup):
     assert preview["rows"] == rows[:20]
     assert preview["table"]["row_count"] == 123
     after = client.get(f"{root}/tables/{source['sheets'][2]['table_id']}/preview").json()
-    assert after["rows"][1][1] == "=1+2"
+    assert after["rows"][1][1] == "3.0"
+    assert after["formula_cells"][0]["formula"] == "=1+2"
     assert "fórmulas" in " ".join(after["table"]["warnings"])
     saved_original = client.get(f"{root}/files/{source['id']}/original")
     assert saved_original.content == original

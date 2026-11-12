@@ -1,0 +1,25 @@
+{
+  "engine_version": "excel-subset-1",
+  "cache_policy": "ignored",
+  "formulas": [
+    {
+      "coordinate": "D2",
+      "formula": "=AVERAGE(B2:C2)",
+      "value": "3.0",
+      "status": "calculated",
+      "error": null,
+      "dependencies": [
+        "'Mediciones'!B2",
+        "'Mediciones'!C2"
+      ]
+    }
+  ],
+  "cell_types": [
+    [
+      "text",
+      "number",
+      "number",
+      "formula"
+    ]
+  ]
+}
