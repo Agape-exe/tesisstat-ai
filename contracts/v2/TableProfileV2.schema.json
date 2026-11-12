@@ -329,6 +329,31 @@
           "minimum": 0,
           "title": "Position",
           "type": "integer"
+        },
+        "source_column": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Z]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Column"
+        },
+        "formula_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Formula Count",
+          "type": "integer"
+        },
+        "formula_error_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Formula Error Count",
+          "type": "integer"
         }
       },
       "required": [
@@ -416,8 +441,11 @@
       "type": "object"
     },
     "formula_policy": {
-      "const": "text-no-evaluation",
       "default": "text-no-evaluation",
+      "enum": [
+        "text-no-evaluation",
+        "calculated-subset-cache-ignored"
+      ],
       "title": "Formula Policy",
       "type": "string"
     },

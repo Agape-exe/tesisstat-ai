@@ -142,6 +142,12 @@
   max-width: 100%;
   overflow: auto;
 }
+.source-table .rp-dataset-scroll table {
+  min-width: 640px;
+}
+.source-table details li {
+  overflow-wrap: anywhere;
+}
 .source-workspace input[type='file'] {
   max-width: 100%;
 }

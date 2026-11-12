@@ -28,6 +28,9 @@ export type Columns = [TableColumnV2, ...TableColumnV2[]];
 export type Id2 = string;
 export type Name1 = string;
 export type Position = number;
+export type SourceColumn = string | null;
+export type FormulaCount = number;
+export type FormulaErrorCount = number;
 export type Synthetic = boolean | null;
 export type Kind1 =
   | "project"
@@ -58,7 +61,7 @@ export type SourceRefs1 = SourceRef[];
 export type ConfigurationHash = string;
 export type Method = "complete-table-descriptive";
 export type EngineVersion = string;
-export type FormulaPolicy = "text-no-evaluation";
+export type FormulaPolicy = "text-no-evaluation" | "calculated-subset-cache-ignored";
 export type CreatedAt = string;
 export type State = "current" | "stale";
 export type Rows = number;
@@ -76,7 +79,7 @@ export type Missing1 = number;
 export type Distinct = number;
 export type Constant = boolean;
 export type PossibleIdentifier = boolean;
-export type FormulaCount = number;
+export type FormulaCount1 = number;
 export type Value = string;
 export type Count = number;
 export type Percentage = number;
@@ -133,6 +136,9 @@ export interface TableColumnV2 {
   id: Id2;
   name: Name1;
   position: Position;
+  source_column?: SourceColumn;
+  formula_count?: FormulaCount;
+  formula_error_count?: FormulaErrorCount;
 }
 export interface SourceRef {
   kind: Kind1;
@@ -153,7 +159,7 @@ export interface ColumnProfileV2 {
   distinct: Distinct;
   constant: Constant;
   possible_identifier: PossibleIdentifier;
-  formula_count: FormulaCount;
+  formula_count: FormulaCount1;
   frequencies: Frequencies;
   numeric_summary?: NumericSummary;
   warnings: Warnings;

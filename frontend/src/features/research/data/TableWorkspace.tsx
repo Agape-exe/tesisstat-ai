@@ -328,7 +328,9 @@ function ProfileView({ profile: p }: { profile: Profile }) {
             }
             . {c.distinct} valores distintos.{' '}
             {c.possible_identifier ? 'Posible identificador.' : ''}{' '}
-            {c.formula_count ? `${c.formula_count} fórmulas como texto.` : ''}
+            {c.formula_count
+              ? `${c.formula_count} fórmulas; consulta la política y la procedencia en la tabla de origen.`
+              : ''}
           </p>
           {c.numeric_summary && (
             <dl className="data-counts">

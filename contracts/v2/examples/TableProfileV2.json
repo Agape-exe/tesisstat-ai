@@ -3,7 +3,7 @@
   "id": "05fab835-6935-5515-9760-fb3835d90697",
   "project_id": "00000101-0000-4000-8000-000000000000",
   "revision": 1,
-  "hash": "e85cefc140e6f02368b7c17d5f0159bd80906f038732dcd9406ccc39d4b6e5a0",
+  "hash": "c34cadb732d311f558e100c2111aeeae6ffc74a697ddb19fa2295845e0d90c4b",
   "dataset_ref": {
     "schema_version": "2.0.0",
     "id": "00000104-0000-4000-8000-000000000000",
@@ -176,6 +176,6 @@
   ],
   "warnings": [
     "Las advertencias no modifican datos. Un duplicado puede ser legítimo.",
-    "Fórmulas conservadas como texto; no se evalúan. No se realizan pruebas inferenciales."
+    "Las fórmulas nuevas usan cálculo acotado sin caché; las importaciones históricas conservan su política. Los errores requieren corregir y reimportar. No se realizan pruebas inferenciales."
   ]
 }

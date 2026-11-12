@@ -431,29 +431,39 @@ export function DiagnosticWorkspace({
           className="diagnostic-options"
           hidden={draft.kind === 'reliability'}
         >
-          {dictionary?.variables.map((v) => (
-            <label key={v.id}>
-              <input
-                type="checkbox"
-                checked={draft.variable_ids?.includes(v.id) ?? false}
-                onChange={(e) =>
-                  update({
-                    variable_ids: e.target.checked
-                      ? [...(draft.variable_ids ?? []), v.id]
-                      : draft.variable_ids?.filter((id) => id !== v.id),
-                    roles: [],
-                    paired_columns: null,
-                    group_column_id: null,
-                  })
-                }
-              />
-              {v.name.value ?? 'Variable sin nombre'} · escala{' '}
-              {v.measurement_scale?.value === 'unknown'
-                ? 'pendiente'
-                : v.measurement_scale?.value}
-              {!v.measurement_scale?.confirmation && ' (sin confirmar)'}
-            </label>
-          ))}
+          {dictionary?.variables.map((v) => {
+            const hasFormulaErrors = selectedTable?.columns.some(
+              (c) =>
+                v.column_ids?.some((id) => id === c.id) &&
+                (c.formula_error_count ?? 0) > 0,
+            );
+            return (
+              <label key={v.id}>
+                <input
+                  type="checkbox"
+                  disabled={hasFormulaErrors}
+                  checked={draft.variable_ids?.includes(v.id) ?? false}
+                  onChange={(e) =>
+                    update({
+                      variable_ids: e.target.checked
+                        ? [...(draft.variable_ids ?? []), v.id]
+                        : draft.variable_ids?.filter((id) => id !== v.id),
+                      roles: [],
+                      paired_columns: null,
+                      group_column_id: null,
+                    })
+                  }
+                />
+                {v.name.value ?? 'Variable sin nombre'} · escala{' '}
+                {v.measurement_scale?.value === 'unknown'
+                  ? 'pendiente'
+                  : v.measurement_scale?.value}
+                {!v.measurement_scale?.confirmation && ' (sin confirmar)'}
+                {hasFormulaErrors &&
+                  ' · No está lista: contiene fórmulas sin valor fiable. Corrige y reimporta.'}
+              </label>
+            );
+          })}
         </div>
         <button
           type="button"

@@ -30,7 +30,9 @@
         "position": 1
       }
     ],
-    "warnings": []
+    "warnings": [],
+    "omitted_columns": [],
+    "calculation_version": null
   },
   "rows": [
     [
@@ -45,5 +47,6 @@
       "0003",
       "14"
     ]
-  ]
+  ],
+  "formula_cells": []
 }

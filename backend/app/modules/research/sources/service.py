@@ -1,12 +1,14 @@
 import hashlib
 import json
 import sqlite3
+from collections import Counter
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.modules.research.context.repository import ContextError
 from app.modules.research.datasets.readers import DatasetLimits
 from app.modules.research.projects.use_cases import ProjectNotFound, ProjectService
+from app.modules.research.sources.formulas import ERROR_PREFIX
 from app.modules.research.sources.models import SheetPatch, TableContextChanges, TableContextPatch
 from app.modules.research.sources.readers import WorkbookLimits, detect, extract, inventory, limit
 from app.modules.research.sources.repository import SourceRepository, missing
@@ -56,8 +58,15 @@ class SourceService:
             raise ContextError("resource_not_found", "No se encontró el recurso.", 404) from exc
 
     def _table(self, source, sheet, extracted, confirmation=None):
+        formula_counts = Counter(
+            f["coordinate"].rstrip("0123456789")
+            for f in (extracted.calculation or {}).get("formulas", [])
+        )
         extraction = ExtractionV2(
-            header_row=extracted.header_row, range=extracted.range, confirmation=confirmation
+            header_row=extracted.header_row,
+            range=extracted.range,
+            confirmation=confirmation,
+            algorithm_version="tabular-v2" if extracted.calculation else "tabular-v1",
         )
         table = ImportedTableV2(
             id=str(uuid4()),
@@ -71,10 +80,23 @@ class SourceService:
             row_count=len(extracted.rows),
             column_count=len(extracted.columns),
             columns=[
-                TableColumnV2(id=str(uuid4()), name=name, position=i)
+                TableColumnV2(
+                    id=str(uuid4()),
+                    name=name,
+                    position=i,
+                    source_column=extracted.source_columns[i] if extracted.calculation else None,
+                    formula_count=formula_counts[extracted.source_columns[i]],
+                    formula_error_count=sum(
+                        bool(row[i] and row[i].startswith(ERROR_PREFIX)) for row in extracted.rows
+                    ),
+                )
                 for i, name in enumerate(extracted.columns)
             ],
             warnings=extracted.warnings,
+            omitted_columns=extracted.omitted_columns,
+            calculation_version=extracted.calculation["engine_version"]
+            if extracted.calculation
+            else None,
         )
         sheet.state = "ready"
         sheet.table_id = table.id
@@ -82,7 +104,7 @@ class SourceService:
         sheet_hash(sheet)
         return table, extracted.data
 
-    def add(self, project_id, name, data):
+    def add(self, project_id, name, data, reimported_from=None):
         project_id = self.require(project_id)
         name = name.strip()
         if not name or len(name) > 200 or any(c in name for c in ("/", "\\", "\x00")):
@@ -105,6 +127,7 @@ class SourceService:
             updated_at=now,
             state="needs_clarification",
             sheets=[],
+            reimported_from=reimported_from,
         )
         tables = []
         for index, raw in enumerate(raw_sheets):
@@ -136,6 +159,10 @@ class SourceService:
                 "storage_unavailable", "No se publicó la importación. Reintenta la carga.", 503
             ) from exc
         return source
+
+    def reimport(self, project_id, file_id):
+        source, data = self.original(project_id, file_id)
+        return self.add(project_id, source.name, data, reimported_from=source.id)
 
     def files(self, project_id):
         return self.repository.files(self.require(project_id))
@@ -196,7 +223,23 @@ class SourceService:
 
     def preview(self, project_id, table_id):
         table, rows = self.read_table(project_id, table_id)
-        return TablePreviewV2(table=table, rows=rows[: self.limits.preview_rows])
+        audit = self.calculation(project_id, table_id)
+        return TablePreviewV2(
+            table=table,
+            rows=rows[: self.limits.preview_rows],
+            formula_cells=[
+                f
+                for f in (audit or {}).get("formulas", [])
+                if int(f["coordinate"].lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+                <= table.extraction.header_row + self.limits.preview_rows
+            ],
+        )
+
+    def calculation(self, project_id, table_id):
+        table, _ = self.read_table(project_id, table_id)
+        return json.loads(self.repository.read("table", table.id, table.content_hash)).get(
+            "calculation"
+        )
 
     def change_sheet(self, project_id, file_id, sheet_id, patch: SheetPatch):
         project_id = self.require(project_id)

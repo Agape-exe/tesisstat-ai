@@ -42,8 +42,11 @@
           "type": "string"
         },
         "algorithm_version": {
-          "const": "tabular-v1",
           "default": "tabular-v1",
+          "enum": [
+            "tabular-v1",
+            "tabular-v2"
+          ],
           "title": "Algorithm Version",
           "type": "string"
         },
@@ -266,6 +269,20 @@
       },
       "title": "Sheets",
       "type": "array"
+    },
+    "reimported_from": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reimported From"
     }
   },
   "required": [

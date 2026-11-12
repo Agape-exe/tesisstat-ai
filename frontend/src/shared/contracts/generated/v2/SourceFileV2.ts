@@ -32,11 +32,12 @@ export type Hash1 = string;
 export type TableId = string | null;
 export type HeaderRow = number;
 export type Range = string;
-export type AlgorithmVersion = "tabular-v1";
+export type AlgorithmVersion = "tabular-v1" | "tabular-v2";
 export type ActorRef = string;
 export type ConfirmedAt = string;
 export type Revision2 = number;
 export type Sheets = SourceSheetV2[];
+export type ReimportedFrom = string | null;
 
 export interface SourceFileV2 {
   schema_version?: SchemaVersion;
@@ -52,6 +53,7 @@ export interface SourceFileV2 {
   updated_at: UpdatedAt;
   state: State;
   sheets: Sheets;
+  reimported_from?: ReimportedFrom;
 }
 export interface SourceSheetV2 {
   id: Id1;

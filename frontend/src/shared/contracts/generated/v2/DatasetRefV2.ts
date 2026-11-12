@@ -23,6 +23,9 @@ export type Columns = [TableColumnV2, ...TableColumnV2[]];
 export type Id1 = string;
 export type Name1 = string;
 export type Position = number;
+export type SourceColumn = string | null;
+export type FormulaCount = number;
+export type FormulaErrorCount = number;
 export type Synthetic = boolean | null;
 export type Kind1 =
   | "project"
@@ -70,6 +73,9 @@ export interface TableColumnV2 {
   id: Id1;
   name: Name1;
   position: Position;
+  source_column?: SourceColumn;
+  formula_count?: FormulaCount;
+  formula_error_count?: FormulaErrorCount;
 }
 export interface SourceRef {
   kind: Kind1;

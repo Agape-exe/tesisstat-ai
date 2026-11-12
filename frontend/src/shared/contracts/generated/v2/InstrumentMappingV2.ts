@@ -51,6 +51,9 @@ export type Columns = [TableColumnV2, ...TableColumnV2[]];
 export type Id3 = string;
 export type Name1 = string;
 export type Position = number;
+export type SourceColumn = string | null;
+export type FormulaCount = number;
+export type FormulaErrorCount = number;
 export type Synthetic = boolean | null;
 export type SourceRefs = SourceRef[];
 export type ItemId = string;
@@ -99,6 +102,9 @@ export interface TableColumnV2 {
   id: Id3;
   name: Name1;
   position: Position;
+  source_column?: SourceColumn;
+  formula_count?: FormulaCount;
+  formula_error_count?: FormulaErrorCount;
 }
 export interface ItemColumnV2 {
   item_id: ItemId;

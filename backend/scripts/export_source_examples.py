@@ -9,6 +9,7 @@ from app.modules.research.sources.readers import Extracted
 from app.shared.analysis_v2 import Confirmation, Fact, Provenance, canonical_hash
 from app.shared.data_sources_v2 import (
     ExtractionV2,
+    FormulaAuditV2,
     ImportedTableV2,
     SourceFileV2,
     SourceSheetV2,
@@ -87,9 +88,23 @@ def examples():
     )
     context.hash = canonical_hash(context)
     preview = TablePreviewV2(table=table, rows=extracted.rows)
+    audit = FormulaAuditV2(
+        engine_version="excel-subset-1",
+        formulas=[
+            {
+                "coordinate": "D2",
+                "formula": "=AVERAGE(B2:C2)",
+                "value": "3.0",
+                "status": "calculated",
+                "error": None,
+                "dependencies": ["'Mediciones'!B2", "'Mediciones'!C2"],
+            }
+        ],
+        cell_types=[["text", "number", "number", "formula"]],
+    )
     return {
         type(model).__name__: model.model_dump(mode="json")
-        for model in (source, sheet, table, context, preview)
+        for model in (source, sheet, table, context, preview, audit)
     }
 
 

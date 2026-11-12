@@ -29,5 +29,7 @@
       "position": 1
     }
   ],
-  "warnings": []
+  "warnings": [],
+  "omitted_columns": [],
+  "calculation_version": null
 }

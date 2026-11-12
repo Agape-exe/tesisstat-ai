@@ -5,10 +5,18 @@ import type { TableContextV2 } from '../../../shared/contracts/generated/v2/Tabl
 import type { TablePreviewV2 } from '../../../shared/contracts/generated/v2/TablePreviewV2';
 
 export type Sheet = Required<SourceSheetV2>;
-export type SourceFile = Omit<Required<SourceFileV2>, 'sheets'> & {
+export type SourceFile = Omit<
+  Required<SourceFileV2>,
+  'sheets' | 'reimported_from'
+> & {
   sheets: Sheet[];
+  reimported_from?: string | null;
 };
-export type Table = Required<ImportedTableV2>;
+export type Table = Omit<
+  Required<ImportedTableV2>,
+  'omitted_columns' | 'calculation_version'
+> &
+  Pick<ImportedTableV2, 'omitted_columns' | 'calculation_version'>;
 export type TableContext = Required<TableContextV2>;
 export type ContextField =
   | 'name'
@@ -87,6 +95,12 @@ export function createSourcesApi(
         headers: { 'X-File-Name': encodeURIComponent(file.name) },
         body: file,
       }),
+    reimport: (id: string, fileId: string) =>
+      request<SourceFile>(id, `/files/${encodeURIComponent(fileId)}/reimport`, {
+        method: 'POST',
+      }),
+    calculationUrl: (id: string, tableId: string) =>
+      `${root(id)}/tables/${encodeURIComponent(tableId)}/calculation`,
     sheet: (id: string, fileId: string, sheetId: string, body: SheetPatch) =>
       request<SourceFile>(
         id,
