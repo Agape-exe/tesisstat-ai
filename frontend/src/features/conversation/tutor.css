@@ -528,3 +528,257 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* Session C05: Guided Data & Instruments Styles */
+
+.tutor-instrument-confirmation {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.tutor-mentoring-block {
+  margin: 1.25rem 0;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.tutor-mentoring-block h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1e293b;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.tutor-hypothesis-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tutor-hypothesis-input {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #ffffff;
+}
+
+.tutor-hypothesis-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.tutor-eval-btn {
+  white-space: nowrap;
+}
+
+.tutor-sample-chips {
+  margin-top: 0.85rem;
+}
+
+.tutor-sample-chips small {
+  color: #64748b;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.tutor-recommendations-block {
+  margin: 1.25rem 0;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.tutor-recommendations-block h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1e293b;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.tutor-recommendation-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.tutor-rec-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease-in-out;
+}
+
+.tutor-rec-card:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.tutor-rec-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.tutor-rec-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.tutor-rec-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.tutor-rec-text strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.tutor-rec-text small {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.tutor-mentoring-response {
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+}
+
+.tutor-proposal-card {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  background: #ffffff;
+  border: 2px solid #2563eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.tutor-proposal-header {
+  margin-bottom: 1rem;
+}
+
+.tutor-proposal-badge {
+  display: inline-block;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+
+.tutor-proposal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tutor-proposal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tutor-proposal-item strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #334155;
+  margin-bottom: 0.25rem;
+}
+
+.tutor-proposal-item p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.tutor-proposal-assumptions {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+}
+
+.tutor-proposal-assumptions strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.tutor-proposal-assumptions ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.875rem;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.tutor-proposal-assumptions li {
+  margin-bottom: 0.35rem;
+}
+
+.tutor-proposal-actions {
+  margin-top: 0.5rem;
+}
+
+.tutor-proposal-approve-btn {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.tutor-proposal-executed {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tutor-exec-badge {
+  font-weight: 600;
+  color: #166534;
+  font-size: 0.95rem;
+}
+
+.tutor-exec-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

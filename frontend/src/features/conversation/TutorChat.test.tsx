@@ -509,7 +509,7 @@ describe('TutorChat C04 Onboarding Conversacional Proactivo', () => {
 
     expect(
       screen.getByRole('button', {
-        name: '📝 Tengo un instrumento (encuesta/cuestionario)',
+        name: '📋 Tengo un instrumento (encuesta/test)',
       }),
     ).toBeInTheDocument();
     expect(
@@ -541,12 +541,28 @@ describe('TutorChat C04 Onboarding Conversacional Proactivo', () => {
     fireEvent.click(diffBtn);
 
     expect(
-      await screen.findByText(/Instrumento de recolección:/),
+      await screen.findByText(
+        /Un instrumento es una prueba, cuestionario o escala con preguntas\/ítems para medir una variable/,
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Datos directos:/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /En cambio, los datos directos son observaciones o registros numéricos tomados directamente/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', {
+        name: '📋 Tengo un instrumento (encuesta/test)',
+      }),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByRole('button', {
+        name: '📊 Tengo datos directos (ej. notas, registros)',
+      }),
+    ).toHaveLength(2);
   });
 
-  it('orienta hacia Instrumento al pulsar "Tengo un instrumento"', async () => {
+  it('orienta hacia Instrumento al pulsar "Tengo un instrumento", despliega subida y solicita respuestas', async () => {
     const { api, historyApi } = fixture(true);
     render(
       <TutorChat
@@ -558,18 +574,50 @@ describe('TutorChat C04 Onboarding Conversacional Proactivo', () => {
     );
 
     const instBtn = await screen.findByRole('button', {
-      name: '📝 Tengo un instrumento (encuesta/cuestionario)',
+      name: '📋 Tengo un instrumento (encuesta/test)',
     });
     fireEvent.click(instBtn);
 
     expect(
-      await screen.findByRole('button', {
-        name: /Ir a Instrumento y puntuaciones/,
+      await screen.findByText(
+        /Para trabajar con un instrumento, primero cargaremos la estructura del cuestionario o test/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Seleccionar o arrastrar instrumento \(\.docx o \.pdf\)/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /Configurar dimensiones e ítems en Instrumento/,
       }),
+    ).toBeInTheDocument();
+
+    // Simular carga de instrumento Word
+    const fileInput = document.querySelector(
+      'input[accept=".docx,.pdf,.doc"]',
+    ) as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+    const docxFile = new File(['content'], 'Cuestionario_Satisfaccion.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    fireEvent.change(fileInput, { target: { files: [docxFile] } });
+
+    expect(
+      await screen.findByText(/Instrumento detectado con éxito/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /He recibido tu instrumento «Cuestionario_Satisfaccion.docx» y detecté 15 ítems/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Subir respuestas de participantes \(\.xlsx o \.csv\)/),
     ).toBeInTheDocument();
   });
 
-  it('despliega zona de subida y selección de datos directos y responde proactivamente', async () => {
+  it('despliega diagnóstico estructural de Notas.xlsx con Shapiro-Wilk para N < 50', async () => {
     const { api, historyApi, status } = fixture(true);
     const notaStatus: TutorStatus = {
       ...status,
@@ -584,11 +632,23 @@ describe('TutorChat C04 Onboarding Conversacional Proactivo', () => {
           name: 'Notas',
           rows: 30,
           columns: 4,
+          recommended_normality_test: 'Shapiro-Wilk',
         },
         variables: [
           {
-            variable_id: 'v_parcial',
-            name: 'nota_parcial',
+            variable_id: 'v_pretest',
+            name: 'Pretest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+          {
+            variable_id: 'v_postest',
+            name: 'Postest',
             detected_type: 'numérico',
             missing: 0,
             formula_errors: 0,
@@ -616,17 +676,298 @@ describe('TutorChat C04 Onboarding Conversacional Proactivo', () => {
     fireEvent.click(directBtn);
 
     expect(
-      await screen.findByText(/Seleccionar o arrastrar Notas.xlsx o CSV/),
-    ).toBeInTheDocument();
-    expect(
       await screen.findByText(
-        /He detectado tu tabla «Notas» con variables cuantitativas de notas/,
+        /He analizado tu tabla «Notas» \(30 registros\)\. He detectado variables cuantitativas de calificaciones: Pretest, Postest/,
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {
-        name: /Describir estos datos \(estadística descriptiva\)/,
+      screen.getByText(
+        /muestra pequeña N < 50, donde corresponde la prueba de normalidad de Shapiro-Wilk/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('Modalidad 1: evalúa la hipótesis pre vs post del tesista y emite la propuesta para muestras pareadas', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const notaStatus: TutorStatus = {
+      ...status,
+      choices: {
+        ...status.choices,
+        datasets: [{ id: 'tbl-notas', label: 'Notas' }],
+      },
+      guidance: {
+        table_count: 1,
+        selected_table: {
+          id: 'tbl-notas',
+          name: 'Notas',
+          rows: 30,
+          columns: 4,
+        },
+        variables: [
+          {
+            variable_id: 'v_pre',
+            name: 'Pretest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+          {
+            variable_id: 'v_post',
+            name: 'Postest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+        ],
+      },
+    };
+    api.status = vi.fn().mockResolvedValue(notaStatus);
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    // Escribir hipótesis en el input de mentoría
+    const hypInput = await screen.findByLabelText(
+      'Pregunta o hipótesis sobre las notas',
+    );
+    fireEvent.change(hypInput, {
+      target: {
+        value:
+          'Quiero saber si las notas del postest fueron significativamente mejores que las del pretest',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Evaluar hipótesis' }));
+
+    // Verificación de respuesta pedagógica
+    expect(
+      await screen.findByText(
+        /Para evaluar si hubo cambio en las calificaciones de los mismos estudiantes, corresponde una prueba para mediciones pareadas \(o dependientes\)/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Con N=30, verificaremos el supuesto de normalidad con Shapiro-Wilk en las diferencias/,
+      ),
+    ).toBeInTheDocument();
+
+    // Verificación de tarjeta formal de propuesta
+    expect(
+      screen.getByRole('region', {
+        name: 'Propuesta estadística determinista',
       }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Comparación de mediciones pareadas (t de Student / Wilcoxon)',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Medición 1: Pretest \| Medición 2: Postest \(30 pares observados\)/,
+      ),
+    ).toBeInTheDocument();
+
+    // 1-Click: Aprobar y ejecutar análisis determinista
+    const approveBtn = screen.getByRole('button', {
+      name: '✓ Aprobar y ejecutar análisis',
+    });
+    fireEvent.click(approveBtn);
+
+    expect(
+      await screen.findByText(
+        /✓ Propuesta aprobada y análisis ejecutado determinísticamente con éxito\./,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '📊 Ver Resultados y Gráficos →' }),
+    ).toBeInTheDocument();
+
+    // Clic en Ver Resultados
+    fireEvent.click(
+      screen.getByRole('button', { name: '📊 Ver Resultados y Gráficos →' }),
+    );
+    expect(window.location.hash).toContain('section=results');
+  });
+
+  it('Modalidad 1: evalúa la hipótesis de correlación entre calificaciones y emite propuesta Pearson/Spearman', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const notaStatus: TutorStatus = {
+      ...status,
+      choices: {
+        ...status.choices,
+        datasets: [{ id: 'tbl-notas', label: 'Notas' }],
+      },
+      guidance: {
+        table_count: 1,
+        selected_table: {
+          id: 'tbl-notas',
+          name: 'Notas',
+          rows: 30,
+          columns: 3,
+        },
+        variables: [
+          {
+            variable_id: 'v_n1',
+            name: 'nota1',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+          {
+            variable_id: 'v_n2',
+            name: 'nota2',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+        ],
+      },
+    };
+    api.status = vi.fn().mockResolvedValue(notaStatus);
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    const hypInput = await screen.findByLabelText(
+      'Pregunta o hipótesis sobre las notas',
+    );
+    fireEvent.change(hypInput, {
+      target: {
+        value: 'Quiero ver si hay correlación entre la nota 1 y la nota 2',
+      },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Evaluar hipótesis' }));
+
+    expect(
+      await screen.findByText(
+        /Para determinar si las notas varían conjuntamente, evaluaremos una correlación/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Si los datos siguen una distribución normal, utilizaremos el coeficiente de Pearson; si no cumplen normalidad o presentan datos atípicos, utilizaremos Spearman/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Correlación bivariada entre calificaciones (Pearson / Spearman)',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('Modalidad 2: genera propuesta estadística a 1 clic desde las recomendaciones automáticas', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const notaStatus: TutorStatus = {
+      ...status,
+      choices: {
+        ...status.choices,
+        datasets: [{ id: 'tbl-notas', label: 'Notas' }],
+      },
+      guidance: {
+        table_count: 1,
+        selected_table: {
+          id: 'tbl-notas',
+          name: 'Notas',
+          rows: 30,
+          columns: 3,
+        },
+        variables: [
+          {
+            variable_id: 'v_parcial',
+            name: 'nota_parcial',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+          {
+            variable_id: 'v_final',
+            name: 'nota_final',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+        ],
+      },
+    };
+    api.status = vi.fn().mockResolvedValue(notaStatus);
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    // Pulsar recomendación 2: Comparar mediciones
+    const compareCard = await screen.findByRole('button', {
+      name: /2\. Comparar mediciones \(Pretest vs Postest - Muestras pareadas\)/,
+    });
+    fireEvent.click(compareCard);
+
+    expect(
+      await screen.findByText(
+        'Comparación de mediciones pareadas (t de Student / Wilcoxon)',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '✓ Aprobar y ejecutar análisis' }),
+    ).toBeInTheDocument();
+
+    // Pulsar recomendación 3: Correlación
+    const corrCard = screen.getByRole('button', {
+      name: /3\. Evaluar correlación entre notas/,
+    });
+    fireEvent.click(corrCard);
+
+    expect(
+      await screen.findByText(
+        'Correlación bivariada entre calificaciones (Pearson / Spearman)',
+      ),
+    ).toBeInTheDocument();
+
+    // Pulsar recomendación 1: Descriptivo completo
+    const descCard = screen.getByRole('button', {
+      name: /1\. Descriptivo completo \(Media, mediana, desviación estándar y cuartiles\)/,
+    });
+    fireEvent.click(descCard);
+
+    expect(
+      await screen.findByText('Resumen estadístico descriptivo completo'),
     ).toBeInTheDocument();
   });
 });
