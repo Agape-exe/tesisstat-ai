@@ -99,12 +99,12 @@ export function TableContextEditor({
               .map(([name, label]) => (
                 <div key={name}>
                   <dt>{label}</dt>
-                  <dd>Servidor: {remote[name].value ?? 'Desconocido'}</dd>
+                  <dd>Servidor: {remote[name].value ?? 'Sin especificar'}</dd>
                   <dd>
                     Tu borrador:{' '}
                     {name in changes
-                      ? (changes[name] ?? 'Desconocido')
-                      : (saved[name].value ?? 'Desconocido')}
+                      ? (changes[name] ?? 'Sin especificar')
+                      : (saved[name].value ?? 'Sin especificar')}
                   </dd>
                 </div>
               ))}
@@ -177,7 +177,7 @@ export function TableContextEditor({
                       disabled={busy}
                       onChange={(e) => edit(name, e.target.value)}
                     >
-                      <option value="unknown">Desconocido</option>
+                      <option value="unknown">Sin especificar</option>
                       <option value="before">Antes</option>
                       <option value="after">Después</option>
                       <option value="other">Otro</option>
@@ -207,13 +207,21 @@ export function TableContextEditor({
                     />
                   )}
                 </label>
-                <small>
+                <span
+                  className={`rp-field-status ${
+                    !changed && saved[name].confirmation
+                      ? 'status-confirmed'
+                      : known
+                        ? 'status-unconfirmed'
+                        : 'status-empty'
+                  }`}
+                >
                   {!changed && saved[name].confirmation
-                    ? 'Confirmado por ti'
+                    ? '✓ Confirmado por ti'
                     : known
-                      ? 'Sin confirmar'
-                      : 'Desconocido'}
-                </small>
+                      ? '● Sin confirmar'
+                      : '○ Sin especificar'}
+                </span>
                 <label className="source-confirm">
                   <input
                     type="checkbox"

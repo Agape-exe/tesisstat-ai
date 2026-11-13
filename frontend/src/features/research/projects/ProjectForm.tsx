@@ -15,6 +15,7 @@ export function ProjectForm({ initial, onSave, onCancel }: Props) {
   const [values, setValues] = useState<ProjectFormValues>(() => ({
     title: initial?.title ?? '',
     description: initial?.description ?? '',
+    methodologicalContext: '',
   }));
   const [errors, setErrors] = useState<FormErrors>({});
   const [error, setError] = useState('');
@@ -100,6 +101,27 @@ export function ProjectForm({ initial, onSave, onCancel }: Props) {
             {errors.description}
           </p>
         )}
+        <details className="rp-context-collapse">
+          <summary>Contexto metodológico de tesis (opcional)</summary>
+          <p className="rp-hint">
+            Pega aquí tus objetivos, preguntas o hipótesis si ya los tienes. No
+            es obligatorio para comenzar a analizar tus datos.
+          </p>
+          <label htmlFor="project-methodologicalContext">
+            Objetivos o hipótesis
+          </label>
+          <textarea
+            {...field('methodologicalContext')}
+            id="project-methodologicalContext"
+            rows={4}
+            placeholder="Ej. Objetivo general: Determinar la relación entre las notas del primer y segundo parcial... Hipótesis: Existe una diferencia significativa..."
+          />
+          {errors.methodologicalContext && (
+            <p id="error-methodologicalContext" className="rp-field-error">
+              {errors.methodologicalContext}
+            </p>
+          )}
+        </details>
         <div className="rp-actions">
           <button type="submit">
             {saving

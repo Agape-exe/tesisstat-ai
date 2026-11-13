@@ -16,7 +16,18 @@
   margin: 0;
 }
 .data-variable {
-  margin: 16px 0;
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+.data-variable h4 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  color: #1e293b;
+  font-size: 1.05rem;
 }
 .data-workspace .rp-field {
   display: flex;
@@ -41,24 +52,23 @@
 .data-workspace textarea {
   min-height: 85px;
 }
-.data-workspace pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-height: 300px;
-  overflow: auto;
-  font-size: 12px;
-}
 .data-confirmations {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 20px;
-  margin: 14px 0;
+  gap: 12px 24px;
+  margin: 18px 0;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
 }
 .data-confirmations label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 13px;
+  color: #334155;
+  cursor: pointer;
 }
 .data-counts {
   display: grid;

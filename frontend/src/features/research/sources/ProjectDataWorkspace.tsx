@@ -36,15 +36,20 @@ export function ProjectDataWorkspace({
         >
           Revisar datos y variables
         </button>
-        <details>
-          <summary>Herramientas avanzadas</summary>
-          <button
-            className="rp-secondary"
-            aria-pressed={legacy}
-            onClick={() => onNavigate('legacy')}
-          >
-            Herramientas anteriores de datasets
-          </button>
+        <details className="rp-dropdown-menu">
+          <summary className="rp-secondary rp-dropdown-trigger">
+            Herramientas avanzadas
+          </summary>
+          <div className="rp-dropdown-content">
+            <button
+              type="button"
+              className="rp-secondary"
+              aria-pressed={legacy}
+              onClick={() => onNavigate('legacy')}
+            >
+              Herramientas anteriores de datasets
+            </button>
+          </div>
         </details>
         <button
           className="rp-secondary"

@@ -23,8 +23,71 @@
   resize: vertical;
 }
 .source-context-field {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: #fbfcfe;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.rp-field-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  width: fit-content;
+}
+.rp-field-status.status-confirmed {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+.rp-field-status.status-unconfirmed {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+.rp-field-status.status-empty {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+.rp-dropdown-menu {
+  position: relative;
+  display: inline-block;
+}
+.rp-dropdown-trigger {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rp-dropdown-trigger::-webkit-details-marker {
+  display: none;
+}
+.rp-dropdown-trigger::after {
+  content: ' ▾';
+  font-size: 0.8em;
+}
+.rp-dropdown-content {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  min-width: 260px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 .source-upload > p {

@@ -1,13 +1,9 @@
 import { ProjectHome } from './ProjectHome';
 import { ProjectContext } from './ProjectContext';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { WorkspaceFocus } from './workspaceFocus';
 import { TutorChat } from '../../conversation/TutorChat';
-import {
-  createTutorApi,
-  type Selection,
-  type TutorStatus,
-} from '../../conversation/tutorApi';
+import type { Selection } from '../../conversation/tutorApi';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
 import { ProjectMethodology } from '../methodology/ProjectMethodology';
 import { ProjectDataWorkspace } from '../sources/ProjectDataWorkspace';
@@ -33,10 +29,7 @@ export function ProjectWorkspace({
   item?: string | null;
 }) {
   const routeKey = JSON.stringify([section, view, item]);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [bubbleStatus, setBubbleStatus] = useState<TutorStatus | null>(null);
-  const [pillDismissed, setPillDismissed] = useState(false);
-  const tutorOpen = helpOpen;
+  const [showDataPanel, setShowDataPanel] = useState(false);
   const helpStage =
     (
       {
@@ -74,53 +67,6 @@ export function ProjectWorkspace({
   };
   const boundSelection =
     focus?.key === routeKey ? focus.selection : baseSelection;
-  const boundSelectionKey = JSON.stringify(boundSelection);
-
-  useEffect(() => {
-    let ignore = false;
-    const fetchStatus = () => {
-      createTutorApi()
-        .status(projectId, boundSelection)
-        .then((s) => {
-          if (!ignore) setBubbleStatus(s);
-        })
-        .catch(() => {});
-    };
-    if (section !== 'home' || tutorOpen) {
-      fetchStatus();
-    }
-    const onResourcesChanged = (event: Event) => {
-      if ((event as CustomEvent<string>).detail === projectId) {
-        setPillDismissed(false);
-        fetchStatus();
-      }
-    };
-    window.addEventListener('tesisstat:resources-changed', onResourcesChanged);
-    return () => {
-      ignore = true;
-      window.removeEventListener(
-        'tesisstat:resources-changed',
-        onResourcesChanged,
-      );
-    };
-  }, [projectId, section, tutorOpen, boundSelectionKey, boundSelection]);
-
-  const selectedTable = bubbleStatus?.guidance?.selected_table;
-  const selectedTableName = selectedTable?.name ?? '';
-  const hasNotaVar = bubbleStatus?.guidance?.variables?.some((v) =>
-    v.name.toLowerCase().includes('nota'),
-  );
-  const isNotaTable =
-    selectedTableName.toLowerCase().includes('nota') || Boolean(hasNotaVar);
-
-  const pillNotification = isNotaTable
-    ? 'He detectado tu tabla con variables de notas. ¿Quieres que te ayude a analizarlas?'
-    : selectedTableName
-      ? `He detectado tu tabla «${selectedTableName}». ¿Quieres que te ayude a analizarla?`
-      : (bubbleStatus?.choices?.datasets?.length ?? 0) > 0 ||
-          (bubbleStatus?.guidance?.table_count ?? 0) > 0
-        ? 'He detectado datos cargados en tu proyecto. ¿Quieres que te ayude a analizarlos?'
-        : null;
 
   const [cache, setCache] = useState<{
     key: string;
@@ -140,108 +86,9 @@ export function ProjectWorkspace({
   return (
     <WorkspaceFocus.Provider value={publish}>
       <div
-        className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : ''}`}
+        className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : ''} ${showDataPanel && section === 'assistant' ? 'rp-workspace-split' : ''}`}
         aria-label="Sección del proyecto"
       >
-        {section !== 'assistant' && (
-          <div
-            className="rp-tutor-floating-container"
-            aria-label="Asistente de tutoría IA"
-          >
-            {!tutorOpen && !pillDismissed && pillNotification && (
-              <div
-                className="rp-tutor-pill"
-                role="status"
-                onClick={() => {
-                  setHelpOpen(true);
-                  setPillDismissed(true);
-                }}
-              >
-                <span className="rp-tutor-pill-icon" aria-hidden="true">
-                  ✨
-                </span>
-                <span className="rp-tutor-pill-text">{pillNotification}</span>
-                <button
-                  type="button"
-                  className="rp-tutor-pill-close"
-                  aria-label="Cerrar notificación"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPillDismissed(true);
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            <button
-              type="button"
-              className={`rp-tutor-bubble ${tutorOpen ? 'rp-tutor-bubble-active' : ''}`}
-              aria-label={
-                tutorOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'
-              }
-              aria-expanded={tutorOpen}
-              onClick={() => {
-                setHelpOpen(!tutorOpen);
-                if (!tutorOpen) setPillDismissed(true);
-              }}
-            >
-              {tutorOpen ? (
-                <span className="rp-tutor-bubble-close" aria-hidden="true">
-                  ✕
-                </span>
-              ) : (
-                <span className="rp-tutor-bubble-icon" aria-hidden="true">
-                  <svg
-                    width="26"
-                    height="26"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    <circle cx="9" cy="10" r="1.25" fill="currentColor" />
-                    <circle cx="15" cy="10" r="1.25" fill="currentColor" />
-                  </svg>
-                </span>
-              )}
-            </button>
-            {tutorOpen && (
-              <div
-                className="rp-tutor-panel"
-                role="dialog"
-                aria-label="Asistente TesisStat"
-              >
-                <div className="rp-tutor-panel-header">
-                  <div className="rp-tutor-panel-title">
-                    <span className="rp-tutor-panel-badge">IA</span>
-                    <strong>Asistente TesisStat</strong>
-                  </div>
-                  <button
-                    type="button"
-                    className="rp-tutor-panel-close-btn"
-                    aria-label="Cerrar asistente"
-                    onClick={() => setHelpOpen(false)}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="rp-tutor-panel-content">
-                  <TutorChat
-                    key={`${projectId}:${JSON.stringify(boundSelection)}`}
-                    projectId={projectId}
-                    projectTitle={projectTitle}
-                    stage={helpStage}
-                    boundSelection={boundSelection}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
         {(Object.entries(cache.routes) as [Section, WorkspaceRoute][]).map(
           ([id, route]) => (
             <div className="rp-guided-content" key={id} hidden={id !== section}>
@@ -254,6 +101,9 @@ export function ProjectWorkspace({
                 item={route.item}
                 active={id === section}
                 tutorStage={cache.tutorStage}
+                boundSelection={boundSelection}
+                showDataPanel={showDataPanel}
+                setShowDataPanel={setShowDataPanel}
               />
             </div>
           ),
@@ -271,6 +121,9 @@ function SectionContent({
   item,
   active,
   tutorStage,
+  boundSelection,
+  showDataPanel,
+  setShowDataPanel,
 }: {
   projectId: string;
   projectTitle?: string;
@@ -280,6 +133,9 @@ function SectionContent({
   item: string | null;
   active: boolean;
   tutorStage?: Selection['stage'];
+  boundSelection?: Selection;
+  showDataPanel?: boolean;
+  setShowDataPanel?: (show: boolean) => void;
 }) {
   switch (section) {
     case 'home':
@@ -297,14 +153,70 @@ function SectionContent({
       );
     case 'assistant':
       return (
-        <TutorChat
-          key={`${projectId}:${view}:${item}:${tutorStage}`}
-          projectId={projectId}
-          projectTitle={projectTitle}
-          stage={view === 'results' ? 'results' : (tutorStage ?? 'home')}
-          active={active}
-          resultId={view === 'results' ? (item ?? undefined) : undefined}
-        />
+        <section
+          className="rp-chat-first-workspace rp-assistant-section"
+          aria-label="Asistente IA"
+        >
+          <div className="rp-chat-workspace-header">
+            <div className="rp-chat-workspace-title">
+              <span className="rp-tutor-panel-badge">IA</span>
+              <h2>Asistente Estadístico TesisStat</h2>
+            </div>
+            <button
+              type="button"
+              className={`rp-secondary rp-toggle-data-btn ${showDataPanel ? 'active' : ''}`}
+              onClick={() => setShowDataPanel?.(!showDataPanel)}
+              aria-expanded={showDataPanel}
+            >
+              {showDataPanel ? '✕ Ocultar datos' : '📊 Ver datos cargados'}
+            </button>
+          </div>
+          <div
+            className={`rp-chat-split-container ${showDataPanel ? 'split-active' : ''}`}
+          >
+            <div className="rp-chat-main-column">
+              <TutorChat
+                key={`${projectId}:${view}:${item}:${tutorStage}`}
+                projectId={projectId}
+                projectTitle={projectTitle}
+                stage={view === 'results' ? 'results' : (tutorStage ?? 'home')}
+                active={active}
+                resultId={view === 'results' ? (item ?? undefined) : undefined}
+                boundSelection={boundSelection}
+                onOpenDataPanel={() => setShowDataPanel?.(true)}
+              />
+            </div>
+            {showDataPanel && (
+              <aside
+                className="rp-side-data-panel"
+                aria-label="Panel de datos cargados"
+              >
+                <div className="rp-side-data-header">
+                  <h3>Datos cargados y visualizaciones</h3>
+                  <button
+                    type="button"
+                    className="rp-side-data-close"
+                    aria-label="Cerrar panel de datos"
+                    onClick={() => setShowDataPanel?.(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="rp-side-data-content">
+                  <ProjectDataWorkspace
+                    projectId={projectId}
+                    view={view}
+                    item={item}
+                    active={true}
+                    onNavigate={(v, i) =>
+                      navigateWorkspace(projectId, 'assistant', v, i)
+                    }
+                  />
+                </div>
+              </aside>
+            )}
+          </div>
+        </section>
       );
     case 'documents':
       return <ProjectDocuments projectId={projectId} />;
