@@ -82,8 +82,7 @@ def render_step(kind, context):
             "para conocer medidas esenciales como media, mediana y dispersión. "
             if quantitative
             else (
-                "Como primer paso, te recomiendo describir las medidas cuantitativas "
-                "de tus datos. "
+                "Como primer paso, te recomiendo describir las medidas cuantitativas de tus datos. "
             )
         )
         + (

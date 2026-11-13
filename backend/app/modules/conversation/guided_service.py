@@ -21,8 +21,7 @@ def guidance(workspace, project, selection, *, table=None):
         target_dataset_id = tables[0].id
 
     if table is None and (
-        not target_dataset_id
-        or any((selection.intent_id, selection.plan_id, selection.result_id))
+        not target_dataset_id or any((selection.intent_id, selection.plan_id, selection.result_id))
     ):
         return result
     if table is None:
