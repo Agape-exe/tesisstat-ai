@@ -4,6 +4,7 @@ export interface ProjectFormValues {
   title: string;
   description: string;
   methodologicalContext?: string;
+  assistedResponse?: string;
 }
 export type FormErrors = Partial<Record<keyof ProjectFormValues, string>>;
 

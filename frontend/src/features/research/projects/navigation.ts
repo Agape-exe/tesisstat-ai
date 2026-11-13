@@ -1,24 +1,35 @@
 import { useSyncExternalStore } from 'react';
 
 export const sections = [
-  ['home', 'Inicio'],
-  ['context', 'Contexto'],
+  ['assistant', 'Asistente IA'],
   ['datasets', 'Datos'],
-  ['analysis', 'Análisis'],
+  ['context', 'Contexto'],
   ['results', 'Resultados'],
 ] as const;
 export const secondarySections = [
-  ['assistant', 'Asistente IA'],
   ['documents', 'Documentos'],
   ['methodology', 'Metodología'],
   ['instrument', 'Instrumento'],
   ['reports', 'Informes'],
 ] as const;
-export type Section =
-  (typeof sections)[number][0] | (typeof secondarySections)[number][0];
+export const allSections = [
+  'assistant',
+  'datasets',
+  'context',
+  'results',
+  'home',
+  'analysis',
+  'documents',
+  'methodology',
+  'instrument',
+  'reports',
+] as const;
+export type Section = (typeof allSections)[number];
 export const primarySection = (section: Section): Section =>
   (
     ({
+      home: 'assistant',
+      analysis: 'results',
       documents: 'context',
       methodology: 'context',
       instrument: 'datasets',
@@ -55,16 +66,16 @@ export function useProjectRoute(): ProjectRoute {
     projectId: params.get('project') || null,
     view: params.get('view'),
     item: params.get('item'),
-    section: [...sections, ...secondarySections].some(([id]) => id === section)
+    section: allSections.some((id) => id === section)
       ? (section as Section)
-      : 'home',
+      : 'assistant',
     form: form === 'create' || form === 'edit' ? form : null,
   };
 }
 
 export function navigateProject(
   projectId: string | null = null,
-  section: Section = 'home',
+  section: Section = 'assistant',
   form: ProjectRoute['form'] = null,
   replace = false,
   workspace?: { view?: string; item?: string },
