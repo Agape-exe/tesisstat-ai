@@ -53,19 +53,50 @@ def render_step(kind, context):
         raise AIError("invalid_response")
     columns = variables(context)
     pending = [v for v in columns if not v.get("meaning_confirmed") or not v.get("scale_confirmed")]
-    names = " y ".join(f"«{v['name']}»" for v in (pending or columns)[:2]) or "las medidas"
+    quantitative = [
+        v
+        for v in columns
+        if v.get("detected_type") == "numérico"
+        and not (v.get("scale_confirmed") and v.get("scale") == "nominal")
+    ]
+    target_vars = quantitative or pending or columns
+    names = " y ".join(f"«{v['name']}»" for v in target_vars[:2]) or "las variables cuantitativas"
     row_known = any(f.context_field == "/table/row_meaning" for f in context.evidence)
+
+    # Detect record count from evidence if available
+    row_count = None
+    import re
+
+    for f in context.evidence:
+        m = re.search(r"(\d+)\s+registros", f.text)
+        if m:
+            row_count = m.group(1)
+            break
+    count_prefix = f"He detectado tu tabla con {row_count} registros. " if row_count else ""
+
     return {
-        "clarify_observations": (
-            "Primero aclararía cómo se vinculan las mediciones entre sí."
-            if row_known
-            else "Primero aclararía qué representa cada fila y cómo se vinculan "
-            "las mediciones entre sí."
+        "clarify_observations": count_prefix
+        + (
+            f"Como primer paso, te recomiendo realizar un análisis descriptivo de tus variables cuantitativas ({names}) "
+            "para conocer medidas esenciales como media, mediana y dispersión. "
+            if quantitative
+            else "Como primer paso, te recomiendo describir las medidas cuantitativas de tus datos. "
         )
-        + " Ese vínculo debe declararse; no se determina por similitud de valores "
-        "ni por orden de filas.",
-        "review_variables": f"Empezaría revisando el significado y la escala de {names} "
-        "antes de elegir los resúmenes o comparaciones.",
+        + (
+            "Para avanzar hacia pruebas inferenciales o comparación de grupos, "
+            + (
+                "aclararemos cómo se vinculan las mediciones entre sí."
+                if row_known
+                else "aclararemos qué representa cada fila y cómo se vinculan las mediciones entre sí."
+            )
+        ),
+        "review_variables": count_prefix
+        + (
+            f"Te sugiero comenzar con la estadística descriptiva de tus variables cuantitativas ({names}), "
+            "revisando su escala y significado para asegurar un resumen estadístico adecuado."
+            if quantitative
+            else f"Empezaría revisando el significado y la escala de {names} antes de elegir los resúmenes o comparaciones."
+        ),
         "review_quality": "Empezaría revisando los faltantes, errores o variables sin variación "
         "señalados por la comprobación local, sin eliminar ni modificar registros automáticamente.",
         "review_analysis": "Primero revisaría la intención seleccionada y las aclaraciones "
@@ -82,15 +113,11 @@ def render_options(indices, context):
     if any(index not in allowed for index in indices):
         raise AIError("invalid_response")
     labels = {
-        "prepare_descriptive": "Podrías comenzar por describir las medidas con resúmenes "
-        "acordes con su significado y escala.",
-        "start_association": "También podrías explorar relaciones entre medidas si corresponde "
-        "vincularlas por sus unidades de observación.",
-        "start_comparison": "Para comparar grupos o mediciones habría que aclarar su diseño "
-        "y si corresponden a las mismas unidades o a unidades distintas.",
+        "prepare_descriptive": "Puedes comenzar por describir estos datos para calcular resúmenes de tendencia central y dispersión.",
+        "start_association": "También puedes explorar asociaciones o correlaciones entre variables.",
+        "start_comparison": "Para comparar grupos o mediciones, definiremos si corresponden a muestras independientes o pareadas.",
         "request_diagnostic": "Podrías revisar los diagnósticos de la intención seleccionada.",
-        "request_proposal": "Con las aclaraciones necesarias, podrías abrir la revisión de "
-        "una propuesta; aprobarla y ejecutarla seguirían siendo acciones separadas.",
+        "request_proposal": "Con las aclaraciones necesarias, podrías generar una propuesta de análisis estadístico.",
     }
     destinations = {
         "datasets": "la tabla y sus variables",

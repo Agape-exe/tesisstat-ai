@@ -121,6 +121,8 @@ class TutorContextBuilder:
         inventory += [
             reference("intent", i).model_dump(mode="json") for i in self.intents.list(project)
         ]
+        if not dataset_id and datasets and not historical_selection:
+            dataset_id = datasets[0].id
         if dataset_id:
             ds, rows = self.workspace.read_table(project, dataset_id)
             refs += [*ds.source_refs, ref("dataset", ds)]

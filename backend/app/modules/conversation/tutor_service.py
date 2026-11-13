@@ -298,20 +298,30 @@ class TutorService:
                 orientation = answer.orientation
                 if "?" not in orientation.clarification:
                     raise AIError("invalid_response")
-                if sent_evidence and not orientation.basis_keys:
+                sent_evidence_keys = {f.key for f in sent_evidence}
+                if sent_evidence and (
+                    not orientation.basis_keys
+                    or any(key not in sent_evidence_keys for key in orientation.basis_keys)
+                ):
                     raise AIError("invalid_response")
-                basis = " ".join("{{" + key + "}}" for key in orientation.basis_keys)
                 procedural_text = [
-                    render_options(orientation.option_indices, context),
                     render_step(orientation.next_step, context),
+                    render_options(orientation.option_indices, context),
                 ]
                 paragraphs.extend(procedural_text)
                 action_indices.extend(orientation.option_indices)
+                for idx, act in enumerate(context.allowed_actions):
+                    if (
+                        act.kind in ("prepare_descriptive", "start_comparison")
+                        and idx not in action_indices
+                    ):
+                        action_indices.append(idx)
                 prose = [
-                    basis + " " + orientation.reason,
+                    orientation.reason,
                     *prose,
                     orientation.clarification,
                 ]
+                fact_keys.extend(orientation.basis_keys)
             for paragraph in prose:
                 rendered, keys = render_contextual_prose(paragraph, sent_evidence)
                 paragraphs.append(rendered)

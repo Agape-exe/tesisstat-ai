@@ -1,9 +1,13 @@
 import { ProjectHome } from './ProjectHome';
 import { ProjectContext } from './ProjectContext';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { WorkspaceFocus } from './workspaceFocus';
 import { TutorChat } from '../../conversation/TutorChat';
-import type { Selection } from '../../conversation/tutorApi';
+import {
+  createTutorApi,
+  type Selection,
+  type TutorStatus,
+} from '../../conversation/tutorApi';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
 import { ProjectMethodology } from '../methodology/ProjectMethodology';
 import { ProjectDataWorkspace } from '../sources/ProjectDataWorkspace';
@@ -29,11 +33,10 @@ export function ProjectWorkspace({
   item?: string | null;
 }) {
   const routeKey = JSON.stringify([section, view, item]);
-  const [helpOpen, setHelpOpen] = useState<boolean | null>(null);
-  const accompanied = ['datasets', 'analysis', 'results', 'reports'].includes(
-    section,
-  );
-  const tutorOpen = helpOpen ?? accompanied;
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [bubbleStatus, setBubbleStatus] = useState<TutorStatus | null>(null);
+  const [pillDismissed, setPillDismissed] = useState(false);
+  const tutorOpen = helpOpen;
   const helpStage =
     (
       {
@@ -71,6 +74,53 @@ export function ProjectWorkspace({
   };
   const boundSelection =
     focus?.key === routeKey ? focus.selection : baseSelection;
+
+  useEffect(() => {
+    let ignore = false;
+    const fetchStatus = () => {
+      createTutorApi()
+        .status(projectId, boundSelection)
+        .then((s) => {
+          if (!ignore) setBubbleStatus(s);
+        })
+        .catch(() => {});
+    };
+    if (section !== 'home' || tutorOpen) {
+      fetchStatus();
+    }
+    const onResourcesChanged = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === projectId) {
+        setPillDismissed(false);
+        fetchStatus();
+      }
+    };
+    window.addEventListener('tesisstat:resources-changed', onResourcesChanged);
+    return () => {
+      ignore = true;
+      window.removeEventListener(
+        'tesisstat:resources-changed',
+        onResourcesChanged,
+      );
+    };
+  }, [projectId, section, tutorOpen, JSON.stringify(boundSelection)]);
+
+  const selectedTable = bubbleStatus?.guidance?.selected_table;
+  const selectedTableName = selectedTable?.name ?? '';
+  const hasNotaVar = bubbleStatus?.guidance?.variables?.some((v) =>
+    v.name.toLowerCase().includes('nota'),
+  );
+  const isNotaTable =
+    selectedTableName.toLowerCase().includes('nota') || Boolean(hasNotaVar);
+
+  const pillNotification = isNotaTable
+    ? 'He detectado tu tabla con variables de notas. ¿Quieres que te ayude a analizarlas?'
+    : selectedTableName
+      ? `He detectado tu tabla «${selectedTableName}». ¿Quieres que te ayude a analizarla?`
+      : (bubbleStatus?.choices?.datasets?.length ?? 0) > 0 ||
+          (bubbleStatus?.guidance?.table_count ?? 0) > 0
+        ? 'He detectado datos cargados en tu proyecto. ¿Quieres que te ayude a analizarlos?'
+        : null;
+
   const [cache, setCache] = useState<{
     key: string;
     routes: Partial<Record<Section, WorkspaceRoute>>;
@@ -89,31 +139,107 @@ export function ProjectWorkspace({
   return (
     <WorkspaceFocus.Provider value={publish}>
       <div
-        className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : accompanied ? 'rp-guided-workspace' : ''}`}
+        className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : ''}`}
         aria-label="Sección del proyecto"
       >
         {section !== 'assistant' && (
-          <aside
-            className="rp-tutor-sidebar"
-            aria-label="Tutor del trabajo actual"
+          <div
+            className="rp-tutor-floating-container"
+            aria-label="Asistente de tutoría IA"
           >
+            {!tutorOpen && !pillDismissed && pillNotification && (
+              <div
+                className="rp-tutor-pill"
+                role="status"
+                onClick={() => {
+                  setHelpOpen(true);
+                  setPillDismissed(true);
+                }}
+              >
+                <span className="rp-tutor-pill-icon" aria-hidden="true">
+                  ✨
+                </span>
+                <span className="rp-tutor-pill-text">{pillNotification}</span>
+                <button
+                  type="button"
+                  className="rp-tutor-pill-close"
+                  aria-label="Cerrar notificación"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPillDismissed(true);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            )}
             <button
-              className="rp-secondary"
+              type="button"
+              className={`rp-tutor-bubble ${tutorOpen ? 'rp-tutor-bubble-active' : ''}`}
+              aria-label={
+                tutorOpen ? 'Cerrar asistente IA' : 'Abrir asistente IA'
+              }
               aria-expanded={tutorOpen}
-              onClick={() => setHelpOpen(!tutorOpen)}
+              onClick={() => {
+                setHelpOpen(!tutorOpen);
+                if (!tutorOpen) setPillDismissed(true);
+              }}
             >
-              {tutorOpen ? 'Plegar tutor' : 'Abrir tutor para este paso'}
+              {tutorOpen ? (
+                <span className="rp-tutor-bubble-close" aria-hidden="true">
+                  ✕
+                </span>
+              ) : (
+                <span className="rp-tutor-bubble-icon" aria-hidden="true">
+                  <svg
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    <circle cx="9" cy="10" r="1.25" fill="currentColor" />
+                    <circle cx="15" cy="10" r="1.25" fill="currentColor" />
+                  </svg>
+                </span>
+              )}
             </button>
             {tutorOpen && (
-              <TutorChat
-                key={`${projectId}:${JSON.stringify(boundSelection)}`}
-                projectId={projectId}
-                projectTitle={projectTitle}
-                stage={helpStage}
-                boundSelection={boundSelection}
-              />
+              <div
+                className="rp-tutor-panel"
+                role="dialog"
+                aria-label="Asistente TesisStat"
+              >
+                <div className="rp-tutor-panel-header">
+                  <div className="rp-tutor-panel-title">
+                    <span className="rp-tutor-panel-badge">IA</span>
+                    <strong>Asistente TesisStat</strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="rp-tutor-panel-close-btn"
+                    aria-label="Cerrar asistente"
+                    onClick={() => setHelpOpen(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="rp-tutor-panel-content">
+                  <TutorChat
+                    key={`${projectId}:${JSON.stringify(boundSelection)}`}
+                    projectId={projectId}
+                    projectTitle={projectTitle}
+                    stage={helpStage}
+                    boundSelection={boundSelection}
+                  />
+                </div>
+              </div>
             )}
-          </aside>
+          </div>
         )}
         {(Object.entries(cache.routes) as [Section, WorkspaceRoute][]).map(
           ([id, route]) => (
