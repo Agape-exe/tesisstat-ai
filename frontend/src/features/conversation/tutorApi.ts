@@ -64,6 +64,7 @@ export interface TutorStatus {
       rows: number;
       columns: number;
       identical_rows?: number;
+      recommended_normality_test?: string;
     } | null;
     variables: {
       variable_id: string;

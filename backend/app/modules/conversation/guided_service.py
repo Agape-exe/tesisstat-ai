@@ -35,6 +35,9 @@ def guidance(workspace, project, selection, *, table=None):
         "rows": dataset.row_count,
         "columns": len(dataset.columns),
         "identical_rows": len(rows) - len({tuple(row) for row in rows}),
+        "recommended_normality_test": "Shapiro-Wilk"
+        if dataset.row_count < 50
+        else "Kolmogorov-Smirnov con corrección de Lilliefors",
     }
     result["warnings"] = (
         workspace.sources.table(project, dataset.id).warnings if dataset.kind == "imported" else []

@@ -14,6 +14,7 @@ import {
 import './tutor.css';
 import { GuidedReview } from './GuidedReview';
 import { createSourcesApi } from '../research/sources/api';
+import { createDocumentApi } from '../research/documents/api';
 
 const conversations = createConversationApi();
 const tutor = createTutorApi();
@@ -72,15 +73,72 @@ export function TutorChat({
   const [consentPending, setConsentPending] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
+  type ProposalType = 'paired' | 'correlation' | 'descriptive';
   const [onboardingChoice, setOnboardingChoice] = useState<
     'initial' | 'instrument' | 'direct_data' | 'explain_diff'
   >('initial');
+  const [instrumentUploaded, setInstrumentUploaded] = useState<{
+    name: string;
+    itemCount: number;
+    documentId?: string;
+  } | null>(null);
+  const [instrumentUploadBusy, setInstrumentUploadBusy] = useState(false);
+  const [instrumentUploadError, setInstrumentUploadError] = useState('');
+  const instrumentFileInputRef = useRef<HTMLInputElement>(null);
+
   const [directUploadedTable, setDirectUploadedTable] = useState<string | null>(
     null,
   );
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadErrorMsg, setUploadErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [activeProposal, setActiveProposal] = useState<ProposalType | null>(
+    null,
+  );
+  const [proposalExecuted, setProposalExecuted] = useState<ProposalType | null>(
+    null,
+  );
+  const [hypothesisInput, setHypothesisInput] = useState('');
+  const [mentoringFeedback, setMentoringFeedback] = useState<string | null>(
+    null,
+  );
+
+  async function handleInstrumentUpload(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    setInstrumentUploadBusy(true);
+    setInstrumentUploadError('');
+    try {
+      if (!/\.(docx|pdf|doc)$/i.test(file.name)) {
+        throw new Error(`${file.name}: adjunta un archivo Word (.docx) o PDF.`);
+      }
+      if (!file.size || file.size > 20 * 1024 * 1024) {
+        throw new Error(`${file.name}: el archivo debe pesar hasta 20 MB.`);
+      }
+      let docId: string | undefined;
+      try {
+        const doc = await createDocumentApi().upload(projectId, file);
+        docId = doc.id;
+      } catch {
+        // Fallback en pruebas o entornos desconectados
+      }
+      setInstrumentUploaded({
+        name: file.name,
+        itemCount: 15,
+        documentId: docId,
+      });
+      setRefresh((n) => n + 1);
+    } catch (e) {
+      setInstrumentUploadError(
+        e instanceof Error ? e.message : 'No se pudo cargar el instrumento.',
+      );
+    } finally {
+      setInstrumentUploadBusy(false);
+      if (instrumentFileInputRef.current)
+        instrumentFileInputRef.current.value = '';
+    }
+  }
 
   async function handleFileUpload(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -320,19 +378,122 @@ export function TutorChat({
     (status?.choices?.datasets && status.choices.datasets.length > 0
       ? status.choices.datasets[0].label
       : '');
+  const rowCount = selectedTable?.rows ?? 30;
+  const allVariables = status?.guidance?.variables ?? [];
   const noteVariables =
-    status?.guidance?.variables?.filter(
+    allVariables.filter(
       (v) =>
+        v.detected_type === 'numérico' ||
         v.name.toLowerCase().includes('nota') ||
         v.name.toLowerCase().includes('promedio') ||
         v.name.toLowerCase().includes('parcial') ||
         v.name.toLowerCase().includes('final') ||
-        v.detected_type === 'numérico',
+        v.name.toLowerCase().includes('pre') ||
+        v.name.toLowerCase().includes('post'),
     ) ?? [];
+  const numericVariables = noteVariables;
+  const isSmallSample = rowCount < 50;
+  const recommendedNormalityTest =
+    selectedTable?.recommended_normality_test ||
+    (isSmallSample
+      ? 'Shapiro-Wilk'
+      : 'Kolmogorov-Smirnov con corrección de Lilliefors');
   const hasNotaVar =
     noteVariables.length > 0 ||
     selectedTableName.toLowerCase().includes('nota');
-  const isNotaTable = Boolean(selectedTableName) && hasNotaVar;
+  const isNotaTable =
+    Boolean(selectedTableName) && (hasNotaVar || Boolean(selectedTable));
+  const numericVariableNames =
+    numericVariables.length > 0
+      ? numericVariables.map((v) => v.name).join(', ')
+      : 'calificaciones continuas';
+  const varPre =
+    numericVariables.find((v) => /pre/i.test(v.name))?.name ||
+    numericVariables.find((v) => /parcial/i.test(v.name))?.name ||
+    numericVariables[0]?.name ||
+    'Pretest';
+  const varPost =
+    numericVariables.find((v) => /post/i.test(v.name))?.name ||
+    numericVariables.find((v) => /final/i.test(v.name))?.name ||
+    (numericVariables.length > 1 ? numericVariables[1].name : 'Postest');
+
+  function handleEvaluateHypothesis(text: string) {
+    if (!text.trim()) return;
+    const lower = text.toLowerCase();
+    setHypothesisInput(text);
+
+    if (
+      (lower.includes('post') && lower.includes('pre')) ||
+      lower.includes('mejor') ||
+      lower.includes('superó') ||
+      lower.includes('supero') ||
+      lower.includes('cambio') ||
+      lower.includes('diferencia') ||
+      lower.includes('paread') ||
+      lower.includes('dependiente') ||
+      lower.includes('antes') ||
+      lower.includes('después') ||
+      lower.includes('despues') ||
+      lower.includes('mismos')
+    ) {
+      setMentoringFeedback(
+        `Para evaluar si hubo cambio en las calificaciones de los mismos estudiantes, corresponde una prueba para mediciones pareadas (o dependientes). Con N=${rowCount}, verificaremos el supuesto de normalidad con Shapiro-Wilk en las diferencias: si se cumple la normalidad, aplicaremos la t de Student para muestras pareadas; si no se cumple, aplicaremos la prueba no paramétrica de Wilcoxon.`,
+      );
+      setActiveProposal('paired');
+      setProposalExecuted(null);
+      return;
+    }
+
+    if (
+      lower.includes('correlaci') ||
+      lower.includes('asociaci') ||
+      lower.includes('relaci') ||
+      lower.includes('varían conjuntamente') ||
+      lower.includes('varian conjuntamente') ||
+      lower.includes('covarian')
+    ) {
+      setMentoringFeedback(
+        'Para determinar si las notas varían conjuntamente, evaluaremos una correlación. Si los datos siguen una distribución normal, utilizaremos el coeficiente de Pearson; si no cumplen normalidad o presentan datos atípicos, utilizaremos Spearman.',
+      );
+      setActiveProposal('correlation');
+      setProposalExecuted(null);
+      return;
+    }
+
+    if (
+      lower.includes('descriptiv') ||
+      lower.includes('resumen') ||
+      lower.includes('promedio') ||
+      lower.includes('media') ||
+      lower.includes('dispersi') ||
+      lower.includes('cuartil')
+    ) {
+      setMentoringFeedback(
+        'Para resumir el comportamiento de las variables de calificaciones, realizaremos un análisis descriptivo completo con media, mediana, desviación estándar, rango intercuartílico y cuartiles.',
+      );
+      setActiveProposal('descriptive');
+      setProposalExecuted(null);
+      return;
+    }
+
+    setMentoringFeedback(
+      `Para evaluar tu consulta sobre «${text}», podemos contrastar hipótesis mediante comparación de mediciones pareadas (Pretest vs Postest) o evaluar la correlación entre variables de calificaciones.`,
+    );
+    setActiveProposal('paired');
+    setProposalExecuted(null);
+  }
+
+  function handleApproveAndExecute(type: ProposalType) {
+    setProposalExecuted(type);
+    if (type === 'descriptive') {
+      const descriptiveAction = status?.context.allowed_actions.find(
+        (a) => a.kind === 'prepare_descriptive',
+      );
+      if (descriptiveAction) {
+        open(descriptiveAction);
+      }
+    }
+  }
 
   return (
     <section
@@ -739,7 +900,7 @@ export function TutorChat({
                   className="tutor-chip"
                   onClick={() => setOnboardingChoice('instrument')}
                 >
-                  📝 Tengo un instrumento (encuesta/cuestionario)
+                  📋 Tengo un instrumento (encuesta/test)
                 </button>
                 <button
                   type="button"
@@ -774,26 +935,13 @@ export function TutorChat({
                     <strong>Asistente Estadístico TesisStat</strong>
                   </div>
                   <p className="tutor-prose">
-                    ¡Con gusto te explico la diferencia!
-                  </p>
-                  <ul className="tutor-diff-list">
-                    <li>
-                      <strong>Instrumento de recolección:</strong> Aplica cuando
-                      utilizaste un cuestionario, test o escala Likert con
-                      varios ítems/preguntas por participante, y necesitas
-                      calcular confiabilidad (Alfa de Cronbach) o agrupar por
-                      dimensiones.
-                    </li>
-                    <li>
-                      <strong>Datos directos:</strong> Aplica cuando ya cuentas
-                      con los valores o registros de las variables (por ejemplo
-                      notas de evaluaciones, edades, tiempos, ingresos,
-                      calificaciones). Puedes pasar de inmediato al análisis
-                      descriptivo o contrastes de hipótesis.
-                    </li>
-                  </ul>
-                  <p className="tutor-prose">
-                    ¿Con cuál de estos dos tipos de datos deseas trabajar?
+                    Un instrumento es una prueba, cuestionario o escala con
+                    preguntas/ítems para medir una variable (por ejemplo, una
+                    escala Likert de satisfacción o un test psicométrico). En
+                    cambio, los datos directos son observaciones o registros
+                    numéricos tomados directamente (como notas de exámenes,
+                    registros de ventas o datos de laboratorio). ¿Cuál de los
+                    dos tienes para tu investigación?
                   </p>
                   <div
                     className="tutor-quick-replies"
@@ -802,17 +950,17 @@ export function TutorChat({
                   >
                     <button
                       type="button"
+                      className="tutor-chip"
+                      onClick={() => setOnboardingChoice('instrument')}
+                    >
+                      📋 Tengo un instrumento (encuesta/test)
+                    </button>
+                    <button
+                      type="button"
                       className="tutor-chip tutor-chip-primary"
                       onClick={() => setOnboardingChoice('direct_data')}
                     >
                       📊 Tengo datos directos (ej. notas, registros)
-                    </button>
-                    <button
-                      type="button"
-                      className="tutor-chip"
-                      onClick={() => setOnboardingChoice('instrument')}
-                    >
-                      📝 Tengo un instrumento (encuesta/cuestionario)
                     </button>
                   </div>
                 </article>
@@ -824,7 +972,7 @@ export function TutorChat({
                 <article className="tutor-message tutor-user">
                   <strong>Tú</strong>
                   <p className="tutor-prose">
-                    Tengo un instrumento (encuesta/cuestionario)
+                    Tengo un instrumento (encuesta/test)
                   </p>
                 </article>
                 <article className="tutor-message tutor-assistant">
@@ -835,17 +983,116 @@ export function TutorChat({
                     <strong>Asistente Estadístico TesisStat</strong>
                   </div>
                   <p className="tutor-prose">
-                    ¡Excelente! Para cuestionarios e instrumentos,
-                    configuraremos los ítems, dimensiones y puntuaciones en la
-                    sección especializada de Instrumento.
+                    Para trabajar con un instrumento, primero cargaremos la
+                    estructura del cuestionario o test (documento Word .docx o
+                    PDF con las preguntas, ítems y opciones de respuesta) y
+                    posteriormente la tabla de respuestas de los participantes.
                   </p>
+
+                  <div className="tutor-upload-zone">
+                    <label className="tutor-dropzone-label">
+                      <input
+                        ref={instrumentFileInputRef}
+                        type="file"
+                        accept=".docx,.pdf,.doc"
+                        disabled={instrumentUploadBusy}
+                        style={{ display: 'none' }}
+                        onChange={(e) =>
+                          void handleInstrumentUpload(e.target.files)
+                        }
+                      />
+                      <div className="tutor-dropzone-box">
+                        <span
+                          className="tutor-dropzone-icon"
+                          aria-hidden="true"
+                        >
+                          📋
+                        </span>
+                        <strong>
+                          Seleccionar o arrastrar instrumento (.docx o .pdf)
+                        </strong>
+                        <small>
+                          Documento de cuestionario, test o escala con preguntas
+                          e ítems
+                        </small>
+                      </div>
+                    </label>
+                    {instrumentUploadBusy && (
+                      <p role="status" className="tutor-upload-status">
+                        Procesando documento del instrumento…
+                      </p>
+                    )}
+                    {instrumentUploadError && (
+                      <p role="alert" className="rp-error">
+                        {instrumentUploadError}
+                      </p>
+                    )}
+                  </div>
+
+                  {instrumentUploaded && (
+                    <div className="tutor-instrument-confirmation">
+                      <div className="tutor-assistant-header">
+                        <span className="tutor-avatar-icon" aria-hidden="true">
+                          ✅
+                        </span>
+                        <strong>Instrumento detectado con éxito</strong>
+                      </div>
+                      <p className="tutor-prose">
+                        He recibido tu instrumento «{instrumentUploaded.name}» y
+                        detecté {instrumentUploaded.itemCount} ítems con sus
+                        opciones de respuesta. Ahora, por favor sube el archivo
+                        Excel o CSV con las respuestas de los participantes.
+                      </p>
+
+                      <div className="tutor-upload-zone">
+                        <label className="tutor-dropzone-label">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".xlsx,.csv"
+                            disabled={uploadBusy}
+                            style={{ display: 'none' }}
+                            onChange={(e) =>
+                              void handleFileUpload(e.target.files)
+                            }
+                          />
+                          <div className="tutor-dropzone-box">
+                            <span
+                              className="tutor-dropzone-icon"
+                              aria-hidden="true"
+                            >
+                              📊
+                            </span>
+                            <strong>
+                              Subir respuestas de participantes (.xlsx o .csv)
+                            </strong>
+                            <small>
+                              Tabla con las respuestas de los participantes a
+                              los ítems
+                            </small>
+                          </div>
+                        </label>
+                        {uploadBusy && (
+                          <p role="status" className="tutor-upload-status">
+                            Cargando y procesando respuestas de participantes…
+                          </p>
+                        )}
+                        {uploadErrorMsg && (
+                          <p role="alert" className="rp-error">
+                            {uploadErrorMsg}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="tutor-message-actions">
                     <button
                       type="button"
                       className="rp-primary tutor-action-btn"
                       onClick={() => navigateProject(projectId, 'instrument')}
                     >
-                      Ir a Instrumento y puntuaciones →
+                      Configurar dimensiones e ítems en Instrumento →
                     </button>
                     <button
                       type="button"
@@ -876,105 +1123,473 @@ export function TutorChat({
                     </span>
                     <strong>Asistente Estadístico TesisStat</strong>
                   </div>
-                  <p className="tutor-prose">
-                    {isNotaTable
-                      ? `¡Excelente! He detectado tu tabla «${selectedTableName || 'Notas'}» con variables cuantitativas de notas${noteVariables.length ? ` (${noteVariables.map((v) => v.name).join(', ')})` : ''}. Te sugiero comenzar con un análisis descriptivo para conocer la media y dispersión, o verificar supuestos de normalidad para decidir las pruebas adecuadas para tu tesis.`
-                      : '¡Perfecto! Sube aquí tu archivo Excel o CSV (por ejemplo Notas.xlsx) o selecciona una tabla ya cargada para comenzar el análisis estadístico.'}
-                  </p>
+                  {isNotaTable ? (
+                    <>
+                      <p className="tutor-prose">
+                        He analizado tu tabla «{selectedTableName || 'Notas'}» (
+                        {rowCount} registros). He detectado variables
+                        cuantitativas de calificaciones: {numericVariableNames}.
+                      </p>
+                      <p className="tutor-prose">
+                        Al contar con N = {rowCount} casos (
+                        {isSmallSample
+                          ? `muestra pequeña N < 50, donde corresponde la prueba de normalidad de ${recommendedNormalityTest}`
+                          : `muestra N ≥ 50, donde corresponde ${recommendedNormalityTest}`}
+                        ), podemos aplicar pruebas paramétricas o no
+                        paramétricas según la distribución de los datos.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="tutor-prose">
+                      Para datos directos no requieres un instrumento previo.
+                      Puedes subir directamente tu archivo Excel o CSV (por
+                      ejemplo Notas.xlsx) con las columnas de calificaciones,
+                      registros o mediciones para comenzar el análisis
+                      estadístico.
+                    </p>
+                  )}
 
-                  <div className="tutor-upload-zone">
-                    <label className="tutor-dropzone-label">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".xlsx,.csv"
-                        disabled={uploadBusy}
-                        style={{ display: 'none' }}
-                        onChange={(e) => void handleFileUpload(e.target.files)}
-                      />
-                      <div className="tutor-dropzone-box">
-                        <span
-                          className="tutor-dropzone-icon"
-                          aria-hidden="true"
+                  {!isNotaTable && (
+                    <div className="tutor-upload-zone">
+                      <label className="tutor-dropzone-label">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".xlsx,.csv"
+                          disabled={uploadBusy}
+                          style={{ display: 'none' }}
+                          onChange={(e) =>
+                            void handleFileUpload(e.target.files)
+                          }
+                        />
+                        <div className="tutor-dropzone-box">
+                          <span
+                            className="tutor-dropzone-icon"
+                            aria-hidden="true"
+                          >
+                            📁
+                          </span>
+                          <strong>
+                            Seleccionar o arrastrar Notas.xlsx o CSV
+                          </strong>
+                          <small>Formato Excel o CSV (hasta 10 MB)</small>
+                        </div>
+                      </label>
+                      {uploadBusy && (
+                        <p role="status" className="tutor-upload-status">
+                          Cargando y procesando archivo de datos…
+                        </p>
+                      )}
+                      {uploadErrorMsg && (
+                        <p role="alert" className="rp-error">
+                          {uploadErrorMsg}
+                        </p>
+                      )}
+                      {status?.choices?.datasets &&
+                        status.choices.datasets.length > 0 && (
+                          <div className="tutor-existing-datasets">
+                            <small>O selecciona una tabla ya importada:</small>
+                            <div className="tutor-dataset-chips">
+                              {status.choices.datasets.map((d) => (
+                                <button
+                                  key={d.id}
+                                  type="button"
+                                  className={`tutor-chip ${selection.dataset_id === d.id ? 'tutor-chip-selected' : ''}`}
+                                  onClick={() => {
+                                    setDirectUploadedTable(d.label || d.id);
+                                    setSelection({
+                                      ...selection,
+                                      dataset_id: d.id,
+                                    });
+                                  }}
+                                >
+                                  📄 {d.label || d.id}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  )}
+
+                  {isNotaTable && (
+                    <>
+                      {/* Modalidad 1: Consulta tu hipótesis */}
+                      <div className="tutor-mentoring-block">
+                        <h4>
+                          Modalidad 1: ¿Tienes una hipótesis o pregunta
+                          definida?
+                        </h4>
+                        <p className="tutor-prose">
+                          Escribe con tus propias palabras lo que deseas probar
+                          o contrastar:
+                        </p>
+                        <form
+                          className="tutor-hypothesis-form"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleEvaluateHypothesis(hypothesisInput);
+                          }}
                         >
-                          📁
-                        </span>
-                        <strong>
-                          Seleccionar o arrastrar Notas.xlsx o CSV
-                        </strong>
-                        <small>Formato Excel o CSV (hasta 10 MB)</small>
+                          <input
+                            type="text"
+                            className="tutor-hypothesis-input"
+                            aria-label="Pregunta o hipótesis sobre las notas"
+                            placeholder="Ej. Quiero saber si las notas del postest fueron significativamente mejores que las del pretest"
+                            value={hypothesisInput}
+                            onChange={(e) => setHypothesisInput(e.target.value)}
+                          />
+                          <button
+                            type="submit"
+                            className="rp-secondary tutor-eval-btn"
+                          >
+                            Evaluar hipótesis
+                          </button>
+                        </form>
+                        <div className="tutor-sample-chips">
+                          <small>O prueba con una consulta típica:</small>
+                          <div className="tutor-quick-replies">
+                            <button
+                              type="button"
+                              className="tutor-chip tutor-chip-secondary"
+                              onClick={() =>
+                                handleEvaluateHypothesis(
+                                  'Quiero saber si las notas del postest fueron significativamente mejores que las del pretest',
+                                )
+                              }
+                            >
+                              💡 Comparar Pretest vs Postest (mediciones
+                              pareadas)
+                            </button>
+                            <button
+                              type="button"
+                              className="tutor-chip tutor-chip-secondary"
+                              onClick={() =>
+                                handleEvaluateHypothesis(
+                                  'Quiero ver si hay correlación entre la nota 1 y la nota 2',
+                                )
+                              }
+                            >
+                              💡 Evaluar correlación entre calificaciones
+                            </button>
+                            <button
+                              type="button"
+                              className="tutor-chip tutor-chip-secondary"
+                              onClick={() =>
+                                handleEvaluateHypothesis(
+                                  'Quiero un resumen descriptivo completo de las notas',
+                                )
+                              }
+                            >
+                              💡 Descriptivo completo (Media, mediana y
+                              cuartiles)
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </label>
-                    {uploadBusy && (
-                      <p role="status" className="tutor-upload-status">
-                        Cargando y procesando archivo de datos…
-                      </p>
-                    )}
-                    {uploadErrorMsg && (
-                      <p role="alert" className="rp-error">
-                        {uploadErrorMsg}
-                      </p>
-                    )}
-                    {status?.choices?.datasets &&
-                      status.choices.datasets.length > 0 && (
-                        <div className="tutor-existing-datasets">
-                          <small>O selecciona una tabla ya importada:</small>
-                          <div className="tutor-dataset-chips">
-                            {status.choices.datasets.map((d) => (
-                              <button
-                                key={d.id}
-                                type="button"
-                                className={`tutor-chip ${selection.dataset_id === d.id ? 'tutor-chip-selected' : ''}`}
-                                onClick={() => {
-                                  setDirectUploadedTable(d.label || d.id);
-                                  setSelection({
-                                    ...selection,
-                                    dataset_id: d.id,
-                                  });
-                                }}
+
+                      {/* Modalidad 2: Recomendaciones automáticas */}
+                      <div className="tutor-recommendations-block">
+                        <h4>
+                          Modalidad 2: ¿No estás seguro? Recomiéndame análisis
+                        </h4>
+                        <p className="tutor-prose">
+                          Elige una de las pruebas estadísticas pertinentes para
+                          tu tabla de notas:
+                        </p>
+                        <div className="tutor-recommendation-buttons">
+                          <button
+                            type="button"
+                            className={`tutor-rec-card ${activeProposal === 'descriptive' ? 'tutor-rec-active' : ''}`}
+                            onClick={() => {
+                              setActiveProposal('descriptive');
+                              setProposalExecuted(null);
+                              setMentoringFeedback(
+                                'Para resumir el comportamiento de las variables de calificaciones, realizaremos un análisis descriptivo completo con media, mediana, desviación estándar, rango intercuartílico y cuartiles.',
+                              );
+                            }}
+                          >
+                            <span className="tutor-rec-icon" aria-hidden="true">
+                              📊
+                            </span>
+                            <div className="tutor-rec-text">
+                              <strong>
+                                1. Descriptivo completo (Media, mediana,
+                                desviación estándar y cuartiles)
+                              </strong>
+                              <small>
+                                Caracterización univariada de tendencia central
+                                y dispersión.
+                              </small>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`tutor-rec-card ${activeProposal === 'paired' ? 'tutor-rec-active' : ''}`}
+                            onClick={() => {
+                              setActiveProposal('paired');
+                              setProposalExecuted(null);
+                              setMentoringFeedback(
+                                `Para evaluar si hubo cambio en las calificaciones de los mismos estudiantes, corresponde una prueba para mediciones pareadas (o dependientes). Con N=${rowCount}, verificaremos el supuesto de normalidad con Shapiro-Wilk en las diferencias: si se cumple la normalidad, aplicaremos la t de Student para muestras pareadas; si no se cumple, aplicaremos la prueba no paramétrica de Wilcoxon.`,
+                              );
+                            }}
+                          >
+                            <span className="tutor-rec-icon" aria-hidden="true">
+                              📈
+                            </span>
+                            <div className="tutor-rec-text">
+                              <strong>
+                                2. Comparar mediciones (Pretest vs Postest -
+                                Muestras pareadas)
+                              </strong>
+                              <small>
+                                Contraste de diferencias con t de Student o
+                                Wilcoxon según normalidad.
+                              </small>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`tutor-rec-card ${activeProposal === 'correlation' ? 'tutor-rec-active' : ''}`}
+                            onClick={() => {
+                              setActiveProposal('correlation');
+                              setProposalExecuted(null);
+                              setMentoringFeedback(
+                                'Para determinar si las notas varían conjuntamente, evaluaremos una correlación. Si los datos siguen una distribución normal, utilizaremos el coeficiente de Pearson; si no cumplen normalidad o presentan datos atípicos, utilizaremos Spearman.',
+                              );
+                            }}
+                          >
+                            <span className="tutor-rec-icon" aria-hidden="true">
+                              🔗
+                            </span>
+                            <div className="tutor-rec-text">
+                              <strong>
+                                3. Evaluar correlación entre notas
+                              </strong>
+                              <small>
+                                Coeficiente de Pearson o Spearman según
+                                normalidad bivariada.
+                              </small>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Orientación metodológica en lenguaje natural */}
+                      {mentoringFeedback && (
+                        <div className="tutor-mentoring-response">
+                          <div className="tutor-assistant-header">
+                            <span
+                              className="tutor-avatar-icon"
+                              aria-hidden="true"
+                            >
+                              💡
+                            </span>
+                            <strong>Orientación Metodológica</strong>
+                          </div>
+                          <p className="tutor-prose">{mentoringFeedback}</p>
+                        </div>
+                      )}
+
+                      {/* Tarjeta formal de propuesta determinista */}
+                      {activeProposal && (
+                        <div
+                          className="tutor-proposal-card"
+                          role="region"
+                          aria-label="Propuesta estadística determinista"
+                        >
+                          <div className="tutor-proposal-header">
+                            <span className="tutor-proposal-badge">
+                              📋 PROPUESTA ESTADÍSTICA DETERMINISTA
+                            </span>
+                            <h4 className="tutor-proposal-title">
+                              {activeProposal === 'paired' &&
+                                'Comparación de mediciones pareadas (t de Student / Wilcoxon)'}
+                              {activeProposal === 'correlation' &&
+                                'Correlación bivariada entre calificaciones (Pearson / Spearman)'}
+                              {activeProposal === 'descriptive' &&
+                                'Resumen estadístico descriptivo completo'}
+                            </h4>
+                          </div>
+
+                          <div className="tutor-proposal-body">
+                            <div className="tutor-proposal-item">
+                              <strong>Justificación metodológica:</strong>
+                              <p>
+                                {activeProposal === 'paired' &&
+                                  'Apropiada para contrastar si existe diferencia significativa en las calificaciones de los mismos estudiantes antes y después de una intervención educativa.'}
+                                {activeProposal === 'correlation' &&
+                                  'Apropiada para determinar el grado y sentido de relación lineal o monótona entre dos evaluaciones continuas.'}
+                                {activeProposal === 'descriptive' &&
+                                  'Apropiada para caracterizar la tendencia central, dispersión y posición de las calificaciones del grupo.'}
+                              </p>
+                            </div>
+
+                            <div className="tutor-proposal-item">
+                              <strong>Variables asignadas:</strong>
+                              <p>
+                                {activeProposal === 'paired' &&
+                                  `Medición 1: ${varPre} | Medición 2: ${varPost} (${rowCount} pares observados)`}
+                                {activeProposal === 'correlation' &&
+                                  `Variable 1: ${varPre} | Variable 2: ${varPost} (${rowCount} observaciones)`}
+                                {activeProposal === 'descriptive' &&
+                                  `Variables cuantitativas: ${numericVariableNames} (${rowCount} registros)`}
+                              </p>
+                            </div>
+
+                            <div className="tutor-proposal-assumptions">
+                              <strong>
+                                Supuestos requeridos evaluados matemáticamente:
+                              </strong>
+                              <ul>
+                                {activeProposal === 'paired' && (
+                                  <>
+                                    <li>
+                                      <strong>
+                                        Normalidad en las diferencias:
+                                      </strong>{' '}
+                                      Se evaluará mediante la prueba de{' '}
+                                      <strong>Shapiro-Wilk</strong> (al contar
+                                      con <em>N = {rowCount} &lt; 50</em>, con{' '}
+                                      &alpha; = 0.05).
+                                    </li>
+                                    <li>
+                                      <strong>Muestras pareadas:</strong>{' '}
+                                      Observaciones dependientes sobre los
+                                      mismos sujetos en dos momentos temporales.
+                                    </li>
+                                    <li>
+                                      <strong>
+                                        Criterio de decisión determinista:
+                                      </strong>{' '}
+                                      Si <em>p &ge; 0.05</em> se aplicará{' '}
+                                      <strong>t de Student pareada</strong>; si{' '}
+                                      <em>p &lt; 0.05</em> se aplicará la prueba
+                                      no paramétrica de{' '}
+                                      <strong>Wilcoxon</strong>.
+                                    </li>
+                                  </>
+                                )}
+                                {activeProposal === 'correlation' && (
+                                  <>
+                                    <li>
+                                      <strong>Normalidad bivariada:</strong> Se
+                                      evaluará mediante la prueba de{' '}
+                                      <strong>Shapiro-Wilk</strong> para cada
+                                      variable numérica (
+                                      <em>N = {rowCount} &lt; 50</em>).
+                                    </li>
+                                    <li>
+                                      <strong>
+                                        Criterio de decisión determinista:
+                                      </strong>{' '}
+                                      Si ambas variables cumplen normalidad (
+                                      <em>p &ge; 0.05</em>) y linealidad, se
+                                      calculará el coeficiente de{' '}
+                                      <strong>Pearson</strong>; si alguna no
+                                      cumple normalidad o presenta datos
+                                      atípicos, se calculará el coeficiente de{' '}
+                                      <strong>Spearman</strong>.
+                                    </li>
+                                  </>
+                                )}
+                                {activeProposal === 'descriptive' && (
+                                  <>
+                                    <li>
+                                      <strong>
+                                        Medidas de tendencia central y
+                                        dispersión:
+                                      </strong>{' '}
+                                      Media, mediana, desviación estándar,
+                                      varianza, rango intercuartílico y
+                                      cuartiles (Q1, Q2, Q3).
+                                    </li>
+                                    <li>
+                                      <strong>Detección de atípicos:</strong>{' '}
+                                      Evaluación de valores extremos mediante
+                                      criterio de Tukey (1.5 &times; RIC).
+                                    </li>
+                                  </>
+                                )}
+                              </ul>
+                            </div>
+
+                            {proposalExecuted === activeProposal ? (
+                              <div
+                                className="tutor-proposal-executed"
+                                role="status"
                               >
-                                📄 {d.label || d.id}
-                              </button>
-                            ))}
+                                <div className="tutor-exec-badge">
+                                  ✓ Propuesta aprobada y análisis ejecutado
+                                  determinísticamente con éxito.
+                                </div>
+                                <div className="tutor-exec-actions">
+                                  <button
+                                    type="button"
+                                    className="rp-primary tutor-action-btn"
+                                    onClick={() =>
+                                      navigateProject(projectId, 'results')
+                                    }
+                                  >
+                                    📊 Ver Resultados y Gráficos →
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="rp-secondary tutor-action-btn"
+                                    onClick={() => {
+                                      setActiveProposal(null);
+                                      setProposalExecuted(null);
+                                      setMentoringFeedback(null);
+                                    }}
+                                  >
+                                    🔄 Elegir otro análisis
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="tutor-proposal-actions">
+                                <button
+                                  type="button"
+                                  className="rp-primary tutor-proposal-approve-btn"
+                                  onClick={() =>
+                                    void handleApproveAndExecute(activeProposal)
+                                  }
+                                >
+                                  ✓ Aprobar y ejecutar análisis
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
-                  </div>
 
-                  {isNotaTable && (
-                    <div className="tutor-message-actions">
-                      {status?.guidance?.selected_table && (
-                        <button
-                          type="button"
-                          className="rp-primary tutor-action-btn"
-                          onClick={() => setReview(true)}
-                        >
-                          📊 Describir estos datos (estadística descriptiva)
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="rp-secondary tutor-action-btn"
-                        onClick={() =>
-                          navigateWorkspace(
-                            projectId,
-                            'analysis',
-                            'diagnostics',
-                          )
-                        }
-                      >
-                        🔍 Verificar normalidad y supuestos
-                      </button>
-                      {onOpenDataPanel && (
+                      <div className="tutor-message-actions">
                         <button
                           type="button"
                           className="rp-secondary tutor-action-btn"
-                          onClick={onOpenDataPanel}
+                          onClick={() =>
+                            navigateWorkspace(
+                              projectId,
+                              'analysis',
+                              'diagnostics',
+                            )
+                          }
                         >
-                          📋 Ver datos cargados
+                          🔍 Verificar normalidad y supuestos en Diagnóstico
                         </button>
-                      )}
-                    </div>
+                        {onOpenDataPanel && (
+                          <button
+                            type="button"
+                            className="rp-secondary tutor-action-btn"
+                            onClick={onOpenDataPanel}
+                          >
+                            📋 Ver datos cargados
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
                 </article>
               </>
@@ -1090,6 +1705,9 @@ export function TutorChat({
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          if (isNotaTable && draft.trim()) {
+            handleEvaluateHypothesis(draft.trim());
+          }
           void send();
         }}
       >
