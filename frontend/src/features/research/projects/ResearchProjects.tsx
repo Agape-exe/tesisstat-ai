@@ -9,6 +9,8 @@ import { navigateProject, useProjectRoute } from './navigation';
 import type { Project, ProjectDraft, ProjectService } from './types';
 import { degreeLabels } from './types';
 import { UiIcon } from './UiIcon';
+import { createContextApi, type ImportProposal } from '../context/api';
+import type { ProjectFormValues } from './validation';
 import './projects.css';
 import './redesign.css';
 
@@ -107,14 +109,39 @@ export function ResearchProjects({
   function open(id: string) {
     setNotice('');
     setDetailError('');
-    navigateProject(id);
+    navigateProject(id, 'assistant');
   }
-  async function save(draft: ProjectDraft) {
+  async function save(draft: ProjectDraft, formValues?: ProjectFormValues) {
     const edited = form === 'edit' && project;
     const savedRoute = activeRoute.current;
     const saved = edited
       ? await service.update(edited.id, draft)
       : await service.create(draft);
+    if (!edited && formValues?.assistedResponse?.trim()) {
+      try {
+        const contextApi = createContextApi();
+        const suggestion = await contextApi.suggest(
+          saved.id,
+          formValues.assistedResponse.trim(),
+          0,
+        );
+        if (suggestion.state === 'pending' && suggestion.proposal) {
+          const proposal = suggestion.proposal as ImportProposal;
+          const fields = Object.keys(proposal).filter((k) => {
+            const val = (proposal as Record<string, unknown>)[k];
+            return (
+              val != null &&
+              (Array.isArray(val)
+                ? val.length > 0
+                : val !== 'unknown' && val !== '')
+            );
+          });
+          await contextApi.apply(saved.id, suggestion, proposal, fields, false);
+        }
+      } catch (cause) {
+        console.warn('Auto-context suggestion skipped:', cause);
+      }
+    }
     setProjects((items) => [saved, ...items.filter((p) => p.id !== saved.id)]);
     if (
       activeRoute.current.projectId !== savedRoute.projectId ||
@@ -125,7 +152,7 @@ export function ResearchProjects({
     setDetailError('');
     setError('');
     setNotice(edited ? 'Investigación actualizada.' : 'Investigación creada.');
-    navigateProject(saved.id, 'home', null, true);
+    navigateProject(saved.id, 'assistant', null, true);
   }
   async function remove() {
     if (!deleting) return;
@@ -276,9 +303,7 @@ export function ResearchProjects({
         </>
       ) : (
         <section aria-label="Información de la investigación" key={project.id}>
-          {section !== 'assistant' && (
-            <ProjectHeader project={project} section={section} />
-          )}
+          <ProjectHeader project={project} section={section} />
           <ProjectWorkspace
             key={project.id}
             projectId={project.id}

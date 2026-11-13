@@ -482,16 +482,21 @@ it('separates preview, quality and preparation and retains a transformation draf
   expect(api.runEda).not.toHaveBeenCalled();
 });
 
-it('opens new sources by default and retains legacy quality navigation with Back and Forward', async () => {
+it('opens clean data viewer by default and retains legacy quality navigation with Back and Forward', async () => {
   mockApi();
   window.history.replaceState(null, '', '#project=project&section=datasets');
   render(<Host />);
   expect(
-    await screen.findByRole('heading', { name: 'Tus datos' }),
+    await screen.findByRole('region', { name: 'Visor de datos' }),
   ).toBeVisible();
-  fireEvent.click(
-    screen.getByRole('button', { name: 'Herramientas anteriores de datasets' }),
-  );
+  act(() => {
+    window.history.pushState(
+      null,
+      '',
+      '#project=project&section=datasets&view=legacy',
+    );
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
   await screen.findByText('sintetico.csv');
   fireEvent.click(screen.getByRole('button', { name: 'Calidad de datos' }));
   await screen.findByRole('button', { name: 'Analizar calidad de datos' });

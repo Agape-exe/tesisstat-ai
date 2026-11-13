@@ -13,6 +13,7 @@ import {
 } from '../research/projects/navigation';
 import './tutor.css';
 import { GuidedReview } from './GuidedReview';
+import { createSourcesApi } from '../research/sources/api';
 
 const conversations = createConversationApi();
 const tutor = createTutorApi();
@@ -41,6 +42,7 @@ export function TutorChat({
   boundSelection,
   api = tutor,
   historyApi = conversations,
+  onOpenDataPanel,
 }: {
   projectId: string;
   projectTitle?: string;
@@ -50,6 +52,7 @@ export function TutorChat({
   boundSelection?: Selection;
   api?: typeof tutor;
   historyApi?: typeof conversations;
+  onOpenDataPanel?: () => void;
 }) {
   const [manualSelection, setSelection] = useState<Selection>({
     stage,
@@ -69,6 +72,45 @@ export function TutorChat({
   const [consentPending, setConsentPending] = useState<boolean | null>(null);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
+  const [onboardingChoice, setOnboardingChoice] = useState<
+    'initial' | 'instrument' | 'direct_data' | 'explain_diff'
+  >('initial');
+  const [directUploadedTable, setDirectUploadedTable] = useState<string | null>(
+    null,
+  );
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadErrorMsg, setUploadErrorMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFileUpload(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    setUploadBusy(true);
+    setUploadErrorMsg('');
+    try {
+      if (!/\.(csv|xlsx)$/i.test(file.name)) {
+        throw new Error(`${file.name}: adjunta CSV o XLSX.`);
+      }
+      if (!file.size || file.size > 10 * 1024 * 1024) {
+        throw new Error(`${file.name}: usa un archivo de 1 byte a 10 MiB.`);
+      }
+      const uploaded = await createSourcesApi().upload(projectId, file);
+      const readySheet = uploaded.sheets.find((s) => s.state === 'ready');
+      const tableId = readySheet?.table_id ?? null;
+      setDirectUploadedTable(file.name.replace(/\.[^/.]+$/, ''));
+      if (tableId) {
+        setSelection((prev) => ({ ...prev, dataset_id: tableId }));
+      }
+      setRefresh((n) => n + 1);
+    } catch (e) {
+      setUploadErrorMsg(
+        e instanceof Error ? e.message : 'No se pudo subir el archivo.',
+      );
+    } finally {
+      setUploadBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
   const gate = useRef(false);
   const pending = useRef<{ body: string; requestId: string } | null>(null);
   const storageKey = `tesisstat:tutor-conversation:v2:${projectId}`;
@@ -270,6 +312,28 @@ export function TutorChat({
       navigateWorkspace(projectId, 'context', 'suggestion', action.resource_id);
     } else navigateProject(projectId, action.destination);
   }
+
+  const selectedTable = status?.guidance?.selected_table;
+  const selectedTableName =
+    selectedTable?.name ||
+    directUploadedTable ||
+    (status?.choices?.datasets && status.choices.datasets.length > 0
+      ? status.choices.datasets[0].label
+      : '');
+  const noteVariables =
+    status?.guidance?.variables?.filter(
+      (v) =>
+        v.name.toLowerCase().includes('nota') ||
+        v.name.toLowerCase().includes('promedio') ||
+        v.name.toLowerCase().includes('parcial') ||
+        v.name.toLowerCase().includes('final') ||
+        v.detected_type === 'numérico',
+    ) ?? [];
+  const hasNotaVar =
+    noteVariables.length > 0 ||
+    selectedTableName.toLowerCase().includes('nota');
+  const isNotaTable = Boolean(selectedTableName) && hasNotaVar;
+
   return (
     <section
       className="tutor-v2 rp-surface"
@@ -371,9 +435,6 @@ export function TutorChat({
           <details className="tutor-server-collapsible">
             <summary>Resumen técnico y ayuda de etapa</summary>
             <div className="tutor-server-collapsible-content">
-              <p>
-                <small>Ayuda estática por etapa · sin proveedor IA</small>
-              </p>
               <p role="status">{status.static_help}</p>
               {boundSelection && (
                 <p>
@@ -640,10 +701,285 @@ export function TutorChat({
         aria-live="polite"
       >
         {messages.length === 0 && (
-          <p>
-            El historial permanece en este proyecto. Puedes consultar conceptos
-            o pedir orientación sobre el siguiente paso.
-          </p>
+          <div
+            className="tutor-onboarding-container"
+            role="region"
+            aria-label="Bienvenida del asistente"
+          >
+            <p className="rp-sr-only">
+              El historial permanece en este proyecto. Puedes consultar
+              conceptos o pedir orientación sobre el siguiente paso.
+            </p>
+            <article className="tutor-message tutor-assistant tutor-welcome-bubble">
+              <div className="tutor-assistant-header">
+                <span className="tutor-avatar-icon" aria-hidden="true">
+                  🤖
+                </span>
+                <strong>Asistente Estadístico TesisStat</strong>
+              </div>
+              <p className="tutor-prose">
+                ¡Hola! Soy tu asistente de análisis estadístico en TesisStat AI.
+                Te guiaré paso a paso para analizar tus datos, verificar
+                supuestos y realizar las pruebas estadísticas adecuadas para tu
+                tesis, de manera sencilla y determinista.
+              </p>
+              <p className="tutor-prose">
+                Para comenzar, cuéntame: ¿Tus datos provienen de un instrumento
+                de recolección (como una encuesta o cuestionario) o tienes
+                directamente un conjunto de datos (como notas, registros o
+                mediciones)?
+              </p>
+              <div
+                className="tutor-quick-replies"
+                role="group"
+                aria-label="Opciones de respuesta rápida"
+              >
+                <button
+                  type="button"
+                  className="tutor-chip"
+                  onClick={() => setOnboardingChoice('instrument')}
+                >
+                  📝 Tengo un instrumento (encuesta/cuestionario)
+                </button>
+                <button
+                  type="button"
+                  className="tutor-chip tutor-chip-primary"
+                  onClick={() => setOnboardingChoice('direct_data')}
+                >
+                  📊 Tengo datos directos (ej. notas, registros)
+                </button>
+                <button
+                  type="button"
+                  className="tutor-chip tutor-chip-secondary"
+                  onClick={() => setOnboardingChoice('explain_diff')}
+                >
+                  ❓ No estoy seguro, explícame la diferencia
+                </button>
+              </div>
+            </article>
+
+            {onboardingChoice === 'explain_diff' && (
+              <>
+                <article className="tutor-message tutor-user">
+                  <strong>Tú</strong>
+                  <p className="tutor-prose">
+                    No estoy seguro, explícame la diferencia
+                  </p>
+                </article>
+                <article className="tutor-message tutor-assistant">
+                  <div className="tutor-assistant-header">
+                    <span className="tutor-avatar-icon" aria-hidden="true">
+                      🤖
+                    </span>
+                    <strong>Asistente Estadístico TesisStat</strong>
+                  </div>
+                  <p className="tutor-prose">
+                    ¡Con gusto te explico la diferencia!
+                  </p>
+                  <ul className="tutor-diff-list">
+                    <li>
+                      <strong>Instrumento de recolección:</strong> Aplica cuando
+                      utilizaste un cuestionario, test o escala Likert con
+                      varios ítems/preguntas por participante, y necesitas
+                      calcular confiabilidad (Alfa de Cronbach) o agrupar por
+                      dimensiones.
+                    </li>
+                    <li>
+                      <strong>Datos directos:</strong> Aplica cuando ya cuentas
+                      con los valores o registros de las variables (por ejemplo
+                      notas de evaluaciones, edades, tiempos, ingresos,
+                      calificaciones). Puedes pasar de inmediato al análisis
+                      descriptivo o contrastes de hipótesis.
+                    </li>
+                  </ul>
+                  <p className="tutor-prose">
+                    ¿Con cuál de estos dos tipos de datos deseas trabajar?
+                  </p>
+                  <div
+                    className="tutor-quick-replies"
+                    role="group"
+                    aria-label="Elección de tipo de datos"
+                  >
+                    <button
+                      type="button"
+                      className="tutor-chip tutor-chip-primary"
+                      onClick={() => setOnboardingChoice('direct_data')}
+                    >
+                      📊 Tengo datos directos (ej. notas, registros)
+                    </button>
+                    <button
+                      type="button"
+                      className="tutor-chip"
+                      onClick={() => setOnboardingChoice('instrument')}
+                    >
+                      📝 Tengo un instrumento (encuesta/cuestionario)
+                    </button>
+                  </div>
+                </article>
+              </>
+            )}
+
+            {onboardingChoice === 'instrument' && (
+              <>
+                <article className="tutor-message tutor-user">
+                  <strong>Tú</strong>
+                  <p className="tutor-prose">
+                    Tengo un instrumento (encuesta/cuestionario)
+                  </p>
+                </article>
+                <article className="tutor-message tutor-assistant">
+                  <div className="tutor-assistant-header">
+                    <span className="tutor-avatar-icon" aria-hidden="true">
+                      🤖
+                    </span>
+                    <strong>Asistente Estadístico TesisStat</strong>
+                  </div>
+                  <p className="tutor-prose">
+                    ¡Excelente! Para cuestionarios e instrumentos,
+                    configuraremos los ítems, dimensiones y puntuaciones en la
+                    sección especializada de Instrumento.
+                  </p>
+                  <div className="tutor-message-actions">
+                    <button
+                      type="button"
+                      className="rp-primary tutor-action-btn"
+                      onClick={() => navigateProject(projectId, 'instrument')}
+                    >
+                      Ir a Instrumento y puntuaciones →
+                    </button>
+                    <button
+                      type="button"
+                      className="rp-secondary tutor-action-btn"
+                      onClick={() => setOnboardingChoice('direct_data')}
+                    >
+                      Cambiar a datos directos
+                    </button>
+                  </div>
+                </article>
+              </>
+            )}
+
+            {(onboardingChoice === 'direct_data' || isNotaTable) && (
+              <>
+                {onboardingChoice === 'direct_data' && (
+                  <article className="tutor-message tutor-user">
+                    <strong>Tú</strong>
+                    <p className="tutor-prose">
+                      Tengo datos directos (ej. notas, registros)
+                    </p>
+                  </article>
+                )}
+                <article className="tutor-message tutor-assistant">
+                  <div className="tutor-assistant-header">
+                    <span className="tutor-avatar-icon" aria-hidden="true">
+                      🤖
+                    </span>
+                    <strong>Asistente Estadístico TesisStat</strong>
+                  </div>
+                  <p className="tutor-prose">
+                    {isNotaTable
+                      ? `¡Excelente! He detectado tu tabla «${selectedTableName || 'Notas'}» con variables cuantitativas de notas${noteVariables.length ? ` (${noteVariables.map((v) => v.name).join(', ')})` : ''}. Te sugiero comenzar con un análisis descriptivo para conocer la media y dispersión, o verificar supuestos de normalidad para decidir las pruebas adecuadas para tu tesis.`
+                      : '¡Perfecto! Sube aquí tu archivo Excel o CSV (por ejemplo Notas.xlsx) o selecciona una tabla ya cargada para comenzar el análisis estadístico.'}
+                  </p>
+
+                  <div className="tutor-upload-zone">
+                    <label className="tutor-dropzone-label">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".xlsx,.csv"
+                        disabled={uploadBusy}
+                        style={{ display: 'none' }}
+                        onChange={(e) => void handleFileUpload(e.target.files)}
+                      />
+                      <div className="tutor-dropzone-box">
+                        <span
+                          className="tutor-dropzone-icon"
+                          aria-hidden="true"
+                        >
+                          📁
+                        </span>
+                        <strong>
+                          Seleccionar o arrastrar Notas.xlsx o CSV
+                        </strong>
+                        <small>Formato Excel o CSV (hasta 10 MB)</small>
+                      </div>
+                    </label>
+                    {uploadBusy && (
+                      <p role="status" className="tutor-upload-status">
+                        Cargando y procesando archivo de datos…
+                      </p>
+                    )}
+                    {uploadErrorMsg && (
+                      <p role="alert" className="rp-error">
+                        {uploadErrorMsg}
+                      </p>
+                    )}
+                    {status?.choices?.datasets &&
+                      status.choices.datasets.length > 0 && (
+                        <div className="tutor-existing-datasets">
+                          <small>O selecciona una tabla ya importada:</small>
+                          <div className="tutor-dataset-chips">
+                            {status.choices.datasets.map((d) => (
+                              <button
+                                key={d.id}
+                                type="button"
+                                className={`tutor-chip ${selection.dataset_id === d.id ? 'tutor-chip-selected' : ''}`}
+                                onClick={() => {
+                                  setDirectUploadedTable(d.label || d.id);
+                                  setSelection({
+                                    ...selection,
+                                    dataset_id: d.id,
+                                  });
+                                }}
+                              >
+                                📄 {d.label || d.id}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+
+                  {isNotaTable && (
+                    <div className="tutor-message-actions">
+                      {status?.guidance?.selected_table && (
+                        <button
+                          type="button"
+                          className="rp-primary tutor-action-btn"
+                          onClick={() => setReview(true)}
+                        >
+                          📊 Describir estos datos (estadística descriptiva)
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="rp-secondary tutor-action-btn"
+                        onClick={() =>
+                          navigateWorkspace(
+                            projectId,
+                            'analysis',
+                            'diagnostics',
+                          )
+                        }
+                      >
+                        🔍 Verificar normalidad y supuestos
+                      </button>
+                      {onOpenDataPanel && (
+                        <button
+                          type="button"
+                          className="rp-secondary tutor-action-btn"
+                          onClick={onOpenDataPanel}
+                        >
+                          📋 Ver datos cargados
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </article>
+              </>
+            )}
+          </div>
         )}
         {messages.map((message) => (
           <article

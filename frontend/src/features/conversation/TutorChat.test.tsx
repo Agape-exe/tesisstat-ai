@@ -485,3 +485,148 @@ it('recovers the exact pending preparation after a reload without creating a new
     sessionStorage.getItem('tesisstat:guided-descriptive:v1:p:b'),
   ).toBeNull();
 });
+
+describe('TutorChat C04 Onboarding Conversacional Proactivo', () => {
+  it('saluda proactivamente con las 3 opciones de respuesta rápida al iniciar', async () => {
+    const { api, historyApi } = fixture(true);
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        /Soy tu asistente de análisis estadístico en TesisStat AI/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/¿Tus datos provienen de un instrumento de recolección/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {
+        name: '📝 Tengo un instrumento (encuesta/cuestionario)',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: '📊 Tengo datos directos (ej. notas, registros)',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: '❓ No estoy seguro, explícame la diferencia',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('explica la diferencia pedagógica al pulsar "No estoy seguro, explícame la diferencia"', async () => {
+    const { api, historyApi } = fixture(true);
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    const diffBtn = await screen.findByRole('button', {
+      name: '❓ No estoy seguro, explícame la diferencia',
+    });
+    fireEvent.click(diffBtn);
+
+    expect(
+      await screen.findByText(/Instrumento de recolección:/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Datos directos:/)).toBeInTheDocument();
+  });
+
+  it('orienta hacia Instrumento al pulsar "Tengo un instrumento"', async () => {
+    const { api, historyApi } = fixture(true);
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    const instBtn = await screen.findByRole('button', {
+      name: '📝 Tengo un instrumento (encuesta/cuestionario)',
+    });
+    fireEvent.click(instBtn);
+
+    expect(
+      await screen.findByRole('button', {
+        name: /Ir a Instrumento y puntuaciones/,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('despliega zona de subida y selección de datos directos y responde proactivamente', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const notaStatus: TutorStatus = {
+      ...status,
+      choices: {
+        ...status.choices,
+        datasets: [{ id: 'tbl-notas', label: 'Notas' }],
+      },
+      guidance: {
+        table_count: 1,
+        selected_table: {
+          id: 'tbl-notas',
+          name: 'Notas',
+          rows: 30,
+          columns: 4,
+        },
+        variables: [
+          {
+            variable_id: 'v_parcial',
+            name: 'nota_parcial',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+        ],
+      },
+    };
+    api.status = vi.fn().mockResolvedValue(notaStatus);
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    const directBtn = await screen.findByRole('button', {
+      name: '📊 Tengo datos directos (ej. notas, registros)',
+    });
+    fireEvent.click(directBtn);
+
+    expect(
+      await screen.findByText(/Seleccionar o arrastrar Notas.xlsx o CSV/),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /He detectado tu tabla «Notas» con variables cuantitativas de notas/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /Describir estos datos \(estadística descriptiva\)/,
+      }),
+    ).toBeInTheDocument();
+  });
+});

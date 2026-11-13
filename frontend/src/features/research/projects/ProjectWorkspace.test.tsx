@@ -9,12 +9,12 @@ vi.mock('../sources/ProjectDataWorkspace', () => ({
   ),
 }));
 
-describe('ProjectWorkspace - Asistente Flotante y Limpieza de Pantalla', () => {
+describe('ProjectWorkspace - Workspace Chat-First y Limpieza Visual', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('muestra la burbuja flotante y el pill reactivo cuando detecta variables de notas', async () => {
+  it('muestra el Asistente Estadístico TesisStat en el área principal con panel colapsable de datos cargados', async () => {
     const mockStatus: tutorApiModule.TutorStatus = {
       provider_configured: true,
       consent: {
@@ -76,37 +76,49 @@ describe('ProjectWorkspace - Asistente Flotante y Limpieza de Pantalla', () => {
       <ProjectWorkspace
         projectId="p1"
         projectTitle="Tesis Notas"
+        section="assistant"
+      />,
+    );
+
+    // Verify main header and chat assistant are mounted
+    expect(
+      screen.getByRole('heading', { name: 'Asistente Estadístico TesisStat' }),
+    ).toBeInTheDocument();
+    const toggleBtn = screen.getByRole('button', {
+      name: /Ver datos cargados/i,
+    });
+    expect(toggleBtn).toBeInTheDocument();
+
+    // Data panel is collapsed initially
+    expect(screen.queryByTestId('data-workspace')).not.toBeInTheDocument();
+
+    // Open side panel
+    fireEvent.click(toggleBtn);
+    expect(screen.getByTestId('data-workspace')).toBeInTheDocument();
+    expect(screen.getByText('✕ Ocultar datos')).toBeInTheDocument();
+
+    // Close side panel with close button in header
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cerrar panel de datos' }),
+    );
+    expect(screen.queryByTestId('data-workspace')).not.toBeInTheDocument();
+  });
+
+  it('no muestra la burbuja flotante colisionante en ninguna sección', () => {
+    const { container } = render(
+      <ProjectWorkspace
+        projectId="p1"
+        projectTitle="Tesis Notas"
         section="datasets"
       />,
     );
 
-    // Verify main screen content is mounted without deformation
     expect(screen.getByTestId('data-workspace')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Abrir asistente IA' }),
-    ).toBeInTheDocument();
-
-    // Verify reactive pill notification
-    const pill = await screen.findByText(
-      /He detectado tu tabla con variables de notas\. ¿Quieres que te ayude a analizarlas\?/,
-    );
-    expect(pill).toBeInTheDocument();
-
-    // Click pill to open floating drawer
-    fireEvent.click(pill);
-
-    // Drawer should open
+      container.querySelector('.rp-tutor-floating-container'),
+    ).not.toBeInTheDocument();
     expect(
-      await screen.findByRole('dialog', { name: 'Asistente TesisStat' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Cerrar asistente IA' }),
-    ).toBeInTheDocument();
-
-    // Close drawer using close button in header
-    fireEvent.click(screen.getByRole('button', { name: 'Cerrar asistente' }));
-    expect(
-      screen.queryByRole('dialog', { name: 'Asistente TesisStat' }),
+      screen.queryByRole('button', { name: 'Abrir asistente IA' }),
     ).not.toBeInTheDocument();
   });
 });
