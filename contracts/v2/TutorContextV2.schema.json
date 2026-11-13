@@ -116,6 +116,68 @@
       ],
       "title": "TutorActionV2",
       "type": "object"
+    },
+    "TutorEvidenceV2": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "pattern": "^f[0-9]{1,3}$",
+          "title": "Key",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "detected",
+            "confirmed",
+            "calculated"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "source_ref": {
+          "$ref": "#/$defs/SourceRef"
+        },
+        "variable": {
+          "anyOf": [
+            {
+              "maxLength": 30,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variable"
+        },
+        "context_field": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Field"
+        }
+      },
+      "required": [
+        "key",
+        "kind",
+        "text",
+        "source_ref"
+      ],
+      "title": "TutorEvidenceV2",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -253,6 +315,14 @@
         "type": "string"
       },
       "title": "Warnings",
+      "type": "array"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/TutorEvidenceV2"
+      },
+      "maxItems": 100,
+      "title": "Evidence",
       "type": "array"
     }
   },

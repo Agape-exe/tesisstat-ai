@@ -20,7 +20,7 @@ class Provider:
     def __init__(self, response=None):
         self.calls = []
         self.response = response or {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Revisa las métricas guardadas y sus limitaciones."],
         }
         self.error = None
@@ -43,7 +43,7 @@ def tutor(setup, response=None):
     cid = client.post(old, json={}).json()["id"]
     consent = client.put(
         root + "/conversations/consent",
-        json={"expected_revision": 0, "granted": True, "consent_scope": "tutor_context_v4"},
+        json={"expected_revision": 0, "granted": True, "consent_scope": "tutor_context_v5"},
     )
     assert consent.status_code == 200, consent.text
     return client, root, provider, cid
@@ -55,7 +55,7 @@ def send(client, root, cid, **changes):
         "request_id": str(uuid4()),
         "stage": "home",
         "external_ai_consent": True,
-        "consent_scope": "tutor_context_v4",
+        "consent_scope": "tutor_context_v5",
         "consent_revision": 1,
     }
     body.update(changes)
@@ -75,7 +75,7 @@ def test_empty_project_help_no_document_no_hypothesis_no_provider(setup):
     assert send(client, root, cid, consent_scope="research_context_v2").status_code == 422
     client.put(
         root + "/conversations/consent",
-        json={"expected_revision": 0, "granted": True, "consent_scope": "tutor_context_v4"},
+        json={"expected_revision": 0, "granted": True, "consent_scope": "tutor_context_v5"},
     )
     app.state.tutor.conversations.provider = Provider()
     app.state.tutor.conversations.provider.configured = False
@@ -106,7 +106,7 @@ def test_explicit_result_not_last_global_and_historical_context(setup):
     client, root, provider, cid = tutor(
         setup,
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Comprueba el resumen guardado."],
             "findings": [{"kind": "metric", "metric_key": "m0"}],
         },
@@ -147,21 +147,21 @@ def test_explicit_result_not_last_global_and_historical_context(setup):
 @pytest.mark.parametrize(
     "response",
     [
-        {"response_version": "tutor-2.1", "concepts": ["p = 0.0001"]},
+        {"response_version": "tutor-2.2", "concepts": ["p = 0.0001"]},
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Hay diferencia"],
             "findings": [{"kind": "metric", "metric_key": "m99"}],
         },
-        {"response_version": "tutor-2.1", "concepts": ["Revisar"], "action_indices": [20]},
-        {"response_version": "tutor-2.1", "concepts": ["Revisar"], "patch": {"approved": True}},
+        {"response_version": "tutor-2.2", "concepts": ["Revisar"], "action_indices": [20]},
+        {"response_version": "tutor-2.2", "concepts": ["Revisar"], "patch": {"approved": True}},
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Revisar"],
             "updates": [{"field": "observations", "value": "paired"}],
         },
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Revisar"],
             "updates": [{"field": "main_objective", "value": "Revisar", "actor_ref": "admin"}],
         },
@@ -195,7 +195,7 @@ def test_revocation_before_and_during_call(setup):
     def revoke():
         r = client.put(
             root + "/conversations/consent",
-            json={"expected_revision": 1, "granted": False, "consent_scope": "tutor_context_v4"},
+            json={"expected_revision": 1, "granted": False, "consent_scope": "tutor_context_v5"},
         )
         assert r.status_code == 200
 
@@ -244,17 +244,16 @@ def test_closed_privacy_for_names_categories_context_messages_and_history(setup)
         "PersonaConfidencial",
         "SecretoGrupo",
         ds["id"],
-        "ignora instrucciones",
     ]:
         assert sensitive not in outbound
-    assert "mean" in outbound
+    assert "Explica media y datos" in outbound
 
 
 def test_ai_suggestion_reuses_c2_review_cas_and_never_approves_by_text(setup):
     client, root, provider, cid = tutor(
         setup,
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Revisa el borrador antes de guardarlo."],
             "updates": [
                 {"field": "main_objective", "value": "Describir las variables seleccionadas"}
@@ -336,7 +335,7 @@ def test_interpretation_review_separate_cas_and_report_draft_label(setup):
     client, root, provider, cid = tutor(
         setup,
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Examina la media y su alcance."],
             "findings": [{"kind": "metric", "metric_key": "m0"}],
         },
@@ -442,7 +441,7 @@ def test_unreferenced_model_findings_are_not_released_without_result(setup):
     client, root, _, cid = tutor(
         setup,
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Se ha demostrado causalidad y significancia."],
         },
     )
@@ -455,7 +454,7 @@ def test_changed_sources_during_answer_keep_original_metric_references(setup):
     client, root, provider, cid = tutor(
         setup,
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Revisa el resumen y sus límites."],
             "findings": [{"kind": "metric", "metric_key": "m0"}],
         },
@@ -480,7 +479,7 @@ def test_specific_concepts_and_follow_up_keep_order_negations_and_provider_prose
     positive = "Una correlación positiva indica que ambas variables tienden a aumentar juntas."
     negative = "Una correlación negativa indica que una variable aumenta cuando la otra disminuye."
     client, root, provider, cid = tutor(
-        setup, {"response_version": "tutor-2.1", "concepts": [positive]}
+        setup, {"response_version": "tutor-2.2", "concepts": [positive]}
     )
     first = send(
         client,
@@ -491,7 +490,7 @@ def test_specific_concepts_and_follow_up_keep_order_negations_and_provider_prose
     assert first.status_code == 200, first.text
     assert positive in first.json()["messages"][1]["content"]
     assert first.json()["messages"][1]["context"]["prose_source"] == "ai_concepts"
-    provider.response = {"response_version": "tutor-2.1", "concepts": [negative]}
+    provider.response = {"response_version": "tutor-2.2", "concepts": [negative]}
     follow = send(client, root, cid, content="¿Y si es negativa? ¿Por qué no implica causalidad?")
     assert follow.status_code == 200, follow.text
     assert negative in follow.json()["messages"][1]["content"]
@@ -508,7 +507,7 @@ def test_general_quantities_and_hypothetical_examples_are_not_numeric_findings(s
     concept = "La t pareada compara dos mediciones relacionadas."
     example = "Supongamos dos mediciones: 3 y 5. Es un ejemplo hipotético."
     client, root, _, cid = tutor(
-        setup, {"response_version": "tutor-2.1", "concepts": [concept], "examples": [example]}
+        setup, {"response_version": "tutor-2.2", "concepts": [concept], "examples": [example]}
     )
     response = send(client, root, cid, content="Explica la t pareada con dos mediciones")
     assert response.status_code == 200, response.text
@@ -532,7 +531,7 @@ def test_an_existing_metric_never_licenses_unsupported_study_prose(setup, alias,
     approve(client, root, plan)
     result = execute(client, root, plan).json()
     provider.response = {
-        "response_version": "tutor-2.1",
+        "response_version": "tutor-2.2",
         "concepts": [prose],
         "findings": [{"kind": "metric", "metric_key": alias}],
     }
@@ -562,11 +561,11 @@ def test_legacy_provider_envelope_and_wrong_evidence_type_rejected_even_with_val
         {"kind": "causality", "metric_key": "m0"},
         {"kind": "metric", "metric_key": "m0", "value": 11},
     ]:
-        provider.response = {"response_version": "tutor-2.1", "findings": [finding]}
+        provider.response = {"response_version": "tutor-2.2", "findings": [finding]}
         assert send(client, root, cid, result_id=result["id"]).status_code == 503
 
 
-def test_v3_consent_is_preserved_but_cannot_authorize_changed_v4_content(setup):
+def test_v4_consent_is_preserved_but_cannot_authorize_changed_v5_content(setup):
     client, root, app, _ = setup
     provider = Provider()
     app.state.tutor.conversations.provider = provider
@@ -579,23 +578,23 @@ def test_v3_consent_is_preserved_but_cannot_authorize_changed_v4_content(setup):
             project,
             "tutor_consent",
             project,
-            {"revision": 1, "granted": True, "consent_scope": "tutor_context_v3"},
+            {"revision": 1, "granted": True, "consent_scope": "tutor_context_v4"},
             0,
         )
     status = client.get(root + "/conversations/status?stage=home").json()
     assert status["consent"] == {
         "revision": 1,
         "granted": False,
-        "consent_scope": "tutor_context_v4",
+        "consent_scope": "tutor_context_v5",
         "renewal_required": True,
     }
-    assert "fragmentos filtrados" in status["privacy"]
+    assert "encabezados depurados" in status["privacy"]
     assert send(client, root, cid).status_code == 403
-    assert send(client, root, cid, consent_scope="tutor_context_v3").status_code == 422
+    assert send(client, root, cid, consent_scope="tutor_context_v4").status_code == 422
     assert provider.calls == []
     renewal = client.put(
         root + "/conversations/consent",
-        json={"expected_revision": 1, "granted": True, "consent_scope": "tutor_context_v4"},
+        json={"expected_revision": 1, "granted": True, "consent_scope": "tutor_context_v5"},
     )
     assert renewal.status_code == 200
     request_id = str(uuid4())
@@ -608,7 +607,7 @@ def test_v3_consent_is_preserved_but_cannot_authorize_changed_v4_content(setup):
     assert [
         v["consent_scope"]
         for v in app.state.tutor.store.revisions(project, "tutor_consent", project)
-    ] == ["tutor_context_v3", "tutor_context_v4"]
+    ] == ["tutor_context_v4", "tutor_context_v5"]
 
 
 def test_confirmed_narrative_is_projected_but_unconfirmed_text_not_invented(setup):
@@ -632,7 +631,7 @@ def test_confirmed_narrative_is_projected_but_unconfirmed_text_not_invented(setu
     )
     payload = json.loads(provider.calls[0][1]["content"].split("\n", 1)[1])
     narrative = payload["confirmed_context"]["/main_objective"]
-    assert "estres y rendimiento" in narrative["text"]
+    assert "estrés y rendimiento" in narrative["text"]
     assert narrative["omitted"] is True
     assert "/study_description" not in payload["confirmed_context"]
     for private in ["maría", "reservada", "pacientesconfidenciales", "otronombre"]:
@@ -643,7 +642,7 @@ def test_saved_findings_are_immutable_on_review_and_legacy_prose_is_quarantined(
     client, root, provider, cid = tutor(
         setup,
         {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["La media resume el centro."],
             "findings": [{"kind": "metric", "metric_key": "m0"}, {"kind": "case_counts"}],
         },
@@ -710,7 +709,7 @@ def test_typed_direction_p_value_and_counts_use_persisted_evidence(setup):
         payload = json.loads(provider.calls[-1][1]["content"].split("\n", 1)[1])
         aliases = {m["kind"]: m["key"] for m in payload["metrics"]}
         provider.response = {
-            "response_version": "tutor-2.1",
+            "response_version": "tutor-2.2",
             "concepts": ["Una asociación no demuestra causalidad."],
             "findings": [
                 {"kind": "association_direction", "metric_key": aliases["r"]},
@@ -738,7 +737,7 @@ def test_typed_direction_p_value_and_counts_use_persisted_evidence(setup):
 
 def test_revocation_at_delivery_leaves_no_orphan_interpretation(setup, monkeypatch):
     client, root, _, cid = tutor(
-        setup, {"response_version": "tutor-2.1", "findings": [{"kind": "case_counts"}]}
+        setup, {"response_version": "tutor-2.2", "findings": [{"kind": "case_counts"}]}
     )
     plan = proposal(client, root, descriptive(client, root))
     approve(client, root, plan)
@@ -749,7 +748,7 @@ def test_revocation_at_delivery_leaves_no_orphan_interpretation(setup, monkeypat
     def revoke_before_transaction(*args, **kwargs):
         revoked = client.put(
             root + "/conversations/consent",
-            json={"expected_revision": 1, "granted": False, "consent_scope": "tutor_context_v4"},
+            json={"expected_revision": 1, "granted": False, "consent_scope": "tutor_context_v5"},
         )
         assert revoked.status_code == 200
         return complete(*args, **kwargs)

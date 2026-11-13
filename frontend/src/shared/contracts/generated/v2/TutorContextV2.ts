@@ -53,6 +53,15 @@ export type Destination = "home" | "context" | "datasets" | "analysis" | "result
 export type Scope = string;
 export type AllowedActions = TutorActionV2[];
 export type Warnings = string[];
+export type Key = string;
+export type Kind2 = "detected" | "confirmed" | "calculated";
+export type Text = string;
+export type Variable = string | null;
+export type ContextField = string | null;
+/**
+ * @maxItems 100
+ */
+export type Evidence = TutorEvidenceV2[];
 
 export interface TutorContextV2 {
   schema_version?: SchemaVersion;
@@ -69,6 +78,7 @@ export interface TutorContextV2 {
   historical_refs: HistoricalRefs;
   allowed_actions: AllowedActions;
   warnings: Warnings;
+  evidence?: Evidence;
 }
 export interface SourceRef {
   kind: Kind;
@@ -88,4 +98,12 @@ export interface TutorActionV2 {
   label: Label;
   destination: Destination;
   scope?: Scope;
+}
+export interface TutorEvidenceV2 {
+  key: Key;
+  kind: Kind2;
+  text: Text;
+  source_ref: SourceRef;
+  variable?: Variable;
+  context_field?: ContextField;
 }

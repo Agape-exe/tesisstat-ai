@@ -218,7 +218,7 @@ export function TutorChat({
           request_id: pending.current.requestId,
           consent_revision: status.consent.revision,
           external_ai_consent: true,
-          consent_scope: 'tutor_context_v4',
+          consent_scope: 'tutor_context_v5',
         });
         setMessages((old) => [
           ...old.filter((m) => !response.messages.some((n) => n.id === m.id)),
@@ -531,10 +531,10 @@ export function TutorChat({
           </details>
           {status.consent.renewal_required && (
             <p role="status">
-              Cambió lo que se transmite: ahora incluye fragmentos filtrados de
-              la consulta, contexto confirmado y seguimiento. El permiso
-              anterior no basta; revisa la descripción y renueva tu
-              autorización.
+              Cambió lo que se transmite: ahora conserva la redacción depurada
+              de la consulta e incluye encabezados seguros, detecciones locales
+              y significados de variables confirmados. El permiso anterior no
+              basta; revisa la descripción y renueva tu autorización.
             </p>
           )}
           <label className="tutor-consent">
@@ -556,17 +556,19 @@ export function TutorChat({
                 }).finally(() => setConsentPending(null));
               }}
             />
-            Autorizo el envío acotado a Cloudflare Workers AI
-            (tutor_context_v4), incluidos fragmentos filtrados de consulta,
-            contexto e historial. Desmarcar revoca el permiso.
+            Autorizo el envío acotado a Cloudflare Workers AI (alcance v5),
+            incluidos consulta e historial depurados, contexto confirmado y
+            resumen de variables y comprobaciones locales. Escribiré sin datos
+            personales ni secretos. Desmarcar revoca el permiso.
           </label>
           {consentPending != null && (
             <p role="status">Guardando el cambio de permiso…</p>
           )}
           <p>
             <small>
-              {status.privacy} Este permiso es independiente de la extracción
-              documental y del cálculo local.
+              Este permiso es independiente de la extracción documental y del
+              cálculo local. Puedes revisar el alcance en «Qué información
+              utiliza el tutor».
             </small>
           </p>
         </>
@@ -646,9 +648,11 @@ export function TutorChat({
                 ? 'Tú'
                 : message.context?.prose_source === 'template'
                   ? 'Orientación básica · acciones sugeridas por IA'
-                  : message.context?.prose_source === 'ai_concepts'
-                    ? 'Conceptos generales de IA · no son hallazgos del estudio'
-                    : 'Borrador IA · revisa su alcance'}
+                  : message.context?.prose_source === 'ai_guidance'
+                    ? 'Orientación de IA · revisa antes de avanzar'
+                    : message.context?.prose_source === 'ai_concepts'
+                      ? 'Conceptos generales de IA · no son hallazgos del estudio'
+                      : 'Borrador IA · revisa su alcance'}
             </strong>
             <p className="tutor-prose">{message.content}</p>
             {message.context?.error && (
@@ -700,6 +704,21 @@ export function TutorChat({
                         : 'version' in s
                           ? s.version
                           : 'histórica'}
+                    </li>
+                  ))}
+                </ul>
+                <ul>
+                  {message.context.evidence_refs?.map((fact) => (
+                    <li key={fact.key}>
+                      {fact.kind === 'confirmed'
+                        ? 'Declaración confirmada'
+                        : fact.kind === 'detected'
+                          ? 'Detección local'
+                          : 'Cálculo local'}
+                      : {fact.text}
+                      {' · '}
+                      {fact.source_ref.kind} · {fact.source_ref.id} · revisión{' '}
+                      {fact.source_ref.revision}
                     </li>
                   ))}
                 </ul>

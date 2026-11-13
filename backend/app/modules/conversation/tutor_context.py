@@ -4,12 +4,14 @@ import hashlib
 import json
 from uuid import UUID
 
+from app.modules.conversation.tutor_privacy import private_terms, project_text
+from app.modules.conversation.tutor_summary import table_summary
 from app.modules.research.context.repository import ContextError
 from app.modules.research.context.use_cases import context_facts
 from app.modules.research.data_workspace.service import ref
 from app.orchestration.analysis_v2_service import reference
 from app.shared.analysis_v2 import SourceRef, canonical_hash
-from app.shared.tutor_v2 import TutorActionV2, TutorContextV2
+from app.shared.tutor_v2 import TutorActionV2, TutorContextV2, TutorEvidenceV2
 
 
 def digest(value):
@@ -40,7 +42,7 @@ class TutorContextBuilder:
     def build(self, project, selection):
         self.workspace.sources.require(project)
         context = self.contexts.get(project)
-        refs, historical, warnings, pending, data = [], [], [], [], []
+        refs, historical, warnings, pending, data, evidence = [], [], [], [], [], []
         project_value = self.contexts.projects.get(UUID(project))
         refs.append(
             SourceRef(
@@ -120,7 +122,7 @@ class TutorContextBuilder:
             reference("intent", i).model_dump(mode="json") for i in self.intents.list(project)
         ]
         if dataset_id:
-            ds, _ = self.workspace.read_table(project, dataset_id)
+            ds, rows = self.workspace.read_table(project, dataset_id)
             refs += [*ds.source_refs, ref("dataset", ds)]
             dictionary = self.workspace.dictionary(project, ds.id, ds)
             if dictionary.revision:
@@ -129,16 +131,9 @@ class TutorContextBuilder:
             variables = [
                 v for v in dictionary.variables if not selected_ids or v.id in selected_ids
             ]
-            for n, variable in enumerate(variables[:30]):
-                data.append(
-                    {
-                        "variable": f"Variable {n + 1}",
-                        "scale": variable.measurement_scale.value,
-                        "scale_confirmed": bool(variable.measurement_scale.confirmation),
-                        "identifier": variable.identifier_confirmed.value is True,
-                    }
-                )
-            data.insert(0, {"rows": ds.row_count, "columns": len(ds.columns), "kind": ds.kind})
+            data, evidence = table_summary(
+                self.workspace, project, selection, ds, rows, dictionary, selected_ids
+            )
             if not intent:
                 actions = [
                     TutorActionV2(
@@ -312,7 +307,39 @@ class TutorContextBuilder:
             historical_refs=historical,
             allowed_actions=actions,
             warnings=warnings,
+            evidence=evidence,
         )
+        denied = private_terms(self.workspace, project, value)
+        context_ref = next((r for r in refs if r.kind == "context"), None)
+        if context_ref:
+            labels = {
+                "/research_question": "Pregunta",
+                "/main_objective": "Objetivo",
+                "/study_description": "Descripción del estudio",
+                "/data_description": "Descripción de datos",
+                "/observational_unit": "Unidad de observación",
+                "/sampling_notes": "Muestreo",
+                "/design": "Diseño",
+            }
+            for path, label in labels.items():
+                if path in confirmed:
+                    value.evidence.append(
+                        TutorEvidenceV2(
+                            **{
+                                "key": f"f{len(value.evidence)}",
+                                "kind": "confirmed",
+                                "text": f"{label} que has confirmado: "
+                                + project_text(confirmed[path], private_terms=denied)[
+                                    "text"
+                                ].rstrip(" .")
+                                + ".",
+                                "source_ref": context_ref,
+                                "context_field": path,
+                            }
+                        )
+                    )
+        # Validate newly assembled evidence; callers can never supply these references.
+        value = TutorContextV2.model_validate(value.model_dump(mode="json"))
         value.context_fingerprint = digest(
             {
                 "context": value.model_dump(mode="json"),

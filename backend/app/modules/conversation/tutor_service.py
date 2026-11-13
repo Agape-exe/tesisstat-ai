@@ -13,10 +13,17 @@ from pydantic import ValidationError
 from app.modules.conversation.models import ConversationError
 from app.modules.conversation.service import ERRORS
 from app.modules.conversation.tutor_context import HELP, TutorContextBuilder, digest
-from app.modules.conversation.tutor_grounding import render_findings, validate_general_prose
+from app.modules.conversation.tutor_grounding import (
+    prose_without_facts,
+    render_contextual_prose,
+    render_findings,
+    validate_general_prose,
+)
+from app.modules.conversation.tutor_orientation import render_options, render_step
 from app.modules.conversation.tutor_privacy import (
-    SYSTEM,
+    fit_payload,
     outbound_context,
+    private_terms,
     project_text,
     topics,
 )
@@ -26,7 +33,17 @@ from app.modules.research.context.suggestions import SuggestionService
 from app.orchestration.analysis_v2_service import reference
 from app.shared.adapters.cloudflare import CloudflareLanguageModel
 from app.shared.ai_errors import AIError
-from app.shared.tutor_v2 import ResultExplanationV2, TutorAnswerV2, TutorSelectionV2
+from app.shared.tutor_v2 import (
+    ResultExplanationV2,
+    TutorAnswerV2,
+    TutorSelectionV2,
+    TutorWireAnswerV1,
+)
+
+
+def provider_answer_schema():
+    """Flat generation transport; domain constraints are enforced independently on return."""
+    return TutorWireAnswerV1.model_json_schema()
 
 
 class TutorService:
@@ -40,12 +57,12 @@ class TutorService:
     def consent(self, project):
         self.analysis.workspace.sources.require(project)
         stored = self.store.get(project, "tutor_consent", project)
-        if stored and stored.get("consent_scope") == "tutor_context_v4":
+        if stored and stored.get("consent_scope") == "tutor_context_v5":
             return stored
         return {
             "revision": stored["revision"] if stored else 0,
             "granted": False,
-            "consent_scope": "tutor_context_v4",
+            "consent_scope": "tutor_context_v5",
             "renewal_required": bool(stored),
         }
 
@@ -67,11 +84,11 @@ class TutorService:
         if (
             not value["granted"]
             or value["revision"] != revision
-            or value["consent_scope"] != "tutor_context_v4"
+            or value["consent_scope"] != "tutor_context_v5"
         ):
             raise ConversationError(
                 "consent_required",
-                "Autoriza el nuevo alcance tutor_context_v4 vigente. "
+                "Autoriza el nuevo alcance tutor_context_v5 vigente. "
                 "El consentimiento anterior o revocado no permite enviar a IA.",
                 403,
             )
@@ -93,14 +110,24 @@ class TutorService:
             "context": context,
             "static_help": HELP[selection.stage],
             "max_message_characters": self.settings.conversation_max_message_characters,
-            "privacy": "Ahora se envían fragmentos filtrados y ordenados de tu pregunta, hasta "
-            "cuatro mensajes recientes del mismo contexto y campos narrativos confirmados "
-            "pertinentes, además de etapa, escalas, estados y métricas agregadas bajo alias. "
-            "Solo se conservan palabras de un vocabulario estadístico y gramatical; nombres, "
-            "cifras escritas, términos desconocidos e identificadores se omiten. No se envían "
-            "filas, documentos, categorías libres, credenciales ni textos originales completos. "
-            "Los fragmentos pueden perder detalles: el tutor debe preguntar y no reconstruirlos. "
-            "El permiso v3 anterior no autoriza este cambio; debes renovarlo como v4.",
+            "privacy": "Con tu permiso v5 se envían a Cloudflare la consulta conservando su "
+            "redacción tras suprimir identificadores y secretos detectados; hasta cuatro mensajes "
+            "recientes del mismo contexto; las declaraciones confirmadas pertinentes y un resumen "
+            "de la tabla: encabezados depurados, significados y escalas confirmados, tipos "
+            "detectados, "
+            "cantidades de registros/columnas, faltantes, errores y variables sin variación. "
+            "Se distinguen "
+            "detecciones, declaraciones y cálculos. Los resultados seleccionados solo "
+            "aportan métricas "
+            "agregadas bajo alias. No se adjuntan archivos, documentos, filas, "
+            "valores individuales, listas de categorías, nombres de proyectos/archivos, "
+            "UUID ni credenciales. La supresión "
+            "local detecta patrones de identificadores, secretos, posibles nombres "
+            "completos y valores "
+            "de columnas identificadoras; no es un detector universal de datos personales: escribe "
+            "solo consultas metodológicas y resúmenes sin personas ni secretos. El permiso "
+            "anterior "
+            "no autoriza este alcance; debes renovarlo como v5.",
             "choices": {
                 "datasets": [
                     {"id": d.id, "label": d.name} for d in self.analysis.workspace.datasets(project)
@@ -151,19 +178,19 @@ class TutorService:
             (r.revision for r in context.source_refs if r.kind == "context" and r.id == project), 0
         )
         trace = {
-            "tutor_version": "contextual-2.1.0",
+            "tutor_version": "contextual-2.2.0",
             "provider_kind": "cloudflare_workers_ai"
             if isinstance(self.conversations.provider, CloudflareLanguageModel)
             else "controlled_test",
             "consent_revision": draft.consent_revision,
-            "consent_scope": "tutor_context_v4",
+            "consent_scope": "tutor_context_v5",
             "snapshot": context.context_fingerprint,
             "stage": context.stage,
             "sources": [r.model_dump(mode="json") for r in context.source_refs],
             "historical_refs": [r.model_dump(mode="json") for r in context.historical_refs],
             "result_ref": reference("result", result).model_dump(mode="json") if result else None,
             "provider_calls": 0,
-            "privacy_policy": "ordered-lexical-projection-v2",
+            "privacy_policy": "selective-redaction-evidence-v1",
             "metric_refs": [],
             "actions": [],
         }
@@ -185,38 +212,41 @@ class TutorService:
             if not self.conversations.provider.configured:
                 raise AIError("not_configured")
             query_topics = topics(draft.content)
-            payload, metric_map = outbound_context(context, result, query_topics)
-            payload["query_topics"] = query_topics
-            payload["question"] = project_text(draft.content)
+            denied = private_terms(self.analysis.workspace, project, context)
+            payload, metric_map = outbound_context(
+                context, result, query_topics, private_terms=denied
+            )
+            payload["question"] = project_text(draft.content, private_terms=denied)
             trace["metrics_omitted"] = payload["metrics_omitted"]
             # Old source conversations do not contribute claims about a new analysis.
             history = self.repository.messages(
                 conversation_id, self.settings.conversation_history_turns * 2, completed_only=True
             )
             payload["history"] = [
-                {"role": m.role, **project_text(m.content, 100)}
+                {"role": m.role, **project_text(m.content, private_terms=denied)}
                 for m in history
                 if m.role in {"user", "assistant"}
                 and m.context
                 and m.context.get("snapshot") == context.context_fingerprint
-                and m.context.get("consent_scope") == "tutor_context_v4"
+                and m.context.get("consent_scope") == "tutor_context_v5"
             ][-4:]
             payload["history_omitted"] = bool(history and not payload["history"])
-            messages = [
-                {"role": "system", "content": SYSTEM},
-                {
-                    "role": "user",
-                    "content": "DATOS_JSON:\n" + json.dumps(payload, ensure_ascii=False),
-                },
-            ]
             output_tokens = min(
                 self.settings.conversation_max_output_tokens,
                 self.settings.cloudflare_max_output_tokens,
             )
+            response_schema = provider_answer_schema()
+            # The provider also bounds schema/framing bytes. Count them before fitting
+            # optional evidence; input and output have independent configured limits.
+            schema_bytes = len(json.dumps(response_schema, ensure_ascii=False).encode())
             limit = min(
                 self.settings.conversation_max_context_bytes,
-                self.settings.cloudflare_max_input_tokens - output_tokens - 512,
+                self.settings.cloudflare_max_input_tokens - schema_bytes - 512,
             )
+            messages = fit_payload(payload, limit)
+            sent_keys = {f["key"] for f in payload["evidence"]}
+            sent_evidence = [f for f in context.evidence if f.key in sent_keys]
+            trace["summary_facts_omitted"] = payload["summary_facts_omitted"]
             if len(json.dumps(messages, ensure_ascii=False).encode()) > limit:
                 raise AIError("input_limit")
             self._consent(project, draft.consent_revision)
@@ -225,7 +255,7 @@ class TutorService:
                 raw = self.conversations.provider.chat(
                     messages,
                     max_tokens=output_tokens,
-                    response_schema=TutorAnswerV2.model_json_schema(),
+                    response_schema=response_schema,
                 )
             else:
                 raw = self.conversations.provider.chat(messages, max_tokens=output_tokens)
@@ -234,12 +264,21 @@ class TutorService:
             if not isinstance(raw, str) or len(raw.encode()) > 16000:
                 raise AIError("invalid_response")
             try:
-                answer = TutorAnswerV2.model_validate_json(raw)
-            except ValidationError:
+                answer = (
+                    TutorWireAnswerV1.model_validate_json(raw).as_answer()
+                    if isinstance(self.conversations.provider, CloudflareLanguageModel)
+                    else TutorAnswerV2.model_validate_json(raw)
+                )
+            except (ValidationError, ValueError):
                 raise AIError("invalid_response") from None
             if (
-                not (answer.concepts or answer.examples or answer.findings or answer.updates)
-                or any(not validate_general_prose(t) for t in answer.concepts)
+                not (
+                    answer.orientation
+                    or answer.concepts
+                    or answer.examples
+                    or answer.findings
+                    or answer.updates
+                )
                 or any(
                     t.casefold().strip(" .") in {"explicación general", "explicacion general"}
                     for t in answer.concepts
@@ -251,16 +290,47 @@ class TutorService:
             ):
                 raise AIError("invalid_response")
             grounded_text, metric_keys = render_findings(answer.findings, metric_map, result)
-            general_text = "\n\n".join(
-                [
-                    *("Concepto general · " + t for t in answer.concepts),
-                    *(
-                        "Ejemplo hipotético; no son datos del estudio · " + t
-                        for t in answer.examples
-                    ),
+            paragraphs, fact_keys = [], []
+            procedural_text = []
+            prose = list(answer.concepts)
+            action_indices = list(answer.action_indices)
+            if answer.orientation:
+                orientation = answer.orientation
+                if "?" not in orientation.clarification:
+                    raise AIError("invalid_response")
+                if sent_evidence and not orientation.basis_keys:
+                    raise AIError("invalid_response")
+                basis = " ".join("{{" + key + "}}" for key in orientation.basis_keys)
+                procedural_text = [
+                    render_options(orientation.option_indices, context),
+                    render_step(orientation.next_step, context),
                 ]
+                paragraphs.extend(procedural_text)
+                action_indices.extend(orientation.option_indices)
+                prose = [
+                    basis + " " + orientation.reason,
+                    *prose,
+                    orientation.clarification,
+                ]
+            for paragraph in prose:
+                rendered, keys = render_contextual_prose(paragraph, sent_evidence)
+                paragraphs.append(rendered)
+                fact_keys.extend(keys)
+            if answer.orientation and sent_evidence and not fact_keys:
+                raise AIError("invalid_response")
+            paragraphs.extend(
+                "Ejemplo hipotético; no son datos del estudio · " + t for t in answer.examples
             )
-            if len(general_text) > 3500:
+            general_text = "\n\n".join(paragraphs)
+            # Result review edits only provider prose. Context facts stay in the chat's
+            # source-bound trace; metric findings remain separately immutable on exports.
+            reviewable_text = "\n\n".join(
+                [*procedural_text, *filter(None, (prose_without_facts(t) for t in prose))]
+            )
+            trace["evidence_refs"] = [
+                f.model_dump(mode="json") for f in context.evidence if f.key in fact_keys
+            ]
+            if len(reviewable_text) > 3500 or len(general_text) > 16000:
                 raise AIError("invalid_response")
             self._consent(project, draft.consent_revision)
             current, _ = self.builder.build(project, selection)
@@ -271,16 +341,26 @@ class TutorService:
             trace["finding_kinds"] = [f.kind for f in answer.findings]
             trace["actions"] = [
                 context.allowed_actions[n].model_dump(mode="json")
-                for n in dict.fromkeys(answer.action_indices)
+                for n in dict.fromkeys(action_indices)
             ]
             # Concepts remain provider-written even before an analysis exists. Study claims
             # never inherit permission from a citation: only render_findings writes them.
             text = general_text
             if grounded_text:
-                text += "\n\nHallazgos del resultado guardado ·\n" + grounded_text
-            trace["prose_source"] = "ai_grounded_draft" if grounded_text else "ai_concepts"
+                text += "\n\n" + grounded_text
+            trace["prose_source"] = (
+                "ai_grounded_draft"
+                if grounded_text
+                else "ai_guidance"
+                if answer.orientation
+                else "ai_concepts"
+            )
             trace["evidence_policy"] = "structured-findings-v1"
             trace["question_omitted"] = payload["question"]["omitted"]
+            if payload["summary_facts_omitted"]:
+                text += (
+                    "\n\nEl resumen está acotado; puedes preguntar por otras columnas de la tabla."
+                )
             if payload["question"]["omitted"]:
                 text += (
                     "\n\nParte de la consulta se omitió por privacidad; "
@@ -325,7 +405,7 @@ class TutorService:
                     revision=1,
                     result_ref=reference("result", result),
                     context_fingerprint=context.context_fingerprint,
-                    text=general_text or "Consulta los hallazgos verificados por el servidor.",
+                    text=reviewable_text or "Consulta los hallazgos verificados por el servidor.",
                     metric_keys=metric_keys,
                     evidence_policy="structured-findings-v1",
                     grounded_text=grounded_text,
@@ -338,7 +418,7 @@ class TutorService:
                 if (
                     not receipt
                     or not receipt["granted"]
-                    or receipt.get("consent_scope") != "tutor_context_v4"
+                    or receipt.get("consent_scope") != "tutor_context_v5"
                     or receipt["revision"] != draft.consent_revision
                 ):
                     raise ConversationError(

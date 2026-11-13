@@ -8,16 +8,20 @@ from app.modules.research.sources.formulas import ERROR_PREFIX
 from app.shared.analysis_v2 import canonical_hash
 
 
-def guidance(workspace, project, selection):
-    """Local facts only. This payload is never included in outbound_context."""
+def guidance(workspace, project, selection, *, table=None):
+    """Local facts. Only the explicit safe projection in tutor_summary may leave here."""
     tables = workspace.datasets(project)
     result = {"table_count": len(tables), "selected_table": None, "variables": []}
-    if not selection.dataset_id or any(
-        (selection.intent_id, selection.plan_id, selection.result_id)
+    if table is None and (
+        not selection.dataset_id
+        or any((selection.intent_id, selection.plan_id, selection.result_id))
     ):
         return result
-    dataset, rows = workspace.read_table(project, selection.dataset_id)
-    dictionary = workspace.dictionary(project, dataset.id, dataset)
+    if table is None:
+        dataset, rows = workspace.read_table(project, selection.dataset_id)
+        dictionary = workspace.dictionary(project, dataset.id, dataset)
+    else:
+        dataset, rows, dictionary = table
     result["selected_table"] = {
         "id": dataset.id,
         "name": dataset.name,

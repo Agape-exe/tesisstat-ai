@@ -33,11 +33,22 @@ export type TutorTrace = {
     revision: number;
     hash: string;
   }[];
+  evidence_refs?: {
+    key: string;
+    kind: 'detected' | 'confirmed' | 'calculated';
+    text: string;
+    source_ref: { kind: string; id: string; revision: number; hash: string };
+  }[];
   metric_refs: { result_id: string; key: string }[];
   actions: Action[];
   suggestion_id?: string;
   error?: string;
-  prose_source?: 'template' | 'ai_draft' | 'ai_concepts' | 'ai_grounded_draft';
+  prose_source?:
+    | 'template'
+    | 'ai_draft'
+    | 'ai_concepts'
+    | 'ai_guidance'
+    | 'ai_grounded_draft';
   context_changed_during_response?: boolean;
 };
 export type TutorMessage = Omit<Message, 'context'> & {
@@ -73,7 +84,7 @@ export interface TutorStatus {
   consent: {
     revision: number;
     granted: boolean;
-    consent_scope: 'tutor_context_v4';
+    consent_scope: 'tutor_context_v5';
     renewal_required?: boolean;
   };
   context: Required<TutorContextV2>;
@@ -155,7 +166,7 @@ export function createTutorApi(
       request<TutorStatus['consent']>(p, '/consent', 'PUT', {
         expected_revision: revision,
         granted,
-        consent_scope: 'tutor_context_v4',
+        consent_scope: 'tutor_context_v5',
       }),
     send: (p: string, cid: string, body: MessageDraftV2) =>
       request<{ messages: TutorMessage[] }>(
