@@ -1,8 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { useReadResource } from '../projects/useReadResource';
 import { ProjectDatasets } from '../datasets/ProjectDatasets';
-import { createSourcesApi, type SourcesApi, type TablePreview } from './api';
+import { createSourcesApi, type SourcesApi } from './api';
+import type { TablePreviewV2 } from '../../../shared/contracts/generated/v2/TablePreviewV2';
 import './sources.css';
+
+type TableColumn = TablePreviewV2['table']['columns'][number];
 
 const defaultSourcesApi = createSourcesApi();
 
@@ -148,7 +151,7 @@ function CleanDataViewer({
     loadPreview,
     active && Boolean(currentTableId),
   );
-  const previewData: TablePreview | null = previewResource.data;
+  const previewData: TablePreviewV2 | null = previewResource.data;
 
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -335,7 +338,7 @@ function CleanDataViewer({
             <table>
               <thead>
                 <tr>
-                  {previewData.table.columns.map((c) => (
+                  {previewData.table.columns.map((c: TableColumn) => (
                     <th key={c.id} scope="col">
                       {c.name}
                     </th>
@@ -343,21 +346,23 @@ function CleanDataViewer({
                 </tr>
               </thead>
               <tbody>
-                {previewData.rows.map((row, rIdx) => (
-                  <tr key={rIdx}>
-                    {row.map((cell, cIdx) => (
-                      <td key={cIdx}>
-                        {cell === null || cell === undefined ? (
-                          <span className="rp-hint">Sin valor</span>
-                        ) : cell === '' ? (
-                          <span className="rp-hint">Vacío</span>
-                        ) : (
-                          String(cell)
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {previewData.rows.map(
+                  (row: (string | null)[], rIdx: number) => (
+                    <tr key={rIdx}>
+                      {row.map((cell: string | null, cIdx: number) => (
+                        <td key={cIdx}>
+                          {cell === null || cell === undefined ? (
+                            <span className="rp-hint">Sin valor</span>
+                          ) : cell === '' ? (
+                            <span className="rp-hint">Vacío</span>
+                          ) : (
+                            String(cell)
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ),
+                )}
               </tbody>
             </table>
           </div>
@@ -365,17 +370,21 @@ function CleanDataViewer({
           <div className="clean-data-variables rp-surface">
             <h4>Variables detectadas ({previewData.table.columns.length})</h4>
             <div className="clean-data-var-list">
-              {previewData.table.columns.map((col, idx) => {
-                const detected = detectColumnType(previewData.rows, idx);
-                return (
-                  <div className="clean-data-var-chip" key={col.id}>
-                    <span className="clean-data-var-name">{col.name}</span>
-                    <span className={`clean-data-var-badge badge-${detected}`}>
-                      {detected}
-                    </span>
-                  </div>
-                );
-              })}
+              {previewData.table.columns.map(
+                (col: TableColumn, idx: number) => {
+                  const detected = detectColumnType(previewData.rows, idx);
+                  return (
+                    <div className="clean-data-var-chip" key={col.id}>
+                      <span className="clean-data-var-name">{col.name}</span>
+                      <span
+                        className={`clean-data-var-badge badge-${detected}`}
+                      >
+                        {detected}
+                      </span>
+                    </div>
+                  );
+                },
+              )}
             </div>
           </div>
         </>

@@ -125,7 +125,7 @@ export function ResearchProjects({
           formValues.assistedResponse.trim(),
           0,
         );
-        if (suggestion.status === 'pending' && suggestion.proposal) {
+        if (suggestion.state === 'pending' && suggestion.proposal) {
           const proposal = suggestion.proposal as ImportProposal;
           const fields = Object.keys(proposal).filter((k) => {
             const val = (proposal as Record<string, unknown>)[k];

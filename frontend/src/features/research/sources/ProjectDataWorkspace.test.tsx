@@ -1,11 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProjectDataWorkspace } from './ProjectDataWorkspace';
-import type { SourcesApi, SourceFile, TablePreview } from './api';
+import type { SourcesApi, SourceFile, Sheet } from './api';
+import type { TablePreviewV2 } from '../../../shared/contracts/generated/v2/TablePreviewV2';
 
 function createMockSourcesApi(
   files: SourceFile[] = [],
-  preview?: TablePreview,
+  preview?: TablePreviewV2,
 ): SourcesApi {
   return {
     files: vi.fn().mockResolvedValue(files),
@@ -57,8 +58,8 @@ function createMockSourcesApi(
     sheet: vi.fn(),
     context: vi.fn(),
     patchContext: vi.fn(),
-    originalUrl: (p, f) => `/files/${p}/${f}`,
-    calculationUrl: (p, t) => `/calc/${p}/${t}`,
+    originalUrl: (p: string, f: string) => `/files/${p}/${f}`,
+    calculationUrl: (p: string, t: string) => `/calc/${p}/${t}`,
   } as unknown as SourcesApi;
 }
 
@@ -79,7 +80,7 @@ describe('ProjectDataWorkspace - Visor Limpio de Datos (C04-B)', () => {
   });
 
   it('muestra visor limpio con tabla, columnas, filas y variables detectadas', async () => {
-    const files: SourceFile[] = [
+    const files = [
       {
         id: 'f1',
         name: 'Notas.xlsx',
@@ -100,10 +101,10 @@ describe('ProjectDataWorkspace - Visor Limpio de Datos (C04-B)', () => {
             revision: 1,
             visibility: 'visible',
             explanation: 'Tabla detectada',
-          },
+          } as unknown as Sheet,
         ],
       },
-    ];
+    ] as unknown as SourceFile[];
     const api = createMockSourcesApi(files);
     render(<ProjectDataWorkspace projectId="p1" sourcesApi={api} />);
 
@@ -148,7 +149,7 @@ describe('ProjectDataWorkspace - Visor Limpio de Datos (C04-B)', () => {
   });
 
   it('permite cambiar entre múltiples tablas cuando hay varias hojas cargadas', async () => {
-    const files: SourceFile[] = [
+    const files = [
       {
         id: 'f1',
         name: 'Notas.xlsx',
@@ -169,7 +170,7 @@ describe('ProjectDataWorkspace - Visor Limpio de Datos (C04-B)', () => {
             revision: 1,
             visibility: 'visible',
             explanation: 'Tabla 1',
-          },
+          } as unknown as Sheet,
           {
             id: 's2',
             file_id: 'f1',
@@ -181,10 +182,10 @@ describe('ProjectDataWorkspace - Visor Limpio de Datos (C04-B)', () => {
             revision: 1,
             visibility: 'visible',
             explanation: 'Tabla 2',
-          },
+          } as unknown as Sheet,
         ],
       },
-    ];
+    ] as unknown as SourceFile[];
     const api = createMockSourcesApi(files);
     const onNavigate = vi.fn();
     render(
