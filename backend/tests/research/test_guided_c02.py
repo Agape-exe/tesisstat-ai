@@ -169,3 +169,23 @@ def test_guided_failure_rolls_back_dictionary_profile_and_intent(setup, monkeypa
     monkeypatch.setattr(app.state.analysis_v2.intents, "save", original)
     assert client.post(root + "/conversations/actions", json=body).status_code == 200
     assert len(client.get(root + "/intents").json()) == 1
+
+
+def test_guided_auto_binds_first_table_when_dataset_id_is_none(setup):
+    client, root, _, _ = setup
+    upload = client.post(
+        root + "/files",
+        content=(b"codigo,nota1,nota2\na,15,18\nb,12,14\n"),
+        headers={"X-File-Name": "notas.csv"},
+    )
+    assert upload.status_code == 201
+    table_id = upload.json()["sheets"][0]["table_id"]
+
+    # Query status WITHOUT passing dataset_id
+    response = client.get(root + "/conversations/status", params={"stage": "data"})
+    assert response.status_code == 200
+    status = response.json()
+    assert status["guidance"]["selected_table"] is not None
+    assert status["guidance"]["selected_table"]["id"] == table_id
+    assert len(status["guidance"]["variables"]) == 3
+    assert any(a["kind"] == "prepare_descriptive" for a in status["context"]["allowed_actions"])
