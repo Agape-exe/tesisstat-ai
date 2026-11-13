@@ -151,7 +151,9 @@
   max-width: 380px;
   font-size: 0.875rem;
   animation: rpSlideUp 0.3s ease-out;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .rp-tutor-pill:hover {

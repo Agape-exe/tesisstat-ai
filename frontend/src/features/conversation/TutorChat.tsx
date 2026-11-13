@@ -369,167 +369,174 @@ export function TutorChat({
       {status && (
         <>
           <details className="tutor-server-collapsible">
-          <summary>Resumen técnico y ayuda de etapa</summary>
-          <div className="tutor-server-collapsible-content">
-            <p>
-              <small>Ayuda estática por etapa · sin proveedor IA</small>
-            </p>
-            <p role="status">{status.static_help}</p>
-            {boundSelection && (
+            <summary>Resumen técnico y ayuda de etapa</summary>
+            <div className="tutor-server-collapsible-content">
               <p>
-                Trabajando en: {stages[selection.stage ?? 'home']}
-                {' · '}
-                {status.guidance?.selected_table?.name ??
-                  status.choices.results.find((r) => r.id === selection.result_id)
-                    ?.label ??
-                  status.choices.plans.find((r) => r.id === selection.plan_id)
-                    ?.label ??
-                  status.choices.intents.find((r) => r.id === selection.intent_id)
-                    ?.label ??
-                  'sin recurso seleccionado'}
+                <small>Ayuda estática por etapa · sin proveedor IA</small>
               </p>
-            )}
-            {boundSelection &&
-              workingTable &&
-              !status.guidance?.selected_table && (
-                <p>Tabla de este análisis: {workingTable.label}.</p>
-              )}
-            {Object.keys(status.context.confirmed_summary ?? {}).length > 0 && (
-              <details>
-                <summary>Contexto confirmado utilizado</summary>
-                <ul>
-                  {Object.entries(status.context.confirmed_summary ?? {}).map(
-                    ([path, value]) => (
-                      <li key={path}>
-                        {(
-                          {
-                            '/main_objective': 'Objetivo principal',
-                            '/research_question': 'Pregunta de investigación',
-                            '/study_description': 'Descripción del estudio',
-                            '/data_description': 'Descripción de datos',
-                            '/sampling_notes': 'Población y muestreo',
-                          } as Record<string, string>
-                        )[path] ?? 'Información confirmada'}
-                        : {value}
-                      </li>
-                    ),
-                  )}
-                </ul>
+              <p role="status">{status.static_help}</p>
+              {boundSelection && (
                 <p>
-                  Es información declarada; no demuestra independencia,
-                  correspondencia entre sujetos ni cumplimiento de objetivos.
+                  Trabajando en: {stages[selection.stage ?? 'home']}
+                  {' · '}
+                  {status.guidance?.selected_table?.name ??
+                    status.choices.results.find(
+                      (r) => r.id === selection.result_id,
+                    )?.label ??
+                    status.choices.plans.find((r) => r.id === selection.plan_id)
+                      ?.label ??
+                    status.choices.intents.find(
+                      (r) => r.id === selection.intent_id,
+                    )?.label ??
+                    'sin recurso seleccionado'}
+                </p>
+              )}
+              {boundSelection &&
+                workingTable &&
+                !status.guidance?.selected_table && (
+                  <p>Tabla de este análisis: {workingTable.label}.</p>
+                )}
+              {Object.keys(status.context.confirmed_summary ?? {}).length >
+                0 && (
+                <details>
+                  <summary>Contexto confirmado utilizado</summary>
+                  <ul>
+                    {Object.entries(status.context.confirmed_summary ?? {}).map(
+                      ([path, value]) => (
+                        <li key={path}>
+                          {(
+                            {
+                              '/main_objective': 'Objetivo principal',
+                              '/research_question': 'Pregunta de investigación',
+                              '/study_description': 'Descripción del estudio',
+                              '/data_description': 'Descripción de datos',
+                              '/sampling_notes': 'Población y muestreo',
+                            } as Record<string, string>
+                          )[path] ?? 'Información confirmada'}
+                          : {value}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                  <p>
+                    Es información declarada; no demuestra independencia,
+                    correspondencia entre sujetos ni cumplimiento de objetivos.
+                  </p>
+                </details>
+              )}
+              {status.guidance && (
+                <section aria-label="Resumen local de datos">
+                  <h3>Resumen del servidor · sin IA</h3>
+                  <p>
+                    {status.guidance.table_count} tablas disponibles.
+                    {status.guidance.selected_table &&
+                      ` Tabla seleccionada: ${status.guidance.selected_table.name}. ${status.guidance.selected_table.rows} registros y ${status.guidance.selected_table.columns} columnas.`}
+                  </p>
+                  {(status.guidance.selected_table?.identical_rows ?? 0) >
+                    0 && (
+                    <p>
+                      Hay {status.guidance.selected_table?.identical_rows} filas
+                      idénticas; no se eliminan automáticamente.
+                    </p>
+                  )}
+                  {status.guidance.warnings?.map((w) => (
+                    <p key={w}>{w}</p>
+                  ))}
+                  <details>
+                    <summary>Tipos detectados y problemas por columna</summary>
+                    <ul>
+                      {status.guidance.variables.map((v) => (
+                        <li key={v.variable_id}>
+                          {v.name}: {v.detected_type}; {v.missing} faltantes
+                          {v.formula_errors
+                            ? `; ${v.formula_errors} errores de fórmula`
+                            : ''}
+                          {v.possible_identifier
+                            ? '; posible identificador'
+                            : ''}
+                          .{' '}
+                          {v.constant
+                            ? 'Sin variación entre los valores presentes. '
+                            : ''}
+                          {v.scale_confirmed
+                            ? 'Escala confirmada.'
+                            : 'Significado y escala por revisar.'}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                  {status.guidance.selected_table && (
+                    <button
+                      className="rp-secondary"
+                      onClick={() => setReview(true)}
+                    >
+                      No sé por dónde empezar
+                    </button>
+                  )}
+                </section>
+              )}
+              {status.provider_kind === 'controlled_test' && (
+                <p className="rp-warning">
+                  Proveedor controlado de verificación, sin llamadas externas.
+                  Esta respuesta no acredita una conexión real con IA.
+                </p>
+              )}
+              {!status.provider_configured && (
+                <p className="rp-warning">
+                  Cloudflare no está configurado o no está disponible. La ayuda
+                  estática, el historial y los formularios siguen disponibles.
+                </p>
+              )}
+              {status.context.pending_questions.length > 0 && (
+                <ul>
+                  {status.context.pending_questions.map((q) => (
+                    <li key={q}>{q}</li>
+                  ))}
+                </ul>
+              )}
+              {status.context.warnings.map((w) => (
+                <p className="rp-warning" key={w}>
+                  {w}
+                </p>
+              ))}
+              <div className="rp-actions">
+                {status.context.allowed_actions.map((action, index) => (
+                  <div key={index}>
+                    <button
+                      className="rp-secondary"
+                      disabled={busy || !contextCurrent}
+                      onClick={() => open(action)}
+                    >
+                      {action.label}
+                    </button>
+                    {action.scope && <small>{action.scope}</small>}
+                  </div>
+                ))}
+              </div>
+              <details>
+                <summary>Qué información utiliza el tutor</summary>
+                <p>{status.privacy}</p>
+                <p>
+                  Huella del contexto:{' '}
+                  <code>{status.context.context_fingerprint}</code>
+                </p>
+                <p>
+                  {status.context.source_refs.length} referencias vigentes y{' '}
+                  {status.context.historical_refs.length} históricas.
                 </p>
               </details>
-            )}
-            {status.guidance && (
-              <section aria-label="Resumen local de datos">
-                <h3>Resumen del servidor · sin IA</h3>
-                <p>
-                  {status.guidance.table_count} tablas disponibles.
-                  {status.guidance.selected_table &&
-                    ` Tabla seleccionada: ${status.guidance.selected_table.name}. ${status.guidance.selected_table.rows} registros y ${status.guidance.selected_table.columns} columnas.`}
-                </p>
-                {(status.guidance.selected_table?.identical_rows ?? 0) > 0 && (
-                  <p>
-                    Hay {status.guidance.selected_table?.identical_rows} filas
-                    idénticas; no se eliminan automáticamente.
-                  </p>
-                )}
-                {status.guidance.warnings?.map((w) => (
-                  <p key={w}>{w}</p>
-                ))}
-                <details>
-                  <summary>Tipos detectados y problemas por columna</summary>
-                  <ul>
-                    {status.guidance.variables.map((v) => (
-                      <li key={v.variable_id}>
-                        {v.name}: {v.detected_type}; {v.missing} faltantes
-                        {v.formula_errors
-                          ? `; ${v.formula_errors} errores de fórmula`
-                          : ''}
-                        {v.possible_identifier ? '; posible identificador' : ''}.{' '}
-                        {v.constant
-                          ? 'Sin variación entre los valores presentes. '
-                          : ''}
-                        {v.scale_confirmed
-                          ? 'Escala confirmada.'
-                          : 'Significado y escala por revisar.'}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-                {status.guidance.selected_table && (
-                  <button
-                    className="rp-secondary"
-                    onClick={() => setReview(true)}
-                  >
-                    No sé por dónde empezar
-                  </button>
-                )}
-              </section>
-            )}
-            {status.provider_kind === 'controlled_test' && (
-              <p className="rp-warning">
-                Proveedor controlado de verificación, sin llamadas externas. Esta
-                respuesta no acredita una conexión real con IA.
-              </p>
-            )}
-            {!status.provider_configured && (
-              <p className="rp-warning">
-                Cloudflare no está configurado o no está disponible. La ayuda
-                estática, el historial y los formularios siguen disponibles.
-              </p>
-            )}
-            {status.context.pending_questions.length > 0 && (
-              <ul>
-                {status.context.pending_questions.map((q) => (
-                  <li key={q}>{q}</li>
-                ))}
-              </ul>
-            )}
-            {status.context.warnings.map((w) => (
-              <p className="rp-warning" key={w}>
-                {w}
-              </p>
-            ))}
-            <div className="rp-actions">
-              {status.context.allowed_actions.map((action, index) => (
-                <div key={index}>
-                  <button
-                    className="rp-secondary"
-                    disabled={busy || !contextCurrent}
-                    onClick={() => open(action)}
-                  >
-                    {action.label}
-                  </button>
-                  {action.scope && <small>{action.scope}</small>}
-                </div>
-              ))}
             </div>
-            <details>
-              <summary>Qué información utiliza el tutor</summary>
-              <p>{status.privacy}</p>
-              <p>
-                Huella del contexto:{' '}
-                <code>{status.context.context_fingerprint}</code>
-              </p>
-              <p>
-                {status.context.source_refs.length} referencias vigentes y{' '}
-                {status.context.historical_refs.length} históricas.
-              </p>
-            </details>
-          </div>
-        </details>
-        {review && contextCurrent && (
-          <GuidedReview
-            key={status.context.context_fingerprint}
-            projectId={projectId}
-            status={status}
-            selection={selection}
-            api={api}
-          />
-        )}
-        {status.consent.renewal_required && (
+          </details>
+          {review && contextCurrent && (
+            <GuidedReview
+              key={status.context.context_fingerprint}
+              projectId={projectId}
+              status={status}
+              selection={selection}
+              api={api}
+            />
+          )}
+          {status.consent.renewal_required && (
             <p role="status">
               Cambió lo que se transmite: ahora conserva la redacción depurada
               de la consulta e incluye encabezados seguros, detecciones locales

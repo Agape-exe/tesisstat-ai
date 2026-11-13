@@ -77,25 +77,36 @@ def render_step(kind, context):
     return {
         "clarify_observations": count_prefix
         + (
-            f"Como primer paso, te recomiendo realizar un análisis descriptivo de tus variables cuantitativas ({names}) "
+            f"Como primer paso, te recomiendo realizar un análisis descriptivo "
+            f"de tus variables cuantitativas ({names}) "
             "para conocer medidas esenciales como media, mediana y dispersión. "
             if quantitative
-            else "Como primer paso, te recomiendo describir las medidas cuantitativas de tus datos. "
+            else (
+                "Como primer paso, te recomiendo describir las medidas cuantitativas "
+                "de tus datos. "
+            )
         )
         + (
             "Para avanzar hacia pruebas inferenciales o comparación de grupos, "
             + (
                 "aclararemos cómo se vinculan las mediciones entre sí."
                 if row_known
-                else "aclararemos qué representa cada fila y cómo se vinculan las mediciones entre sí."
+                else (
+                    "aclararemos qué representa cada fila y cómo se vinculan "
+                    "las mediciones entre sí."
+                )
             )
         ),
         "review_variables": count_prefix
         + (
-            f"Te sugiero comenzar con la estadística descriptiva de tus variables cuantitativas ({names}), "
-            "revisando su escala y significado para asegurar un resumen estadístico adecuado."
+            f"Te sugiero comenzar con la estadística descriptiva de tus variables "
+            f"cuantitativas ({names}), revisando su escala y significado para asegurar "
+            "un resumen estadístico adecuado."
             if quantitative
-            else f"Empezaría revisando el significado y la escala de {names} antes de elegir los resúmenes o comparaciones."
+            else (
+                f"Empezaría revisando el significado y la escala de {names} antes "
+                "de elegir los resúmenes o comparaciones."
+            )
         ),
         "review_quality": "Empezaría revisando los faltantes, errores o variables sin variación "
         "señalados por la comprobación local, sin eliminar ni modificar registros automáticamente.",
@@ -113,11 +124,22 @@ def render_options(indices, context):
     if any(index not in allowed for index in indices):
         raise AIError("invalid_response")
     labels = {
-        "prepare_descriptive": "Puedes comenzar por describir estos datos para calcular resúmenes de tendencia central y dispersión.",
-        "start_association": "También puedes explorar asociaciones o correlaciones entre variables.",
-        "start_comparison": "Para comparar grupos o mediciones, definiremos si corresponden a muestras independientes o pareadas.",
+        "prepare_descriptive": (
+            "Puedes comenzar por describir estos datos para calcular resúmenes "
+            "de tendencia central y dispersión."
+        ),
+        "start_association": (
+            "También puedes explorar asociaciones o correlaciones entre variables."
+        ),
+        "start_comparison": (
+            "Para comparar grupos o mediciones, definiremos si corresponden a "
+            "muestras independientes o pareadas."
+        ),
         "request_diagnostic": "Podrías revisar los diagnósticos de la intención seleccionada.",
-        "request_proposal": "Con las aclaraciones necesarias, podrías generar una propuesta de análisis estadístico.",
+        "request_proposal": (
+            "Con las aclaraciones necesarias, podrías generar una propuesta "
+            "de análisis estadístico."
+        ),
     }
     destinations = {
         "datasets": "la tabla y sus variables",

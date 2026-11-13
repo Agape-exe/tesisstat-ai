@@ -74,6 +74,7 @@ export function ProjectWorkspace({
   };
   const boundSelection =
     focus?.key === routeKey ? focus.selection : baseSelection;
+  const boundSelectionKey = JSON.stringify(boundSelection);
 
   useEffect(() => {
     let ignore = false;
@@ -102,7 +103,7 @@ export function ProjectWorkspace({
         onResourcesChanged,
       );
     };
-  }, [projectId, section, tutorOpen, JSON.stringify(boundSelection)]);
+  }, [projectId, section, tutorOpen, boundSelectionKey, boundSelection]);
 
   const selectedTable = bubbleStatus?.guidance?.selected_table;
   const selectedTableName = selectedTable?.name ?? '';

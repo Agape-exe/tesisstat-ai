@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ProjectWorkspace } from './ProjectWorkspace';
 import * as tutorApiModule from '../../conversation/tutorApi';
@@ -17,7 +17,11 @@ describe('ProjectWorkspace - Asistente Flotante y Limpieza de Pantalla', () => {
   it('muestra la burbuja flotante y el pill reactivo cuando detecta variables de notas', async () => {
     const mockStatus: tutorApiModule.TutorStatus = {
       provider_configured: true,
-      consent: { revision: 0, granted: false, consent_scope: 'tutor_context_v5' },
+      consent: {
+        revision: 0,
+        granted: false,
+        consent_scope: 'tutor_context_v5',
+      },
       static_help: 'Revisa las variables.',
       privacy: 'Solo agregados.',
       max_message_characters: 2000,
