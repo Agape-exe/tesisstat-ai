@@ -11,7 +11,7 @@
       "type": "boolean"
     },
     "consent_scope": {
-      "const": "tutor_context_v4",
+      "const": "tutor_context_v5",
       "title": "Consent Scope",
       "type": "string"
     }

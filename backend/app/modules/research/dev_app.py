@@ -108,6 +108,7 @@ from app.orchestration.research_statistics import ResearchInputError, ResearchSt
 from app.orchestration.scores_v2 import ScoreServiceV2
 from app.orchestration.statistics_routes import create_statistics_router
 from app.shared.adapters.cloudflare import CloudflareLanguageModel
+from app.shared.adapters.gemini import GeminiLanguageModel
 
 logger = logging.getLogger(__name__)
 
@@ -502,11 +503,16 @@ def create_app(
             )
         )
     )
+    default_ai_provider = (
+        GeminiLanguageModel(settings)
+        if getattr(settings, "gemini_api_key", "").strip()
+        else CloudflareLanguageModel(settings)
+    )
     methodology_repository = SQLiteMethodologyRepository(settings.research_db_path)
     methodology = MethodologyService(
         extraction,
         methodology_repository,
-        methodology_provider or CloudflareLanguageModel(settings),
+        methodology_provider or default_ai_provider,
         MethodologyLimits(
             max_characters=settings.research_methodology_max_characters,
             max_input_tokens=settings.cloudflare_max_input_tokens,
@@ -539,7 +545,7 @@ def create_app(
     if instrument_extraction_service is not None:
         extraction_service_inst = instrument_extraction_service
     else:
-        inst_provider = instrument_provider or CloudflareLanguageModel(settings)
+        inst_provider = instrument_provider or default_ai_provider
         integrity_secret_bytes = (
             settings.research_integrity_secret.encode("utf-8")
             if settings.research_integrity_secret
@@ -582,7 +588,7 @@ def create_app(
         SQLiteConversationRepository(settings.research_db_path),
         conversation_provider
         if conversation_provider is not None
-        else CloudflareLanguageModel(settings),
+        else default_ai_provider,
         settings,
         context,
     )

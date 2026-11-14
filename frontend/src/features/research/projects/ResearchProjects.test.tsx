@@ -16,6 +16,7 @@ import {
   vi,
 } from 'vitest';
 import { ProjectApiError } from './api';
+import { extractCandidateFields } from './extractCandidates';
 import { ResearchProjects } from './ResearchProjects';
 import type { Project, ProjectService } from './types';
 import { testContext } from '../context/testContext';
@@ -351,7 +352,7 @@ describe('Research projects UI', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar detalle' }));
     expect(
-      await screen.findByRole('region', { name: 'Inicio del proyecto' }),
+      await screen.findByRole('region', { name: 'Asistente IA' }),
     ).toBeInTheDocument();
   });
 
@@ -430,7 +431,7 @@ it('navigates between document and dataset steps', async () => {
       name: `Ver investigación: ${project.title}`,
     }),
   );
-  await screen.findByRole('region', { name: 'Inicio del proyecto' });
+  await screen.findByRole('region', { name: 'Asistente IA' });
   fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   expect(
     await screen.findByRole('region', { name: 'Documentos de investigación' }),
@@ -464,7 +465,7 @@ it('opens Asistente IA, preserves document state and restores the project after 
             consent: {
               revision: 0,
               granted: false,
-              consent_scope: 'tutor_context_v4',
+              consent_scope: 'tutor_context_v5',
             },
             static_help: 'Puedes comenzar sin documento ni hipótesis.',
             privacy: 'Solo agregados.',
@@ -488,7 +489,7 @@ it('opens Asistente IA, preserves document state and restores the project after 
       name: `Ver investigación: ${project.title}`,
     }),
   );
-  await screen.findByRole('region', { name: 'Inicio del proyecto' });
+  await screen.findByRole('region', { name: 'Asistente IA' });
   fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
   const documents = await screen.findByRole('region', {
     name: 'Documentos de investigación',
@@ -501,7 +502,7 @@ it('opens Asistente IA, preserves document state and restores the project after 
     await screen.findByText(/Cloudflare no está configurado/),
   ).toBeInTheDocument();
   expect(window.location.hash).toContain('section=assistant');
-  for (const name of ['Documentos', 'Datos', 'Análisis']) {
+  for (const name of ['Documentos', 'Datos', 'Resultados']) {
     expect(screen.getByRole('button', { name })).toBeEnabled();
   }
   fireEvent.click(screen.getByRole('button', { name: 'Documentos' }));
@@ -554,7 +555,7 @@ it('searches persisted projects and preserves CRUD after clearing the search', a
   expect(service.list).toHaveBeenCalledTimes(1);
 });
 
-it('creates with only a name and opens Inicio without starting the assistant', async () => {
+it('creates with only a name and opens Asistente directly', async () => {
   const service = mockService();
   render(<ResearchProjects service={service} />);
   await screen.findByText('Tu próxima investigación empieza aquí');
@@ -563,22 +564,13 @@ it('creates with only a name and opens Inicio without starting the assistant', a
   fillForm();
   fireEvent.click(screen.getByRole('button', { name: 'Crear investigación' }));
   expect(
-    await screen.findByRole('region', { name: 'Inicio del proyecto' }),
+    await screen.findByRole('region', { name: 'Asistente IA' }),
   ).toBeInTheDocument();
-  expect(window.location.hash).toContain('section=home');
+  expect(window.location.hash).toContain('section=assistant');
   expect(service.create).toHaveBeenCalledWith({
     title: project.title,
     description: '',
   });
-  expect(
-    screen.queryByRole('region', { name: 'Asistente IA' }),
-  ).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Solicitar ayuda' })).toBeEnabled();
-  expect(
-    vi
-      .mocked(fetch)
-      .mock.calls.some(([url]) => String(url).includes('/conversations')),
-  ).toBe(false);
 });
 
 it('restores project and section with browser Back and Forward, then reloads Datos', async () => {
@@ -603,15 +595,14 @@ it('restores project and section with browser Back and Forward, then reloads Dat
       name: `Ver investigación: ${project.title}`,
     }),
   );
-  await screen.findByRole('region', { name: 'Inicio del proyecto' });
+  await screen.findByRole('region', { name: 'Asistente IA' });
   fireEvent.click(screen.getByRole('button', { name: 'Datos' }));
   expect(window.location.hash).toContain('section=datasets');
   act(() => window.history.back());
   await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Inicio' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    ),
+    expect(
+      screen.getByRole('button', { name: 'Asistente IA' }),
+    ).toHaveAttribute('aria-current', 'page'),
   );
   expect(
     screen.getByText(project.title, {
@@ -621,7 +612,7 @@ it('restores project and section with browser Back and Forward, then reloads Dat
   act(() => window.history.back());
   await screen.findByRole('heading', { name: 'Mis investigaciones' });
   act(() => window.history.forward());
-  await screen.findByRole('region', { name: 'Inicio del proyecto' });
+  await screen.findByRole('region', { name: 'Asistente IA' });
   act(() => window.history.forward());
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Datos' })).toHaveAttribute(
@@ -648,7 +639,7 @@ it('keeps methodology and the previous package URL accessible', async () => {
   );
   render(<ResearchProjects service={service} />);
   expect(
-    await screen.findByRole('button', { name: 'Análisis' }),
+    await screen.findByRole('button', { name: 'Resultados' }),
   ).toHaveAttribute('aria-current', 'page');
   for (const label of ['Resultados', 'Informes', 'Metodología'])
     expect(screen.getByRole('button', { name: label })).toBeEnabled();
@@ -750,7 +741,7 @@ it('closes a project dialog when browser history changes and does not reopen it 
   await projectAction('Eliminar investigación');
   expect(screen.getByRole('dialog')).toBeInTheDocument();
   act(() => window.history.back());
-  await screen.findByRole('region', { name: 'Inicio del proyecto' });
+  await screen.findByRole('region', { name: 'Asistente IA' });
   act(() => window.history.forward());
   await screen.findByRole('heading', { name: 'Mis investigaciones' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -783,7 +774,7 @@ it('supports project menu keyboard navigation and Escape', async () => {
   fireEvent.click(
     screen.getByRole('button', { name: `Ver investigación: ${project.title}` }),
   );
-  await screen.findByRole('region', { name: 'Inicio del proyecto' });
+  await screen.findByRole('region', { name: 'Asistente IA' });
   expect(service.delete).not.toHaveBeenCalled();
   expect(service.update).not.toHaveBeenCalled();
 });
@@ -912,7 +903,60 @@ it('lists, searches and opens projects without academic metadata', async () => {
   fireEvent.click(
     screen.getByRole('button', { name: `Ver investigación: ${minimal.title}` }),
   );
-  await screen.findByRole('region', { name: 'Inicio del proyecto' });
-  expect(screen.getAllByText('Sin especificar')).toHaveLength(5);
+  await screen.findByRole('region', { name: 'Asistente IA' });
   expect(document.body.textContent).not.toMatch(/\b(null|undefined)\b/);
+  fireEvent.click(screen.getByRole('button', { name: 'Contexto' }));
+  expect(screen.getAllByText('Sin especificar')).toHaveLength(5);
+});
+
+describe('extractCandidateFields - Sincronización exacta con candidates del backend', () => {
+  it('extrae las claves con el formato exacto del backend eliminando metadatos', () => {
+    const proposal = {
+      format_version: 'context-import-1.0',
+      title: 'Título no candidato',
+      main_objective: 'Determinar impacto',
+      research_question: '¿Cuál es el impacto?',
+      study_description: 'Estudio experimental',
+      data_description: 'Notas de alumnos',
+      observational_unit: 'Estudiante',
+      sampling_notes: 'Muestreo censal',
+      design: 'quasi_experimental',
+      specific_objectives: [
+        { ref: 'o1', text: 'Objetivo 1' },
+        { ref: 'o2', text: 'Objetivo 2' },
+      ],
+      hypotheses: [
+        {
+          ref: 'h1',
+          statement: 'Hipótesis 1',
+          objective_ref: 'o1',
+          alternative: 'greater',
+        },
+      ],
+      complementary_notes: ['Nota 1', 'Nota 2'],
+      observations: 'unknown',
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fields = extractCandidateFields(proposal as any);
+    expect(fields).toEqual([
+      'research_question',
+      'main_objective',
+      'study_description',
+      'data_description',
+      'observational_unit',
+      'sampling_notes',
+      'design',
+      'specific_objectives/o1',
+      'specific_objectives/o2',
+      'hypotheses/h1',
+      'complementary_notes/0',
+      'complementary_notes/1',
+    ]);
+    expect(fields).not.toContain('title');
+    expect(fields).not.toContain('format_version');
+    expect(fields).not.toContain('observations');
+    expect(fields).not.toContain('specific_objectives');
+    expect(fields).not.toContain('hypotheses');
+  });
 });

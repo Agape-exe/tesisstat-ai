@@ -8,22 +8,36 @@ from app.modules.research.sources.formulas import ERROR_PREFIX
 from app.shared.analysis_v2 import canonical_hash
 
 
-def guidance(workspace, project, selection):
-    """Local facts only. This payload is never included in outbound_context."""
+def guidance(workspace, project, selection, *, table=None):
+    """Local facts. Only the explicit safe projection in tutor_summary may leave here."""
     tables = workspace.datasets(project)
     result = {"table_count": len(tables), "selected_table": None, "variables": []}
-    if not selection.dataset_id or any(
-        (selection.intent_id, selection.plan_id, selection.result_id)
+    target_dataset_id = selection.dataset_id
+    if (
+        not target_dataset_id
+        and tables
+        and not any((selection.intent_id, selection.plan_id, selection.result_id))
+    ):
+        target_dataset_id = tables[0].id
+
+    if table is None and (
+        not target_dataset_id or any((selection.intent_id, selection.plan_id, selection.result_id))
     ):
         return result
-    dataset, rows = workspace.read_table(project, selection.dataset_id)
-    dictionary = workspace.dictionary(project, dataset.id, dataset)
+    if table is None:
+        dataset, rows = workspace.read_table(project, target_dataset_id)
+        dictionary = workspace.dictionary(project, dataset.id, dataset)
+    else:
+        dataset, rows, dictionary = table
     result["selected_table"] = {
         "id": dataset.id,
         "name": dataset.name,
         "rows": dataset.row_count,
         "columns": len(dataset.columns),
         "identical_rows": len(rows) - len({tuple(row) for row in rows}),
+        "recommended_normality_test": "Shapiro-Wilk"
+        if dataset.row_count < 50
+        else "Kolmogorov-Smirnov con corrección de Lilliefors",
     }
     result["warnings"] = (
         workspace.sources.table(project, dataset.id).warnings if dataset.kind == "imported" else []
@@ -93,6 +107,11 @@ def prepare_descriptive(tutor, project, request):
                 409,
             )
         table_id = request.selection.dataset_id
+        if not table_id:
+            datasets = workspace.datasets(project)
+            table_id = datasets[0].id if datasets else None
+        if not table_id:
+            fail("No hay una tabla seleccionada ni disponible.", "no_table", 400)
         dataset, _ = workspace.read_table(project, table_id)
         dictionary = workspace.dictionary(project, table_id, dataset, db)
         ids = [v.variable_id for v in request.variables]

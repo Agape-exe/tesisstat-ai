@@ -29,11 +29,7 @@ export function ProjectWorkspace({
   item?: string | null;
 }) {
   const routeKey = JSON.stringify([section, view, item]);
-  const [helpOpen, setHelpOpen] = useState<boolean | null>(null);
-  const accompanied = ['datasets', 'analysis', 'results', 'reports'].includes(
-    section,
-  );
-  const tutorOpen = helpOpen ?? accompanied;
+  const [showDataPanel, setShowDataPanel] = useState(false);
   const helpStage =
     (
       {
@@ -71,6 +67,7 @@ export function ProjectWorkspace({
   };
   const boundSelection =
     focus?.key === routeKey ? focus.selection : baseSelection;
+
   const [cache, setCache] = useState<{
     key: string;
     routes: Partial<Record<Section, WorkspaceRoute>>;
@@ -89,32 +86,9 @@ export function ProjectWorkspace({
   return (
     <WorkspaceFocus.Provider value={publish}>
       <div
-        className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : accompanied ? 'rp-guided-workspace' : ''}`}
+        className={`rp-workspace ${section === 'assistant' ? 'rp-workspace-chat' : ''} ${showDataPanel && section === 'assistant' ? 'rp-workspace-split' : ''}`}
         aria-label="Sección del proyecto"
       >
-        {section !== 'assistant' && (
-          <aside
-            className="rp-tutor-sidebar"
-            aria-label="Tutor del trabajo actual"
-          >
-            <button
-              className="rp-secondary"
-              aria-expanded={tutorOpen}
-              onClick={() => setHelpOpen(!tutorOpen)}
-            >
-              {tutorOpen ? 'Plegar tutor' : 'Abrir tutor para este paso'}
-            </button>
-            {tutorOpen && (
-              <TutorChat
-                key={`${projectId}:${JSON.stringify(boundSelection)}`}
-                projectId={projectId}
-                projectTitle={projectTitle}
-                stage={helpStage}
-                boundSelection={boundSelection}
-              />
-            )}
-          </aside>
-        )}
         {(Object.entries(cache.routes) as [Section, WorkspaceRoute][]).map(
           ([id, route]) => (
             <div className="rp-guided-content" key={id} hidden={id !== section}>
@@ -127,6 +101,9 @@ export function ProjectWorkspace({
                 item={route.item}
                 active={id === section}
                 tutorStage={cache.tutorStage}
+                boundSelection={boundSelection}
+                showDataPanel={showDataPanel}
+                setShowDataPanel={setShowDataPanel}
               />
             </div>
           ),
@@ -144,6 +121,9 @@ function SectionContent({
   item,
   active,
   tutorStage,
+  boundSelection,
+  showDataPanel,
+  setShowDataPanel,
 }: {
   projectId: string;
   projectTitle?: string;
@@ -153,6 +133,9 @@ function SectionContent({
   item: string | null;
   active: boolean;
   tutorStage?: Selection['stage'];
+  boundSelection?: Selection;
+  showDataPanel?: boolean;
+  setShowDataPanel?: (show: boolean) => void;
 }) {
   switch (section) {
     case 'home':
@@ -170,14 +153,70 @@ function SectionContent({
       );
     case 'assistant':
       return (
-        <TutorChat
-          key={`${projectId}:${view}:${item}:${tutorStage}`}
-          projectId={projectId}
-          projectTitle={projectTitle}
-          stage={view === 'results' ? 'results' : (tutorStage ?? 'home')}
-          active={active}
-          resultId={view === 'results' ? (item ?? undefined) : undefined}
-        />
+        <section
+          className="rp-chat-first-workspace rp-assistant-section"
+          aria-label="Asistente IA"
+        >
+          <div className="rp-chat-workspace-header">
+            <div className="rp-chat-workspace-title">
+              <span className="rp-tutor-panel-badge">IA</span>
+              <h2>Asistente Estadístico TesisStat</h2>
+            </div>
+            <button
+              type="button"
+              className={`rp-secondary rp-toggle-data-btn ${showDataPanel ? 'active' : ''}`}
+              onClick={() => setShowDataPanel?.(!showDataPanel)}
+              aria-expanded={showDataPanel}
+            >
+              {showDataPanel ? '✕ Ocultar datos' : '📊 Ver datos cargados'}
+            </button>
+          </div>
+          <div
+            className={`rp-chat-split-container ${showDataPanel ? 'split-active' : ''}`}
+          >
+            <div className="rp-chat-main-column">
+              <TutorChat
+                key={`${projectId}:${view}:${item}:${tutorStage}`}
+                projectId={projectId}
+                projectTitle={projectTitle}
+                stage={view === 'results' ? 'results' : (tutorStage ?? 'home')}
+                active={active}
+                resultId={view === 'results' ? (item ?? undefined) : undefined}
+                boundSelection={boundSelection}
+                onOpenDataPanel={() => setShowDataPanel?.(true)}
+              />
+            </div>
+            {showDataPanel && (
+              <aside
+                className="rp-side-data-panel"
+                aria-label="Panel de datos cargados"
+              >
+                <div className="rp-side-data-header">
+                  <h3>Datos cargados y visualizaciones</h3>
+                  <button
+                    type="button"
+                    className="rp-side-data-close"
+                    aria-label="Cerrar panel de datos"
+                    onClick={() => setShowDataPanel?.(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="rp-side-data-content">
+                  <ProjectDataWorkspace
+                    projectId={projectId}
+                    view={view}
+                    item={item}
+                    active={true}
+                    onNavigate={(v, i) =>
+                      navigateWorkspace(projectId, 'assistant', v, i)
+                    }
+                  />
+                </div>
+              </aside>
+            )}
+          </div>
+        </section>
       );
     case 'documents':
       return <ProjectDocuments projectId={projectId} />;

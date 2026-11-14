@@ -13,7 +13,7 @@ export type ResultId = string | null;
 export type Content = string;
 export type RequestId = string;
 export type ExternalAiConsent = true;
-export type ConsentScope = "tutor_context_v4";
+export type ConsentScope = "tutor_context_v5";
 export type ConsentRevision = number;
 
 export interface MessageDraftV2 {

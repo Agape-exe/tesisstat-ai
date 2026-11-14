@@ -72,13 +72,6 @@ export function ProjectHome({
           >
             Solicitar ayuda
           </button>
-          <button
-            className="rp-secondary"
-            disabled={resource.loading}
-            onClick={resource.reload}
-          >
-            Actualizar estado
-          </button>
         </div>
       </div>
       <h3>Recorrido recomendado</h3>

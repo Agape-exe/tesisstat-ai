@@ -617,3 +617,22 @@ body:has(.rp-shell) {
     align-items: stretch;
   }
 }
+
+.rp-context-collapse {
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+.rp-context-collapse summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+.rp-context-collapse textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  box-sizing: border-box;
+}

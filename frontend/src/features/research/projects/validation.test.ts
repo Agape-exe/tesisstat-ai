@@ -12,15 +12,22 @@ describe('Minimal project form', () => {
   it.each(['', ' ', 'a'.repeat(201)])('rejects invalid name %s', (title) => {
     expect(validateProject({ ...valid, title }).title).toBeTruthy();
   });
-  it('accepts boundaries and rejects an oversized description', () => {
+  it('accepts optional assistedResponse and preserves title and description', () => {
     expect(
       validateProject({
-        title: 'a'.repeat(200),
-        description: 'a'.repeat(2000),
+        ...valid,
+        assistedResponse: '{"format_version": "context-import-1.0"}',
       }),
     ).toEqual({});
     expect(
-      validateProject({ ...valid, description: 'a'.repeat(2001) }).description,
-    ).toBeTruthy();
+      toProjectDraft({
+        title: 'Tesis',
+        description: 'Mi tesis',
+        assistedResponse: '{"format_version": "context-import-1.0"}',
+      }),
+    ).toEqual({
+      title: 'Tesis',
+      description: 'Mi tesis',
+    });
   });
 });

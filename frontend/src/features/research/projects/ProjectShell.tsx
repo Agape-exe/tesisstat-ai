@@ -177,18 +177,22 @@ export function ProjectShell({
                   <span>{label}</span>
                 </button>
               ))}
-              <div className="rp-nav-divider" />
-              <p className="rp-nav-label">APOYO Y HERRAMIENTAS</p>
-              {secondarySections.map(([id, label]) => (
-                <button
-                  key={id}
-                  aria-current={id === section ? 'page' : undefined}
-                  onClick={() => go(id)}
-                >
-                  <UiIcon name={sectionInfo[id].icon} />
-                  <span>{label}</span>
-                </button>
-              ))}
+              {secondarySections.length > 0 && (
+                <>
+                  <div className="rp-nav-divider" />
+                  <p className="rp-nav-label">APOYO Y HERRAMIENTAS</p>
+                  {secondarySections.map(([id, label]) => (
+                    <button
+                      key={id}
+                      aria-current={id === section ? 'page' : undefined}
+                      onClick={() => go(id)}
+                    >
+                      <UiIcon name={sectionInfo[id].icon} />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </>
+              )}
             </>
           )}
         </nav>
@@ -235,9 +239,9 @@ export function ProjectHeader({
             Mis investigaciones
           </button>
           <UiIcon name="chevron" />
-          <span title={project.title}>{project.title}</span>
+          <span>{sectionInfo[section].title}</span>
         </div>
-        <h1>{sectionInfo[section].title}</h1>
+        <h1>{project.title}</h1>
         <p>{sectionInfo[section].description}</p>
         <nav className="rp-section-tabs" aria-label="Apartados del proyecto">
           {sections.map(([id, label]) => (

@@ -468,9 +468,9 @@ def test_chat_limits_prevent_network_and_deadline_stops_read(monkeypatch):
 
 
 def test_tutor_structured_chat_uses_closed_schema_and_same_bounded_transport(monkeypatch):
-    from app.shared.tutor_v2 import TutorAnswerV2
+    from app.shared.tutor_v2 import TutorWireAnswerV1
 
-    schema = TutorAnswerV2.model_json_schema()
+    schema = TutorWireAnswerV1.model_json_schema()
 
     class Transport:
         def open(self, request, timeout):
@@ -481,8 +481,13 @@ def test_tutor_structured_chat_uses_closed_schema_and_same_bounded_transport(mon
                 {
                     "result": {
                         "response": {
-                            "response_version": "tutor-2.1",
-                            "concepts": ["La mediana es el valor central."],
+                            "response_version": "tutor-wire-1.0",
+                            "mode": "explanation",
+                            "text": "La mediana es el valor central.",
+                            "next_step": "none",
+                            "option_indices": [],
+                            "question": "",
+                            "basis_keys": [],
                         }
                     }
                 }
@@ -492,4 +497,6 @@ def test_tutor_structured_chat_uses_closed_schema_and_same_bounded_transport(mon
     answer = configured_model().chat(
         [{"role": "user", "content": "Pregunta sintética"}], max_tokens=1024, response_schema=schema
     )
-    assert TutorAnswerV2.model_validate_json(answer).concepts == ["La mediana es el valor central."]
+    assert TutorWireAnswerV1.model_validate_json(answer).as_answer().concepts == [
+        "La mediana es el valor central."
+    ]
