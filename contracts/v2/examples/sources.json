@@ -1,0 +1,66 @@
+{
+  "dataset": {
+    "id": "00000005-0000-4000-8000-000000000000",
+    "project_id": "00000001-0000-4000-8000-000000000000",
+    "revision": 1,
+    "fixture": "sales.synthetic.csv",
+    "columns": [
+      {
+        "id": "00000004-0000-4000-8000-000000000000",
+        "name": "importe"
+      }
+    ],
+    "row_count": 3,
+    "synthetic": true
+  },
+  "dictionary": {
+    "id": "00000006-0000-4000-8000-000000000000",
+    "project_id": "00000001-0000-4000-8000-000000000000",
+    "revision": 1,
+    "dataset_id": "00000005-0000-4000-8000-000000000000",
+    "variables": [
+      {
+        "id": "00000003-0000-4000-8000-000000000000",
+        "column_ids": [
+          "00000004-0000-4000-8000-000000000000"
+        ],
+        "name": {
+          "value": "Importe",
+          "provenance": {
+            "kind": "manual",
+            "source_refs": [],
+            "algorithm_version": null
+          },
+          "confirmation": {
+            "actor_ref": "local",
+            "confirmed_at": "2026-11-09T12:00:00Z",
+            "revision": 1
+          }
+        },
+        "measurement_scale": {
+          "value": "ratio",
+          "provenance": {
+            "kind": "manual",
+            "source_refs": [],
+            "algorithm_version": null
+          },
+          "confirmation": {
+            "actor_ref": "local",
+            "confirmed_at": "2026-11-09T12:00:00Z",
+            "revision": 1
+          }
+        }
+      }
+    ]
+  },
+  "profile": {
+    "id": "00000007-0000-4000-8000-000000000000",
+    "project_id": "00000001-0000-4000-8000-000000000000",
+    "revision": 1,
+    "dataset_id": "00000005-0000-4000-8000-000000000000",
+    "total_rows": 3,
+    "valid_count": 3,
+    "missing_count": 0,
+    "algorithm_version": "synthetic-fixture-v1"
+  }
+}

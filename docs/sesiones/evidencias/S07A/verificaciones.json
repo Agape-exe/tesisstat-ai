@@ -1,0 +1,23 @@
+{
+  "base": "172377f3dcc4d8f6835db40de24d342593b486ce",
+  "required_ancestor": "6ac8fe5",
+  "backend": {
+    "pytest": { "passed": 1020, "warnings": 2, "duration_seconds": 1324.98 },
+    "ruff_check": "passed",
+    "ruff_format_check": { "passed": true, "files": 256 },
+    "export_contracts_check": "passed",
+    "compileall": "passed"
+  },
+  "frontend": {
+    "vitest": { "passed": 215, "files": 38, "duration_seconds": 200.62 },
+    "eslint": "passed",
+    "prettier_check": "passed",
+    "contracts_generate": "passed; no generated diff",
+    "typescript_and_main_build": "passed",
+    "research_build": "passed; known chunk size warning above 500 kB"
+  },
+  "contracts_changed": false,
+  "diff_check": "passed",
+  "user_manual_acceptance": "pending",
+  "remote_identity_and_persistence": "not implemented/integrated; not accredited by local tests"
+}

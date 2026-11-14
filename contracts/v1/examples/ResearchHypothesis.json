@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "id": "h1",
+  "statement": "Existe asociación entre las horas de estudio y el puntaje académico.",
+  "objective": "Evaluar la asociación entre horas de estudio y puntaje.",
+  "kind": "association",
+  "variable_ids": [
+    "study_hours",
+    "score"
+  ],
+  "null_statement": "No existe asociación.",
+  "alternative": "two-sided"
+}

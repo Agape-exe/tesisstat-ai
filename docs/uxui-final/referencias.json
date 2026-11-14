@@ -1,0 +1,50 @@
+{
+  "html": "C:\\Users\\Melissa\\Downloads\\TesisStat_AI_Mockup_Integral_Corregido.html",
+  "html_sha256": "60dac57527076a1468c42b403924211e05c29587d329c512cd87c4d8dd73620b",
+  "zip": "C:\\Users\\Melissa\\Downloads\\tesisstat-ai-mockup-integral.zip",
+  "zip_sha256": "bd6d0d6b24bdf5c6f018a3867a35db37f77b4eea6856db811dd0bba4b10ca9b9",
+  "references": [
+    {
+      "file": "referencias/documentos.png",
+      "zip_entry": "capturas/documentos.png",
+      "sha256": "22e8c6c30ec2b405a2db73e78b8aeeed9f297b11cc5304ce253f27bfbaeac226",
+      "matches_original": true
+    },
+    {
+      "file": "referencias/metodologia.png",
+      "zip_entry": "capturas/metodologia.png",
+      "sha256": "e436151c87382cda085826f860cba9a796f2244a8a53d8dbbd9e054982bbf213",
+      "matches_original": true
+    },
+    {
+      "file": "referencias/instrumento.png",
+      "zip_entry": "capturas/instrumento.png",
+      "sha256": "8eccc6e5ed159c6b74aad7ad621a07b874b8021dcabc7a0a35af071b5fcc0892",
+      "matches_original": true
+    },
+    {
+      "file": "referencias/datos.png",
+      "zip_entry": "capturas/datos.png",
+      "sha256": "372e1dfb5cddb30598618977a7caaf921435ee5d06cc354db15547afdf4936ce",
+      "matches_original": true
+    },
+    {
+      "file": "referencias/analisis.png",
+      "zip_entry": "capturas/analisis.png",
+      "sha256": "67528e8ddbddfa16c2cd0cee2e1d09ec57250dbf351f64d7dba7ce31556e8618",
+      "matches_original": true
+    },
+    {
+      "file": "referencias/resultados.png",
+      "zip_entry": "capturas/resultados.png",
+      "sha256": "39c26ac051ce4cafad6bbe66b7453470cbacbac27e108283328f235e378bd8e4",
+      "matches_original": true
+    },
+    {
+      "file": "referencias/informes.png",
+      "zip_entry": "capturas/informes.png",
+      "sha256": "b21ce0135704158b29070789c37000f800a965f3cb6f089d7579ad8ea388c3dd",
+      "matches_original": true
+    }
+  ]
+}

@@ -1,0 +1,863 @@
+[
+  {
+    "section": "documents",
+    "viewport": [
+      1440,
+      900
+    ],
+    "documentWidth": 1440,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1196,
+      "height": 195.859375
+    },
+    "content": {
+      "x": 362.46875,
+      "y": 289.359375,
+      "width": 959.0625,
+      "height": 356.390625
+    },
+    "support": {
+      "x": 1026.53125,
+      "y": 289.359375,
+      "width": 295,
+      "height": 252.5
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1196,
+        "height": 194.859375
+      },
+      "content": {
+        "x": 362.46875,
+        "y": 283.859375,
+        "width": 959.0625,
+        "height": 238.5
+      },
+      "titleFont": "30.24px"
+    }
+  },
+  {
+    "section": "methodology",
+    "viewport": [
+      1440,
+      900
+    ],
+    "documentWidth": 1440,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1196,
+      "height": 195.859375
+    },
+    "content": {
+      "x": 362.46875,
+      "y": 227.859375,
+      "width": 959.0625,
+      "height": 766.140625
+    },
+    "support": {
+      "x": 1026.53125,
+      "y": 227.859375,
+      "width": 295,
+      "height": 240.5
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1196,
+        "height": 194.859375
+      },
+      "content": {
+        "x": 362.46875,
+        "y": 226.859375,
+        "width": 959.0625,
+        "height": 533.1875
+      },
+      "titleFont": "30.24px"
+    }
+  },
+  {
+    "section": "instrument",
+    "viewport": [
+      1440,
+      900
+    ],
+    "documentWidth": 1440,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1196,
+      "height": 195.859375
+    },
+    "content": {
+      "x": 362.46875,
+      "y": 227.859375,
+      "width": 959.0625,
+      "height": 328.1875
+    },
+    "support": {
+      "x": 1026.53125,
+      "y": 227.859375,
+      "width": 295,
+      "height": 290.28125
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1196,
+        "height": 194.859375
+      },
+      "content": {
+        "x": 362.46875,
+        "y": 420.859375,
+        "width": 959.0625,
+        "height": 339.28125
+      },
+      "titleFont": "30.24px"
+    }
+  },
+  {
+    "section": "datasets",
+    "viewport": [
+      1440,
+      900
+    ],
+    "documentWidth": 1440,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1196,
+      "height": 195.859375
+    },
+    "content": {
+      "x": 362.46875,
+      "y": 289.359375,
+      "width": 959.0625,
+      "height": 562.890625
+    },
+    "support": {
+      "x": 1026.53125,
+      "y": 289.359375,
+      "width": 295,
+      "height": 301.6875
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1196,
+        "height": 194.859375
+      },
+      "content": {
+        "x": 362.46875,
+        "y": 283.859375,
+        "width": 959.0625,
+        "height": 591
+      },
+      "titleFont": "30.24px"
+    }
+  },
+  {
+    "section": "analysis",
+    "viewport": [
+      1440,
+      900
+    ],
+    "documentWidth": 1440,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1196,
+      "height": 195.859375
+    },
+    "content": {
+      "x": 362.46875,
+      "y": 296.859375,
+      "width": 959.0625,
+      "height": 627.5
+    },
+    "support": {
+      "x": 1026.53125,
+      "y": 296.859375,
+      "width": 295,
+      "height": 290.28125
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1196,
+        "height": 194.859375
+      },
+      "content": {
+        "x": 362.46875,
+        "y": 278.859375,
+        "width": 959.0625,
+        "height": 401
+      },
+      "titleFont": "30.24px"
+    }
+  },
+  {
+    "section": "results",
+    "viewport": [
+      1440,
+      900
+    ],
+    "documentWidth": 1440,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1196,
+      "height": 195.859375
+    },
+    "content": {
+      "x": 362.46875,
+      "y": 629.140625,
+      "width": 959.0625,
+      "height": 936.453125
+    },
+    "support": {
+      "x": 1026.53125,
+      "y": 629.140625,
+      "width": 295,
+      "height": 313.0625
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1196,
+        "height": 194.859375
+      },
+      "content": {
+        "x": 362.46875,
+        "y": 445.046875,
+        "width": 959.0625,
+        "height": 425.75
+      },
+      "titleFont": "30.24px"
+    }
+  },
+  {
+    "section": "reports",
+    "viewport": [
+      1440,
+      900
+    ],
+    "documentWidth": 1440,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1196,
+      "height": 195.859375
+    },
+    "content": {
+      "x": 362.46875,
+      "y": 385.359375,
+      "width": 959.0625,
+      "height": 736.9375
+    },
+    "support": {
+      "x": 1026.53125,
+      "y": 385.359375,
+      "width": 295,
+      "height": 515.96875
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1196,
+        "height": 194.859375
+      },
+      "content": {
+        "x": 362.46875,
+        "y": 353.046875,
+        "width": 959.0625,
+        "height": 659.9375
+      },
+      "titleFont": "30.24px"
+    }
+  },
+  {
+    "section": "documents",
+    "viewport": [
+      1366,
+      768
+    ],
+    "documentWidth": 1366,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1122,
+      "height": 194.0625
+    },
+    "content": {
+      "x": 322.359375,
+      "y": 287.5625,
+      "width": 965.28125,
+      "height": 356.390625
+    },
+    "support": {
+      "x": 992.640625,
+      "y": 287.5625,
+      "width": 295,
+      "height": 252.5
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1122,
+        "height": 193.0625
+      },
+      "content": {
+        "x": 322.359375,
+        "y": 282.0625,
+        "width": 965.28125,
+        "height": 238.5
+      },
+      "titleFont": "28.686px"
+    }
+  },
+  {
+    "section": "methodology",
+    "viewport": [
+      1366,
+      768
+    ],
+    "documentWidth": 1366,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1122,
+      "height": 194.0625
+    },
+    "content": {
+      "x": 322.359375,
+      "y": 226.0625,
+      "width": 965.28125,
+      "height": 766.140625
+    },
+    "support": {
+      "x": 992.640625,
+      "y": 226.0625,
+      "width": 295,
+      "height": 240.5
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1122,
+        "height": 193.0625
+      },
+      "content": {
+        "x": 322.359375,
+        "y": 225.0625,
+        "width": 965.28125,
+        "height": 533.1875
+      },
+      "titleFont": "28.686px"
+    }
+  },
+  {
+    "section": "instrument",
+    "viewport": [
+      1366,
+      768
+    ],
+    "documentWidth": 1366,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1122,
+      "height": 194.0625
+    },
+    "content": {
+      "x": 322.359375,
+      "y": 226.0625,
+      "width": 965.28125,
+      "height": 309
+    },
+    "support": {
+      "x": 992.640625,
+      "y": 226.0625,
+      "width": 295,
+      "height": 290.28125
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1122,
+        "height": 193.0625
+      },
+      "content": {
+        "x": 322.359375,
+        "y": 419.0625,
+        "width": 965.28125,
+        "height": 339.28125
+      },
+      "titleFont": "28.686px"
+    }
+  },
+  {
+    "section": "datasets",
+    "viewport": [
+      1366,
+      768
+    ],
+    "documentWidth": 1366,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1122,
+      "height": 194.0625
+    },
+    "content": {
+      "x": 322.359375,
+      "y": 287.5625,
+      "width": 965.28125,
+      "height": 562.890625
+    },
+    "support": {
+      "x": 992.640625,
+      "y": 287.5625,
+      "width": 295,
+      "height": 301.6875
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1122,
+        "height": 193.0625
+      },
+      "content": {
+        "x": 322.359375,
+        "y": 282.0625,
+        "width": 965.28125,
+        "height": 591
+      },
+      "titleFont": "28.686px"
+    }
+  },
+  {
+    "section": "analysis",
+    "viewport": [
+      1366,
+      768
+    ],
+    "documentWidth": 1366,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1122,
+      "height": 194.0625
+    },
+    "content": {
+      "x": 322.359375,
+      "y": 295.0625,
+      "width": 965.28125,
+      "height": 627.5
+    },
+    "support": {
+      "x": 992.640625,
+      "y": 295.0625,
+      "width": 295,
+      "height": 290.28125
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1122,
+        "height": 193.0625
+      },
+      "content": {
+        "x": 322.359375,
+        "y": 277.0625,
+        "width": 965.28125,
+        "height": 401
+      },
+      "titleFont": "28.686px"
+    }
+  },
+  {
+    "section": "results",
+    "viewport": [
+      1366,
+      768
+    ],
+    "documentWidth": 1366,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1122,
+      "height": 194.0625
+    },
+    "content": {
+      "x": 322.359375,
+      "y": 627.34375,
+      "width": 965.28125,
+      "height": 914.0625
+    },
+    "support": {
+      "x": 992.640625,
+      "y": 627.34375,
+      "width": 295,
+      "height": 313.0625
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1122,
+        "height": 193.0625
+      },
+      "content": {
+        "x": 322.359375,
+        "y": 443.25,
+        "width": 965.28125,
+        "height": 425.75
+      },
+      "titleFont": "28.686px"
+    }
+  },
+  {
+    "section": "reports",
+    "viewport": [
+      1366,
+      768
+    ],
+    "documentWidth": 1366,
+    "header": {
+      "x": 244,
+      "y": 0,
+      "width": 1122,
+      "height": 194.0625
+    },
+    "content": {
+      "x": 322.359375,
+      "y": 383.5625,
+      "width": 965.28125,
+      "height": 736.9375
+    },
+    "support": {
+      "x": 992.640625,
+      "y": 383.5625,
+      "width": 295,
+      "height": 515.96875
+    },
+    "reference": {
+      "header": {
+        "x": 244,
+        "y": 0,
+        "width": 1122,
+        "height": 193.0625
+      },
+      "content": {
+        "x": 322.359375,
+        "y": 351.25,
+        "width": 965.28125,
+        "height": 659.9375
+      },
+      "titleFont": "28.686px"
+    }
+  },
+  {
+    "section": "documents",
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 190.40625
+    },
+    "content": {
+      "x": 22,
+      "y": 379.40625,
+      "width": 346,
+      "height": 681.78125
+    },
+    "support": {
+      "x": 22,
+      "y": 822.6875,
+      "width": 346,
+      "height": 238.5
+    },
+    "reference": {
+      "header": {
+        "x": 0,
+        "y": 61,
+        "width": 390,
+        "height": 204.40625
+      },
+      "content": {
+        "x": 22,
+        "y": 385.796875,
+        "width": 346,
+        "height": 464.5
+      },
+      "titleFont": "23px"
+    }
+  },
+  {
+    "section": "methodology",
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 190.40625
+    },
+    "content": {
+      "x": 22,
+      "y": 276.40625,
+      "width": 346,
+      "height": 1060.28125
+    },
+    "support": {
+      "x": 22,
+      "y": 1128.1875,
+      "width": 346,
+      "height": 208.5
+    },
+    "reference": {
+      "header": {
+        "x": 0,
+        "y": 61,
+        "width": 390,
+        "height": 204.40625
+      },
+      "content": {
+        "x": 22,
+        "y": 290.40625,
+        "width": 346,
+        "height": 841.28125
+      },
+      "titleFont": "23px"
+    }
+  },
+  {
+    "section": "instrument",
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 190.40625
+    },
+    "content": {
+      "x": 22,
+      "y": 276.40625,
+      "width": 346,
+      "height": 645.15625
+    },
+    "support": {
+      "x": 22,
+      "y": 663.875,
+      "width": 346,
+      "height": 257.6875
+    },
+    "reference": {
+      "header": {
+        "x": 0,
+        "y": 61,
+        "width": 390,
+        "height": 204.40625
+      },
+      "content": {
+        "x": 22,
+        "y": 526.296875,
+        "width": 346,
+        "height": 680.0625
+      },
+      "titleFont": "23px"
+    }
+  },
+  {
+    "section": "datasets",
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 190.40625
+    },
+    "content": {
+      "x": 22,
+      "y": 337.90625,
+      "width": 346,
+      "height": 833.984375
+    },
+    "support": {
+      "x": 22,
+      "y": 902.796875,
+      "width": 346,
+      "height": 269.09375
+    },
+    "reference": {
+      "header": {
+        "x": 0,
+        "y": 61,
+        "width": 390,
+        "height": 204.40625
+      },
+      "content": {
+        "x": 22,
+        "y": 347.40625,
+        "width": 346,
+        "height": 823.5
+      },
+      "titleFont": "23px"
+    }
+  },
+  {
+    "section": "analysis",
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 190.40625
+    },
+    "content": {
+      "x": 22,
+      "y": 345.40625,
+      "width": 346,
+      "height": 1018.78125
+    },
+    "support": {
+      "x": 22,
+      "y": 1087.90625,
+      "width": 346,
+      "height": 276.28125
+    },
+    "reference": {
+      "header": {
+        "x": 0,
+        "y": 61,
+        "width": 390,
+        "height": 204.40625
+      },
+      "content": {
+        "x": 22,
+        "y": 342.40625,
+        "width": 346,
+        "height": 743.875
+      },
+      "titleFont": "23px"
+    }
+  },
+  {
+    "section": "results",
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 190.40625
+    },
+    "content": {
+      "x": 22,
+      "y": 999.5625,
+      "width": 346,
+      "height": 1215.34375
+    },
+    "support": {
+      "x": 22,
+      "y": 1934.4375,
+      "width": 346,
+      "height": 280.46875
+    },
+    "reference": {
+      "header": {
+        "x": 0,
+        "y": 61,
+        "width": 390,
+        "height": 204.40625
+      },
+      "content": {
+        "x": 22,
+        "y": 782.359375,
+        "width": 346,
+        "height": 625.34375
+      },
+      "titleFont": "23px"
+    }
+  },
+  {
+    "section": "reports",
+    "viewport": [
+      390,
+      844
+    ],
+    "documentWidth": 390,
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 170.90625
+    },
+    "content": {
+      "x": 22,
+      "y": 470.90625,
+      "width": 346,
+      "height": 1290.5625
+    },
+    "support": {
+      "x": 22,
+      "y": 1278.09375,
+      "width": 346,
+      "height": 483.375
+    },
+    "reference": {
+      "header": {
+        "x": 0,
+        "y": 61,
+        "width": 390,
+        "height": 184.90625
+      },
+      "content": {
+        "x": 22,
+        "y": 473.859375,
+        "width": 346,
+        "height": 1047.78125
+      },
+      "titleFont": "23px"
+    }
+  }
+]

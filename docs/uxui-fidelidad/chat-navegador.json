@@ -1,0 +1,163 @@
+{
+  "checks": [
+    "No project CRUD in assistant",
+    "Consent rejected, accepted, expanded block hidden",
+    "Two real API sends to simulated backend; revoke blocks composer",
+    "F5 restores all messages and resets consent",
+    "New conversation without replacing persisted history"
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/4a0baf23-759f-432c-b080-ce6d542135cf",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/4a0baf23-759f-432c-b080-ce6d542135cf/messages",
+      "body": "{\"content\":\"¿Qué es una hipótesis de investigación?\",\"request_id\":\"03e5d102-629f-4b15-b5a5-4f80d0897500\",\"external_ai_consent\":true,\"consent_scope\":\"research_context_v2\"}"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/4a0baf23-759f-432c-b080-ce6d542135cf/messages",
+      "body": "{\"content\":\"¿Qué análisis estadístico corresponde a mi hipótesis?\",\"request_id\":\"6a50d772-9c55-45e5-a110-e54ffcd4fa51\",\"external_ai_consent\":true,\"consent_scope\":\"research_context_v2\"}"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/4a0baf23-759f-432c-b080-ce6d542135cf",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations",
+      "body": "{\"title\":\"Nueva conversación\"}"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    }
+  ],
+  "errors": [],
+  "geometry_file": "geometria-poblado.json"
+}

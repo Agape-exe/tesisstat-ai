@@ -1,0 +1,95 @@
+{
+  "schema_version": "2.0.0",
+  "id": "b6ed9b4d-7682-5659-baa3-d08f49f6ba83",
+  "project_id": "00000101-0000-4000-8000-000000000000",
+  "recipe": {
+    "kind": "prepare",
+    "name": "Notas renombradas",
+    "left_table_id": "00000104-0000-4000-8000-000000000000",
+    "right_table_id": null,
+    "left_key": null,
+    "right_key": null,
+    "key_policy": "exact-text-v1",
+    "unmatched_policy": null,
+    "columns": [],
+    "operations": [
+      {
+        "type": "rename_column",
+        "column_ids": [
+          "00000111-0000-4000-8000-000000000000"
+        ],
+        "new_name": "nota_antes",
+        "value": null
+      }
+    ]
+  },
+  "recipe_hash": "379d304e1e6a8a54eddade04901720ede2bcae317c14bc3a6e084e0d3538d6f7",
+  "source_refs": [
+    {
+      "kind": "dataset",
+      "id": "00000104-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+    },
+    {
+      "kind": "source_file",
+      "id": "00000102-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "ce0420d8f0798d49baf97cb2fd2eebc2986fd007608a4d52e0ccc066df2a5751"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "00000103-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "8942ef70b485735e48cc131b05eb36480acebf9aa06353f3197511d6c8109135"
+    },
+    {
+      "kind": "table",
+      "id": "00000104-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+    },
+    {
+      "kind": "dictionary",
+      "id": "3abc50c1-36ea-512f-b3ad-da8f3b3d0d1d",
+      "revision": 1,
+      "hash": "8119e1a76b956349897d4401f5590b361a689b4369d006e5aa057072d136e237"
+    }
+  ],
+  "configuration_hash": "fd00b55777ce1dc8947951c8d7483f1dc5819a6956e735178001a764dad493c1",
+  "result_hash": "e9e7723ebd960f879ee7483c30eb31ae3f6bd3d1c0aeba5ca52368371c52bfc3",
+  "engine_version": "table-workspace-1",
+  "created_at": "2026-11-09T15:00:00Z",
+  "expires_at": "2026-11-09T15:30:00Z",
+  "counts": {
+    "left_rows": 3,
+    "rows_removed": 0,
+    "result_rows": 3,
+    "result_columns": 2,
+    "cells_changed": 0
+  },
+  "result_columns": [
+    "codigo",
+    "nota_antes"
+  ],
+  "rows": [
+    [
+      "0001",
+      "12"
+    ],
+    [
+      "0002",
+      ""
+    ],
+    [
+      "0003",
+      "14"
+    ]
+  ],
+  "unmatched_left": [],
+  "unmatched_right": [],
+  "unmatched_left_rows": [],
+  "unmatched_right_rows": [],
+  "warnings": [],
+  "blockers": []
+}

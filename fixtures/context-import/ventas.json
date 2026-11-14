@@ -1,0 +1,15 @@
+{
+  "format_version": "context-import-1.0",
+  "title": "Ventas sintéticas por canal",
+  "research_question": "¿Cómo se distribuyen las ventas registradas por canal?",
+  "main_objective": "Describir las ventas registradas por canal.",
+  "specific_objectives": [{"ref": "o1", "text": "Describir los importes registrados por canal."}],
+  "hypotheses": [],
+  "study_description": "Revisión de registros sintéticos de transacciones.",
+  "data_description": "Tabla ficticia con canal comercial e importe por transacción.",
+  "observational_unit": "Una transacción comercial",
+  "design": "observational",
+  "observations": "unknown",
+  "sampling_notes": null,
+  "complementary_notes": ["Ejemplo ficticio para comprobar la importación; no contiene resultados."]
+}

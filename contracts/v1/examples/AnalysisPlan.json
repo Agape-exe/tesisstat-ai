@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "id": "plan-h1",
+  "research_package_id": "research-association",
+  "hypothesis_id": "h1",
+  "dataset_id": "dataset-association",
+  "status": "needs_clarification",
+  "technique": null,
+  "rationale": "Fixture sin recomendación calculada: revisar distribución, valores atípicos, linealidad y metodología antes de elegir una prueba.",
+  "alpha": 0.05,
+  "assumptions_to_check": [
+    "Independencia según diseño",
+    "Valores atípicos",
+    "Forma de la relación"
+  ],
+  "pending_questions": [
+    "¿La relación es aproximadamente lineal o monótona?"
+  ]
+}

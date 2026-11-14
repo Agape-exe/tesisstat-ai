@@ -1,0 +1,42 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 1,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "mapping_revision": {
+      "minimum": 1,
+      "title": "Mapping Revision",
+      "type": "integer"
+    },
+    "scoring_rule_id": {
+      "format": "uuid",
+      "title": "Scoring Rule Id",
+      "type": "string"
+    },
+    "column_name": {
+      "default": "puntuacion",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Column Name",
+      "type": "string"
+    },
+    "confirm": {
+      "const": true,
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "mapping_revision",
+    "scoring_rule_id",
+    "confirm"
+  ],
+  "title": "ScorePreviewRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ScorePreviewRequest.schema.json"
+}

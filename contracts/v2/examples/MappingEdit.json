@@ -1,0 +1,21 @@
+{
+  "expected_revision": 1,
+  "instrument_revision": 2,
+  "dataset_id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+  "dataset_revision": 1,
+  "item_columns": [
+    {
+      "item_id": "578a3912-ceb6-42e0-a0da-a2cda10e1e4c",
+      "column_id": "7003b264-2a84-43a1-be12-6b48d1e8c56b"
+    },
+    {
+      "item_id": "24bf852e-c64d-4789-a9e4-e0e8f5ae1d5a",
+      "column_id": "6b13da45-d6bf-483d-b820-a0dde13d7bc0"
+    },
+    {
+      "item_id": "ef770a9e-3a3d-4365-a8cd-b5ae822c471a",
+      "column_id": "b7bab7ae-0ce4-4d6f-8d8a-02ced23593aa"
+    }
+  ],
+  "confirm": true
+}

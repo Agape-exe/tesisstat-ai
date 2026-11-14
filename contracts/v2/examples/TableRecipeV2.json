@@ -1,0 +1,21 @@
+{
+  "kind": "prepare",
+  "name": "Notas renombradas",
+  "left_table_id": "00000104-0000-4000-8000-000000000000",
+  "right_table_id": null,
+  "left_key": null,
+  "right_key": null,
+  "key_policy": "exact-text-v1",
+  "unmatched_policy": null,
+  "columns": [],
+  "operations": [
+    {
+      "type": "rename_column",
+      "column_ids": [
+        "00000111-0000-4000-8000-000000000000"
+      ],
+      "new_name": "nota_antes",
+      "value": null
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "schema_version": "2.0.0",
+  "id": "3a0874ba-75cf-420b-84fd-2f0901b8ca87",
+  "project_id": "2e968867-f89a-4100-8200-dddb6c2d703a",
+  "revision": 1,
+  "analysis_plan_id": "2733d6f9-1dd2-4388-87d4-c5a67dee9942",
+  "snapshot_ref": {
+    "kind": "snapshot",
+    "id": "93fcf024-4fe0-4452-b548-e625e44d86a7",
+    "revision": 1,
+    "hash": "08fbc76b788b734878bfaf4a3d0754859dd1660fa455f80c49ffb851f0482601"
+  },
+  "dataset_id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+  "status": "completed",
+  "created_at": "2026-11-10T19:29:05.594349Z",
+  "engine_version": "statistics-engine-v2.0.0",
+  "method_version": "descriptive-v2:priority-methods-1.0.0",
+  "source_fingerprint": "0e1025b024f57aef51c4e7944a0ac4de8ac1472350470d272e62a1701cf7eedd",
+  "source_refs": [
+    {
+      "kind": "source_file",
+      "id": "4b6d3e83-1953-483b-a6c0-c3c55c192a3f",
+      "revision": 1,
+      "hash": "a8dc6d3e086f1cdff0fb2dbfdbe3de1a9f53f8de9122b0fdb92d426f3c66e757"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "03e19b22-6931-4169-84a0-a0fcf25b1fc4",
+      "revision": 1,
+      "hash": "35ea37849bc755899e04e0bf2337dc2ef46939411552190778dc7725a79b1ed3"
+    },
+    {
+      "kind": "table",
+      "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+      "revision": 1,
+      "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+    },
+    {
+      "kind": "dataset",
+      "id": "6e3b28f6-64dd-407e-818b-a93742dde6e0",
+      "revision": 1,
+      "hash": "f2a6eb13879681e130df6e4b351339b4fe711c79191277ec734165f443435a6b"
+    },
+    {
+      "kind": "dictionary",
+      "id": "a0062f3a-6329-5f7f-8737-68660f1b6487",
+      "revision": 1,
+      "hash": "c466471321c15867e79e9430c732fa8a8011ddaba9339041c0fe1e58f89c319f"
+    },
+    {
+      "kind": "profile",
+      "id": "e7493b02-c3d9-5b24-a6bc-0de8ab157e75",
+      "revision": 1,
+      "hash": "01fbf4d1a98e249579e1ff29e9cd5c2b7950eca4cb4e191d28538cfd14857995"
+    },
+    {
+      "kind": "intent",
+      "id": "8ba78d27-8daf-4be6-a7aa-80abdb908f3d",
+      "revision": 1,
+      "hash": "7cb25569b4503b2eb23cc47664f5c6bf77ca640c0dec9abc6c93104380d88e38"
+    }
+  ],
+  "case_counts": {
+    "total": 65,
+    "used": 64,
+    "excluded": 1,
+    "groups": [],
+    "pairs": null
+  },
+  "metrics": [
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.mean",
+      "label": "importe · mean",
+      "value": 41.5,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.median",
+      "label": "importe · median",
+      "value": 41.5,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.minimum",
+      "label": "importe · minimum",
+      "value": 10.0,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.maximum",
+      "label": "importe · maximum",
+      "value": 73.0,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.sample_standard_deviation",
+      "label": "importe · sample_standard_deviation",
+      "value": 18.618986725025255,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.sample_variance",
+      "label": "importe · sample_variance",
+      "value": 346.6666666666667,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.p0",
+      "label": "importe · p0",
+      "value": 10.0,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.p25",
+      "label": "importe · p25",
+      "value": 25.75,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.p50",
+      "label": "importe · p50",
+      "value": 41.5,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.p75",
+      "label": "importe · p75",
+      "value": 57.25,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "be298eed-cbdd-5041-8384-12ecaa630651.p100",
+      "label": "importe · p100",
+      "value": 73.0,
+      "unit": null,
+      "reason": null
+    }
+  ],
+  "tables": [
+    {
+      "id": "76ffb878-fc41-5f73-8850-68a8dc382077",
+      "title": "categoria: frecuencias sobre 64 casos completos",
+      "columns": [
+        {
+          "key": "category",
+          "label": "Categoría",
+          "type": "string"
+        },
+        {
+          "key": "count",
+          "label": "Frecuencia",
+          "type": "number"
+        },
+        {
+          "key": "percentage",
+          "label": "Porcentaje de casos usados",
+          "type": "number"
+        }
+      ],
+      "rows": [
+        {
+          "category": "Norte",
+          "count": 32.0,
+          "percentage": 50.0
+        },
+        {
+          "category": "Sur",
+          "count": 32.0,
+          "percentage": 50.0
+        }
+      ]
+    }
+  ],
+  "figures": [],
+  "assumptions": [],
+  "warnings": [
+    "No hay moda: todos los valores válidos son distintos.",
+    "importe: moda(s) no definida; cuantiles tipo 7; varianza muestral n−1."
+  ],
+  "limitations": [
+    "Los casos completos se seleccionan conjuntamente entre todas las variables elegidas.",
+    "El análisis no demuestra causalidad. Los intervalos disponibles son del 95 %."
+  ],
+  "interpretation": {
+    "text": "Se analizaron 64 de 65 casos mediante descriptive_summary. Consulta las métricas y sus límites; este resultado no establece causalidad.",
+    "metric_keys": [
+      "be298eed-cbdd-5041-8384-12ecaa630651.mean",
+      "be298eed-cbdd-5041-8384-12ecaa630651.median",
+      "be298eed-cbdd-5041-8384-12ecaa630651.minimum",
+      "be298eed-cbdd-5041-8384-12ecaa630651.maximum",
+      "be298eed-cbdd-5041-8384-12ecaa630651.sample_standard_deviation",
+      "be298eed-cbdd-5041-8384-12ecaa630651.sample_variance",
+      "be298eed-cbdd-5041-8384-12ecaa630651.p0",
+      "be298eed-cbdd-5041-8384-12ecaa630651.p25",
+      "be298eed-cbdd-5041-8384-12ecaa630651.p50",
+      "be298eed-cbdd-5041-8384-12ecaa630651.p75",
+      "be298eed-cbdd-5041-8384-12ecaa630651.p100"
+    ],
+    "source": "template",
+    "review_status": "draft"
+  },
+  "question": "Describir importes y categorías de ventas",
+  "technique": "descriptive_summary",
+  "variable_names": [
+    "importe",
+    "categoria"
+  ],
+  "validity": "current",
+  "stale_reasons": []
+}

@@ -1,0 +1,42 @@
+{
+  "synthetic": true,
+  "source_documents": [
+    {
+      "kind": "research_project",
+      "title": "Estudio completamente sintético sobre hábitos de estudio",
+      "objectives": [
+        "Evaluar la asociación entre horas de estudio y puntaje."
+      ],
+      "design": "Observacional transversal cuantitativo"
+    },
+    {
+      "kind": "consistency_matrix",
+      "rows": [
+        {
+          "hypothesis_id": "h1",
+          "variable_ids": [
+            "study_hours",
+            "score"
+          ],
+          "objective": "Evaluar la asociación entre horas de estudio y puntaje."
+        }
+      ]
+    },
+    {
+      "kind": "instrument",
+      "items": [
+        {
+          "column": "study_hours",
+          "prompt": "¿Cuántas horas estudia por semana?",
+          "scale": "ratio"
+        },
+        {
+          "column": "score",
+          "prompt": "Puntaje de evaluación ficticia",
+          "scale": "interval"
+        }
+      ]
+    }
+  ],
+  "expected_package": "fixtures/research/association.package.json"
+}

@@ -1,0 +1,137 @@
+[
+  {
+    "viewport": [
+      1440,
+      900
+    ],
+    "document": [
+      1440,
+      900
+    ],
+    "nav": {
+      "x": 0,
+      "y": 0,
+      "width": 244,
+      "height": 900,
+      "bottom": 900
+    },
+    "history": {
+      "x": 244,
+      "y": 0,
+      "width": 194,
+      "height": 900,
+      "bottom": 900
+    },
+    "header": {
+      "x": 438,
+      "y": 0,
+      "width": 1002,
+      "height": 127.578125,
+      "bottom": 127.578125
+    },
+    "messages": {
+      "x": 438,
+      "y": 127.578125,
+      "width": 1002,
+      "height": 618.421875,
+      "bottom": 746
+    },
+    "composer": {
+      "x": 539,
+      "y": 789,
+      "width": 800,
+      "height": 62,
+      "bottom": 851
+    }
+  },
+  {
+    "viewport": [
+      1366,
+      768
+    ],
+    "document": [
+      1366,
+      768
+    ],
+    "nav": {
+      "x": 0,
+      "y": 0,
+      "width": 244,
+      "height": 768,
+      "bottom": 768
+    },
+    "history": {
+      "x": 244,
+      "y": 0,
+      "width": 194,
+      "height": 768,
+      "bottom": 768
+    },
+    "header": {
+      "x": 438,
+      "y": 0,
+      "width": 928,
+      "height": 127.578125,
+      "bottom": 127.578125
+    },
+    "messages": {
+      "x": 438,
+      "y": 127.578125,
+      "width": 928,
+      "height": 486.421875,
+      "bottom": 614
+    },
+    "composer": {
+      "x": 502,
+      "y": 657,
+      "width": 800,
+      "height": 62,
+      "bottom": 719
+    }
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "document": [
+      390,
+      844
+    ],
+    "nav": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "bottom": 0
+    },
+    "history": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "bottom": 0
+    },
+    "header": {
+      "x": 0,
+      "y": 61,
+      "width": 390,
+      "height": 95.046875,
+      "bottom": 156.046875
+    },
+    "messages": {
+      "x": 0,
+      "y": 156.046875,
+      "width": 390,
+      "height": 532.953125,
+      "bottom": 689
+    },
+    "composer": {
+      "x": 14,
+      "y": 731,
+      "width": 362,
+      "height": 62,
+      "bottom": 793
+    }
+  }
+]

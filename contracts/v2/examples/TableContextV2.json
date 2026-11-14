@@ -1,0 +1,84 @@
+{
+  "schema_version": "2.0.0",
+  "project_id": "00000101-0000-4000-8000-000000000000",
+  "table_id": "00000104-0000-4000-8000-000000000000",
+  "revision": 1,
+  "hash": "39be2a01b6805deee8176fee511f93daf9f67d725d1f4662d8693f5772736fe2",
+  "updated_at": "2026-11-09T12:00:00Z",
+  "name": {
+    "value": "Notas sintéticas",
+    "provenance": {
+      "kind": "manual",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": {
+      "actor_ref": "local",
+      "confirmed_at": "2026-11-09T12:00:00Z",
+      "revision": 1
+    }
+  },
+  "description": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "purpose": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "row_meaning": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "measurement_moment": {
+    "value": "unknown",
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "population": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "identifier_column_id": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "related_tables_notes": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  }
+}

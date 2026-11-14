@@ -1,0 +1,73 @@
+{
+  "$defs": {
+    "ItemColumnV2": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "column_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Column Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item_id",
+        "column_id"
+      ],
+      "title": "ItemColumnV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "instrument_revision": {
+      "minimum": 1,
+      "title": "Instrument Revision",
+      "type": "integer"
+    },
+    "dataset_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "dataset_revision": {
+      "minimum": 1,
+      "title": "Dataset Revision",
+      "type": "integer"
+    },
+    "item_columns": {
+      "items": {
+        "$ref": "#/$defs/ItemColumnV2"
+      },
+      "maxItems": 200,
+      "title": "Item Columns",
+      "type": "array"
+    },
+    "confirm": {
+      "default": false,
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "instrument_revision",
+    "dataset_id",
+    "dataset_revision"
+  ],
+  "title": "MappingEdit",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/MappingEdit.schema.json"
+}

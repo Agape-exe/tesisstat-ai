@@ -1,0 +1,7 @@
+id,antes,despues,grupo
+E01,10,11,A
+E02,12,14,A
+E03,8,8,B
+E04,14,15,B
+E05,9,12,A
+E06,13,,B

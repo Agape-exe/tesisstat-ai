@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "proposal_token": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Proposal Token",
+      "type": "string"
+    },
+    "confirm": {
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "proposal_token",
+    "confirm"
+  ],
+  "title": "ApprovalRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ApprovalRequest.schema.json"
+}

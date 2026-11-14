@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "No conversation or message without consent",
+    "First send creates exactly one conversation and sends one consented message",
+    "F5 restores history and resets permission"
+  ],
+  "requests": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8018/api/research/projects/2954a783-7134-43ea-9872-048ba9db6f16/conversations",
+      "body": "{\"title\":\"Nueva conversación\"}"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8018/api/research/projects/2954a783-7134-43ea-9872-048ba9db6f16/conversations/e8a04373-66aa-400f-9f78-81cbda45c859/messages",
+      "body": "{\"content\":\"¿Qué es una hipótesis de investigación?\",\"request_id\":\"2c486988-c581-4b3c-804a-ab90db967c97\",\"external_ai_consent\":true,\"consent_scope\":\"research_context_v2\"}"
+    }
+  ]
+}

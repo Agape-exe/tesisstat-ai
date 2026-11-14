@@ -1,0 +1,87 @@
+{
+  "schema_version": "2.0.0",
+  "project_id": "00000001-0000-4000-8000-000000000000",
+  "revision": 1,
+  "updated_at": "2026-11-09T12:00:00Z",
+  "state": "partial",
+  "research_question": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "main_objective": {
+    "value": "Describir los importes de ventas sintéticas",
+    "provenance": {
+      "kind": "manual",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": {
+      "actor_ref": "local",
+      "confirmed_at": "2026-11-09T12:00:00Z",
+      "revision": 1
+    }
+  },
+  "specific_objectives": [],
+  "hypotheses": [],
+  "study_description": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "data_description": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "observational_unit": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "sampling_notes": {
+    "value": null,
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "design": {
+    "value": "unknown",
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "observations": {
+    "value": "unknown",
+    "provenance": {
+      "kind": "unknown",
+      "source_refs": [],
+      "algorithm_version": null
+    },
+    "confirmation": null
+  },
+  "complementary_notes": [],
+  "pending_questions": []
+}

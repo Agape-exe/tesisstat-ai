@@ -1,0 +1,55 @@
+
+> tesisstat-frontend@0.1.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 326 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/statistics-demo.html                    0.51 kB │ gzip:  0.31 kB
+dist/research-demo/index.html                0.60 kB │ gzip:  0.33 kB
+dist/index.html                              0.69 kB │ gzip:  0.34 kB
+dist/assets/app-C-uIyEqI.css                 0.18 kB │ gzip:  0.15 kB
+dist/assets/descriptiveDemo-Dp3s_Xhk.css     1.72 kB │ gzip:  0.67 kB
+dist/assets/ResearchProjects-xaSqoEDI.css   41.43 kB │ gzip:  8.98 kB
+dist/assets/researchDemo-DnXvki17.js         0.24 kB │ gzip:  0.20 kB
+dist/assets/app-D-dMLwum.js                  0.30 kB │ gzip:  0.24 kB
+dist/assets/descriptiveDemo-CERFsgiw.js      7.45 kB │ gzip:  2.71 kB
+dist/assets/jsx-runtime-DldWOv9M.js        220.08 kB │ gzip: 68.84 kB
+dist/assets/ResearchProjects-CvLyK1ly.js   304.46 kB │ gzip: 85.35 kB
+
+✓ built in 240ms
+
+> tesisstat-frontend@0.1.0 build:research
+> vite build --config src/features/research/vite.demo.config.ts
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 317 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/research-independent/research-demo/index.html     0.41 kB │ gzip:   0.28 kB
+dist/research-independent/assets/index-xaSqoEDI.css   41.43 kB │ gzip:   8.98 kB
+dist/research-independent/assets/index-BKOHIqg7.js   525.02 kB │ gzip: 153.87 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 286ms
+
+> tesisstat-frontend@0.1.0 lint
+> eslint . --max-warnings 0
+
+
+> tesisstat-frontend@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+
+> tesisstat-frontend@0.1.0 contracts:generate
+> node scripts/generate-contracts.mjs
+

@@ -1,0 +1,67 @@
+{
+  "synthetic_only": true,
+  "consent_scope": "tutor_context_v5",
+  "query": "He cargado mis datos y no sé por dónde empezar. ¿Qué puedo analizar con esta tabla y qué me recomiendas hacer primero? Explica por qué y pregúntame lo necesario antes de preparar una propuesta.",
+  "provider_calls": 2,
+  "cases": [
+    {
+      "name": "sin-contexto",
+      "status": 200,
+      "answer": "Podrías comenzar por describir las medidas con resúmenes acordes con su significado y escala. También podrías explorar relaciones entre medidas si corresponde vincularlas por sus unidades de observación. Para comparar grupos o mediciones habría que aclarar su diseño y si corresponden a las mismas unidades o a unidades distintas.\n\nPrimero aclararía qué representa cada fila y cómo se vinculan las mediciones entre sí. Ese vínculo debe declararse; no se determina por similitud de valores ni por orden de filas.\n\nEl encabezado «tension_previa» corresponde a formato numérico detectado localmente; su formato no confirma significado ni escala. El encabezado «tension_posterior» corresponde a formato numérico detectado localmente; su formato no confirma significado ni escala. Revisar las variables ayuda a identificar qué medidas son confiables y qué falta. Esto evita análisis inapropiados por datos incompletos o mal definidos.\n\n¿Qué significado tienen las variables «tension_previa» y «tension_posterior» en tu estudio?",
+      "orientation": {
+        "option_indices": [
+          0,
+          1,
+          2
+        ],
+        "next_step": "clarify_observations",
+        "reason": "Revisar las variables ayuda a identificar qué medidas son confiables y qué falta. Esto evita análisis inapropiados por datos incompletos o mal definidos.",
+        "clarification": "¿Qué significado tienen las variables «tension_previa» y «tension_posterior» en tu estudio?",
+        "basis_keys": [
+          "f2",
+          "f3"
+        ]
+      },
+      "question_preserved": true,
+      "contract_valid": true,
+      "useful_orientation": true,
+      "clarification_concrete": true,
+      "evidence_kinds": [
+        "detected"
+      ],
+      "no_mutations": true,
+      "retry_without_new_call": true
+    },
+    {
+      "name": "con-contexto",
+      "status": 200,
+      "answer": "Podrías comenzar por describir las medidas con resúmenes acordes con su significado y escala. También podrías explorar relaciones entre medidas si corresponde vincularlas por sus unidades de observación. Para comparar grupos o mediciones habría que aclarar su diseño y si corresponden a las mismas unidades o a unidades distintas.\n\nEmpezaría revisando el significado y la escala de «tension_posterior» y «grupo» antes de elegir los resúmenes o comparaciones.\n\nPara «tension_previa», has confirmado significado: Tensión arterial sistólica previa en mmHg; escala: ratio. Objetivo que has confirmado: Evaluar el cambio de tensión arterial tras una intervención, sin afirmar causalidad a partir de la tabla. El encabezado «tension_posterior» corresponde a formato numérico detectado localmente; su formato no confirma significado ni escala. Revisar las variables es clave para evitar errores en el análisis. Confirma la escala de «tension_posterior» y el significado de «grupo» para asegurar que los datos sean válidos y relevantes.\n\n¿Qué significa la variable «grupo» y cuál es la escala de «tension_posterior»?",
+      "orientation": {
+        "option_indices": [
+          0,
+          1,
+          2
+        ],
+        "next_step": "review_variables",
+        "reason": "Revisar las variables es clave para evitar errores en el análisis. Confirma la escala de «tension_posterior» y el significado de «grupo» para asegurar que los datos sean válidos y relevantes.",
+        "clarification": "¿Qué significa la variable «grupo» y cuál es la escala de «tension_posterior»?",
+        "basis_keys": [
+          "f3",
+          "f7",
+          "f4"
+        ]
+      },
+      "question_preserved": true,
+      "contract_valid": true,
+      "useful_orientation": true,
+      "clarification_concrete": true,
+      "evidence_kinds": [
+        "confirmed",
+        "detected"
+      ],
+      "no_mutations": true,
+      "retry_without_new_call": true
+    }
+  ],
+  "complete": true
+}

@@ -1,0 +1,195 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 2399 >>
+stream
+BT
+/F1 10 Tf
+50 750 Td
+(TesisStat AI — Informe estadístico) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Metadatos de reproducibilidad) Tj
+0 -14 Td
+(Resultado: result-78344649-67f2-4ce6-af2b-08d06e332ad6) Tj
+0 -14 Td
+(Plan de análisis: 78344649-67f2-4ce6-af2b-08d06e332ad6) Tj
+0 -14 Td
+(Dataset: c54a6acb-d88f-4811-bb95-f956b9b772cd) Tj
+0 -14 Td
+(Estado: completed) Tj
+0 -14 Td
+(Esquema: 1.0.0) Tj
+0 -14 Td
+(Motor: statistics-engine-v1) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Contexto metodológico) Tj
+0 -14 Td
+(Proyecto: 9abdff2b-b0b7-40b0-a4f4-26c22f322ca1) Tj
+0 -14 Td
+(Investigación: Demostración sintética 1: horas y rendimiento) Tj
+0 -14 Td
+(Paquete: b67ded4e-e1da-4791-920a-fca0805a3fe7) Tj
+0 -14 Td
+(Plan: 78344649-67f2-4ce6-af2b-08d06e332ad6) Tj
+0 -14 Td
+(Dataset: c54a6acb-d88f-4811-bb95-f956b9b772cd) Tj
+0 -14 Td
+(Técnica: pearson) Tj
+0 -14 Td
+(Justificación: Mide asociación lineal entre dos variables cuantitativas.) Tj
+0 -14 Td
+(Aprobación explícita: 2026-11-07T02:20:18.392152+00:00) Tj
+0 -14 Td
+(Demostración local con datos sintéticos. No implica significancia estadística.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Tabla 1. Métricas calculadas) Tj
+0 -14 Td
+(- n: 6) Tj
+0 -14 Td
+(- r: 0.977692) Tj
+0 -14 Td
+(- t_statistic: 9.30949) Tj
+0 -14 Td
+(- degrees_of_freedom: 4) Tj
+0 -14 Td
+(- p_value: 0.000740896) Tj
+0 -14 Td
+(- r_ci_95_low: 0.804342) Tj
+0 -14 Td
+(- r_ci_95_high: 0.997656) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Figura 1. Resumen gráfico de métricas persistidas) Tj
+0 -14 Td
+(Asociaciones y efectos \(escala -1 a 1\)) Tj
+0 -14 Td
+(- r: [-------------------*] 0.977692) Tj
+0 -14 Td
+(P-valores \(escala 0 a 1; referencia alfa=0.05\)) Tj
+0 -14 Td
+(- p_value: [*-------------------] 0.000740896) Tj
+0 -14 Td
+(Nota: referencia visual; no determina significancia automáticamente.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Figura 2. Dispersión autorizada: horas y rendimiento) Tj
+0 -14 Td
+(|                              x|) Tj
+0 -14 Td
+(|                               |) Tj
+0 -14 Td
+(|                               |) Tj
+0 -14 Td
+(|                      x        |) Tj
+0 -14 Td
+(|                               |) Tj
+0 -14 Td
+(|               x               |) Tj
+0 -14 Td
+(|                               |) Tj
+0 -14 Td
+(|                               |) Tj
+0 -14 Td
+(|                               |) Tj
+0 -14 Td
+(|                               |) Tj
+0 -14 Td
+(|x       x                      |) Tj
+ET
+BT
+/F1 9 Tf
+50 35 Td
+(1/2) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1153 >>
+stream
+BT
+/F1 10 Tf
+50 750 Td
+(+-------------------------------+) Tj
+0 -14 Td
+(Eje X: horas \(1 a 5\)) Tj
+0 -14 Td
+(Eje Y: rendimiento \(3 a 9\)) Tj
+0 -14 Td
+(6 pares completos; se representan 6 pares mediante posiciones agrupadas.) Tj
+0 -14 Td
+(Se representaron todos los pares autorizados.) Tj
+0 -14 Td
+(Nota: figura descriptiva; no determina significancia automáticamente.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Tabla 2. Verificación de supuestos) Tj
+0 -14 Td
+(- descriptive_input_validation: passed — El dataset fue validado por DatasetReader) Tj
+0 -14 Td
+(antes del cálculo.) Tj
+0 -14 Td
+(- independence: not_checked — La independencia requiere confirmación del diseño y) Tj
+0 -14 Td
+(del procedimiento de muestreo.) Tj
+0 -14 Td
+(- normality: not_checked — Se requieren al menos ocho valores numéricos.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Advertencias) Tj
+0 -14 Td
+(- Se informa el coeficiente r y un p-valor bilateral. Revisa linealidad,) Tj
+0 -14 Td
+(normalidad y valores atípicos antes de interpretar.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Interpretación) Tj
+0 -14 Td
+(Se ejecutó pearson de forma determinista sobre el dataset autorizado.) Tj
+ET
+BT
+/F1 9 Tf
+50 35 Td
+(2/2) Tj
+ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000216 00000 n 
+0000000342 00000 n 
+0000002793 00000 n 
+0000002919 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+4124
+%%EOF

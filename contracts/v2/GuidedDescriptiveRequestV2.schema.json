@@ -1,0 +1,153 @@
+{
+  "$defs": {
+    "GuidedVariableV2": {
+      "additionalProperties": false,
+      "properties": {
+        "variable_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "measurement_scale": {
+          "enum": [
+            "nominal",
+            "ordinal",
+            "interval",
+            "ratio"
+          ],
+          "title": "Measurement Scale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "variable_id",
+        "measurement_scale"
+      ],
+      "title": "GuidedVariableV2",
+      "type": "object"
+    },
+    "TutorSelectionV2": {
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "default": "home",
+          "enum": [
+            "home",
+            "context",
+            "data",
+            "analysis",
+            "results"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "intent_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intent Id"
+        },
+        "plan_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Plan Id"
+        },
+        "result_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Id"
+        }
+      },
+      "title": "TutorSelectionV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "prepare_descriptive",
+      "title": "Kind",
+      "type": "string"
+    },
+    "selection": {
+      "$ref": "#/$defs/TutorSelectionV2"
+    },
+    "context_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Context Fingerprint",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/GuidedVariableV2"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Variables",
+      "type": "array"
+    },
+    "confirm": {
+      "const": true,
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "kind",
+    "selection",
+    "context_fingerprint",
+    "request_id",
+    "variables",
+    "confirm"
+  ],
+  "title": "GuidedDescriptiveRequestV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/GuidedDescriptiveRequestV2.schema.json"
+}

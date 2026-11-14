@@ -1,0 +1,62 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "intent_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Intent Id",
+      "type": "string"
+    },
+    "intent_revision": {
+      "minimum": 1,
+      "title": "Intent Revision",
+      "type": "integer"
+    },
+    "dataset_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "dataset_revision": {
+      "minimum": 1,
+      "title": "Dataset Revision",
+      "type": "integer"
+    },
+    "checks": {
+      "items": {
+        "enum": [
+          "complete_cases",
+          "group_sizes",
+          "paired_cases",
+          "distribution",
+          "normality",
+          "homogeneity",
+          "influence"
+        ],
+        "type": "string"
+      },
+      "maxItems": 7,
+      "minItems": 1,
+      "title": "Checks",
+      "type": "array"
+    },
+    "confirm": {
+      "const": true,
+      "title": "Confirm",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "intent_id",
+    "intent_revision",
+    "dataset_id",
+    "dataset_revision",
+    "checks",
+    "confirm"
+  ],
+  "title": "DiagnosticRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/DiagnosticRequest.schema.json"
+}

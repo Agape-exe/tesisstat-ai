@@ -1,0 +1,89 @@
+{
+  "project_id": "2e968867-f89a-4100-8200-dddb6c2d703a",
+  "results": [
+    "3a0874ba-75cf-420b-84fd-2f0901b8ca87",
+    "1ca73f18-49b2-49e2-a876-cc4983dda685"
+  ],
+  "geometry": [
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "external": [],
+  "mutations": [
+    {
+      "url": "http://127.0.0.1:8014/api/research/projects",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/files",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/data-tables/6e3b28f6-64dd-407e-818b-a93742dde6e0/dictionary",
+      "method": "PATCH"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/intents",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/data-tables/6e3b28f6-64dd-407e-818b-a93742dde6e0/profile",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans/2733d6f9-1dd2-4388-87d4-c5a67dee9942/authorize-data",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans/2733d6f9-1dd2-4388-87d4-c5a67dee9942/approve",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans/2733d6f9-1dd2-4388-87d4-c5a67dee9942/execute",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/intents",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/data-tables/d95e5cf1-c3f1-4685-998e-af8926c968e9/profile",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/diagnostics",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans/a6385e9f-e062-4fc0-9385-6743f83eb249/authorize-data",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans/a6385e9f-e062-4fc0-9385-6743f83eb249/approve",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/analysis/plans/a6385e9f-e062-4fc0-9385-6743f83eb249/execute",
+      "method": "POST"
+    },
+    {
+      "url": "http://127.0.0.1:8014/api/v2/research/projects/2e968867-f89a-4100-8200-dddb6c2d703a/intents/c744c588-bbb2-47bd-a588-ea2f81e99623",
+      "method": "PATCH"
+    }
+  ]
+}

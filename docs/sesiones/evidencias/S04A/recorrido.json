@@ -1,0 +1,36 @@
+{
+  "education_project": "af0039d8-9be9-4e74-af96-baedf599f71b",
+  "sales_project": "883dbc23-e363-46ba-b8af-23d40131a5f6",
+  "diagnostic_id": "53f173ed-fcb3-4346-a76c-95d4571a2fff",
+  "geometry": [
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "external": [],
+  "mutations": [
+    "http://127.0.0.1:8014/api/research/projects",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/files",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/data-tables/a105b982-814d-4e26-adf3-3b5cce7ed587/dictionary",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/intents",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/data-tables/a105b982-814d-4e26-adf3-3b5cce7ed587/profile",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/diagnostics",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/intents",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/data-tables/4f4edd4a-9171-4324-8566-6b610ec00ecd/profile",
+    "http://127.0.0.1:8014/api/v2/research/projects/af0039d8-9be9-4e74-af96-baedf599f71b/diagnostics",
+    "http://127.0.0.1:8014/api/v2/research/projects/883dbc23-e363-46ba-b8af-23d40131a5f6/intents",
+    "http://127.0.0.1:8014/api/v2/research/projects/883dbc23-e363-46ba-b8af-23d40131a5f6/data-tables/2b09908b-58eb-4de8-858b-c539f28f1c71/profile",
+    "http://127.0.0.1:8014/api/v2/research/projects/883dbc23-e363-46ba-b8af-23d40131a5f6/diagnostics"
+  ],
+  "health": {
+    "status": "ok",
+    "service": "research-dev",
+    "version": "0.3.0"
+  }
+}

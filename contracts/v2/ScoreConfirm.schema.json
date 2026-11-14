@@ -1,0 +1,36 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "preview_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Preview Id",
+      "type": "string"
+    },
+    "fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Fingerprint",
+      "type": "string"
+    },
+    "confirm": {
+      "const": true,
+      "title": "Confirm",
+      "type": "boolean"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "preview_id",
+    "fingerprint",
+    "confirm",
+    "request_id"
+  ],
+  "title": "ScoreConfirm",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/ScoreConfirm.schema.json"
+}

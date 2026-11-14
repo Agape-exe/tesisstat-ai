@@ -1,0 +1,151 @@
+{
+  "instrument_project": "9db3eb01-479c-4350-b2bd-7dfc078488bd",
+  "chain_mean": 2.75,
+  "alpha_metrics": [
+    {
+      "key": "n",
+      "label": "Casos completos",
+      "value": 4.0,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "items",
+      "label": "Ítems",
+      "value": 2.0,
+      "unit": null,
+      "reason": null
+    },
+    {
+      "key": "alpha",
+      "label": "Alfa de Cronbach",
+      "value": 0.9655172413793103,
+      "unit": null,
+      "reason": null
+    }
+  ],
+  "chain": {
+    "A_score": "9ae702d3-daf8-4c92-9638-50b5b4e6fda5",
+    "B_score": "007f4169-8944-45a3-a4f3-bea72fb349c4"
+  },
+  "multiple_analysis_project": "23b3abf5-eebc-4ffd-a6d3-3f723b847366",
+  "analyses": [
+    {
+      "id": "3befae8c-a60b-4681-9e0c-6a4f8497e08b",
+      "technique": "pearson",
+      "dataset": "4b7d6c66-5276-49c6-9a22-724245216333",
+      "case_counts": {
+        "total": 7,
+        "used": 6,
+        "excluded": 1,
+        "groups": [],
+        "pairs": null
+      }
+    },
+    {
+      "id": "a7a44a75-a1c3-46bb-ab93-081f94a5a9ef",
+      "technique": "spearman",
+      "dataset": "f08db114-1825-4e7b-8989-85f2fba05859",
+      "case_counts": {
+        "total": 7,
+        "used": 6,
+        "excluded": 1,
+        "groups": [],
+        "pairs": null
+      }
+    },
+    {
+      "id": "7471b414-6eb2-41ee-8c01-220e3275cc03",
+      "technique": "t_welch",
+      "dataset": "00828b32-2cb6-4883-bdc0-765d72769f66",
+      "case_counts": {
+        "total": 7,
+        "used": 6,
+        "excluded": 1,
+        "groups": [
+          {
+            "label": "A",
+            "count": 3
+          },
+          {
+            "label": "B",
+            "count": 3
+          }
+        ],
+        "pairs": null
+      }
+    },
+    {
+      "id": "f84fe7e6-57c6-4477-84c0-bd38339521e7",
+      "technique": "mann_whitney",
+      "dataset": "2099df7d-2147-4391-a944-5d018bcf2378",
+      "case_counts": {
+        "total": 7,
+        "used": 6,
+        "excluded": 1,
+        "groups": [
+          {
+            "label": "A",
+            "count": 3
+          },
+          {
+            "label": "B",
+            "count": 3
+          }
+        ],
+        "pairs": null
+      }
+    },
+    {
+      "id": "b68e4e50-5125-4a5c-8933-0ae0cf91d524",
+      "technique": "t_paired",
+      "dataset": "485ad7d4-52b9-4331-949d-63d443228519",
+      "case_counts": {
+        "total": 7,
+        "used": 6,
+        "excluded": 1,
+        "groups": [],
+        "pairs": 6
+      }
+    },
+    {
+      "id": "40b9bf3f-0949-48b8-af31-8e8cdbb6dc03",
+      "technique": "wilcoxon",
+      "dataset": "71221a5a-1625-44ec-88c5-1b4026001cf5",
+      "case_counts": {
+        "total": 7,
+        "used": 6,
+        "excluded": 1,
+        "groups": [],
+        "pairs": 6
+      }
+    }
+  ],
+  "workbook_sheets": [
+    {
+      "name": "Instrucciones",
+      "state": "pending"
+    },
+    {
+      "name": "Antes",
+      "state": "ready"
+    },
+    {
+      "name": "Después",
+      "state": "ready"
+    },
+    {
+      "name": "Instrumento",
+      "state": "ready"
+    },
+    {
+      "name": "Vacía",
+      "state": "pending"
+    },
+    {
+      "name": "Con título",
+      "state": "pending"
+    }
+  ],
+  "independent_contexts": 3
+}

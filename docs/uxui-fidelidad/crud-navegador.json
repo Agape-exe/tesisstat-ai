@@ -1,0 +1,191 @@
+{
+  "checks": [
+    "Create, edit, F5 persisted edit, cancel and confirm deletion via real services",
+    "URL, Back, Forward and reload preserve project/section",
+    "Backend sources, versions and persisted LangGraph agents available in disclosures",
+    "Mobile history, new conversation, sources and global navigation",
+    "Conversation deletion: cancel and confirmed backend delete"
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": "{\"title\":\"Proyecto ficticio para verificar el menú\",\"description\":\"\",\"university\":\"Universidad ficticia\",\"faculty\":\"\",\"program\":\"Investigación educativa\",\"degree\":\"bachelor\",\"academic_year\":null}"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e",
+      "body": null
+    },
+    {
+      "method": "PUT",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e",
+      "body": "{\"title\":\"Proyecto ficticio para verificar el menú editado\",\"description\":\"\",\"university\":\"Universidad ficticia\",\"faculty\":\"\",\"program\":\"Investigación educativa\",\"degree\":\"bachelor\",\"academic_year\":null}"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "DELETE",
+      "url": "http://127.0.0.1:8018/api/research/projects/ee59893c-f640-4122-bb38-71130d4d6c0e",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/documents",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/documents",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/documents",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/b0fbdc31-977e-4638-ac8d-e7fee0dae730/documents",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/status",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations?offset=0",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/b4db1e25-3eb8-427f-8337-c30db75ac27c",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/b4db1e25-3eb8-427f-8337-c30db75ac27c",
+      "body": null
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/4a0baf23-759f-432c-b080-ce6d542135cf",
+      "body": null
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations",
+      "body": "{\"title\":\"Nueva conversación\"}"
+    },
+    {
+      "method": "DELETE",
+      "url": "http://127.0.0.1:8018/api/research/projects/86883f06-dfad-4923-91fb-da6af6f708b1/conversations/9266198b-79ca-4865-8cab-0e32b1d26270",
+      "body": null
+    }
+  ]
+}

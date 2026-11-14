@@ -1,0 +1,84 @@
+{
+  "pages": {
+    "alpha-word.pdf": 2,
+    "alpha.pdf": 2,
+    "descriptive-word.pdf": 3,
+    "descriptive.pdf": 3,
+    "paired-word.pdf": 4,
+    "paired.pdf": 4
+  },
+  "render": "DOCX: Microsoft Word, nueva instancia, oculto y solo lectura; PNG: PDFium del runtime",
+  "files": [
+    {
+      "name": "alpha-word.pdf",
+      "sha256": "c9238264579e859c14221cc795e2a87d38f186e0231fd9e4e07c9cd7d591ec26",
+      "bytes": 242558
+    },
+    {
+      "name": "alpha.docx",
+      "sha256": "8da83ad3d60c7a5b6ac6c7b4b46ba243d05af68e2a9e9a8c44aa1504dbc52913",
+      "bytes": 39091
+    },
+    {
+      "name": "alpha.pdf",
+      "sha256": "d270b5e3ca7a5bd2cdc641f6ed969f1ae6728487a1006d7daa6a0fd9edce8353",
+      "bytes": 5855
+    },
+    {
+      "name": "alpha.txt",
+      "sha256": "9a69caef4a7169387047850678193e26a29d1f785430a87982c54e6992679de3",
+      "bytes": 3823
+    },
+    {
+      "name": "descriptive-word.pdf",
+      "sha256": "ab4e549e157790cfc2f4d72881c4b737170d7820b8d43e4ccf357d03ae955947",
+      "bytes": 253615
+    },
+    {
+      "name": "descriptive.docx",
+      "sha256": "e15ea4a4495f76f664bdc16ff311cf2c7e0ffa5e37eec1295486956022a7249b",
+      "bytes": 38918
+    },
+    {
+      "name": "descriptive.pdf",
+      "sha256": "b1e4196512acb10506b3fecda076d09f3a87c4db48d70c3aad3db338145306a9",
+      "bytes": 8385
+    },
+    {
+      "name": "descriptive.txt",
+      "sha256": "4ccfe7988c8f3ff969b646a355b48084596022663f4ed81c5c93ef2692197aa5",
+      "bytes": 5308
+    },
+    {
+      "name": "paired-word.pdf",
+      "sha256": "ad9663d38364892cc6407d58d8b410c5a23f56677293924e6116947fe8d9e950",
+      "bytes": 260384
+    },
+    {
+      "name": "paired.docx",
+      "sha256": "4fba0e070e09473277a2b834ce395d132bed65d55e9c2cedb6921c0645ad1816",
+      "bytes": 39901
+    },
+    {
+      "name": "paired.pdf",
+      "sha256": "babad12d4b32887adf178298f86c086f4c64889791e86de62297f802f539ea84",
+      "bytes": 10437
+    },
+    {
+      "name": "paired.txt",
+      "sha256": "8ee59f9df3455ae565e149c6233f310b8156a1c7231ce6ddec23ddccce377ae2",
+      "bytes": 6926
+    }
+  ],
+  "cases": [
+    "descriptive",
+    "paired",
+    "alpha"
+  ],
+  "formats": [
+    "txt",
+    "docx",
+    "pdf"
+  ],
+  "visual_inspection": "18 páginas, todas inspeccionadas; figuras/captions completos, texto español y tablas legibles"
+}

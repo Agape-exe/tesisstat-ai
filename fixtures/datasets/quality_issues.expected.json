@@ -1,0 +1,14 @@
+{
+  "synthetic": true,
+  "purpose": "Casos para el futuro módulo de preparación; no son observaciones independientes válidas.",
+  "issues": [
+    "ID SYN-002 duplicado",
+    "Valor pre faltante",
+    "Valor post no numérico",
+    "Likert 9 fuera del rango 1..5"
+  ],
+  "valid_likert_range": [
+    1,
+    5
+  ]
+}

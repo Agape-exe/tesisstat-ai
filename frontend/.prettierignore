@@ -1,0 +1,5 @@
+dist
+.cache
+node_modules
+src/shared/contracts/generated
+package-lock.json

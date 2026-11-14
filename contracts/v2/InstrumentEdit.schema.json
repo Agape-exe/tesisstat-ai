@@ -1,0 +1,397 @@
+{
+  "$defs": {
+    "InstrumentDimension": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension_id": {
+          "format": "uuid",
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "variable_id": {
+          "format": "uuid",
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dimension_id",
+        "variable_id",
+        "name"
+      ],
+      "title": "InstrumentDimension",
+      "type": "object"
+    },
+    "InstrumentIndicator": {
+      "additionalProperties": false,
+      "properties": {
+        "indicator_id": {
+          "format": "uuid",
+          "title": "Indicator Id",
+          "type": "string"
+        },
+        "dimension_id": {
+          "format": "uuid",
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "indicator_id",
+        "dimension_id",
+        "name"
+      ],
+      "title": "InstrumentIndicator",
+      "type": "object"
+    },
+    "InstrumentItem": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "format": "uuid",
+          "title": "Item Id",
+          "type": "string"
+        },
+        "variable_id": {
+          "format": "uuid",
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "dimension_id": {
+          "format": "uuid",
+          "title": "Dimension Id",
+          "type": "string"
+        },
+        "indicator_id": {
+          "format": "uuid",
+          "title": "Indicator Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "response_type": {
+          "enum": [
+            "single_choice",
+            "numeric"
+          ],
+          "title": "Response Type",
+          "type": "string"
+        },
+        "response_options": {
+          "items": {
+            "$ref": "#/$defs/ResponseOption"
+          },
+          "title": "Response Options",
+          "type": "array"
+        },
+        "valid_min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid Min"
+        },
+        "valid_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid Max"
+        },
+        "reverse_scored": {
+          "default": false,
+          "title": "Reverse Scored",
+          "type": "boolean"
+        },
+        "reverse_rule": {
+          "anyOf": [
+            {
+              "const": "min_plus_max_minus_value",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reverse Rule"
+        },
+        "source_quote": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Quote"
+        }
+      },
+      "required": [
+        "item_id",
+        "variable_id",
+        "dimension_id",
+        "indicator_id",
+        "text",
+        "response_type"
+      ],
+      "title": "InstrumentItem",
+      "type": "object"
+    },
+    "InstrumentStructureV2": {
+      "additionalProperties": false,
+      "properties": {
+        "variables": {
+          "items": {
+            "$ref": "#/$defs/InstrumentVariableV2"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Variables",
+          "type": "array"
+        },
+        "dimensions": {
+          "items": {
+            "$ref": "#/$defs/InstrumentDimension"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "indicators": {
+          "items": {
+            "$ref": "#/$defs/InstrumentIndicator"
+          },
+          "maxItems": 200,
+          "minItems": 1,
+          "title": "Indicators",
+          "type": "array"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/InstrumentItem"
+          },
+          "maxItems": 200,
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        },
+        "scoring_rules": {
+          "items": {
+            "$ref": "#/$defs/ScoringRuleV2"
+          },
+          "maxItems": 100,
+          "title": "Scoring Rules",
+          "type": "array"
+        }
+      },
+      "required": [
+        "variables",
+        "dimensions",
+        "indicators",
+        "items"
+      ],
+      "title": "InstrumentStructureV2",
+      "type": "object"
+    },
+    "InstrumentVariableV2": {
+      "additionalProperties": false,
+      "properties": {
+        "variable_id": {
+          "format": "uuid",
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "scale": {
+          "default": "unknown",
+          "enum": [
+            "nominal",
+            "ordinal",
+            "interval",
+            "ratio",
+            "unknown"
+          ],
+          "title": "Scale",
+          "type": "string"
+        },
+        "context_variable_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Variable Id"
+        }
+      },
+      "required": [
+        "variable_id",
+        "name"
+      ],
+      "title": "InstrumentVariableV2",
+      "type": "object"
+    },
+    "ResponseOption": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "numeric_value": {
+          "title": "Numeric Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "code",
+        "label",
+        "numeric_value"
+      ],
+      "title": "ResponseOption",
+      "type": "object"
+    },
+    "ScoringRuleV2": {
+      "additionalProperties": false,
+      "properties": {
+        "scoring_rule_id": {
+          "format": "uuid",
+          "title": "Scoring Rule Id",
+          "type": "string"
+        },
+        "scope": {
+          "enum": [
+            "dimension",
+            "instrument"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "dimension_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimension Id"
+        },
+        "item_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 200,
+          "minItems": 1,
+          "title": "Item Ids",
+          "type": "array"
+        },
+        "aggregation": {
+          "enum": [
+            "sum",
+            "mean"
+          ],
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "missing_policy": {
+          "const": "all_required",
+          "default": "all_required",
+          "title": "Missing Policy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scoring_rule_id",
+        "scope",
+        "item_ids",
+        "aggregation"
+      ],
+      "title": "ScoringRuleV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "structure": {
+      "$ref": "#/$defs/InstrumentStructureV2"
+    },
+    "context_field": {
+      "default": "study_description",
+      "enum": [
+        "research_question",
+        "main_objective",
+        "study_description",
+        "data_description"
+      ],
+      "title": "Context Field",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "structure"
+  ],
+  "title": "InstrumentEdit",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/InstrumentEdit.schema.json"
+}

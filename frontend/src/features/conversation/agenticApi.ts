@@ -1,0 +1,279 @@
+/**
+ * Typed client for the Agentic Chat API in TesisStat AI.
+ */
+
+export interface AgenticMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  meta: {
+    quick_replies?: Array<{ id: string; label: string; value?: string }>;
+    upload_requested?: {
+      mode: 'instrument_and_dataset' | 'dataset_only';
+      hint: string;
+    };
+    proposal?: {
+      title: string;
+      technique: string;
+      justification: string;
+      variables?: string[];
+      can_execute?: boolean;
+    };
+    proposal_executed?: boolean;
+    execution_result?: {
+      result_id: string;
+      proposal_type: string;
+      metrics: Record<string, unknown>;
+      presentation: Record<string, unknown>;
+      variable_summaries: Record<string, unknown>;
+      figures: Array<{ kind: string; url?: string; title?: string }>;
+      decision: string;
+      t_stat?: number | string;
+      df?: number | string;
+      p_str?: string;
+      cohen_d?: number | string;
+      standard_error?: number | string;
+      mean_difference?: number | string;
+      ci_low?: number | string;
+      ci_high?: number | string;
+      var1_name?: string;
+      var1_mean?: number | string;
+      var1_std?: number | string;
+      var1_n?: number | string;
+      var2_name?: string;
+      var2_mean?: number | string;
+      var2_std?: number | string;
+      var2_n?: number | string;
+      shapiro_wilk?: {
+        statistic?: number;
+        p_value?: number;
+        assumption_met?: boolean;
+        status_text?: string;
+        target?: string;
+        interpretation?: string;
+      };
+      intergroup?: {
+        tested?: boolean;
+        comparison?: string;
+        group_exp_name?: string;
+        group_exp_n?: number;
+        group_exp_mean?: number;
+        group_exp_std?: number;
+        group_exp_shapiro_w?: number;
+        group_exp_shapiro_p?: number;
+        group_ctrl_name?: string;
+        group_ctrl_n?: number;
+        group_ctrl_mean?: number;
+        group_ctrl_std?: number;
+        group_ctrl_shapiro_w?: number;
+        group_ctrl_shapiro_p?: number;
+        gain_experimental?: number;
+        gain_control?: number;
+        gain_difference?: number;
+        standard_error?: number;
+        diff_of_gains?: number;
+        welch_t?: number;
+        welch_df?: number;
+        welch_p?: number;
+        welch_p_str?: string;
+        ci_95?: number[];
+        equal_variance_assumed?: boolean;
+        independence_note?: string;
+        design_limitation?: string;
+        conclusion?: string;
+      };
+      ancova?: {
+        tested?: boolean;
+        model?: string;
+        r_squared?: number;
+        f_stat?: number;
+        df_num?: number;
+        df_den?: number;
+        p_value?: number;
+        group_effect_beta?: number;
+        group_effect_se?: number;
+        group_effect_ci_95?: number[];
+        group_effect_t?: number;
+        group_effect_p?: number;
+        covariate_beta?: number;
+        covariate_se?: number;
+        covariate_ci_95?: number[];
+        covariate_t?: number;
+        covariate_p?: number;
+        linear_relationship_met?: boolean;
+        homogeneity_of_slopes_met?: boolean;
+        interpretation?: string;
+      };
+      convention?: string;
+    };
+    quick_questions?: string[];
+  };
+  created_at: string;
+  sequence: number;
+}
+
+export interface AgenticConversation {
+  id: string;
+  project_id: string;
+  title: string;
+  status: string;
+  dataset_summary: {
+    filename?: string;
+    sheets?: Array<{
+      name: string;
+      row_count: number;
+      columns: string[];
+      numeric_columns: string[];
+      column_summaries?: Record<
+        string,
+        { n: number; mean: number; min: number; max: number }
+      >;
+    }>;
+    total_rows?: number;
+    total_columns?: number;
+    numeric_columns?: string[];
+  };
+  dataset_filename: string | null;
+  instrument_summary: Record<string, unknown>;
+  latest_result_id: string | null;
+  created_at: string;
+  updated_at: string;
+  messages: AgenticMessage[];
+}
+
+const getApiBase = (): string => {
+  if (import.meta.env.VITE_RESEARCH_API_BASE_URL) {
+    return import.meta.env.VITE_RESEARCH_API_BASE_URL.replace(/\/$/, '');
+  }
+  // In development, default to direct backend url (matching createProjectApi)
+  return 'http://127.0.0.1:8001';
+};
+
+export const agenticApi = {
+  async getActiveConversation(projectId: string): Promise<AgenticConversation> {
+    const base = getApiBase();
+    const res = await fetch(
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/active`,
+    );
+    if (!res.ok)
+      throw new Error(`Failed to get active conversation: ${res.statusText}`);
+    return res.json();
+  },
+
+  async getConversation(
+    projectId: string,
+    conversationId: string,
+  ): Promise<AgenticConversation> {
+    const base = getApiBase();
+    const res = await fetch(
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}`,
+    );
+    if (!res.ok)
+      throw new Error(`Failed to get conversation: ${res.statusText}`);
+    return res.json();
+  },
+
+  async createConversation(
+    projectId: string,
+    retainDatasetFrom?: string | null,
+  ): Promise<AgenticConversation> {
+    const base = getApiBase();
+    const res = await fetch(
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          retain_dataset_from: retainDatasetFrom || null,
+        }),
+      },
+    );
+    if (!res.ok)
+      throw new Error(`Failed to create conversation: ${res.statusText}`);
+    return res.json();
+  },
+
+  async sendMessage(
+    projectId: string,
+    conversationId: string,
+    content: string,
+  ): Promise<AgenticConversation> {
+    const base = getApiBase();
+    const res = await fetch(
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/messages`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      },
+    );
+    if (!res.ok) throw new Error(`Failed to send message: ${res.statusText}`);
+    return res.json();
+  },
+
+  async uploadDataset(
+    projectId: string,
+    conversationId: string,
+    file: File,
+    instrumentFile?: File | null,
+    isInstrument = false,
+  ): Promise<AgenticConversation> {
+    const base = getApiBase();
+    const toBase64 = (f: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = reader.result as string;
+          const base64 = res.split(',')[1] || res;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
+
+    const fileBase64 = await toBase64(file);
+    const instrumentBase64 = instrumentFile
+      ? await toBase64(instrumentFile)
+      : null;
+
+    const res = await fetch(
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/upload-json`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          file_base64: fileBase64,
+          is_instrument: isInstrument,
+          instrument_filename: instrumentFile ? instrumentFile.name : null,
+          instrument_base64: instrumentBase64,
+        }),
+      },
+    );
+    if (!res.ok) throw new Error(`Failed to upload dataset: ${res.statusText}`);
+    return res.json();
+  },
+
+  async executeAnalysis(
+    projectId: string,
+    conversationId: string,
+    proposalType = 'paired',
+    variableNames: string[] = [],
+  ): Promise<AgenticConversation> {
+    const base = getApiBase();
+    const res = await fetch(
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/execute`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          proposal_type: proposalType,
+          variable_names: variableNames,
+        }),
+      },
+    );
+    if (!res.ok)
+      throw new Error(`Failed to execute analysis: ${res.statusText}`);
+    return res.json();
+  },
+};

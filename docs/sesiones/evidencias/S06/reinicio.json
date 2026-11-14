@@ -1,0 +1,128 @@
+{
+  "existing_tables": 24,
+  "all_existing_data_unchanged": true,
+  "new_tables": [],
+  "migration": "nullable conversation_requests.fingerprint; old columns compared explicitly",
+  "tables": {
+    "analysis_evidence_v2": {
+      "rows": 94,
+      "before_hash": "3f8b8770c0ee8eed9bbf7c5c896669ee996a0e26ec51c2ab64a8f57580338370",
+      "after_hash": "3f8b8770c0ee8eed9bbf7c5c896669ee996a0e26ec51c2ab64a8f57580338370"
+    },
+    "context_suggestions_v2": {
+      "rows": 20,
+      "before_hash": "32b78be922b4397467c1b7bdf6d91f35811fe22c594c7c0fd869e4f9c994e4d4",
+      "after_hash": "32b78be922b4397467c1b7bdf6d91f35811fe22c594c7c0fd869e4f9c994e4d4"
+    },
+    "conversation_messages": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "conversation_requests": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "conversations": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "data_workspace_revisions_v2": {
+      "rows": 99,
+      "before_hash": "574c49d792b934af197b8bec6e488250f23ef866fd318f839cb362f68bd0a5d2",
+      "after_hash": "574c49d792b934af197b8bec6e488250f23ef866fd318f839cb362f68bd0a5d2"
+    },
+    "derived_content_v2": {
+      "rows": 7,
+      "before_hash": "a7baa9afaf1b4b218ff70343ce00e43fec1d51dccb60e3bb3dab7e4b003e482b",
+      "after_hash": "a7baa9afaf1b4b218ff70343ce00e43fec1d51dccb60e3bb3dab7e4b003e482b"
+    },
+    "imported_tables_v2": {
+      "rows": 29,
+      "before_hash": "3c28e1ba800bb3f4c836f869ccb8c45cb67f8dddf4e19f909c6bb2394c3b51a5",
+      "after_hash": "3c28e1ba800bb3f4c836f869ccb8c45cb67f8dddf4e19f909c6bb2394c3b51a5"
+    },
+    "research_analyses": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_context_revisions_v2": {
+      "rows": 34,
+      "before_hash": "5224612be17574f9077f7afb45799f6d6c9b7b2482c796d19967f777127d6bf0",
+      "after_hash": "5224612be17574f9077f7afb45799f6d6c9b7b2482c796d19967f777127d6bf0"
+    },
+    "research_datasets": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_documents": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_eda": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_extractions": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_instruments": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_methodology": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_methodology_reviews": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_packages": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_preparation_previews": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_preparations": {
+      "rows": 0,
+      "before_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "after_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "research_projects": {
+      "rows": 30,
+      "before_hash": "3b667069f118ffdbbdf873c5adb30c0c2088750521b8a5616e123781bf2483cc",
+      "after_hash": "3b667069f118ffdbbdf873c5adb30c0c2088750521b8a5616e123781bf2483cc"
+    },
+    "source_file_revisions_v2": {
+      "rows": 29,
+      "before_hash": "506cc40cf838aef4074925d8d9c3d7afa69e142f48dda879f7b42aabfa4485c1",
+      "after_hash": "506cc40cf838aef4074925d8d9c3d7afa69e142f48dda879f7b42aabfa4485c1"
+    },
+    "source_files_v2": {
+      "rows": 29,
+      "before_hash": "bdba12cf87348936816bb4335b67b09f1b0b0e11c034b0744fa42cd50ce572bc",
+      "after_hash": "bdba12cf87348936816bb4335b67b09f1b0b0e11c034b0744fa42cd50ce572bc"
+    },
+    "table_context_revisions_v2": {
+      "rows": 6,
+      "before_hash": "0d3c50fb23fd88d02ca9b2dca3bcd16e5af56170a1ed011e4b46c17efb09f110",
+      "after_hash": "0d3c50fb23fd88d02ca9b2dca3bcd16e5af56170a1ed011e4b46c17efb09f110"
+    }
+  }
+}

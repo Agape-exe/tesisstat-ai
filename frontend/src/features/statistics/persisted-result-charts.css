@@ -1,0 +1,214 @@
+.persisted-charts {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border: 1px solid #d9e0dc;
+  border-radius: 0.4rem;
+  background: #f8fbf8;
+}
+
+.persisted-charts h5 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.persisted-chart {
+  margin: 0.75rem 0;
+}
+
+.persisted-chart figcaption {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.persisted-frequency,
+.persisted-scale,
+.persisted-interval,
+.persisted-estimate,
+.persisted-p-value,
+.persisted-completeness {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(6rem, 2fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.4rem 0;
+}
+
+.persisted-frequency i,
+.persisted-interval i {
+  display: block;
+  min-width: 2px;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #587747;
+}
+
+.persisted-scale > div,
+.persisted-interval > div,
+.persisted-estimate > div {
+  position: relative;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: linear-gradient(
+    90deg,
+    #d68a76 0 49.5%,
+    #d9e0dc 49.5% 50.5%,
+    #587747 50.5% 100%
+  );
+}
+
+.persisted-p-value > div,
+.persisted-completeness > div {
+  position: relative;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #d9e0dc;
+}
+
+.persisted-p-value i,
+.persisted-p-value b {
+  position: absolute;
+  top: -0.2rem;
+  display: block;
+  width: 0.2rem;
+  height: 1.1rem;
+  background: #193c36;
+  transform: translateX(-50%);
+}
+
+.persisted-p-value b {
+  top: -0.05rem;
+  height: 0.8rem;
+  background: #b04a34;
+}
+
+.persisted-completeness i {
+  display: block;
+  min-width: 2px;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #587747;
+}
+
+.persisted-chart-note {
+  margin: 0.5rem 0 0;
+  color: #536b65;
+  font-size: 0.85rem;
+}
+
+.persisted-scale i {
+  position: absolute;
+  top: -0.2rem;
+  width: 0.2rem;
+  height: 1.1rem;
+  border-radius: 0.1rem;
+  background: #193c36;
+  transform: translateX(-50%);
+}
+
+.persisted-interval > div {
+  background: #d9e0dc;
+}
+
+.persisted-interval i {
+  position: absolute;
+  top: 0;
+}
+
+.persisted-estimate > div {
+  background: linear-gradient(
+    90deg,
+    #f5e1db 0 49.5%,
+    #536b65 49.5% 50.5%,
+    #dce8d6 50.5% 100%
+  );
+}
+
+.persisted-estimate i {
+  position: absolute;
+  top: 0;
+  display: block;
+  min-width: 2px;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: #193c36;
+}
+
+.persisted-chart small {
+  white-space: nowrap;
+}
+
+.persisted-chart-empty {
+  margin: 0.75rem 0;
+  color: #536b65;
+}
+
+.authorized-scatter,
+.authorized-residuals,
+.authorized-groups,
+.authorized-pairs {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border: 1px solid #d9e0dc;
+  border-radius: 0.4rem;
+  background: #f8fbf8;
+}
+
+.authorized-scatter svg,
+.authorized-residuals svg,
+.authorized-groups svg,
+.authorized-pairs svg {
+  display: block;
+  width: min(100%, 32rem);
+  margin: 0.75rem auto;
+  overflow: visible;
+}
+
+.authorized-scatter line,
+.authorized-residuals line,
+.authorized-groups line,
+.authorized-pairs line {
+  stroke: #536b65;
+}
+.authorized-scatter circle {
+  fill: #193c36;
+  opacity: 0.75;
+}
+.authorized-residuals circle {
+  fill: #193c36;
+  opacity: 0.75;
+}
+.authorized-groups circle {
+  fill: #193c36;
+  opacity: 0.75;
+}
+.authorized-residuals .authorized-residual-zero {
+  stroke: #b04a34;
+  stroke-dasharray: 4 3;
+}
+.authorized-scatter text,
+.authorized-residuals text,
+.authorized-groups text,
+.authorized-pairs text {
+  fill: #193c36;
+  font-size: 0.75rem;
+}
+.authorized-scatter p,
+.authorized-residuals p,
+.authorized-groups p,
+.authorized-pairs p {
+  margin: 0.5rem 0 0;
+  color: #536b65;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 38rem) {
+  .persisted-frequency,
+  .persisted-scale,
+  .persisted-interval,
+  .persisted-estimate,
+  .persisted-p-value,
+  .persisted-completeness {
+    grid-template-columns: 1fr;
+  }
+}

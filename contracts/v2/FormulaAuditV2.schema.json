@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "FormulaValueV2": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinate": {
+          "title": "Coordinate",
+          "type": "string"
+        },
+        "formula": {
+          "title": "Formula",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "status": {
+          "enum": [
+            "calculated",
+            "error"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "coordinate",
+        "formula",
+        "value",
+        "status",
+        "error",
+        "dependencies"
+      ],
+      "title": "FormulaValueV2",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "engine_version": {
+      "const": "excel-subset-1",
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "cache_policy": {
+      "const": "ignored",
+      "default": "ignored",
+      "title": "Cache Policy",
+      "type": "string"
+    },
+    "formulas": {
+      "items": {
+        "$ref": "#/$defs/FormulaValueV2"
+      },
+      "title": "Formulas",
+      "type": "array"
+    },
+    "cell_types": {
+      "items": {
+        "items": {
+          "enum": [
+            "blank",
+            "text",
+            "number",
+            "boolean",
+            "date",
+            "formula",
+            "error"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Cell Types",
+      "type": "array"
+    }
+  },
+  "required": [
+    "engine_version",
+    "formulas",
+    "cell_types"
+  ],
+  "title": "FormulaAuditV2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tesisstat.local/contracts/v2/FormulaAuditV2.schema.json"
+}

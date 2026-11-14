@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "14 capturas de estados vacíos; sin ejecución ni mezcla de proyectos",
+    "Error 503 de lectura inyectado en navegador: aviso y recuperación con datos reales",
+    "Validación de formato documental; cancelar, confirmar eliminación y comprobar F5",
+    "Selección de archivo, eliminación cancelable y persistencia del dataset activo y derivado"
+  ],
+  "errors": [],
+  "external": []
+}

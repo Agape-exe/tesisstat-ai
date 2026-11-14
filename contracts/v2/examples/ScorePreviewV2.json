@@ -1,0 +1,89 @@
+{
+  "schema_version": "2.0.0",
+  "id": "1363ce22-cc12-4058-b4ef-13ad9b457585",
+  "project_id": "d126330b-5bc5-489c-aedc-fdb92ee59c22",
+  "revision": 1,
+  "instrument_id": "686b2c3a-b6e3-4aea-8df9-bef979a29686",
+  "source_refs": [
+    {
+      "kind": "source_file",
+      "id": "63800fe8-4aa6-45f1-89ee-072ca94240c7",
+      "revision": 1,
+      "hash": "91433cda022147707cea2c2d6f2e2b842a2a2252e0039893ca9cdcfcc5a782a1"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "2e65eb3a-118d-48bc-8c5d-ef8707c113ae",
+      "revision": 1,
+      "hash": "83838f0841db8ccb536b976b553905f543b1dd08efbc3aa28f32d12b1ab91739"
+    },
+    {
+      "kind": "table",
+      "id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "revision": 1,
+      "hash": "4dce44c1fae37619bc1f2de49ae56c4871f6722639478be6dbf5a633f240b5cc"
+    },
+    {
+      "kind": "dataset",
+      "id": "680f7fb9-48b5-405d-9975-ddb8d605af8d",
+      "revision": 1,
+      "hash": "4dce44c1fae37619bc1f2de49ae56c4871f6722639478be6dbf5a633f240b5cc"
+    },
+    {
+      "kind": "dictionary",
+      "id": "512a60f1-6511-5aa2-a69f-250408c675e8",
+      "revision": 1,
+      "hash": "5f970f9b9df87a933a10a6e619d296d4c14ace61badc684952e16a45cb1a33ff"
+    },
+    {
+      "kind": "instrument",
+      "id": "686b2c3a-b6e3-4aea-8df9-bef979a29686",
+      "revision": 2,
+      "hash": "f0a2042becc13bce3cf3754b6b145dafefce88e7331334f758fc04a3cceed392"
+    },
+    {
+      "kind": "mapping",
+      "id": "60e9b165-1953-4493-aabf-6fe4fa5b70d6",
+      "revision": 1,
+      "hash": "8dd284e368ea7a79b6558d712e97801798854f943fcd5f10a1668456ec249acd"
+    },
+    {
+      "kind": "context",
+      "id": "d126330b-5bc5-489c-aedc-fdb92ee59c22",
+      "revision": 1,
+      "hash": "ba86a8197eb7e3c7bf2de0f0cbc1769600e89c5b388175ddae7209af1d486a46"
+    },
+    {
+      "kind": "recoding",
+      "id": "686b2c3a-b6e3-4aea-8df9-bef979a29686:c945125b-dc56-44e9-a8f7-383dba837b86",
+      "revision": 2,
+      "hash": "7b0d66b274e23413ffaf44f983b1818287955a2a1d1314e2511642d9a0d37de5"
+    }
+  ],
+  "fingerprint": "911cbff579fb3cae255b0e13e25135f88b6ab08673b68a5a401ab44cc037dc8d",
+  "expires_at": "2026-11-11T06:53:19.724606Z",
+  "scoring_engine_version": "instrument-scoring-v2.0.0",
+  "rule_id": "c945125b-dc56-44e9-a8f7-383dba837b86",
+  "counts": {
+    "total": 5,
+    "valid": 4,
+    "missing": 1,
+    "unknown": 0,
+    "out_of_range": 0
+  },
+  "column_name": "puntuacion_ejemplo",
+  "bounded_preview": [
+    2,
+    4,
+    7,
+    9,
+    null
+  ],
+  "warnings": [
+    "Se invierte una sola vez, antes de agregar. Faltantes y errores producen null; no se imputa ni se convierten en cero.",
+    "La vista previa no calcula alfa. Solicita confiabilidad desde Análisis.",
+    "Inversión: Dificultad para recibir ayuda; 1.0 + 5.0 − valor.",
+    "Se usan 2 ítems de esta regla; los ítems ajenos no anulan su puntuación."
+  ],
+  "exclusions": []
+}

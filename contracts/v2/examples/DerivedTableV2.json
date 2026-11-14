@@ -1,0 +1,162 @@
+{
+  "schema_version": "2.0.0",
+  "id": "93be0bf3-7c2d-5add-9393-2675299979cb",
+  "project_id": "00000101-0000-4000-8000-000000000000",
+  "revision": 1,
+  "hash": "198532648ae2a8addf76193d3a5088411095e617d1d444315cd8793066be1cea",
+  "dataset_ref": {
+    "schema_version": "2.0.0",
+    "id": "93be0bf3-7c2d-5add-9393-2675299979cb",
+    "project_id": "00000101-0000-4000-8000-000000000000",
+    "revision": 1,
+    "hash": "e9e7723ebd960f879ee7483c30eb31ae3f6bd3d1c0aeba5ca52368371c52bfc3",
+    "hash_algorithm": "table-json-v1",
+    "format": "table_json",
+    "kind": "derived",
+    "name": "Notas renombradas",
+    "row_count": 3,
+    "columns": [
+      {
+        "id": "51f477f3-5bc1-54f3-941c-c80fdca0303c",
+        "name": "codigo",
+        "position": 0
+      },
+      {
+        "id": "d680a7af-1a88-5ba3-8ff3-1af96fc8d051",
+        "name": "nota_antes",
+        "position": 1
+      }
+    ],
+    "synthetic": null,
+    "source_refs": [
+      {
+        "kind": "dataset",
+        "id": "00000104-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+      },
+      {
+        "kind": "source_file",
+        "id": "00000102-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "ce0420d8f0798d49baf97cb2fd2eebc2986fd007608a4d52e0ccc066df2a5751"
+      },
+      {
+        "kind": "source_sheet",
+        "id": "00000103-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "8942ef70b485735e48cc131b05eb36480acebf9aa06353f3197511d6c8109135"
+      },
+      {
+        "kind": "table",
+        "id": "00000104-0000-4000-8000-000000000000",
+        "revision": 1,
+        "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+      },
+      {
+        "kind": "dictionary",
+        "id": "3abc50c1-36ea-512f-b3ad-da8f3b3d0d1d",
+        "revision": 1,
+        "hash": "8119e1a76b956349897d4401f5590b361a689b4369d006e5aa057072d136e237"
+      }
+    ],
+    "preparation_ref": {
+      "kind": "preparation",
+      "id": "93be0bf3-7c2d-5add-9393-2675299979cb",
+      "revision": 1,
+      "hash": "379d304e1e6a8a54eddade04901720ede2bcae317c14bc3a6e084e0d3538d6f7"
+    }
+  },
+  "preview_id": "b6ed9b4d-7682-5659-baa3-d08f49f6ba83",
+  "recipe": {
+    "kind": "prepare",
+    "name": "Notas renombradas",
+    "left_table_id": "00000104-0000-4000-8000-000000000000",
+    "right_table_id": null,
+    "left_key": null,
+    "right_key": null,
+    "key_policy": "exact-text-v1",
+    "unmatched_policy": null,
+    "columns": [],
+    "operations": [
+      {
+        "type": "rename_column",
+        "column_ids": [
+          "00000111-0000-4000-8000-000000000000"
+        ],
+        "new_name": "nota_antes",
+        "value": null
+      }
+    ]
+  },
+  "source_refs": [
+    {
+      "kind": "dataset",
+      "id": "00000104-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+    },
+    {
+      "kind": "source_file",
+      "id": "00000102-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "ce0420d8f0798d49baf97cb2fd2eebc2986fd007608a4d52e0ccc066df2a5751"
+    },
+    {
+      "kind": "source_sheet",
+      "id": "00000103-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "8942ef70b485735e48cc131b05eb36480acebf9aa06353f3197511d6c8109135"
+    },
+    {
+      "kind": "table",
+      "id": "00000104-0000-4000-8000-000000000000",
+      "revision": 1,
+      "hash": "7bbb8d7fcdb9c743753cf649edd8b9ea1744177868357c05ca1658801336668f"
+    },
+    {
+      "kind": "dictionary",
+      "id": "3abc50c1-36ea-512f-b3ad-da8f3b3d0d1d",
+      "revision": 1,
+      "hash": "8119e1a76b956349897d4401f5590b361a689b4369d006e5aa057072d136e237"
+    }
+  ],
+  "created_at": "2026-11-09T15:00:00Z",
+  "confirmation": {
+    "actor_ref": "local",
+    "confirmed_at": "2026-11-09T15:00:00Z",
+    "revision": 1
+  },
+  "engine_version": "table-workspace-1",
+  "counts": {
+    "left_rows": 3,
+    "rows_removed": 0,
+    "result_rows": 3,
+    "result_columns": 2,
+    "cells_changed": 0
+  },
+  "column_lineage": [
+    {
+      "source_table_id": "00000104-0000-4000-8000-000000000000",
+      "source_column_id": "00000110-0000-4000-8000-000000000000",
+      "result_column_id": "51f477f3-5bc1-54f3-941c-c80fdca0303c"
+    },
+    {
+      "source_table_id": "00000104-0000-4000-8000-000000000000",
+      "source_column_id": "00000111-0000-4000-8000-000000000000",
+      "result_column_id": "d680a7af-1a88-5ba3-8ff3-1af96fc8d051"
+    }
+  ],
+  "row_lineage": [
+    {
+      "00000104-0000-4000-8000-000000000000": 1
+    },
+    {
+      "00000104-0000-4000-8000-000000000000": 2
+    },
+    {
+      "00000104-0000-4000-8000-000000000000": 3
+    }
+  ],
+  "warnings": []
+}
