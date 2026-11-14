@@ -3,7 +3,6 @@ import { ProjectContext } from './ProjectContext';
 import { useCallback, useState } from 'react';
 import { WorkspaceFocus } from './workspaceFocus';
 import { AgenticChat } from '../../conversation/AgenticChat';
-import { TutorChat } from '../../conversation/TutorChat';
 import type { Selection } from '../../conversation/tutorApi';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
 import { ProjectMethodology } from '../methodology/ProjectMethodology';
@@ -121,8 +120,6 @@ function SectionContent({
   view,
   item,
   active,
-  tutorStage,
-  boundSelection,
   showDataPanel,
   setShowDataPanel,
 }: {

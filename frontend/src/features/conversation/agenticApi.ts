@@ -22,9 +22,9 @@ export interface AgenticMessage {
     execution_result?: {
       result_id: string;
       proposal_type: string;
-      metrics: Record<string, any>;
-      presentation: any;
-      variable_summaries: Record<string, any>;
+      metrics: Record<string, unknown>;
+      presentation: Record<string, unknown>;
+      variable_summaries: Record<string, unknown>;
       figures: Array<{ kind: string; url?: string; title?: string }>;
       decision: string;
       t_stat?: number;
@@ -50,14 +50,17 @@ export interface AgenticConversation {
       row_count: number;
       columns: string[];
       numeric_columns: string[];
-      column_summaries?: Record<string, { n: number; mean: number; min: number; max: number }>;
+      column_summaries?: Record<
+        string,
+        { n: number; mean: number; min: number; max: number }
+      >;
     }>;
     total_rows?: number;
     total_columns?: number;
     numeric_columns?: string[];
   };
   dataset_filename: string | null;
-  instrument_summary: Record<string, any>;
+  instrument_summary: Record<string, unknown>;
   latest_result_id: string | null;
   created_at: string;
   updated_at: string;
@@ -66,14 +69,23 @@ export interface AgenticConversation {
 
 export const agenticApi = {
   async getActiveConversation(projectId: string): Promise<AgenticConversation> {
-    const res = await fetch(`/api/v2/research/projects/${projectId}/agentic/conversations/active`);
-    if (!res.ok) throw new Error(`Failed to get active conversation: ${res.statusText}`);
+    const res = await fetch(
+      `/api/v2/research/projects/${projectId}/agentic/conversations/active`,
+    );
+    if (!res.ok)
+      throw new Error(`Failed to get active conversation: ${res.statusText}`);
     return res.json();
   },
 
-  async getConversation(projectId: string, conversationId: string): Promise<AgenticConversation> {
-    const res = await fetch(`/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}`);
-    if (!res.ok) throw new Error(`Failed to get conversation: ${res.statusText}`);
+  async getConversation(
+    projectId: string,
+    conversationId: string,
+  ): Promise<AgenticConversation> {
+    const res = await fetch(
+      `/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}`,
+    );
+    if (!res.ok)
+      throw new Error(`Failed to get conversation: ${res.statusText}`);
     return res.json();
   },
 
@@ -81,12 +93,18 @@ export const agenticApi = {
     projectId: string,
     retainDatasetFrom?: string | null,
   ): Promise<AgenticConversation> {
-    const res = await fetch(`/api/v2/research/projects/${projectId}/agentic/conversations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ retain_dataset_from: retainDatasetFrom || null }),
-    });
-    if (!res.ok) throw new Error(`Failed to create conversation: ${res.statusText}`);
+    const res = await fetch(
+      `/api/v2/research/projects/${projectId}/agentic/conversations`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          retain_dataset_from: retainDatasetFrom || null,
+        }),
+      },
+    );
+    if (!res.ok)
+      throw new Error(`Failed to create conversation: ${res.statusText}`);
     return res.json();
   },
 
@@ -127,7 +145,9 @@ export const agenticApi = {
       });
 
     const fileBase64 = await toBase64(file);
-    const instrumentBase64 = instrumentFile ? await toBase64(instrumentFile) : null;
+    const instrumentBase64 = instrumentFile
+      ? await toBase64(instrumentFile)
+      : null;
 
     const res = await fetch(
       `/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/upload-json`,
@@ -164,7 +184,8 @@ export const agenticApi = {
         }),
       },
     );
-    if (!res.ok) throw new Error(`Failed to execute analysis: ${res.statusText}`);
+    if (!res.ok)
+      throw new Error(`Failed to execute analysis: ${res.statusText}`);
     return res.json();
   },
 };

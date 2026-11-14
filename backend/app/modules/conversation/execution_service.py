@@ -69,12 +69,8 @@ def execute_chat_analysis(
                     "median": round(summary.median, 2) if summary.median is not None else None,
                     "min": round(summary.minimum, 2) if summary.minimum is not None else None,
                     "max": round(summary.maximum, 2) if summary.maximum is not None else None,
-                    "q1": round(summary.quantiles.get("p25", 0), 2)
-                    if summary.quantiles
-                    else None,
-                    "q3": round(summary.quantiles.get("p75", 0), 2)
-                    if summary.quantiles
-                    else None,
+                    "q1": round(summary.quantiles.get("p25", 0), 2) if summary.quantiles else None,
+                    "q3": round(summary.quantiles.get("p75", 0), 2) if summary.quantiles else None,
                 }
 
     # 2. If an existing completed result matches the proposal type, return it immediately
@@ -124,7 +120,6 @@ def execute_chat_analysis(
             status_code=400,
             detail="No se encontraron variables numéricas analizables en la tabla.",
         )
-
 
     # 4. Create intent based on proposal_type
     with tutor.store.transaction() as db:

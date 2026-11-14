@@ -301,7 +301,15 @@ export function buildDeterministicResult(
         columns: ['Variable', 'M', 'DE', '1', '2', 'p', 'R²'],
         rows: [
           [`1. ${varPre}`, mPre, dePre, '—', `${rVal}**`, pFormatted, '—'],
-          [`2. ${varPost}`, mPost, dePost, `${rVal}**`, '—', pFormatted, (realR * realR).toFixed(3)],
+          [
+            `2. ${varPost}`,
+            mPost,
+            dePost,
+            `${rVal}**`,
+            '—',
+            pFormatted,
+            (realR * realR).toFixed(3),
+          ],
         ],
         note: 'Nota. M = Media; DE = Desviación Estándar; ** La correlación es estadísticamente significativa al nivel p < .001 (bilateral).',
       },
@@ -333,8 +341,8 @@ export function buildDeterministicResult(
   }
 
   // descriptive: Map ALL variables from real dataset
-  let apaRows: string[][] = [];
-  let boxplots: BoxplotStats[] = [];
+  let apaRows: string[][];
+  let boxplots: BoxplotStats[];
 
   if (summaries && Object.keys(summaries).length > 0) {
     apaRows = Object.entries(summaries).map(([name, s]) => [
@@ -359,12 +367,48 @@ export function buildDeterministicResult(
     }));
   } else {
     apaRows = [
-      [varPre, String(n), '11.23', '2.45', '11.00', '6.00', '16.00', '9.50', '13.00'],
-      [varPost, String(n), '15.67', '2.10', '16.00', '11.00', '20.00', '14.00', '17.50'],
+      [
+        varPre,
+        String(n),
+        '11.23',
+        '2.45',
+        '11.00',
+        '6.00',
+        '16.00',
+        '9.50',
+        '13.00',
+      ],
+      [
+        varPost,
+        String(n),
+        '15.67',
+        '2.10',
+        '16.00',
+        '11.00',
+        '20.00',
+        '14.00',
+        '17.50',
+      ],
     ];
     boxplots = [
-      { label: varPre, min: 6, q1: 9.5, median: 11.0, q3: 13.0, max: 16, mean: 11.23 },
-      { label: varPost, min: 11, q1: 14.0, median: 16.0, q3: 17.5, max: 20, mean: 15.67 },
+      {
+        label: varPre,
+        min: 6,
+        q1: 9.5,
+        median: 11.0,
+        q3: 13.0,
+        max: 16,
+        mean: 11.23,
+      },
+      {
+        label: varPost,
+        min: 11,
+        q1: 14.0,
+        median: 16.0,
+        q3: 17.5,
+        max: 20,
+        mean: 15.67,
+      },
     ];
   }
 

@@ -242,9 +242,7 @@ class TutorService:
                     self.conversations.provider.limits, "gemini_max_output_tokens", 4096
                 )
                 limit = (
-                    getattr(
-                        self.conversations.provider.limits, "gemini_max_input_tokens", 128000
-                    )
+                    getattr(self.conversations.provider.limits, "gemini_max_input_tokens", 128000)
                     * 4
                 )
             else:
@@ -285,9 +283,7 @@ class TutorService:
             if monotonic() - started > timeout:
                 raise AIError("timeout")
             max_bytes = (
-                64000
-                if isinstance(self.conversations.provider, GeminiLanguageModel)
-                else 16000
+                64000 if isinstance(self.conversations.provider, GeminiLanguageModel) else 16000
             )
             if not isinstance(raw, str) or len(raw.encode()) > max_bytes:
                 raise AIError("invalid_response")
@@ -334,11 +330,10 @@ class TutorService:
                             "¿Cuál es el objetivo o hipótesis principal que deseas contrastar?"
                         )
                 sent_evidence_keys = {f.key for f in sent_evidence}
-                if sent_evidence:
-                    valid_keys = [k for k in orientation.basis_keys if k in sent_evidence_keys]
-                    if not valid_keys:
-                        valid_keys = [sent_evidence[0].key]
-                    orientation.basis_keys = valid_keys
+                if any(key not in sent_evidence_keys for key in orientation.basis_keys) or (
+                    sent_evidence and not orientation.basis_keys
+                ):
+                    raise AIError("invalid_response")
                 procedural_text = [
                     render_step(orientation.next_step, context),
                     render_options(orientation.option_indices, context),

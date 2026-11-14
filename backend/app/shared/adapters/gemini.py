@@ -34,7 +34,9 @@ class GeminiLanguageModel:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self.api_key = getattr(settings, "gemini_api_key", "")
-        self.model = getattr(settings, "gemini_model", "gemini-3.5-flash-lite") or "gemini-3.5-flash-lite"
+        self.model = (
+            getattr(settings, "gemini_model", "gemini-3.5-flash-lite") or "gemini-3.5-flash-lite"
+        )
         self.limits = GeminiSettings(_env_file=None, **settings.model_dump())
 
     @property
@@ -46,9 +48,7 @@ class GeminiLanguageModel:
     ) -> str:
         if not self.configured:
             raise AIError("not_configured")
-        output_limit = (
-            self.limits.gemini_max_output_tokens if max_tokens is None else max_tokens
-        )
+        output_limit = self.limits.gemini_max_output_tokens if max_tokens is None else max_tokens
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": content},
