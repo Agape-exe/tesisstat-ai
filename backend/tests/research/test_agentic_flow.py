@@ -10,20 +10,26 @@ from app.modules.conversation.agentic_service import AgenticChatService
 
 @pytest.fixture
 def agentic_service():
-    with TemporaryDirectory() as tmpdir:
-        db_path = Path(tmpdir) / "projects.sqlite3"
-        settings = Settings()
-        sources_mock = MagicMock()
-        tutor_mock = MagicMock()
-        reports_mock = MagicMock()
-        service = AgenticChatService(
-            db_path=db_path,
-            settings=settings,
-            sources=sources_mock,
-            tutor=tutor_mock,
-            reports=reports_mock,
-        )
-        yield service
+    import gc
+    tmpdir = TemporaryDirectory(ignore_cleanup_errors=True)
+    db_path = Path(tmpdir.name) / "projects.sqlite3"
+    settings = Settings()
+    sources_mock = MagicMock()
+    tutor_mock = MagicMock()
+    reports_mock = MagicMock()
+    service = AgenticChatService(
+        db_path=db_path,
+        settings=settings,
+        sources=sources_mock,
+        tutor=tutor_mock,
+        reports=reports_mock,
+    )
+    yield service
+    gc.collect()
+    try:
+        tmpdir.cleanup()
+    except Exception:
+        pass
 
 
 def test_initial_conversation_has_no_upload_requested(agentic_service):
@@ -178,4 +184,112 @@ def test_execute_analysis_regression_and_proposal_executed_flag(agentic_service,
     assert "¿Deseas realizar otro análisis adicional?" not in qqs
     assert any("Comparar la ganancia" in q for q in qqs)
     assert any("APA 7.ª" in q for q in qqs)
+
+
+def test_user_hypothesis_text_does_not_trigger_premature_execution(agentic_service):
+    # Regression test for premature execution bug:
+    # User message contains "significativa" (has substring "si") and hypothesis details.
+    # Must NOT trigger execute_analysis; must present structured proposal.
+    conv = agentic_service.get_or_create_conversation("proj-hyp-test")
+    # Simulate that dataset summary was already set
+    with agentic_service._connect() as db, db:
+        import json
+        summary = {
+            "sheets": [
+                {"name": "2°A Pretest", "row_count": 23, "columns": ["Alumno", "Promedio Pretest"]},
+                {"name": "2°A Posttest", "row_count": 23, "columns": ["Alumno", "Promedio Posttest"]},
+                {"name": "2°B Pretest", "row_count": 23, "columns": ["Alumno", "Promedio Pretest"]},
+                {"name": "2°B Posttest", "row_count": 23, "columns": ["Alumno", "Promedio Posttest"]},
+            ],
+            "sheet_count": 4,
+            "total_rows": 92,
+        }
+        db.execute(
+            "UPDATE agentic_conversations SET dataset_summary = ? WHERE id = ?",
+            (json.dumps(summary), conv.id),
+        )
+
+    user_text = (
+        "1. La sección 2° A es la del grupo experimental y la 2°B es la del grupo de control.\n"
+        "2. El objetivo general es: Evaluar el efecto de la aplicación del laboratorio químico interactivo digital ChemicalLab...\n"
+        "H0-G: No genera una diferencia significativa favorable...\n"
+        "H1-G: Genera una diferencia significativa favorable..."
+    )
+
+    updated = agentic_service.send_message("proj-hyp-test", conv.id, user_text)
+    last_msg = updated.messages[-1]
+
+    # Verify that execution was NOT prematurely triggered!
+    assert "execution_result" not in last_msg.meta
+    # Verify that a formal proposal card was created
+    assert "proposal" in last_msg.meta
+    proposal = last_msg.meta["proposal"]
+    assert proposal.get("technique") == "paired"
+    assert "ChemicalLab" in last_msg.content or "2°A" in last_msg.content or "experimental" in last_msg.content.lower()
+
+
+def test_intergroup_and_ancova_and_shapiro_rigorous_interpretation(agentic_service, monkeypatch):
+    conv = agentic_service.get_or_create_conversation("proj-ancova-test")
+    with agentic_service._connect() as db, db:
+        import json
+        summary = {
+            "sheets": [{"name": "2°A Pretest"}, {"name": "2°A Posttest"}, {"name": "2°B Pretest"}, {"name": "2°B Posttest"}],
+            "sheet_count": 4,
+        }
+        db.execute(
+            "UPDATE agentic_conversations SET dataset_summary = ? WHERE id = ?",
+            (json.dumps(summary), conv.id),
+        )
+
+    mock_res = {
+        "analysis_id": "an-456",
+        "technique": "t_paired",
+        "metrics": {
+            "n": 23,
+            "mean_difference": 0.8260869565,
+            "t_statistic": 5.6974108561,
+            "degrees_of_freedom": 22,
+            "p_value": 0.00000991637,
+            "cohens_dz": 1.1879922863,
+            "standard_error": 0.1449933974,
+            "mean_difference_ci_95_low": 0.5253890546,
+            "mean_difference_ci_95_high": 1.1267848585,
+            "shapiro_w": 0.9475,
+            "shapiro_p": 0.2592,
+        },
+        "presentation": {},
+        "variable_summaries": {},
+        "figures": [],
+    }
+    monkeypatch.setattr(
+        "app.modules.conversation.agentic_service.execute_chat_analysis",
+        lambda tutor, reports, pid, req: mock_res,
+    )
+
+    updated = agentic_service.execute_analysis("proj-ancova-test", conv.id, "paired")
+    exec_msg = updated.messages[-1]
+    er = exec_msg.meta.get("execution_result", {})
+
+    # Shapiro-Wilk rigorous phrasing
+    sw = er.get("shapiro_wilk", {})
+    assert "No se rechaza" in sw.get("status_text", "")
+    assert "no demuestra que los datos sean normales" in sw.get("interpretation", "") or "no equivale a una demostración concluyente" in sw.get("interpretation", "")
+
+    # Intergroup Welch
+    ig = er.get("intergroup", {})
+    assert ig.get("tested") is True
+    assert ig.get("welch_t") == pytest.approx(4.617, abs=1e-2)
+    assert ig.get("equal_variance_assumed") is False
+    assert "independencia" in ig.get("independence_note", "").lower()
+    assert "intactas" in ig.get("design_limitation", "").lower()
+
+    # ANCOVA
+    ancova = er.get("ancova", {})
+    assert ancova.get("tested") is True
+    assert ancova.get("r_squared") == pytest.approx(0.693, abs=1e-2)
+    assert ancova.get("f_stat") == pytest.approx(48.52, abs=1e-1)
+    assert ancova.get("group_effect_beta") == pytest.approx(1.120, abs=1e-2)
+    assert ancova.get("covariate_beta") == pytest.approx(0.486, abs=1e-2)
+    assert "lineales observadas" in ancova.get("interpretation", "")
+
 

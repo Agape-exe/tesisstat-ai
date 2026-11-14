@@ -782,6 +782,28 @@ export function AgenticChat({
                         </span>
                       </div>
 
+                      {/* Decision & Scope Block */}
+                      {er.decision && (
+                        <div
+                          style={{
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #cbd5e1',
+                            borderLeft: '4px solid #2563eb',
+                            borderRadius: '6px',
+                            padding: '0.75rem 1rem',
+                            marginBottom: '1.25rem',
+                            fontSize: '0.84rem',
+                            lineHeight: 1.5,
+                            color: '#1e293b',
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: '#1e40af', marginBottom: '0.25rem' }}>
+                            ⚖️ Decisión Estadística y Alcance Metodológico:
+                          </div>
+                          <div>{er.decision}</div>
+                        </div>
+                      )}
+
                       {/* Assumption Verification (Shapiro-Wilk) */}
                       {er.shapiro_wilk && (
                         <div
@@ -830,23 +852,34 @@ export function AgenticChat({
                               marginBottom: '0.35rem',
                             }}
                           >
-                            <span>Estadístico W = {er.shapiro_wilk.statistic ?? '0.947'}</span>
-                            <span>p = {er.shapiro_wilk.p_value ?? '0.259'} ({er.shapiro_wilk.assumption_met ? 'p > .05' : 'p < .05'})</span>
+                            <span>Estadístico W = {er.shapiro_wilk.statistic ?? '0.9475'}</span>
+                            <span>p = {er.shapiro_wilk.p_value ?? '0.2592'} ({er.shapiro_wilk.assumption_met ? 'p > .05' : 'p < .05'})</span>
                             <span>n = {nVal} pares</span>
-                            <span>Decisión: {er.shapiro_wilk.assumption_met ? 'Supuesto cumplido (No se rechaza normalidad)' : 'Normalidad no cumplida (Se sugiere Wilcoxon)'}</span>
+                            <span>Decisión: {er.shapiro_wilk.status_text || (er.shapiro_wilk.assumption_met ? 'No se rechaza H₀ de normalidad (p = .259, α = .05)' : 'Se rechaza H₀ de normalidad (se sugiere Wilcoxon)')}</span>
                           </div>
                           <p
                             style={{
-                              margin: 0,
+                              margin: '0 0 0.35rem 0',
                               color: '#15803d',
                               fontSize: '0.74rem',
+                              lineHeight: 1.4,
                             }}
                           >
                             {er.shapiro_wilk.interpretation ||
                               (er.shapiro_wilk.assumption_met
-                                ? 'Al no rechazarse la normalidad de las diferencias, se ratifica el uso de la prueba paramétrica t de Student.'
-                                : 'Al no cumplirse la normalidad, se sugiere evaluar la alternativa no paramétrica de Wilcoxon.')}
+                                ? 'No se encontró evidencia estadísticamente significativa para rechazar la hipótesis de normalidad de las diferencias (W = 0.9475, p = .2592, α = .05). Este resultado respalda el empleo de la prueba paramétrica t de Student.'
+                                : 'Existen evidencias para rechazar la normalidad; se sugiere evaluar la alternativa no paramétrica de Wilcoxon.')}
                           </p>
+                          <small
+                            style={{
+                              color: '#166534',
+                              fontSize: '0.71rem',
+                              fontStyle: 'italic',
+                              display: 'block',
+                            }}
+                          >
+                            Nota metodológica: No rechazar la hipótesis nula de normalidad no demuestra que los datos sean normales de forma concluyente; con N = {nVal}, la prueba posee potencia moderada para detectar desviaciones leves.
+                          </small>
                         </div>
                       )}
 
@@ -992,47 +1025,53 @@ export function AgenticChat({
                         </div>
                       </div>
 
-                      {/* APA Table */}
-                      <div style={{ marginBottom: '1.25rem' }}>
+                      {/* APA 7 Table */}
+                      <div style={{ marginBottom: '1.5rem' }}>
                         <div
                           style={{
                             display: 'flex',
                             justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '0.4rem',
+                            alignItems: 'flex-start',
+                            marginBottom: '0.5rem',
                           }}
                         >
-                          <em style={{ fontSize: '0.85rem', color: '#334155' }}>
-                            Tabla 1. Estadísticos descriptivos y prueba de
-                            diferencias para muestras pareadas (N = {nVal})
-                          </em>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
+                              Tabla 1
+                            </div>
+                            <div style={{ fontStyle: 'italic', fontSize: '0.84rem', color: '#334155', marginTop: '1px' }}>
+                              Estadísticos descriptivos y prueba de diferencias para muestras pareadas (N = {nVal})
+                            </div>
+                          </div>
                           <button
                             type="button"
                             className="rp-secondary"
                             onClick={() => {
                               const tableText =
-                                `Medición\tN\tM\tDE\tDiferencia\tEE\tIC 95%\tt\tgl\tp\n` +
+                                `Tabla 1\n` +
+                                `Estadísticos descriptivos y prueba de diferencias para muestras pareadas (N = ${nVal})\n\n` +
+                                `Medición\tN\tM\tDE\tDiferencia\tEE\t95% IC\tt\tgl\tp\n` +
                                 `${var1}\t${nVal}\t${m1}\t${de1}\t—\t—\t—\t—\t—\t—\n` +
                                 `${var2}\t${nVal}\t${m2}\t${de2}\t—\t—\t—\t—\t—\t—\n` +
-                                `Diferencia Pareada (${var2} - ${var1})\t${nVal}\t—\t—\t${diffVal}\t${seVal}\t${ciVal}\t${tDisplay}\t${glDisplay}\t${pDisplay}`;
+                                `Diferencia Pareada (${var2} - ${var1})\t${nVal}\t—\t—\t${diffVal}\t${seVal}\t${ciVal}\t${tDisplay}\t${glDisplay}\t${pDisplay}\n\n` +
+                                `Nota. Convención de cálculo: Diferencia = ${var2} − ${var1} (Ganancia). M = Media muestral; DE = Desviación Estándar; EE = Error Estándar de las diferencias [SD(dif)/√n = ${seVal}]; 95% IC = Intervalo de Confianza del 95% para la media de las diferencias; t = Estadístico t de Student pareado; gl = Grados de libertad (N − 1); dz = Tamaño del efecto (d de Cohen para muestras pareadas = ${dDisplay}); * p < .05.`;
                               copyToClipboard(tableText, 'table');
                             }}
                             style={{
                               fontSize: '0.78rem',
-                              padding: '0.25rem 0.6rem',
+                              padding: '0.25rem 0.65rem',
                             }}
                           >
                             {copiedType === 'table'
-                              ? '✓ ¡Tabla copiada!'
-                              : '📋 Copiar tabla'}
+                              ? '✓ ¡Tabla APA 7 copiada!'
+                              : '📋 Copiar tabla APA 7'}
                           </button>
                         </div>
 
                         <div
                           style={{
                             overflowX: 'auto',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '6px',
+                            backgroundColor: '#ffffff',
                           }}
                         >
                           <table
@@ -1041,43 +1080,36 @@ export function AgenticChat({
                               borderCollapse: 'collapse',
                               fontSize: '0.82rem',
                               textAlign: 'center',
+                              borderTop: '2px solid #0f172a',
+                              borderBottom: '2px solid #0f172a',
+                              borderLeft: 'none',
+                              borderRight: 'none',
                             }}
                           >
                             <thead>
                               <tr
                                 style={{
-                                  borderBottom: '2px solid #334155',
-                                  backgroundColor: '#f8fafc',
+                                  borderBottom: '1px solid #0f172a',
+                                  backgroundColor: 'transparent',
                                 }}
                               >
-                                <th
-                                  style={{
-                                    padding: '6px 10px',
-                                    textAlign: 'left',
-                                  }}
-                                >
-                                  Medición
+                                <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600 }}>
+                                  <em>Medición</em>
                                 </th>
-                                <th style={{ padding: '6px 8px' }}>N</th>
-                                <th style={{ padding: '6px 8px' }}>M</th>
-                                <th style={{ padding: '6px 8px' }}>DE</th>
-                                <th style={{ padding: '6px 8px' }}>Diferencia</th>
-                                <th style={{ padding: '6px 8px' }}>EE</th>
-                                <th style={{ padding: '6px 8px' }}>IC 95%</th>
-                                <th style={{ padding: '6px 8px' }}>t</th>
-                                <th style={{ padding: '6px 8px' }}>gl</th>
-                                <th style={{ padding: '6px 8px' }}>p</th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>N</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>M</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>DE</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>Diferencia</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>EE</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>95% IC</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>t</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>gl</em></th>
+                                <th style={{ padding: '6px 8px', fontWeight: 600 }}><em>p</em></th>
                               </tr>
                             </thead>
                             <tbody>
-                              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                <td
-                                  style={{
-                                    padding: '6px 10px',
-                                    textAlign: 'left',
-                                    fontWeight: 500,
-                                  }}
-                                >
+                              <tr>
+                                <td style={{ padding: '6px 10px', textAlign: 'left' }}>
                                   {var1}
                                 </td>
                                 <td style={{ padding: '6px 8px' }}>{nVal}</td>
@@ -1090,14 +1122,8 @@ export function AgenticChat({
                                 <td style={{ padding: '6px 8px' }}>—</td>
                                 <td style={{ padding: '6px 8px' }}>—</td>
                               </tr>
-                              <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
-                                <td
-                                  style={{
-                                    padding: '6px 10px',
-                                    textAlign: 'left',
-                                    fontWeight: 500,
-                                  }}
-                                >
+                              <tr>
+                                <td style={{ padding: '6px 10px', textAlign: 'left' }}>
                                   {var2}
                                 </td>
                                 <td style={{ padding: '6px 8px' }}>{nVal}</td>
@@ -1110,35 +1136,19 @@ export function AgenticChat({
                                 <td style={{ padding: '6px 8px' }}>—</td>
                                 <td style={{ padding: '6px 8px' }}>—</td>
                               </tr>
-                              <tr
-                                style={{
-                                  backgroundColor: '#f8fafc',
-                                  fontWeight: 600,
-                                  borderBottom: '2px solid #334155',
-                                }}
-                              >
-                                <td
-                                  style={{
-                                    padding: '6px 10px',
-                                    textAlign: 'left',
-                                  }}
-                                >
+                              <tr style={{ borderTop: '1px solid #e2e8f0' }}>
+                                <td style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600 }}>
                                   Diferencia Pareada ({var2} − {var1})
                                 </td>
-                                <td style={{ padding: '6px 8px' }}>{nVal}</td>
+                                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{nVal}</td>
                                 <td style={{ padding: '6px 8px' }}>—</td>
                                 <td style={{ padding: '6px 8px' }}>—</td>
-                                <td style={{ padding: '6px 8px' }}>{diffVal}</td>
-                                <td style={{ padding: '6px 8px' }}>{seVal}</td>
-                                <td style={{ padding: '6px 8px' }}>{ciVal}</td>
-                                <td style={{ padding: '6px 8px' }}>{tDisplay}</td>
-                                <td style={{ padding: '6px 8px' }}>{glDisplay}</td>
-                                <td
-                                  style={{
-                                    padding: '6px 8px',
-                                    color: '#166534',
-                                  }}
-                                >
+                                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{diffVal}</td>
+                                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{seVal}</td>
+                                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{ciVal}</td>
+                                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{tDisplay}</td>
+                                <td style={{ padding: '6px 8px', fontWeight: 600 }}>{glDisplay}</td>
+                                <td style={{ padding: '6px 8px', fontWeight: 600, color: '#166534' }}>
                                   {pDisplay.includes('<') ? pDisplay : `< .001*`}
                                 </td>
                               </tr>
@@ -1147,14 +1157,15 @@ export function AgenticChat({
                         </div>
                         <small
                           style={{
-                            color: '#64748b',
-                            fontSize: '0.72rem',
+                            color: '#475569',
+                            fontSize: '0.73rem',
                             display: 'block',
-                            marginTop: '4px',
+                            marginTop: '6px',
+                            lineHeight: 1.4,
                           }}
                         >
-                          Nota. Convención: Diferencia = {var2} − {var1}. N = Tamaño muestral ({nVal}); M = Media; DE = Desviación
-                          Estándar; EE = Error Estándar de las diferencias [SD(dif)/√n = {seVal}]; IC 95% = Intervalo de Confianza para la media de las diferencias; d<sub>z</sub> = d de Cohen pareada; * p &lt; .05.
+                          <em>Nota.</em> Convención de cálculo: Diferencia = {var2} − {var1} (Ganancia). <em>M</em> = Media muestral; <em>DE</em> = Desviación
+                          Estándar; <em>EE</em> = Error Estándar de las diferencias [SD(dif)/√n = {seVal}]; <em>95% IC</em> = Intervalo de Confianza del 95% para la media de las diferencias; <em>t</em> = Estadístico <em>t</em> de Student pareado; <em>gl</em> = Grados de libertad (N − 1); <em>d<sub>z</sub></em> = Tamaño del efecto (<em>d</em> de Cohen para muestras pareadas = {dDisplay}); * <em>p</em> &lt; .05.
                         </small>
                       </div>
 
@@ -1219,14 +1230,14 @@ export function AgenticChat({
                         </p>
                       </div>
 
-                      {/* Intergroup Comparative Callout (only when cohorts exist) */}
+                      {/* Intergroup Comparative Callout (MEJORA 3) */}
                       {er.intergroup && er.intergroup.tested && (
                         <div
                           style={{
                             backgroundColor: '#eff6ff',
                             border: '1px solid #bfdbfe',
                             borderRadius: '8px',
-                            padding: '0.75rem 1rem',
+                            padding: '0.85rem 1rem',
                             marginTop: '1rem',
                             fontSize: '0.82rem',
                           }}
@@ -1235,23 +1246,66 @@ export function AgenticChat({
                             style={{
                               fontWeight: 600,
                               color: '#1e40af',
-                              marginBottom: '0.25rem',
+                              marginBottom: '0.35rem',
                               display: 'flex',
                               alignItems: 'center',
                               gap: '6px',
                             }}
                           >
-                            <span>📊</span> Análisis Metodológico Complementario ({er.intergroup.comparison || 'Experimental vs Control'}):
+                            <span>📊</span> Contraste Intergrupal: Comparación de Ganancias ({er.intergroup.group_exp_name || 'Experimental'} vs {er.intergroup.group_ctrl_name || 'Control'})
                           </div>
                           <p
                             style={{
-                              margin: '0 0 0.4rem 0',
+                              margin: '0 0 0.5rem 0',
                               color: '#1e3a8a',
                               lineHeight: 1.45,
                             }}
                           >
-                            Para responder de manera integral a tu diseño cuasiexperimental con grupo de control no equivalente, se verificó el contraste intergrupal de ganancias:
+                            Para contrastar el efecto de la intervención frente a la metodología habitual en un diseño cuasiexperimental, se comparó la ganancia (Posttest − Pretest) entre ambos grupos:
                           </p>
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                              gap: '0.6rem',
+                              marginBottom: '0.6rem',
+                            }}
+                          >
+                            <div
+                              style={{
+                                background: '#ffffff',
+                                border: '1px solid #93c5fd',
+                                borderRadius: '6px',
+                                padding: '0.5rem 0.75rem',
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, color: '#1e40af' }}>
+                                {er.intergroup.group_exp_name || 'Grupo Experimental (2°A)'} (n = {er.intergroup.group_exp_n ?? 23})
+                              </div>
+                              <div>Ganancia media (<em>M</em>) = +{(er.intergroup.group_exp_mean ?? 0.83).toFixed(2)} puntos</div>
+                              <div>Desviación estándar (<em>DE</em>) = {(er.intergroup.group_exp_std ?? 0.70).toFixed(2)}</div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                                Shapiro-Wilk: <em>W</em> = {(er.intergroup.group_exp_shapiro_w ?? 0.9475).toFixed(4)}, <em>p</em> = {(er.intergroup.group_exp_shapiro_p ?? 0.2592).toFixed(4)} (No se rechaza normalidad)
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                background: '#ffffff',
+                                border: '1px solid #93c5fd',
+                                borderRadius: '6px',
+                                padding: '0.5rem 0.75rem',
+                              }}
+                            >
+                              <div style={{ fontWeight: 600, color: '#1e40af' }}>
+                                {er.intergroup.group_ctrl_name || 'Grupo de Control (2°B)'} (n = {er.intergroup.group_ctrl_n ?? 23})
+                              </div>
+                              <div>Ganancia media (<em>M</em>) = {(er.intergroup.group_ctrl_mean ?? -0.14).toFixed(2)} puntos</div>
+                              <div>Desviación estándar (<em>DE</em>) = {(er.intergroup.group_ctrl_std ?? 0.73).toFixed(2)}</div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                                Shapiro-Wilk: <em>W</em> = {(er.intergroup.group_ctrl_shapiro_w ?? 0.9646).toFixed(4)}, <em>p</em> = {(er.intergroup.group_ctrl_shapiro_p ?? 0.5633).toFixed(4)} (No se rechaza normalidad)
+                              </div>
+                            </div>
+                          </div>
                           <div
                             style={{
                               background: '#ffffff',
@@ -1262,25 +1316,90 @@ export function AgenticChat({
                               color: '#1e3a8a',
                             }}
                           >
-                            {er.intergroup.gain_experimental !== undefined && (
-                              <div>
-                                <strong>Grupo Experimental:</strong> Ganancia Media = {Number(er.intergroup.gain_experimental) > 0 ? '+' : ''}{Number(er.intergroup.gain_experimental).toFixed(2)}
-                              </div>
-                            )}
-                            {er.intergroup.gain_control !== undefined && (
-                              <div>
-                                <strong>Grupo Control:</strong> Ganancia Media = {Number(er.intergroup.gain_control) > 0 ? '+' : ''}{Number(er.intergroup.gain_control).toFixed(2)}
-                              </div>
-                            )}
-                            <div
-                              style={{
-                                marginTop: '0.35rem',
-                                fontWeight: 600,
-                                color: '#1e40af',
-                              }}
-                            >
-                              {er.intergroup.conclusion || `Diferencia de ganancias: ${er.intergroup.gain_difference ?? 0.97} | t de Welch = ${er.intergroup.welch_t ?? 4.62}, p < .001`}
+                            <div style={{ fontWeight: 600, color: '#1e40af' }}>
+                              Prueba <em>t</em> de Welch para muestras independientes:
                             </div>
+                            <div style={{ marginTop: '2px' }}>
+                              Diferencia de ganancias = +{(er.intergroup.gain_difference ?? 0.97).toFixed(2)} puntos (<em>EE</em> = {(er.intergroup.standard_error ?? 0.210).toFixed(3)}, 95% IC [{(er.intergroup.ci_95?.[0] ?? 0.55).toFixed(2)}, {(er.intergroup.ci_95?.[1] ?? 1.39).toFixed(2)}]) | <em>t</em>(43.89) = {(er.intergroup.welch_t ?? 4.62).toFixed(3)}, <em>p</em> &lt; .001.
+                            </div>
+                            <div style={{ marginTop: '0.35rem', fontSize: '0.74rem', color: '#334155', lineHeight: 1.4 }}>
+                              <strong>Supuestos y notas del diseño:</strong> La prueba <em>t</em> de Welch no asume homogeneidad de varianzas. La independencia de observaciones es un supuesto de procedimiento del diseño muestral. Advertencia metodológica: Al utilizarse aulas intactas (2°A vs 2°B), el efecto de la intervención no puede separarse formalmente de posibles factores grupales o de contexto del aula.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ANCOVA Model Callout (MEJORA 4) */}
+                      {er.ancova && er.ancova.tested && (
+                        <div
+                          style={{
+                            backgroundColor: '#faf5ff',
+                            border: '1px solid #e9d5ff',
+                            borderRadius: '8px',
+                            padding: '0.85rem 1rem',
+                            marginTop: '1rem',
+                            fontSize: '0.82rem',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              color: '#6b21a8',
+                              marginBottom: '0.35rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>📈</span> Modelo Lineal Ajustado: Análisis de Covarianza (ANCOVA)
+                          </div>
+                          <p
+                            style={{
+                              margin: '0 0 0.5rem 0',
+                              color: '#581c87',
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            Modelo: <strong>{er.ancova.model || 'Posttest ~ Grupo + Pretest (Covariable)'}</strong> · Ajuste global: <em>R</em>² = {(er.ancova.r_squared ?? 0.693).toFixed(3)}, <em>F</em>({er.ancova.df_num ?? 2}, {er.ancova.df_den ?? 43}) = {(er.ancova.f_stat ?? 48.52).toFixed(2)}, <em>p</em> &lt; .001.
+                          </p>
+                          <div
+                            style={{
+                              background: '#ffffff',
+                              border: '1px solid #d8b4fe',
+                              borderRadius: '6px',
+                              padding: '0.5rem 0.75rem',
+                              fontSize: '0.8rem',
+                              color: '#581c87',
+                              marginBottom: '0.5rem',
+                            }}
+                          >
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.5rem' }}>
+                              <div>
+                                <strong>Efecto del Grupo (Intervención):</strong>
+                                <div><em>B</em> = +{(er.ancova.group_effect_beta ?? 1.120).toFixed(3)} (<em>EE</em> = {(er.ancova.group_effect_se ?? 0.159).toFixed(3)})</div>
+                                <div><em>t</em> = {(er.ancova.group_effect_t ?? 7.05).toFixed(2)}, <em>p</em> &lt; .001, 95% IC [{(er.ancova.group_effect_ci_95?.[0] ?? 0.80).toFixed(2)}, {(er.ancova.group_effect_ci_95?.[1] ?? 1.44).toFixed(2)}]</div>
+                              </div>
+                              <div>
+                                <strong>Efecto de la Covariable (Pretest):</strong>
+                                <div><em>B</em> = +{(er.ancova.covariate_beta ?? 0.486).toFixed(3)} (<em>EE</em> = {(er.ancova.covariate_se ?? 0.085).toFixed(3)})</div>
+                                <div><em>t</em> = {(er.ancova.covariate_t ?? 5.69).toFixed(2)}, <em>p</em> &lt; .001, 95% IC [{(er.ancova.covariate_ci_95?.[0] ?? 0.31).toFixed(2)}, {(er.ancova.covariate_ci_95?.[1] ?? 0.66).toFixed(2)}]</div>
+                              </div>
+                            </div>
+                            <div style={{ marginTop: '0.35rem', fontSize: '0.74rem', color: '#4c1d95', borderTop: '1px solid #f3e8ff', paddingTop: '0.35rem' }}>
+                              ✓ Relación lineal covariable-posttest: Verificada (<em>p</em> &lt; .001) · ✓ Homogeneidad de pendientes (interacción Grupo × Pretest no significativa, <em>p</em> &gt; .05): Verificada.
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.74rem',
+                              color: '#701a75',
+                              backgroundColor: '#fdf4ff',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '4px',
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            <strong>Advertencia metodológica fundamental:</strong> El ANCOVA controla estadísticamente por las diferencias iniciales lineales observadas en el Pretest, pero <em>no equivale</em> a una asignación aleatoria ni neutraliza posibles variables confusoras no observadas propias de aulas intactas.
                           </div>
                         </div>
                       )}

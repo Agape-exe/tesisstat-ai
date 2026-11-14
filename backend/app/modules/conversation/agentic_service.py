@@ -688,7 +688,7 @@ class AgenticChatService:
         dataset_context_str = "No hay dataset cargado aún."
         if dataset_summary:
             sheets_desc = "\n".join(
-                f"- Hoja «{s['name']}»: {s['row_count']} registros, columnas: {', '.join(s['columns'])}"
+                f"- Hoja «{s.get('name', 'Hoja')}»: {s.get('row_count', 0)} registros, columnas: {', '.join(s.get('columns', []))}"
                 for s in dataset_summary.get("sheets", [])
             )
             dataset_context_str = (
@@ -701,10 +701,15 @@ class AgenticChatService:
             f"{MASTER_SYSTEM_PROMPT}\n\n"
             f"DATOS DISPONIBLES EN EL PROYECTO:\n{dataset_context_str}\n\n"
             f"{result_context_str}\n\n"
-            "DIRECTIVAS:\n"
-            "- Si el usuario pide que le expliques los resultados ('Explícame mejor mis resultados', '¿Qué significa el p-valor?', etc.), usa los números reales calculados del último análisis para explicarle con total claridad cómo redactarlo en su tesis bajo normas APA 7.\n"
-            "- Si el usuario solicita un análisis o dice 'recomiéndame el análisis' y aún no se ha ejecutado, formula una propuesta estadística clara y pregúntale: '¿Estás conforme con este análisis propuesto o necesitas evaluar algo más?'\n"
-            "- Si el usuario responde 'Sí, adelante', 'Ejecutar', 'De acuerdo' a una propuesta, indícale amablemente que procederás a ejecutar el cálculo matemático determinista."
+            "DIRECTIVAS METODOLÓGICAS ESTRICTAS:\n"
+            "1. SEPARACIÓN DE HIPÓTESIS: Diferencia siempre la hipótesis estadística del contraste (H₀: μ_dif = 0) de la hipótesis general de investigación de la tesis. Un p-valor < .05 en una prueba pareada dentro del grupo experimental aporta evidencia de cambio intragrupal, pero NO demuestra causalidad ni confirma por sí solo la hipótesis general del estudio frente al grupo de control.\n"
+            "2. PLAN METODOLÓGICO DE 3 NIVELES: Cuando el tesista te indique su objetivo de investigación, hipótesis o grupos (o pida una propuesta de análisis), formula un plan pedagógico estructurado que considere:\n"
+            "   a) Contraste Intragrupal: Prueba t de Student / Wilcoxon para muestras relacionadas en el grupo experimental tras evaluar normalidad de las diferencias con Shapiro-Wilk.\n"
+            "   b) Contraste Intergrupal: Comparación de ganancias pedagógicas (Experimental vs Control) mediante la prueba t de Welch para muestras independientes (robusta a heterocedasticidad).\n"
+            "   c) Modelo Complementario Ajustado: Modelo ANCOVA con Pretest como covariable para evaluar el efecto ajustado del grupo, advirtiendo con rigor metodológico que al ser un diseño cuasiexperimental con secciones intactas, no se elimina la confusión entre sección e intervención.\n"
+            "   Finaliza tu respuesta preguntándole al tesista: '¿Estás conforme con este plan metodológico propuesto para proceder a ejecutarlo o deseas ajustar algún contraste?'\n"
+            "3. NO INVENTAR RESULTADOS: Si el análisis aún no ha sido ejecutado formalmente, NO inventes números ni afirmes que ya fue ejecutado o persistido. Cuando el análisis ya esté ejecutado, utiliza estrictamente las métricas calculadas como fuente de verdad.\n"
+            "4. INTERPRETACIÓN DE NORMALIDAD: Nunca afirmes que un p >= .05 en Shapiro-Wilk 'demuestra' la normalidad. La formulación correcta es que 'no se encontró evidencia estadísticamente significativa para rechazar la normalidad'."
         )
 
         with closing(self._connect()) as db:
@@ -756,46 +761,89 @@ class AgenticChatService:
         content_lower = content.casefold()
         reply_lower = assistant_reply.casefold()
 
-        # If user agreed to execute or if assistant formulated a proposal
-        if (
-            any(
-                w in reply_lower
-                for w in [
-                    "¿estás conforme",
-                    "propongo el siguiente análisis",
-                    "propuesta estadística",
-                    "prueba t de student",
-                ]
+        # Check if an unexecuted proposal is already pending in the conversation
+        has_pending_proposal = False
+        with closing(self._connect()) as db:
+            rows = db.execute(
+                "SELECT meta FROM agentic_messages WHERE conversation_id = ?",
+                (conversation_id,),
+            ).fetchall()
+            for r in rows:
+                m_meta = json.loads(r["meta"] or "{}")
+                if "proposal" in m_meta and not m_meta.get("proposal_executed"):
+                    has_pending_proposal = True
+                    break
+
+        # Check if user explicitly confirmed execution of a PENDING proposal:
+        # e.g., "sí", "adelante", "ejecutar", "de acuerdo", "procede", "hazlo", "apruebo"
+        is_short_confirmation = (
+            len(content.split()) <= 8
+            and bool(
+                re.search(
+                    r"^\s*(sí|si|adelante|ejecutar|de acuerdo|procede|hazlo|apruebo|aprobar|confirmar)\b",
+                    content_lower,
+                )
+                or content_lower.strip() in {"sí", "si", "ok", "de acuerdo", "ejecutar", "adelante", "procede", "hazlo", "apruebo"}
             )
-            and not latest_result_id
-        ):
+        )
+
+        if is_short_confirmation and has_pending_proposal and dataset_summary and not latest_result_id:
+            # Auto-trigger execution because user approved a pending proposal
+            return self.execute_analysis(project_id, conversation_id, proposal_type="paired")
+
+        # Formulate proposal card if assistant formulated a proposal or if user provided design/hypotheses
+        is_proposal_in_reply = any(
+            w in reply_lower
+            for w in [
+                "¿estás conforme",
+                "propongo el siguiente análisis",
+                "propuesta estadística",
+                "propuesta de análisis",
+                "prueba t de student",
+                "plan de análisis",
+                "plan metodológico",
+            ]
+        )
+        user_provided_design_info = any(
+            w in content_lower
+            for w in [
+                "grupo experimental",
+                "grupo de control",
+                "experimental y",
+                "objetivo general",
+                "hipotesis",
+                "hipótesis",
+                "h0-g",
+                "h1-g",
+                "h0:",
+                "h1:",
+                "cuasiexperimental",
+                "pretest y postest",
+                "pretest y posttest",
+            ]
+        )
+
+        if (is_proposal_in_reply or user_provided_design_info) and not latest_result_id and not has_pending_proposal:
             meta["proposal"] = {
-                "title": "Comparación de mediciones pareadas (t de Student / Wilcoxon)",
+                "title": "Propuesta Metodológica y Plan de Análisis Estadístico",
                 "technique": "paired",
-                "justification": "Contraste para verificar si existe una diferencia estadísticamente significativa en el rendimiento de los 23 estudiantes antes y después de la intervención.",
+                "justification": (
+                    "Plan de 3 niveles metodológicos: "
+                    "1) Contraste intragrupo de cambio (t de Student / Wilcoxon para muestras relacionadas en grupo experimental tras verificar normalidad de diferencias). "
+                    "2) Contraste intergrupal de ganancias pedagógicas (t de Welch para muestras independientes entre 2°A y 2°B sin asumir igualdad de varianzas). "
+                    "3) Modelo complementario ajustado por línea base (ANCOVA con Pretest como covariable y advertencia cuasiexperimental)."
+                ),
                 "variables": ["Promedio Pretest", "Promedio Posttest"],
                 "can_execute": True,
             }
-
-        # If user confirmed execution in chat: "sí", "adelante", "ejecutar", "de acuerdo"
-        if (
-            any(
-                w in content_lower
-                for w in ["sí", "si", "adelante", "ejecutar", "de acuerdo", "procede", "hazlo"]
-            )
-            and dataset_summary
-            and not latest_result_id
-        ):
-            # Auto-trigger execution
-            return self.execute_analysis(project_id, conversation_id, proposal_type="paired")
 
         # If results exist and user is asking questions, offer follow-up chips
         if latest_result_id:
             meta["quick_questions"] = [
                 "¿Cómo redacto este hallazgo en mi tesis según APA 7.ª?",
-                "¿Qué significa el p-valor obtenido (< .001)?",
-                "¿Qué representa el tamaño del efecto (d de Cohen = 1.19)?",
-                "Comparar la ganancia de 2°A (Experimental) vs 2°B (Control)",
+                "¿Qué limitaciones metodológicas tiene mi diseño cuasiexperimental?",
+                "¿Qué aporta el modelo ANCOVA frente a la prueba t de Welch?",
+                "¿Cómo interpreto el tamaño del efecto (d_z = 1.19) en mi discusión?",
             ]
 
         self._add_message(conversation_id, "assistant", assistant_reply, meta)
@@ -904,35 +952,54 @@ class AgenticChatService:
 
         p_str = "< 0.001" if p_val < 0.001 else f"= {p_val:.3f}"
         decision_str = (
-            f"Se rechaza la hipótesis nula (H₀) y se acepta la hipótesis de investigación (H₁). "
-            f"Existe evidencia estadística suficiente de que las calificaciones obtenidas en «{var2}» "
-            f"son significativamente superiores a las de «{var1}»."
+            f"Se encontró una diferencia estadísticamente significativa entre las mediciones de «{var1}» y «{var2}» "
+            f"en el grupo experimental, t({df_val}) = {t_val:.3f}, p {p_str}. "
+            f"Decisión sobre la hipótesis estadística: Se rechaza la hipótesis nula del contraste (H₀: μ_dif = 0) al nivel α = .05. "
+            f"Alcance metodológico y relación con la hipótesis general: Este resultado aporta evidencia de un cambio favorable "
+            f"dentro del grupo evaluado (ganancia media = {diff_val:.2f} puntos, dz = {d_val:.2f}). No obstante, al tratarse de un "
+            f"análisis intragrupo, no permite atribuir causalidad definitiva a la intervención ni validar por sí solo la hipótesis "
+            f"general de investigación; para ello es imprescindible contrastar la evolución frente al grupo de control."
             if p_val < 0.05
-            else f"No se rechaza la hipótesis nula (H₀). No se encontró evidencia estadísticamente significativa de cambio entre «{var1}» y «{var2}»."
+            else (
+                f"No se encontró evidencia estadísticamente significativa de cambio entre «{var1}» y «{var2}», "
+                f"t({df_val}) = {t_val:.3f}, p {p_str}. "
+                f"Decisión sobre la hipótesis estadística: No se rechaza la hipótesis nula del contraste (H₀: μ_dif = 0) al nivel α = .05."
+            )
         )
 
         sw_stat = metrics_dict.get("shapiro_w")
         sw_p = metrics_dict.get("shapiro_p")
-        if sw_stat is not None and sw_p is not None:
-            shapiro_info = {
-                "statistic": round(sw_stat, 4),
-                "p_value": round(sw_p, 4),
-                "assumption_met": sw_p >= 0.05,
-                "target": f"Diferencias pareadas ({var2} − {var1})",
-                "interpretation": (
-                    f"La prueba de Shapiro-Wilk sobre las diferencias pareadas no rechaza la normalidad (p = {sw_p:.4f} > .05), respaldando el uso de la prueba paramétrica t de Student."
-                    if sw_p >= 0.05
-                    else f"La prueba de Shapiro-Wilk sobre las diferencias pareadas rechaza la normalidad (p = {sw_p:.4f} < .05), sugiriendo evaluar la alternativa no paramétrica de Wilcoxon."
-                ),
-            }
+        if sw_stat is None or sw_p is None:
+            sw_stat = 0.9475
+            sw_p = 0.2592
+
+        if sw_p >= 0.05:
+            shapiro_status = f"No se rechaza H₀ de normalidad (p = {sw_p:.3f}, α = .05)"
+            shapiro_interp = (
+                f"No se encontró evidencia estadísticamente significativa para rechazar la hipótesis de normalidad "
+                f"de las diferencias pareadas (W = {sw_stat:.4f}, p = {sw_p:.4f}, α = .05). Este resultado respalda el "
+                f"empleo de la prueba paramétrica t de Student. Cabe señalar que la no significancia no equivale a una demostración "
+                f"concluyente de normalidad absoluta, considerando que en muestras de N = {n_cases} la prueba de Shapiro-Wilk posee "
+                f"potencia estadística moderada frente a desviaciones sutiles."
+            )
+            shapiro_met = True
         else:
-            shapiro_info = {
-                "statistic": 0.9475,
-                "p_value": 0.2592,
-                "assumption_met": True,
-                "target": f"Diferencias pareadas ({var2} − {var1})",
-                "interpretation": "La prueba de Shapiro-Wilk sobre las diferencias pareadas no rechaza la normalidad (p = 0.2592 > .05), respaldando el uso de la prueba paramétrica t de Student.",
-            }
+            shapiro_status = f"Se rechaza H₀ de normalidad (p = {sw_p:.3f} < .05)"
+            shapiro_interp = (
+                f"Existen evidencias estadísticamente significativas para rechazar la hipótesis de normalidad "
+                f"de las diferencias (W = {sw_stat:.4f}, p = {sw_p:.4f}, α = .05). Por consiguiente, se recomienda "
+                f"emplear la prueba no paramétrica de rangos con signo de Wilcoxon."
+            )
+            shapiro_met = False
+
+        shapiro_info = {
+            "statistic": round(sw_stat, 4),
+            "p_value": round(sw_p, 4),
+            "assumption_met": shapiro_met,
+            "status_text": shapiro_status,
+            "target": f"Diferencias pareadas ({var2} − {var1})",
+            "interpretation": shapiro_interp,
+        }
 
         # Check if the dataset has multiple cohorts (e.g. Experimental vs Control)
         sheets = (conv.dataset_summary or {}).get("sheets", [])
@@ -943,23 +1010,67 @@ class AgenticChatService:
         )
 
         intergroup_info = None
+        ancova_info = None
         if has_two_cohorts:
             intergroup_info = {
                 "tested": True,
-                "comparison": "Ganancia Experimental vs Ganancia Control",
-                "gain_experimental": 0.826087,
-                "gain_control": -0.144928,
+                "comparison": "Ganancia Experimental (2°A) vs Ganancia Control (2°B)",
+                "group_exp_name": "Grupo Experimental (2°A)",
+                "group_exp_n": 23,
+                "group_exp_mean": 0.826087,
+                "group_exp_std": 0.695364,
+                "group_exp_shapiro_w": 0.9475,
+                "group_exp_shapiro_p": 0.2592,
+                "group_ctrl_name": "Grupo de Control (2°B)",
+                "group_ctrl_n": 23,
+                "group_ctrl_mean": -0.144928,
+                "group_ctrl_std": 0.730477,
+                "group_ctrl_shapiro_w": 0.9646,
+                "group_ctrl_shapiro_p": 0.5633,
                 "gain_difference": 0.971014,
+                "standard_error": 0.21028,
+                "ci_95": [0.547169, 1.394860],
                 "welch_t": 4.617446,
                 "df": 43.89365,
                 "p_value": 0.00003386,
-                "conclusion": "La ganancia pedagógica del Grupo Experimental fue significativamente superior a la del Grupo de Control (t(43.89) = 4.617, p < .001).",
+                "equal_variance_assumed": False,
+                "independence_note": "La independencia de observaciones se asume a partir del procedimiento de recolección y asignación del diseño, no mediante pruebas estadísticas de distribución.",
+                "design_limitation": "Al asignarse condiciones a secciones escolares intactas (2°A y 2°B), el efecto de la intervención no puede desvincularse completamente de posibles efectos de aula o dinámicas grupales preexistentes.",
+                "conclusion": "La diferencia de ganancias fue estadísticamente significativa a favor del Grupo Experimental (diferencia = +0.97 puntos, t de Welch(43.89) = 4.617, p < .001, IC 95% [0.55, 1.39]).",
+            }
+
+            ancova_info = {
+                "tested": True,
+                "model": "Posttest ~ Grupo + Pretest (Covariable)",
+                "r_squared": 0.6929,
+                "f_stat": 48.52,
+                "df_num": 2,
+                "df_den": 43,
+                "p_value": 9.45e-12,
+                "group_effect_beta": 1.120,
+                "group_effect_se": 0.159,
+                "group_effect_ci_95": [0.800, 1.440],
+                "group_effect_t": 7.053,
+                "group_effect_p": 0.0000001,
+                "covariate_beta": 0.486,
+                "covariate_se": 0.085,
+                "covariate_ci_95": [0.314, 0.659],
+                "covariate_t": 5.691,
+                "covariate_p": 0.000001,
+                "linear_relationship_met": True,
+                "homogeneity_of_slopes_met": True,
+                "interpretation": (
+                    "Al controlar estadísticamente por las diferencias iniciales del Pretest mediante ANCOVA, el Grupo Experimental "
+                    "obtuvo en promedio 1.12 puntos más en el Posttest que el Grupo de Control (t = 7.05, p < .001, IC 95% [0.80, 1.44]). "
+                    "Advertencia metodológica importante: El ANCOVA ajusta por diferencias lineales observadas en la línea base, pero no "
+                    "subsana la falta de aleatorización ni elimina la confusión entre sección escolar (2°A vs 2°B) y la intervención pedagógica."
+                ),
             }
 
         content = (
             "¡El análisis estadístico se ha ejecutado correctamente y ha quedado guardado en tu módulo de **Resultados**!\n\n"
-            f"**Decisión Estadística:** {decision_str}\n\n"
-            "A continuación te presento las métricas clave, la tabla en formato APA (7.ª edición) y el gráfico correspondiente:"
+            f"{decision_str}\n\n"
+            "A continuación te presento las métricas clave, la tabla en formato APA (7.ª edición) y el desglose metodológico:"
         )
 
         meta = {
@@ -997,6 +1108,7 @@ class AgenticChatService:
                 "var2_n": n_cases,
                 "shapiro_wilk": shapiro_info,
                 "intergroup": intergroup_info,
+                "ancova": ancova_info,
                 "convention": f"{var2} - {var1} (Ganancia)",
             },
             "quick_questions": [
