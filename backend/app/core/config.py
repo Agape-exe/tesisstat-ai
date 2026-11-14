@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.5-flash-lite"
     supabase_url: str = ""
     supabase_key: str = ""
+    supabase_jwt_issuer: str = ""
+    supabase_jwt_audience: str = "authenticated"
+    supabase_jwt_algorithms: list[str] = Field(default_factory=lambda: ["ES256", "RS256"])
+    supabase_jwks_url: str = ""
+    supabase_jwks_cache_seconds: int = Field(default=300, ge=30, le=3600)
+    supabase_jwks_timeout_seconds: float = Field(default=5.0, ge=0.5, le=30.0)
 
 
 @lru_cache
