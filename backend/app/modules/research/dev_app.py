@@ -598,6 +598,19 @@ def create_app(
     app.state.reports_v2 = ReportsServiceV2(app.state.analysis_v2, tutor)
     app.include_router(create_tutor_router(tutor, app.state.reports_v2))
 
+    from app.modules.conversation.agentic_routes import create_agentic_router
+    from app.modules.conversation.agentic_service import AgenticChatService
+
+    agentic_service = AgenticChatService(
+        settings.research_db_path,
+        settings,
+        sources,
+        tutor,
+        app.state.reports_v2,
+    )
+    app.state.agentic_service = agentic_service
+    app.include_router(create_agentic_router(agentic_service))
+
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "research-dev", "version": "0.3.0"}

@@ -213,6 +213,19 @@ class TutorWireAnswerV1(V2Model):
     )
     updates: list[TutorUpdateV2] = Field(default_factory=list, max_length=3)
 
+    @model_validator(mode="after")
+    def coherent_mode(self):
+        if self.mode == "orientation":
+            if self.next_step == "none" or not self.option_indices or not self.question.strip():
+                raise ValueError(
+                    "La orientación requiere un paso, al menos una opción y una pregunta."
+                )
+        elif self.next_step != "none" or self.option_indices or self.question:
+            raise ValueError(
+                "La explicación no puede incluir pasos, opciones ni preguntas de orientación."
+            )
+        return self
+
     def as_answer(self):
         if "{{" in self.text or "}}" in self.text:
             raise ValueError("Los hechos se seleccionan mediante claves, no dentro de la prosa.")

@@ -1853,11 +1853,14 @@ export function TutorChat({
                 </div>
               )}
             {message.context?.snapshot && (
-              <details>
+              <details className="tutor-message-references">
                 <summary>Referencias de este mensaje</summary>
                 <p>
                   Etapa: {message.context.stage ?? 'recorrido anterior'}.
-                  Huella: <code>{message.context.snapshot}</code>
+                  <span className="rp-sr-only">
+                    {' '}
+                    Huella: <code>{message.context.snapshot}</code>
+                  </span>
                 </p>
                 {status &&
                   message.context.snapshot !==
@@ -1867,7 +1870,7 @@ export function TutorChat({
                       sustituye el contexto actual.
                     </p>
                   )}
-                <ul>
+                <ul className="rp-sr-only">
                   {[
                     ...(message.context.sources ?? []),
                     ...(message.context.historical_refs ?? []),
@@ -1882,7 +1885,7 @@ export function TutorChat({
                     </li>
                   ))}
                 </ul>
-                <ul>
+                <ul className="tutor-evidence-list">
                   {message.context.evidence_refs?.map((fact) => (
                     <li key={fact.key}>
                       {fact.kind === 'confirmed'
@@ -1891,13 +1894,15 @@ export function TutorChat({
                           ? 'Detección local'
                           : 'Cálculo local'}
                       : {fact.text}
-                      {' · '}
-                      {fact.source_ref.kind} · {fact.source_ref.id} · revisión{' '}
-                      {fact.source_ref.revision}
+                      <span className="rp-sr-only">
+                        {' · '}
+                        {fact.source_ref.kind} · {fact.source_ref.id} · revisión{' '}
+                        {fact.source_ref.revision}
+                      </span>
                     </li>
                   ))}
                 </ul>
-                <ul>
+                <ul className="rp-sr-only">
                   {message.context.metric_refs?.map((m) => (
                     <li key={`${m.result_id}:${m.key}`}>
                       Resultado {m.result_id} · métrica {m.key}
@@ -1998,9 +2003,9 @@ export function TutorChat({
               />
               <span>
                 Autorizo el envío acotado de consultas para asistencia con IA
-                (Google Gemini 3.5 Flash), incluidos consulta, contexto
-                metodológico confirmado y resumen de variables. Escribiré sin
-                datos personales ni secretos. Desmarcar revoca el permiso.
+                (Google Gemini), incluidos consulta, contexto metodológico
+                confirmado y resumen de variables. Escribiré sin datos
+                personales ni secretos. Desmarcar revoca el permiso.
               </span>
             </label>
             {consentPending != null && (

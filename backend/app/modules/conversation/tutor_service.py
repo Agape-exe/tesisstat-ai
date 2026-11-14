@@ -330,11 +330,10 @@ class TutorService:
                             "¿Cuál es el objetivo o hipótesis principal que deseas contrastar?"
                         )
                 sent_evidence_keys = {f.key for f in sent_evidence}
-                if sent_evidence:
-                    valid_keys = [k for k in orientation.basis_keys if k in sent_evidence_keys]
-                    if not valid_keys:
-                        valid_keys = [sent_evidence[0].key]
-                    orientation.basis_keys = valid_keys
+                if any(key not in sent_evidence_keys for key in orientation.basis_keys) or (
+                    sent_evidence and not orientation.basis_keys
+                ):
+                    raise AIError("invalid_response")
                 procedural_text = [
                     render_step(orientation.next_step, context),
                     render_options(orientation.option_indices, context),
