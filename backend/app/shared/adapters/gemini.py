@@ -109,6 +109,12 @@ class GeminiLanguageModel:
             if not isinstance(value, str):
                 raise AIError("invalid_response")
             value = value.strip()
+            if value.startswith("```json"):
+                value = value[7:].strip()
+            elif value.startswith("```"):
+                value = value[3:].strip()
+            if value.endswith("```"):
+                value = value[:-3].strip()
             # Normalize response_version if tutor wire answer
             if '"response_version": "1.0"' in value or '"response_version":"1.0"' in value:
                 value = re.sub(

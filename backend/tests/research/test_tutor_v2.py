@@ -783,3 +783,20 @@ def test_c06_chat_executions_endpoint_and_reports_export(setup):
     pdf_res = client.get(root + f"/analysis/results/{data['result_id']}/export?format=pdf")
     assert pdf_res.status_code == 200
     assert len(pdf_res.content) > 100
+
+
+def test_c06_chat_executions_descriptive(setup):
+    client, root, _, _ = tutor(setup)
+    source(client, root)
+    res = client.post(root + "/executions", json={"proposal_type": "descriptive"})
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["status"] == "completed"
+    assert data["technique"] == "descriptive_summary"
+    assert data["result_id"]
+    assert "metrics" in data
+    assert "presentation" in data
+    assert len(data["presentation"]["tables"]) >= 1
+
+
+

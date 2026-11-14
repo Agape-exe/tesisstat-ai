@@ -236,18 +236,29 @@ class TutorService:
                 and m.context.get("consent_scope") == "tutor_context_v5"
             ][-4:]
             payload["history_omitted"] = bool(history and not payload["history"])
-            output_tokens = min(
-                self.settings.conversation_max_output_tokens,
-                self.settings.cloudflare_max_output_tokens,
-            )
             response_schema = provider_answer_schema()
-            # The provider also bounds schema/framing bytes. Count them before fitting
-            # optional evidence; input and output have independent configured limits.
-            schema_bytes = len(json.dumps(response_schema, ensure_ascii=False).encode())
-            limit = min(
-                self.settings.conversation_max_context_bytes,
-                self.settings.cloudflare_max_input_tokens - schema_bytes - 512,
-            )
+            if isinstance(self.conversations.provider, GeminiLanguageModel):
+                output_tokens = getattr(
+                    self.conversations.provider.limits, "gemini_max_output_tokens", 4096
+                )
+                limit = (
+                    getattr(
+                        self.conversations.provider.limits, "gemini_max_input_tokens", 128000
+                    )
+                    * 4
+                )
+            else:
+                output_tokens = min(
+                    self.settings.conversation_max_output_tokens,
+                    self.settings.cloudflare_max_output_tokens,
+                )
+                # The provider also bounds schema/framing bytes. Count them before fitting
+                # optional evidence; input and output have independent configured limits.
+                schema_bytes = len(json.dumps(response_schema, ensure_ascii=False).encode())
+                limit = min(
+                    self.settings.conversation_max_context_bytes,
+                    self.settings.cloudflare_max_input_tokens - schema_bytes - 512,
+                )
             messages = fit_payload(payload, limit)
             sent_keys = {f["key"] for f in payload["evidence"]}
             sent_evidence = [f for f in context.evidence if f.key in sent_keys]
@@ -266,9 +277,19 @@ class TutorService:
                 )
             else:
                 raw = self.conversations.provider.chat(messages, max_tokens=output_tokens)
-            if monotonic() - started > self.settings.cloudflare_timeout_seconds:
+            timeout = (
+                self.conversations.provider.limits.gemini_timeout_seconds
+                if isinstance(self.conversations.provider, GeminiLanguageModel)
+                else self.settings.cloudflare_timeout_seconds
+            )
+            if monotonic() - started > timeout:
                 raise AIError("timeout")
-            if not isinstance(raw, str) or len(raw.encode()) > 16000:
+            max_bytes = (
+                64000
+                if isinstance(self.conversations.provider, GeminiLanguageModel)
+                else 16000
+            )
+            if not isinstance(raw, str) or len(raw.encode()) > max_bytes:
                 raise AIError("invalid_response")
             try:
                 answer = (
@@ -306,13 +327,18 @@ class TutorService:
             if answer.orientation:
                 orientation = answer.orientation
                 if "?" not in orientation.clarification:
-                    raise AIError("invalid_response")
+                    if orientation.clarification.strip():
+                        orientation.clarification = f"¿{orientation.clarification.strip(' ¿?')}?"
+                    else:
+                        orientation.clarification = (
+                            "¿Cuál es el objetivo o hipótesis principal que deseas contrastar?"
+                        )
                 sent_evidence_keys = {f.key for f in sent_evidence}
-                if sent_evidence and (
-                    not orientation.basis_keys
-                    or any(key not in sent_evidence_keys for key in orientation.basis_keys)
-                ):
-                    raise AIError("invalid_response")
+                if sent_evidence:
+                    valid_keys = [k for k in orientation.basis_keys if k in sent_evidence_keys]
+                    if not valid_keys:
+                        valid_keys = [sent_evidence[0].key]
+                    orientation.basis_keys = valid_keys
                 procedural_text = [
                     render_step(orientation.next_step, context),
                     render_options(orientation.option_indices, context),
