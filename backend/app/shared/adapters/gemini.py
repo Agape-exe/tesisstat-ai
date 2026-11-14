@@ -34,7 +34,7 @@ class GeminiLanguageModel:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self.api_key = getattr(settings, "gemini_api_key", "")
-        self.model = getattr(settings, "gemini_model", "gemini-3.5-flash") or "gemini-3.5-flash"
+        self.model = getattr(settings, "gemini_model", "gemini-3.5-flash-lite") or "gemini-3.5-flash-lite"
         self.limits = GeminiSettings(_env_file=None, **settings.model_dump())
 
     @property
