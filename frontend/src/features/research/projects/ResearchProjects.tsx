@@ -10,6 +10,7 @@ import type { Project, ProjectDraft, ProjectService } from './types';
 import { degreeLabels } from './types';
 import { UiIcon } from './UiIcon';
 import { createContextApi, type ImportProposal } from '../context/api';
+import { extractCandidateFields } from './extractCandidates';
 import type { ProjectFormValues } from './validation';
 import './projects.css';
 import './redesign.css';
@@ -127,16 +128,16 @@ export function ResearchProjects({
         );
         if (suggestion.state === 'pending' && suggestion.proposal) {
           const proposal = suggestion.proposal as ImportProposal;
-          const fields = Object.keys(proposal).filter((k) => {
-            const val = (proposal as Record<string, unknown>)[k];
-            return (
-              val != null &&
-              (Array.isArray(val)
-                ? val.length > 0
-                : val !== 'unknown' && val !== '')
+          const fields = extractCandidateFields(proposal);
+          if (fields.length > 0) {
+            await contextApi.apply(
+              saved.id,
+              suggestion,
+              proposal,
+              fields,
+              false,
             );
-          });
-          await contextApi.apply(saved.id, suggestion, proposal, fields, false);
+          }
         }
       } catch (cause) {
         console.warn('Auto-context suggestion skipped:', cause);

@@ -16,6 +16,7 @@ import {
   vi,
 } from 'vitest';
 import { ProjectApiError } from './api';
+import { extractCandidateFields } from './extractCandidates';
 import { ResearchProjects } from './ResearchProjects';
 import type { Project, ProjectService } from './types';
 import { testContext } from '../context/testContext';
@@ -906,4 +907,56 @@ it('lists, searches and opens projects without academic metadata', async () => {
   expect(document.body.textContent).not.toMatch(/\b(null|undefined)\b/);
   fireEvent.click(screen.getByRole('button', { name: 'Contexto' }));
   expect(screen.getAllByText('Sin especificar')).toHaveLength(5);
+});
+
+describe('extractCandidateFields - Sincronización exacta con candidates del backend', () => {
+  it('extrae las claves con el formato exacto del backend eliminando metadatos', () => {
+    const proposal = {
+      format_version: 'context-import-1.0',
+      title: 'Título no candidato',
+      main_objective: 'Determinar impacto',
+      research_question: '¿Cuál es el impacto?',
+      study_description: 'Estudio experimental',
+      data_description: 'Notas de alumnos',
+      observational_unit: 'Estudiante',
+      sampling_notes: 'Muestreo censal',
+      design: 'quasi_experimental',
+      specific_objectives: [
+        { ref: 'o1', text: 'Objetivo 1' },
+        { ref: 'o2', text: 'Objetivo 2' },
+      ],
+      hypotheses: [
+        {
+          ref: 'h1',
+          statement: 'Hipótesis 1',
+          objective_ref: 'o1',
+          alternative: 'greater',
+        },
+      ],
+      complementary_notes: ['Nota 1', 'Nota 2'],
+      observations: 'unknown',
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fields = extractCandidateFields(proposal as any);
+    expect(fields).toEqual([
+      'research_question',
+      'main_objective',
+      'study_description',
+      'data_description',
+      'observational_unit',
+      'sampling_notes',
+      'design',
+      'specific_objectives/o1',
+      'specific_objectives/o2',
+      'hypotheses/h1',
+      'complementary_notes/0',
+      'complementary_notes/1',
+    ]);
+    expect(fields).not.toContain('title');
+    expect(fields).not.toContain('format_version');
+    expect(fields).not.toContain('observations');
+    expect(fields).not.toContain('specific_objectives');
+    expect(fields).not.toContain('hypotheses');
+  });
 });
