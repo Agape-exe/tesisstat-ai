@@ -67,10 +67,19 @@ export interface AgenticConversation {
   messages: AgenticMessage[];
 }
 
+const getApiBase = (): string => {
+  if (import.meta.env.VITE_RESEARCH_API_BASE_URL) {
+    return import.meta.env.VITE_RESEARCH_API_BASE_URL.replace(/\/$/, '');
+  }
+  // In development, default to direct backend url (matching createProjectApi)
+  return 'http://127.0.0.1:8001';
+};
+
 export const agenticApi = {
   async getActiveConversation(projectId: string): Promise<AgenticConversation> {
+    const base = getApiBase();
     const res = await fetch(
-      `/api/v2/research/projects/${projectId}/agentic/conversations/active`,
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/active`,
     );
     if (!res.ok)
       throw new Error(`Failed to get active conversation: ${res.statusText}`);
@@ -81,8 +90,9 @@ export const agenticApi = {
     projectId: string,
     conversationId: string,
   ): Promise<AgenticConversation> {
+    const base = getApiBase();
     const res = await fetch(
-      `/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}`,
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}`,
     );
     if (!res.ok)
       throw new Error(`Failed to get conversation: ${res.statusText}`);
@@ -93,8 +103,9 @@ export const agenticApi = {
     projectId: string,
     retainDatasetFrom?: string | null,
   ): Promise<AgenticConversation> {
+    const base = getApiBase();
     const res = await fetch(
-      `/api/v2/research/projects/${projectId}/agentic/conversations`,
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,8 +124,9 @@ export const agenticApi = {
     conversationId: string,
     content: string,
   ): Promise<AgenticConversation> {
+    const base = getApiBase();
     const res = await fetch(
-      `/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/messages`,
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/messages`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,6 +144,7 @@ export const agenticApi = {
     instrumentFile?: File | null,
     isInstrument = false,
   ): Promise<AgenticConversation> {
+    const base = getApiBase();
     const toBase64 = (f: File): Promise<string> =>
       new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -150,7 +163,7 @@ export const agenticApi = {
       : null;
 
     const res = await fetch(
-      `/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/upload-json`,
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/upload-json`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,8 +186,9 @@ export const agenticApi = {
     proposalType = 'paired',
     variableNames: string[] = [],
   ): Promise<AgenticConversation> {
+    const base = getApiBase();
     const res = await fetch(
-      `/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/execute`,
+      `${base}/api/v2/research/projects/${projectId}/agentic/conversations/${conversationId}/execute`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

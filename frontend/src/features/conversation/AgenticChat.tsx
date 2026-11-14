@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { agenticApi } from './agenticApi';
 import type { AgenticConversation, AgenticMessage } from './agenticApi';
+import { MarkdownText } from './MarkdownText';
 
 interface AgenticChatProps {
   projectId: string;
@@ -81,6 +82,12 @@ export function AgenticChat({
                 label: '📊 Tengo datos directos (ej. notas, registros)',
                 value:
                   'Tengo datos directos (calificaciones, notas de pretest/posttest o mediciones).',
+              },
+              {
+                id: 'not_sure',
+                label: '❓ No estoy seguro, explícame la diferencia',
+                value:
+                  'No estoy seguro, por favor explícame la diferencia entre tener un instrumento o datos directos.',
               },
             ],
           },
@@ -164,13 +171,16 @@ export function AgenticChat({
     setUploading(true);
     setError(null);
 
+    const isInstrumentMode =
+      uploadRequested?.mode === 'instrument_and_dataset' || wantsInstrument;
+
     try {
       const updated = await agenticApi.uploadDataset(
         projectId,
         conversation.id,
         selectedFile,
         selectedInstrument,
-        wantsInstrument,
+        isInstrumentMode,
       );
       setConversation(updated);
       setSelectedFile(null);
@@ -251,6 +261,12 @@ export function AgenticChat({
   }
 
   const hasDataset = Boolean(conversation?.dataset_filename);
+  const latestAssistantMsg = (conversation?.messages ?? [])
+    .slice()
+    .reverse()
+    .find((m) => m.role === 'assistant');
+  const uploadRequested = latestAssistantMsg?.meta?.upload_requested;
+  const isUploadMode = !hasDataset && Boolean(uploadRequested);
 
   return (
     <div
@@ -517,11 +533,10 @@ export function AgenticChat({
                     boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                     lineHeight: 1.55,
                     fontSize: '0.93rem',
-                    whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                   }}
                 >
-                  {msg.content}
+                  <MarkdownText content={msg.content} isUser={isUser} />
                 </div>
 
                 {/* Quick Replies Chips */}
@@ -1089,8 +1104,8 @@ export function AgenticChat({
           );
         })}
 
-        {/* Upload Card if no dataset uploaded yet */}
-        {!hasDataset && (
+        {/* Upload Card only when explicitly requested and dataset not yet uploaded */}
+        {isUploadMode && (
           <div
             style={{
               backgroundColor: '#ffffff',
@@ -1105,7 +1120,9 @@ export function AgenticChat({
               📂
             </div>
             <h4 style={{ margin: '0 0 0.25rem 0', color: '#1e293b' }}>
-              Adjunta tu archivo de datos para comenzar
+              {uploadRequested?.mode === 'instrument_and_dataset'
+                ? 'Adjunta tu instrumento de investigación y archivo de datos'
+                : 'Adjunta tu archivo de datos para comenzar'}
             </h4>
             <p
               style={{
@@ -1114,8 +1131,9 @@ export function AgenticChat({
                 fontSize: '0.85rem',
               }}
             >
-              El asistente analizará <strong>todas las hojas</strong> de tu
-              archivo Excel (.xlsx) o CSV.
+              {uploadRequested?.mode === 'instrument_and_dataset'
+                ? 'Analizaré las dimensiones e ítems de tu instrumento y todas las hojas de tu matriz de datos.'
+                : 'El asistente analizará todas las hojas de tu archivo Excel (.xlsx) o CSV.'}
             </p>
 
             <div
@@ -1123,10 +1141,54 @@ export function AgenticChat({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.75rem',
-                maxWidth: '420px',
+                maxWidth: '440px',
                 margin: '0 auto',
               }}
             >
+              {uploadRequested?.mode === 'instrument_and_dataset' && (
+                <label
+                  style={{
+                    display: 'block',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    backgroundColor: '#f8fafc',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      color: '#334155',
+                      marginBottom: '2px',
+                    }}
+                  >
+                    📋 Instrumento de investigación (PDF, Word o Excel):
+                  </div>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.xlsx,.txt"
+                    onChange={(e) =>
+                      setSelectedInstrument(e.target.files?.[0] || null)
+                    }
+                    style={{ fontSize: '0.82rem' }}
+                  />
+                  {selectedInstrument && (
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        color: '#16a34a',
+                        marginTop: '4px',
+                      }}
+                    >
+                      ✓ {selectedInstrument.name}
+                    </div>
+                  )}
+                </label>
+              )}
+
               <label
                 style={{
                   display: 'block',
@@ -1154,46 +1216,29 @@ export function AgenticChat({
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   style={{ fontSize: '0.82rem' }}
                 />
-              </label>
-
-              {wantsInstrument && (
-                <label
-                  style={{
-                    display: 'block',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '8px',
-                    padding: '0.75rem',
-                    backgroundColor: '#f8fafc',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
+                {selectedFile && (
                   <div
                     style={{
-                      fontWeight: 600,
-                      fontSize: '0.85rem',
-                      color: '#334155',
-                      marginBottom: '2px',
+                      fontSize: '0.8rem',
+                      color: '#16a34a',
+                      marginTop: '4px',
                     }}
                   >
-                    📋 Instrumento de investigación (opcional - PDF/Word/Excel):
+                    ✓ {selectedFile.name}
                   </div>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.xlsx,.txt"
-                    onChange={(e) =>
-                      setSelectedInstrument(e.target.files?.[0] || null)
-                    }
-                    style={{ fontSize: '0.82rem' }}
-                  />
-                </label>
-              )}
+                )}
+              </label>
 
               <button
                 type="button"
                 className="rp-primary"
                 onClick={handleFileUpload}
-                disabled={!selectedFile || uploading}
+                disabled={
+                  !selectedFile ||
+                  (uploadRequested?.mode === 'instrument_and_dataset' &&
+                    !selectedInstrument) ||
+                  uploading
+                }
                 style={{
                   padding: '0.65rem',
                   borderRadius: '8px',
@@ -1207,7 +1252,9 @@ export function AgenticChat({
               >
                 {uploading
                   ? '⏳ Analizando todas las hojas con Gemini…'
-                  : '📤 Analizar dataset completo'}
+                  : uploadRequested?.mode === 'instrument_and_dataset'
+                    ? '📤 Analizar instrumento y datos'
+                    : '📤 Analizar dataset completo'}
               </button>
             </div>
           </div>

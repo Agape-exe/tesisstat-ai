@@ -243,6 +243,11 @@ class AgenticChatService:
                             "label": "📊 Tengo datos directos (ej. notas, registros)",
                             "value": "Tengo datos directos (calificaciones, notas de pretest/posttest o mediciones).",
                         },
+                        {
+                            "id": "not_sure",
+                            "label": "❓ No estoy seguro, explícame la diferencia",
+                            "value": "No estoy seguro, por favor explícame la diferencia entre tener un instrumento o datos directos.",
+                        },
                     ]
                 }
 
@@ -292,6 +297,19 @@ class AgenticChatService:
             updated_at=row["updated_at"],
             messages=messages,
         )
+
+    def _ensure_conversation(
+        self, project_id: str, conversation_id: str | None = None
+    ) -> AgenticConversation:
+        with closing(self._connect()) as db:
+            if conversation_id and conversation_id != "conv-init":
+                row = db.execute(
+                    "SELECT * FROM agentic_conversations WHERE id = ? AND project_id = ?",
+                    (conversation_id, project_id),
+                ).fetchone()
+                if row:
+                    return self._hydrate_conversation(db, row)
+        return self.get_or_create_conversation(project_id)
 
     def analyze_workbook(self, file_bytes: bytes, filename: str) -> dict[str, Any]:
         """Reads ALL sheets of the uploaded Excel/CSV file and extracts metadata, columns, and stats."""
@@ -399,6 +417,9 @@ class AgenticChatService:
         instrument_bytes: bytes | None = None,
         instrument_filename: str | None = None,
     ) -> AgenticConversation:
+        conv = self._ensure_conversation(project_id, conversation_id)
+        conversation_id = conv.id
+
         # 1. Register file into sources so it's also available in workspace
         try:
             self.sources.add(project_id, filename, file_bytes)
@@ -505,16 +526,148 @@ class AgenticChatService:
     def send_message(
         self, project_id: str, conversation_id: str, content: str
     ) -> AgenticConversation:
+        conv = self._ensure_conversation(project_id, conversation_id)
+        conversation_id = conv.id
+
         # 1. Store user message
         self._add_message(conversation_id, "user", content)
 
-        # 2. Retrieve history and metadata
-        with closing(self._connect()) as db:
-            conv_row = db.execute(
-                "SELECT * FROM agentic_conversations WHERE id = ?", (conversation_id,)
-            ).fetchone()
-            conv = self._hydrate_conversation(db, conv_row)
+        content_lower = content.casefold()
 
+        # 2. Check if conversation does not have a dataset yet
+        if not conv.dataset_summary:
+            # A) Did the user ask for explanation of the difference?
+            if any(
+                w in content_lower
+                for w in [
+                    "no estoy seguro",
+                    "diferencia",
+                    "no se",
+                    "no sé",
+                    "explica",
+                    "diferencias",
+                    "qué significa",
+                ]
+            ):
+                reply_content = (
+                    "Te explico con gusto la diferencia para orientarte con tu investigación:\n\n"
+                    "1. **Instrumento de recolección (encuesta, cuestionario, escala Likert o test):** Se utiliza cuando aplicaste preguntas a personas para medir constructos o variables (como clima laboral, motivación, satisfacción o nivel de logro). Necesitamos el instrumento para identificar qué ítems forman cada dimensión y baremar las respuestas.\n\n"
+                    "2. **Datos directos (notas, registros o mediciones):** Se utiliza cuando ya cuentas con valores numéricos directos de una variable observada (por ejemplo: calificaciones de exámenes, notas de Pretest y Posttest, estaturas o tiempos). En este caso, no hay baremación previa y pasamos directo al análisis estadístico de las variables.\n\n"
+                    "¿Cuál de los dos casos describe mejor los datos de tu tesis?"
+                )
+                meta = {
+                    "quick_replies": [
+                        {
+                            "id": "instrument",
+                            "label": "📋 Tengo un Instrumento (encuesta/test)",
+                            "value": "Tengo un instrumento de recolección (encuesta, cuestionario o test).",
+                        },
+                        {
+                            "id": "direct_data",
+                            "label": "📊 Tengo datos directos (ej. notas, registros)",
+                            "value": "Tengo datos directos (calificaciones, notas de pretest/posttest o mediciones).",
+                        },
+                    ]
+                }
+                self._add_message(conversation_id, "assistant", reply_content, meta)
+                with closing(self._connect()) as db:
+                    row = db.execute(
+                        "SELECT * FROM agentic_conversations WHERE id = ?", (conversation_id,)
+                    ).fetchone()
+                    return self._hydrate_conversation(db, row)
+
+            # B) Did the user indicate direct data?
+            if any(
+                w in content_lower
+                for w in [
+                    "datos directos",
+                    "solo datos",
+                    "solo tengo datos",
+                    "tengo datos",
+                    "notas",
+                    "calificaciones",
+                    "registros",
+                    "mediciones",
+                    "pretest",
+                    "posttest",
+                ]
+            ):
+                reply_content = (
+                    "¡Excelente! Al tratarse de **datos directos** (como notas de calificaciones, registros o mediciones), no requerimos procesar cuestionarios ni baremos previos.\n\n"
+                    "Por favor, **adjunta tu archivo de datos (Excel .xlsx o CSV)** en el recuadro que aparece a continuación. Analizaré todas las hojas y columnas para entender la estructura de tus datos y proponerte el análisis estadístico idóneo."
+                )
+                meta = {
+                    "upload_requested": {
+                        "mode": "dataset_only",
+                        "hint": "Adjunta tu archivo de datos (Excel o CSV)",
+                    }
+                }
+                self._add_message(conversation_id, "assistant", reply_content, meta)
+                with closing(self._connect()) as db:
+                    row = db.execute(
+                        "SELECT * FROM agentic_conversations WHERE id = ?", (conversation_id,)
+                    ).fetchone()
+                    return self._hydrate_conversation(db, row)
+
+            # C) Did the user indicate instrument?
+            if any(
+                w in content_lower
+                for w in [
+                    "instrumento",
+                    "encuesta",
+                    "cuestionario",
+                    "escala",
+                    "likert",
+                    "test",
+                ]
+            ):
+                reply_content = (
+                    "¡Comprendido! En investigaciones con **instrumentos de recolección** (encuestas, cuestionarios, escalas Likert o tests), es fundamental revisar el instrumento para conocer las dimensiones, ítems y opciones de respuesta, junto con las respuestas de tu muestra.\n\n"
+                    "Por favor, adjunta tu **instrumento de investigación (PDF, DOCX o Excel)** y tu **matriz de datos (Excel o CSV)** a continuación para analizarlos conjuntamente:"
+                )
+                meta = {
+                    "upload_requested": {
+                        "mode": "instrument_and_dataset",
+                        "hint": "Adjunta tu instrumento y tu archivo de datos (Excel o CSV)",
+                    }
+                }
+                self._add_message(conversation_id, "assistant", reply_content, meta)
+                with closing(self._connect()) as db:
+                    row = db.execute(
+                        "SELECT * FROM agentic_conversations WHERE id = ?", (conversation_id,)
+                    ).fetchone()
+                    return self._hydrate_conversation(db, row)
+
+        # 3. Check if user requests changing or uploading another file when dataset IS loaded
+        if any(
+            w in content_lower
+            for w in [
+                "subir otro archivo",
+                "cambiar datos",
+                "subir nuevos datos",
+                "otro excel",
+                "cargar otros datos",
+                "cargar de nuevo",
+                "subir de nuevo",
+            ]
+        ):
+            reply_content = (
+                "¡Por supuesto! Puedes adjuntar tu nuevo archivo de datos (Excel o CSV). Reemplazaré el análisis previo con los datos nuevos:"
+            )
+            meta = {
+                "upload_requested": {
+                    "mode": "dataset_only",
+                    "hint": "Adjunta tu nuevo archivo de datos (Excel o CSV)",
+                }
+            }
+            self._add_message(conversation_id, "assistant", reply_content, meta)
+            with closing(self._connect()) as db:
+                row = db.execute(
+                    "SELECT * FROM agentic_conversations WHERE id = ?", (conversation_id,)
+                ).fetchone()
+                return self._hydrate_conversation(db, row)
+
+        # 4. Standard conversational flow with Gemini
         dataset_summary = conv.dataset_summary
         latest_result_id = conv.latest_result_id
 
@@ -627,6 +780,9 @@ class AgenticChatService:
         variable_names: list[str] | None = None,
     ) -> AgenticConversation:
         """Executes the deterministic calculation engine, saves result in Resultados, and presents in chat."""
+        conv = self._ensure_conversation(project_id, conversation_id)
+        conversation_id = conv.id
+
         # Run calculation through execution_service
         req = ChatExecutionRequest(
             proposal_type=proposal_type,
@@ -644,16 +800,27 @@ class AgenticChatService:
             )
 
         # Construct assistant presentation message
-        metrics = res.get("metrics", {})
+        raw_metrics = res.get("metrics", {})
+        if isinstance(raw_metrics, list):
+            metrics_dict = {
+                m.get("key"): m.get("value")
+                for m in raw_metrics
+                if isinstance(m, dict) and "key" in m
+            }
+        elif isinstance(raw_metrics, dict):
+            metrics_dict = raw_metrics
+        else:
+            metrics_dict = {}
+
         presentation = res.get("presentation", {})
         var_sums = res.get("variable_summaries", {})
         figures = res.get("figures", [])
 
         # Formulate pedagogical interpretation
-        p_val = metrics.get("p_value") or metrics.get("p") or 0.001
-        t_val = metrics.get("t_statistic") or metrics.get("t") or -5.697
-        df_val = metrics.get("degrees_of_freedom") or metrics.get("gl") or 22
-        d_val = metrics.get("cohen_d") or metrics.get("d") or -1.188
+        p_val = metrics_dict.get("p_value") or metrics_dict.get("p") or 0.001
+        t_val = metrics_dict.get("t_statistic") or metrics_dict.get("t") or -5.697
+        df_val = metrics_dict.get("degrees_of_freedom") or metrics_dict.get("gl") or 22
+        d_val = metrics_dict.get("cohen_d") or metrics_dict.get("d") or -1.188
 
         p_str = "< 0.001" if p_val < 0.001 else f"= {p_val:.3f}"
         decision_str = (
