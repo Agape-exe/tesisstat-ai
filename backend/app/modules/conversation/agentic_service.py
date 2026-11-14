@@ -19,7 +19,7 @@ from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import openpyxl
 from pydantic import BaseModel, Field
@@ -31,7 +31,6 @@ from app.modules.conversation.execution_service import (
 )
 from app.modules.research.sources.service import SourceService
 from app.shared.adapters.gemini import GeminiLanguageModel
-from app.shared.ai_errors import AIError
 
 
 class AgenticMessage(BaseModel):
@@ -260,7 +259,9 @@ class AgenticChatService:
             ).fetchone()
             return self._hydrate_conversation(db, row)
 
-    def _hydrate_conversation(self, db: sqlite3.Connection, row: sqlite3.Row) -> AgenticConversation:
+    def _hydrate_conversation(
+        self, db: sqlite3.Connection, row: sqlite3.Row
+    ) -> AgenticConversation:
         conv_id = row["id"]
         msg_rows = db.execute(
             "SELECT id, role, content, meta, sequence, created_at "
@@ -347,13 +348,13 @@ class AgenticChatService:
                     header_row_idx = idx
                     break
             headers = [
-                str(h).strip()
-                for h in raw_rows[header_row_idx]
-                if h is not None and str(h).strip()
+                str(h).strip() for h in raw_rows[header_row_idx] if h is not None and str(h).strip()
             ]
             data_rows = raw_rows[header_row_idx + 1 :]
             # filter out completely empty rows
-            data_rows = [r for r in data_rows if any(v is not None and str(v).strip() != "" for v in r)]
+            data_rows = [
+                r for r in data_rows if any(v is not None and str(v).strip() != "" for v in r)
+            ]
 
             sheet_info = {
                 "name": sheet_name,
@@ -457,7 +458,10 @@ class AgenticChatService:
             reply_content = self.provider.chat(
                 [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": "Analiza las hojas de mi archivo y dime qué podemos hacer."},
+                    {
+                        "role": "user",
+                        "content": "Analiza las hojas de mi archivo y dime qué podemos hacer.",
+                    },
                 ],
                 max_tokens=2048,
             )
@@ -554,7 +558,7 @@ class AgenticChatService:
 
         try:
             assistant_reply = self.provider.chat(history_for_llm, max_tokens=3000)
-        except Exception as exc:
+        except Exception:
             assistant_reply = (
                 "Entiendo tu consulta sobre los datos. Para darte la mejor orientación para tu tesis, "
                 "cuéntame si deseas contrastar las calificaciones entre pretest y posttest, o si tienes alguna duda "
@@ -567,15 +571,18 @@ class AgenticChatService:
         reply_lower = assistant_reply.casefold()
 
         # If user agreed to execute or if assistant formulated a proposal
-        if any(
-            w in reply_lower
-            for w in [
-                "¿estás conforme",
-                "propongo el siguiente análisis",
-                "propuesta estadística",
-                "prueba t de student",
-            ]
-        ) and not latest_result_id:
+        if (
+            any(
+                w in reply_lower
+                for w in [
+                    "¿estás conforme",
+                    "propongo el siguiente análisis",
+                    "propuesta estadística",
+                    "prueba t de student",
+                ]
+            )
+            and not latest_result_id
+        ):
             meta["proposal"] = {
                 "title": "Comparación de mediciones pareadas (t de Student / Wilcoxon)",
                 "technique": "paired",
@@ -586,7 +593,10 @@ class AgenticChatService:
 
         # If user confirmed execution in chat: "sí", "adelante", "ejecutar", "de acuerdo"
         if (
-            any(w in content_lower for w in ["sí", "si", "adelante", "ejecutar", "de acuerdo", "procede", "hazlo"])
+            any(
+                w in content_lower
+                for w in ["sí", "si", "adelante", "ejecutar", "de acuerdo", "procede", "hazlo"]
+            )
             and dataset_summary
             and not latest_result_id
         ):
@@ -704,7 +714,15 @@ class AgenticChatService:
             db.execute(
                 "INSERT INTO agentic_messages (id, conversation_id, role, content, meta, sequence, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (msg_id, conversation_id, role, content, json.dumps(meta or {}, ensure_ascii=False), seq, now),
+                (
+                    msg_id,
+                    conversation_id,
+                    role,
+                    content,
+                    json.dumps(meta or {}, ensure_ascii=False),
+                    seq,
+                    now,
+                ),
             )
             db.execute(
                 "UPDATE agentic_conversations SET updated_at = ? WHERE id = ?",
