@@ -1822,8 +1822,55 @@ export function TutorChat({
           void send();
         }}
       >
+        <div className="tutor-composer-bar">
+          <label className="rp-sr-only" htmlFor="tutor-chat-input">
+            Tu consulta
+          </label>
+          <textarea
+            id="tutor-chat-input"
+            className="tutor-composer-textarea"
+            value={draft}
+            disabled={busy}
+            maxLength={status?.max_message_characters ?? 2000}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (
+                  !busy &&
+                  contextCurrent &&
+                  status?.provider_configured &&
+                  status?.consent.granted &&
+                  draft.trim()
+                ) {
+                  if (isNotaTable) {
+                    handleEvaluateHypothesis(draft.trim());
+                  }
+                  void send();
+                }
+              }
+            }}
+            rows={2}
+            placeholder="Formula tu hipótesis o consulta estadística sobre tus datos..."
+          />
+          <button
+            type="submit"
+            className="tutor-send-button"
+            aria-label="Enviar consulta"
+            disabled={
+              busy ||
+              !contextCurrent ||
+              !status?.provider_configured ||
+              !status.consent.granted ||
+              !draft.trim()
+            }
+          >
+            {busy ? 'Procesando…' : 'Enviar consulta'}
+          </button>
+        </div>
+
         {status && (
-          <div className="tutor-consent-box">
+          <div className="tutor-consent-footer">
             {status.consent.renewal_required && (
               <p role="status" className="tutor-consent-renewal">
                 Cambió lo que se transmite: ahora conserva la redacción depurada
@@ -1833,7 +1880,7 @@ export function TutorChat({
                 autorización.
               </p>
             )}
-            <label className="tutor-consent">
+            <label className="tutor-consent-subtle">
               <input
                 type="checkbox"
                 checked={consentPending ?? status.consent.granted}
@@ -1852,45 +1899,28 @@ export function TutorChat({
                   }).finally(() => setConsentPending(null));
                 }}
               />
-              Autorizo el envío acotado a Cloudflare Workers AI (alcance v5),
-              incluidos consulta e historial depurados, contexto confirmado y
-              resumen de variables y comprobaciones locales. Escribiré sin datos
-              personales ni secretos. Desmarcar revoca el permiso.
+              <span>
+                Autorizo el envío acotado a Cloudflare Workers AI (alcance v5),
+                incluidos consulta e historial depurados, contexto confirmado y
+                resumen de variables y comprobaciones locales. Escribiré sin
+                datos personales ni secretos. Desmarcar revoca el permiso.
+              </span>
             </label>
             {consentPending != null && (
-              <p role="status">Guardando el cambio de permiso…</p>
+              <p role="status" className="tutor-consent-status">
+                Guardando el cambio de permiso…
+              </p>
             )}
             <p className="tutor-consent-hint">
               <small>
-                Este permiso es independiente de la extracción documental y del
-                cálculo local. Puedes revisar el alcance en «Qué información
-                utiliza el tutor».
+                💡 Las recomendaciones a 1 clic, carga de instrumentos y
+                cálculos estadísticos (Shapiro-Wilk, t-Student, Wilcoxon, APA)
+                se ejecutan de forma 100% local y determinista sin requerir este
+                permiso.
               </small>
             </p>
           </div>
         )}
-        <label className="rp-field">
-          Tu consulta
-          <textarea
-            value={draft}
-            disabled={busy}
-            maxLength={status?.max_message_characters ?? 2000}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={3}
-            placeholder="Formula tu hipótesis o consulta estadística sobre tus datos..."
-          />
-        </label>
-        <button
-          disabled={
-            busy ||
-            !contextCurrent ||
-            !status?.provider_configured ||
-            !status.consent.granted ||
-            !draft.trim()
-          }
-        >
-          {busy ? 'Procesando…' : 'Enviar consulta'}
-        </button>
         {error && (
           <button
             type="button"

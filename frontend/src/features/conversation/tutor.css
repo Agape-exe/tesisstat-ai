@@ -73,6 +73,133 @@
   border-radius: 6px;
   border: 1px solid #cbd5e1;
 }
+
+/* Modern Composer and Input Bar */
+.tutor-composer-form {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.tutor-composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tutor-composer-bar:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.tutor-composer-textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  font-family: inherit;
+  font-size: 0.925rem;
+  line-height: 1.45;
+  color: #1e293b;
+  padding: 0.25rem 0.25rem;
+  min-height: 38px;
+  max-height: 120px;
+}
+
+.tutor-composer-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.tutor-send-button {
+  flex-shrink: 0;
+  background: #4f46e5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.tutor-send-button:hover:not(:disabled) {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.tutor-send-button:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border: 1px solid #e2e8f0;
+}
+
+/* Subtle Consent Footer */
+.tutor-consent-footer {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.775rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.tutor-consent-subtle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.tutor-consent-subtle input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  accent-color: #4f46e5;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.tutor-consent-subtle span {
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.tutor-consent-status {
+  font-size: 0.75rem;
+  color: #4f46e5;
+  margin: 0.25rem 0 0 1.4rem;
+}
+
+.tutor-consent-hint {
+  margin: 0.35rem 0 0 1.4rem;
+  color: #94a3b8;
+  font-size: 0.735rem;
+}
+
+.tutor-consent-renewal {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.785rem;
+  margin-bottom: 0.5rem;
+}
+
 .tutor-consent-box {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -81,22 +208,14 @@
   margin-bottom: 0.75rem;
   font-size: 0.825rem;
 }
-.tutor-consent-renewal {
-  color: #b45309;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-.tutor-consent-hint {
-  margin: 0.35rem 0 0;
-  color: #64748b;
-  font-size: 0.75rem;
-}
+
 .tutor-consent {
   display: flex;
   align-items: start;
   gap: 0.5rem;
   margin-block: 0.5rem;
 }
+
 .tutor-consent input {
   flex: 0 0 auto;
   width: 1.15rem;
