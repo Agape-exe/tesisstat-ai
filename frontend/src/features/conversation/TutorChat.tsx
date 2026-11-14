@@ -627,123 +627,160 @@ export function TutorChat({
         </div>
       )}
       {error && <p role="alert">{error}</p>}
-      <button
-        className="rp-secondary"
-        disabled={busy}
-        onClick={() => {
-          setError('');
-          setRefresh((n) => n + 1);
-        }}
-      >
-        Actualizar fuentes y permiso
-      </button>
-      {!boundSelection && (
-        <details>
-          <summary>Cambiar la selección de la consulta</summary>
-          <div className="tutor-selection">
-            <label className="rp-field">
-              Etapa de la consulta
-              <select
-                aria-label="Etapa de la consulta"
-                disabled={busy}
-                value={selection.stage}
-                onChange={(e) =>
-                  setSelection({
-                    ...selection,
-                    stage: e.target.value as Selection['stage'],
-                  })
-                }
-              >
-                {Object.entries(stages).map(([value, label]) => (
-                  <option value={value} key={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {status &&
-              (['datasets', 'intents', 'plans', 'results'] as const).map(
-                (kind) => {
-                  const field = {
-                    datasets: 'dataset_id',
-                    intents: 'intent_id',
-                    plans: 'plan_id',
-                    results: 'result_id',
-                  } as const;
-                  return (
-                    <label className="rp-field" key={kind}>
-                      {
-                        {
-                          datasets: 'Tabla pertinente',
-                          intents: 'Análisis pertinente',
-                          plans: 'Propuesta pertinente',
-                          results: 'Resultado pertinente',
-                        }[kind]
-                      }
-                      <select
-                        aria-label={selectionLabels[kind]}
-                        disabled={busy}
-                        value={selection[field[kind]] ?? ''}
-                        onChange={(e) =>
-                          setSelection({
-                            stage: selection.stage,
-                            [field[kind]]: e.target.value || null,
-                          })
-                        }
-                      >
-                        <option value="">Seleccionar explícitamente</option>
-                        {status.choices[kind].map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label || item.id}
-                            {item.validity === 'stale'
-                              ? ' · histórico desactualizado'
-                              : item.validity === 'unverified'
-                                ? ' · vigencia al seleccionar'
-                                : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  );
-                },
-              )}
-          </div>
-        </details>
-      )}
-      {status && (
-        <>
-          <details className="tutor-server-collapsible">
-            <summary>Resumen técnico y ayuda de etapa</summary>
-            <div className="tutor-server-collapsible-content">
-              <p role="status">{status.static_help}</p>
-              {boundSelection && (
-                <p>
-                  Trabajando en: {stages[selection.stage ?? 'home']}
-                  {' · '}
-                  {status.guidance?.selected_table?.name ??
-                    status.choices.results.find(
-                      (r) => r.id === selection.result_id,
-                    )?.label ??
-                    status.choices.plans.find((r) => r.id === selection.plan_id)
-                      ?.label ??
-                    status.choices.intents.find(
-                      (r) => r.id === selection.intent_id,
-                    )?.label ??
-                    'sin recurso seleccionado'}
-                </p>
-              )}
-              {boundSelection &&
-                workingTable &&
-                !status.guidance?.selected_table && (
-                  <p>Tabla de este análisis: {workingTable.label}.</p>
+      <div className="tutor-chat-top-toolbar">
+        <label className="rp-field tutor-conversation-field">
+          <span>Conversación:</span>
+          <select
+            aria-label="Conversación"
+            disabled={busy}
+            value={cid}
+            onChange={(e) => void choose(e.target.value)}
+          >
+            <option value="">Nueva conversación</option>
+            {items.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title} · {new Date(c.created_at).toLocaleString('es-PE')}
+              </option>
+            ))}
+          </select>
+        </label>
+        {moreConversations && (
+          <button
+            className="rp-secondary"
+            disabled={busy}
+            onClick={() =>
+              void work(async () => {
+                const next = await historyApi.list(projectId, items.length);
+                setItems((old) => [...old, ...next]);
+                setMoreConversations(next.length > 0);
+              })
+            }
+          >
+            Más conversaciones
+          </button>
+        )}
+      </div>
+      <details className="tutor-advanced-panel">
+        <summary>⚙️ Opciones avanzadas y diagnóstico del tutor</summary>
+        <div className="tutor-advanced-content">
+          <button
+            className="rp-secondary"
+            disabled={busy}
+            onClick={() => {
+              setError('');
+              setRefresh((n) => n + 1);
+            }}
+          >
+            Actualizar fuentes y permiso
+          </button>
+          {!boundSelection && (
+            <details>
+              <summary>Cambiar la selección de la consulta</summary>
+              <div className="tutor-selection">
+                <label className="rp-field">
+                  Etapa de la consulta
+                  <select
+                    aria-label="Etapa de la consulta"
+                    disabled={busy}
+                    value={selection.stage}
+                    onChange={(e) =>
+                      setSelection({
+                        ...selection,
+                        stage: e.target.value as Selection['stage'],
+                      })
+                    }
+                  >
+                    {Object.entries(stages).map(([value, label]) => (
+                      <option value={value} key={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {status &&
+                  (['datasets', 'intents', 'plans', 'results'] as const).map(
+                    (kind) => {
+                      const field = {
+                        datasets: 'dataset_id',
+                        intents: 'intent_id',
+                        plans: 'plan_id',
+                        results: 'result_id',
+                      } as const;
+                      return (
+                        <label className="rp-field" key={kind}>
+                          {
+                            {
+                              datasets: 'Tabla pertinente',
+                              intents: 'Análisis pertinente',
+                              plans: 'Propuesta pertinente',
+                              results: 'Resultado pertinente',
+                            }[kind]
+                          }
+                          <select
+                            aria-label={selectionLabels[kind]}
+                            disabled={busy}
+                            value={selection[field[kind]] ?? ''}
+                            onChange={(e) =>
+                              setSelection({
+                                stage: selection.stage,
+                                [field[kind]]: e.target.value || null,
+                              })
+                            }
+                          >
+                            <option value="">Seleccionar explícitamente</option>
+                            {status.choices[kind].map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.label || item.id}
+                                {item.validity === 'stale'
+                                  ? ' · histórico desactualizado'
+                                  : item.validity === 'unverified'
+                                    ? ' · vigencia al seleccionar'
+                                    : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      );
+                    },
+                  )}
+              </div>
+            </details>
+          )}
+          {status && (
+            <details className="tutor-server-collapsible">
+              <summary>Resumen técnico y ayuda de etapa</summary>
+              <div className="tutor-server-collapsible-content">
+                <p role="status">{status.static_help}</p>
+                {boundSelection && (
+                  <p>
+                    Trabajando en: {stages[selection.stage ?? 'home']}
+                    {' · '}
+                    {status.guidance?.selected_table?.name ??
+                      status.choices.results.find(
+                        (r) => r.id === selection.result_id,
+                      )?.label ??
+                      status.choices.plans.find(
+                        (r) => r.id === selection.plan_id,
+                      )?.label ??
+                      status.choices.intents.find(
+                        (r) => r.id === selection.intent_id,
+                      )?.label ??
+                      'sin recurso seleccionado'}
+                  </p>
                 )}
-              {Object.keys(status.context.confirmed_summary ?? {}).length >
-                0 && (
-                <details>
-                  <summary>Contexto confirmado utilizado</summary>
-                  <ul>
-                    {Object.entries(status.context.confirmed_summary ?? {}).map(
-                      ([path, value]) => (
+                {boundSelection &&
+                  workingTable &&
+                  !status.guidance?.selected_table && (
+                    <p>Tabla de este análisis: {workingTable.label}.</p>
+                  )}
+                {Object.keys(status.context.confirmed_summary ?? {}).length >
+                  0 && (
+                  <details>
+                    <summary>Contexto confirmado utilizado</summary>
+                    <ul>
+                      {Object.entries(
+                        status.context.confirmed_summary ?? {},
+                      ).map(([path, value]) => (
                         <li key={path}>
                           {(
                             {
@@ -756,201 +793,132 @@ export function TutorChat({
                           )[path] ?? 'Información confirmada'}
                           : {value}
                         </li>
-                      ),
-                    )}
-                  </ul>
-                  <p>
-                    Es información declarada; no demuestra independencia,
-                    correspondencia entre sujetos ni cumplimiento de objetivos.
-                  </p>
-                </details>
-              )}
-              {status.guidance && (
-                <section aria-label="Resumen local de datos">
-                  <h3>Resumen del servidor · sin IA</h3>
-                  <p>
-                    {status.guidance.table_count} tablas disponibles.
-                    {status.guidance.selected_table &&
-                      ` Tabla seleccionada: ${status.guidance.selected_table.name}. ${status.guidance.selected_table.rows} registros y ${status.guidance.selected_table.columns} columnas.`}
-                  </p>
-                  {(status.guidance.selected_table?.identical_rows ?? 0) >
-                    0 && (
-                    <p>
-                      Hay {status.guidance.selected_table?.identical_rows} filas
-                      idénticas; no se eliminan automáticamente.
-                    </p>
-                  )}
-                  {status.guidance.warnings?.map((w) => (
-                    <p key={w}>{w}</p>
-                  ))}
-                  <details>
-                    <summary>Tipos detectados y problemas por columna</summary>
-                    <ul>
-                      {status.guidance.variables.map((v) => (
-                        <li key={v.variable_id}>
-                          {v.name}: {v.detected_type}; {v.missing} faltantes
-                          {v.formula_errors
-                            ? `; ${v.formula_errors} errores de fórmula`
-                            : ''}
-                          {v.possible_identifier
-                            ? '; posible identificador'
-                            : ''}
-                          .{' '}
-                          {v.constant
-                            ? 'Sin variación entre los valores presentes. '
-                            : ''}
-                          {v.scale_confirmed
-                            ? 'Escala confirmada.'
-                            : 'Significado y escala por revisar.'}
-                        </li>
                       ))}
                     </ul>
+                    <p>
+                      Es información declarada; no demuestra independencia,
+                      correspondencia entre sujetos ni cumplimiento de
+                      objetivos.
+                    </p>
                   </details>
-                  {status.guidance.selected_table && (
-                    <button
-                      className="rp-secondary"
-                      onClick={() => setReview(true)}
-                    >
-                      No sé por dónde empezar
-                    </button>
-                  )}
-                </section>
-              )}
-              {status.provider_kind === 'controlled_test' && (
-                <p className="rp-warning">
-                  Proveedor controlado de verificación, sin llamadas externas.
-                  Esta respuesta no acredita una conexión real con IA.
-                </p>
-              )}
-              {!status.provider_configured && (
-                <p className="rp-warning">
-                  Cloudflare no está configurado o no está disponible. La ayuda
-                  estática, el historial y los formularios siguen disponibles.
-                </p>
-              )}
-              {status.context.pending_questions.length > 0 && (
-                <ul>
-                  {status.context.pending_questions.map((q) => (
-                    <li key={q}>{q}</li>
-                  ))}
-                </ul>
-              )}
-              {status.context.warnings.map((w) => (
-                <p className="rp-warning" key={w}>
-                  {w}
-                </p>
-              ))}
-              <div className="rp-actions">
-                {status.context.allowed_actions.map((action, index) => (
-                  <div key={index}>
-                    <button
-                      className="rp-secondary"
-                      disabled={busy || !contextCurrent}
-                      onClick={() => open(action)}
-                    >
-                      {action.label}
-                    </button>
-                    {action.scope && <small>{action.scope}</small>}
-                  </div>
+                )}
+                {status.guidance && (
+                  <section aria-label="Resumen local de datos">
+                    <h3>Resumen del servidor · sin IA</h3>
+                    <p>
+                      {status.guidance.table_count} tablas disponibles.
+                      {status.guidance.selected_table &&
+                        ` Tabla seleccionada: ${status.guidance.selected_table.name}. ${status.guidance.selected_table.rows} registros y ${status.guidance.selected_table.columns} columnas.`}
+                    </p>
+                    {(status.guidance.selected_table?.identical_rows ?? 0) >
+                      0 && (
+                      <p>
+                        Hay {status.guidance.selected_table?.identical_rows}{' '}
+                        filas idénticas; no se eliminan automáticamente.
+                      </p>
+                    )}
+                    {status.guidance.warnings?.map((w) => (
+                      <p key={w}>{w}</p>
+                    ))}
+                    <details>
+                      <summary>
+                        Tipos detectados y problemas por columna
+                      </summary>
+                      <ul>
+                        {status.guidance.variables.map((v) => (
+                          <li key={v.variable_id}>
+                            {v.name}: {v.detected_type}; {v.missing} faltantes
+                            {v.formula_errors
+                              ? `; ${v.formula_errors} errores de fórmula`
+                              : ''}
+                            {v.possible_identifier
+                              ? '; posible identificador'
+                              : ''}
+                            .{' '}
+                            {v.constant
+                              ? 'Sin variación entre los valores presentes. '
+                              : ''}
+                            {v.scale_confirmed
+                              ? 'Escala confirmada.'
+                              : 'Significado y escala por revisar.'}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                    {status.guidance.selected_table && (
+                      <button
+                        className="rp-secondary"
+                        onClick={() => setReview(true)}
+                      >
+                        No sé por dónde empezar
+                      </button>
+                    )}
+                  </section>
+                )}
+                {status.provider_kind === 'controlled_test' && (
+                  <p className="rp-warning">
+                    Proveedor controlado de verificación, sin llamadas externas.
+                    Esta respuesta no acredita una conexión real con IA.
+                  </p>
+                )}
+                {!status.provider_configured && (
+                  <p className="rp-warning">
+                    Cloudflare no está configurado o no está disponible. La
+                    ayuda estática, el historial y los formularios siguen
+                    disponibles.
+                  </p>
+                )}
+                {status.context.pending_questions.length > 0 && (
+                  <ul>
+                    {status.context.pending_questions.map((q) => (
+                      <li key={q}>{q}</li>
+                    ))}
+                  </ul>
+                )}
+                {status.context.warnings.map((w) => (
+                  <p className="rp-warning" key={w}>
+                    {w}
+                  </p>
                 ))}
+                <div className="rp-actions">
+                  {status.context.allowed_actions.map((action, index) => (
+                    <div key={index}>
+                      <button
+                        className="rp-secondary"
+                        disabled={busy || !contextCurrent}
+                        onClick={() => open(action)}
+                      >
+                        {action.label}
+                      </button>
+                      {action.scope && <small>{action.scope}</small>}
+                    </div>
+                  ))}
+                </div>
+                <details>
+                  <summary>Qué información utiliza el tutor</summary>
+                  <p>{status.privacy}</p>
+                  <p>
+                    Huella del contexto:{' '}
+                    <code>{status.context.context_fingerprint}</code>
+                  </p>
+                  <p>
+                    {status.context.source_refs.length} referencias vigentes y{' '}
+                    {status.context.historical_refs.length} históricas.
+                  </p>
+                </details>
               </div>
-              <details>
-                <summary>Qué información utiliza el tutor</summary>
-                <p>{status.privacy}</p>
-                <p>
-                  Huella del contexto:{' '}
-                  <code>{status.context.context_fingerprint}</code>
-                </p>
-                <p>
-                  {status.context.source_refs.length} referencias vigentes y{' '}
-                  {status.context.historical_refs.length} históricas.
-                </p>
-              </details>
-            </div>
-          </details>
-          {review && contextCurrent && (
-            <GuidedReview
-              key={status.context.context_fingerprint}
-              projectId={projectId}
-              status={status}
-              selection={selection}
-              api={api}
-            />
+            </details>
           )}
-          {status.consent.renewal_required && (
-            <p role="status">
-              Cambió lo que se transmite: ahora conserva la redacción depurada
-              de la consulta e incluye encabezados seguros, detecciones locales
-              y significados de variables confirmados. El permiso anterior no
-              basta; revisa la descripción y renueva tu autorización.
-            </p>
-          )}
-          <label className="tutor-consent">
-            <input
-              type="checkbox"
-              checked={consentPending ?? status.consent.granted}
-              disabled={busy}
-              onChange={(e) => {
-                const granted = e.target.checked;
-                if (gate.current) return;
-                setConsentPending(granted);
-                void work(async () => {
-                  const consent = await api.consent(
-                    projectId,
-                    status.consent.revision,
-                    granted,
-                  );
-                  setStatus({ ...status, consent });
-                }).finally(() => setConsentPending(null));
-              }}
-            />
-            Autorizo el envío acotado a Cloudflare Workers AI (alcance v5),
-            incluidos consulta e historial depurados, contexto confirmado y
-            resumen de variables y comprobaciones locales. Escribiré sin datos
-            personales ni secretos. Desmarcar revoca el permiso.
-          </label>
-          {consentPending != null && (
-            <p role="status">Guardando el cambio de permiso…</p>
-          )}
-          <p>
-            <small>
-              Este permiso es independiente de la extracción documental y del
-              cálculo local. Puedes revisar el alcance en «Qué información
-              utiliza el tutor».
-            </small>
-          </p>
-        </>
-      )}
-      <label className="rp-field">
-        Conversación
-        <select
-          aria-label="Conversación"
-          disabled={busy}
-          value={cid}
-          onChange={(e) => void choose(e.target.value)}
-        >
-          <option value="">Nueva conversación</option>
-          {items.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.title} · {new Date(c.created_at).toLocaleString('es-PE')}
-            </option>
-          ))}
-        </select>
-      </label>
-      {moreConversations && (
-        <button
-          className="rp-secondary"
-          disabled={busy}
-          onClick={() =>
-            void work(async () => {
-              const next = await historyApi.list(projectId, items.length);
-              setItems((old) => [...old, ...next]);
-              setMoreConversations(next.length > 0);
-            })
-          }
-        >
-          Más conversaciones
-        </button>
+        </div>
+      </details>
+      {review && contextCurrent && status && (
+        <GuidedReview
+          key={status.context.context_fingerprint}
+          projectId={projectId}
+          status={status}
+          selection={selection}
+          api={api}
+        />
       )}
       {hasMore && (
         <button
@@ -1845,6 +1813,7 @@ export function TutorChat({
         ))}
       </div>
       <form
+        className="tutor-composer-form"
         onSubmit={(e) => {
           e.preventDefault();
           if (isNotaTable && draft.trim()) {
@@ -1853,6 +1822,53 @@ export function TutorChat({
           void send();
         }}
       >
+        {status && (
+          <div className="tutor-consent-box">
+            {status.consent.renewal_required && (
+              <p role="status" className="tutor-consent-renewal">
+                Cambió lo que se transmite: ahora conserva la redacción depurada
+                de la consulta e incluye encabezados seguros, detecciones
+                locales y significados de variables confirmados. El permiso
+                anterior no basta; revisa la descripción y renueva tu
+                autorización.
+              </p>
+            )}
+            <label className="tutor-consent">
+              <input
+                type="checkbox"
+                checked={consentPending ?? status.consent.granted}
+                disabled={busy}
+                onChange={(e) => {
+                  const granted = e.target.checked;
+                  if (gate.current) return;
+                  setConsentPending(granted);
+                  void work(async () => {
+                    const consent = await api.consent(
+                      projectId,
+                      status.consent.revision,
+                      granted,
+                    );
+                    setStatus({ ...status, consent });
+                  }).finally(() => setConsentPending(null));
+                }}
+              />
+              Autorizo el envío acotado a Cloudflare Workers AI (alcance v5),
+              incluidos consulta e historial depurados, contexto confirmado y
+              resumen de variables y comprobaciones locales. Escribiré sin datos
+              personales ni secretos. Desmarcar revoca el permiso.
+            </label>
+            {consentPending != null && (
+              <p role="status">Guardando el cambio de permiso…</p>
+            )}
+            <p className="tutor-consent-hint">
+              <small>
+                Este permiso es independiente de la extracción documental y del
+                cálculo local. Puedes revisar el alcance en «Qué información
+                utiliza el tutor».
+              </small>
+            </p>
+          </div>
+        )}
         <label className="rp-field">
           Tu consulta
           <textarea
@@ -1861,6 +1877,7 @@ export function TutorChat({
             maxLength={status?.max_message_characters ?? 2000}
             onChange={(e) => setDraft(e.target.value)}
             rows={3}
+            placeholder="Formula tu hipótesis o consulta estadística sobre tus datos..."
           />
         </label>
         <button

@@ -29,16 +29,79 @@
   display: block;
   margin-top: 0.35rem;
 }
+.tutor-advanced-panel {
+  margin-bottom: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.85rem;
+}
+.tutor-advanced-panel summary {
+  padding: 0.5rem 0.85rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+.tutor-advanced-panel summary:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+.tutor-advanced-panel .tutor-advanced-content {
+  padding: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+.tutor-chat-top-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+}
+.tutor-conversation-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.tutor-conversation-field select {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+.tutor-consent-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.825rem;
+}
+.tutor-consent-renewal {
+  color: #b45309;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.tutor-consent-hint {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.75rem;
+}
 .tutor-consent {
   display: flex;
   align-items: start;
   gap: 0.5rem;
-  margin-block: 1rem;
+  margin-block: 0.5rem;
 }
 .tutor-consent input {
   flex: 0 0 auto;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 2px;
 }
 .tutor-messages {
   max-height: 650px;
