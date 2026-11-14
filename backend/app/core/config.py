@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     cloudflare_account_id: str = ""
     cloudflare_api_token: str = Field(default="", repr=False)
     cloudflare_model: str = "@cf/qwen/qwen3-30b-a3b-fp8"
+    gemini_api_key: str = Field(default="", repr=False)
+    gemini_model: str = "gemini-3.5-flash"
     supabase_url: str = ""
     supabase_key: str = ""
 

@@ -12,6 +12,7 @@ from app.orchestration.multiagent.graph import MultiagentWorkflow
 from app.orchestration.multiagent.state import ExecutionBudget
 from app.orchestration.multiagent.tools import VerifiedPlanningReader
 from app.shared.adapters.cloudflare import CloudflareLanguageModel, CloudflareSettings
+from app.shared.adapters.gemini import GeminiLanguageModel
 from app.shared.ai_errors import AIError
 
 ERRORS = {
@@ -63,12 +64,12 @@ class ConversationService:
             provider,
             research_context,
             VerifiedPlanningReader(research_context) if research_context else None,
-            provider_kind="cloudflare_workers_ai"
+            provider_kind="gemini"
+            if isinstance(provider, GeminiLanguageModel)
+            else "cloudflare_workers_ai"
             if isinstance(provider, CloudflareLanguageModel)
             else "injected",
-            model=settings.cloudflare_model
-            if isinstance(provider, CloudflareLanguageModel)
-            else None,
+            model=getattr(provider, "model", None),
         )
 
     def status(self, project_id: UUID):

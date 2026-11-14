@@ -189,7 +189,7 @@ class TutorAnswerV2(V2Model):
 class TutorWireAnswerV1(V2Model):
     """Flat provider transport; domain validation and rendering remain independent."""
 
-    response_version: Literal["tutor-wire-1.0"]
+    response_version: Literal["tutor-wire-1.0", "1.0"] = "tutor-wire-1.0"
     mode: Literal["orientation", "explanation"]
     text: Annotated[StrictStr, Field(min_length=10, max_length=1800)]
     next_step: Literal[
@@ -232,8 +232,6 @@ class TutorWireAnswerV1(V2Model):
                 basis_keys=self.basis_keys,
             )
         else:
-            if self.next_step != "none" or self.option_indices or self.question:
-                raise ValueError("Una explicación no declara pasos operativos.")
             basis = " ".join("{{" + key + "}}" for key in self.basis_keys)
             values["concepts"] = [(basis + " " + self.text).strip()]
         return TutorAnswerV2.model_validate(values)

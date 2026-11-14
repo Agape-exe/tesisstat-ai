@@ -32,6 +32,7 @@ from app.modules.research.context.repository import ContextError
 from app.modules.research.context.suggestions import SuggestionService
 from app.orchestration.analysis_v2_service import reference
 from app.shared.adapters.cloudflare import CloudflareLanguageModel
+from app.shared.adapters.gemini import GeminiLanguageModel
 from app.shared.ai_errors import AIError
 from app.shared.tutor_v2 import (
     ResultExplanationV2,
@@ -103,7 +104,9 @@ class TutorService:
         return {
             "guidance": guidance(self.analysis.workspace, project, selection),
             "provider_configured": self.conversations.provider.configured,
-            "provider_kind": "cloudflare_workers_ai"
+            "provider_kind": "gemini"
+            if isinstance(self.conversations.provider, GeminiLanguageModel)
+            else "cloudflare_workers_ai"
             if isinstance(self.conversations.provider, CloudflareLanguageModel)
             else "controlled_test",
             "consent": self.consent(project),
@@ -179,7 +182,9 @@ class TutorService:
         )
         trace = {
             "tutor_version": "contextual-2.2.0",
-            "provider_kind": "cloudflare_workers_ai"
+            "provider_kind": "gemini"
+            if isinstance(self.conversations.provider, GeminiLanguageModel)
+            else "cloudflare_workers_ai"
             if isinstance(self.conversations.provider, CloudflareLanguageModel)
             else "controlled_test",
             "consent_revision": draft.consent_revision,
@@ -251,7 +256,9 @@ class TutorService:
                 raise AIError("input_limit")
             self._consent(project, draft.consent_revision)
             trace["provider_calls"] = 1
-            if isinstance(self.conversations.provider, CloudflareLanguageModel):
+            if isinstance(
+                self.conversations.provider, (CloudflareLanguageModel, GeminiLanguageModel)
+            ):
                 raw = self.conversations.provider.chat(
                     messages,
                     max_tokens=output_tokens,
@@ -266,7 +273,9 @@ class TutorService:
             try:
                 answer = (
                     TutorWireAnswerV1.model_validate_json(raw).as_answer()
-                    if isinstance(self.conversations.provider, CloudflareLanguageModel)
+                    if isinstance(
+                        self.conversations.provider, (CloudflareLanguageModel, GeminiLanguageModel)
+                    )
                     else TutorAnswerV2.model_validate_json(raw)
                 )
             except (ValidationError, ValueError):
