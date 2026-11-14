@@ -874,7 +874,7 @@ class AgenticChatService:
             "execution_result": {
                 "result_id": result_id,
                 "proposal_type": proposal_type,
-                "metrics": metrics,
+                "metrics": metrics_dict,
                 "presentation": presentation,
                 "variable_summaries": var_sums,
                 "figures": figures,
