@@ -16,7 +16,6 @@ export function ProjectForm({ initial, onSave, onCancel }: Props) {
   const [values, setValues] = useState<ProjectFormValues>(() => ({
     title: initial?.title ?? '',
     description: initial?.description ?? '',
-    methodologicalContext: '',
     assistedResponse: '',
   }));
   const [errors, setErrors] = useState<FormErrors>({});
@@ -158,20 +157,6 @@ export function ProjectForm({ initial, onSave, onCancel }: Props) {
             rows={5}
             placeholder="Pega aquí la respuesta obtenida de ChatGPT, Claude o Gemini..."
           />
-          <label htmlFor="project-methodologicalContext">
-            Objetivos o hipótesis (escritura directa opcional)
-          </label>
-          <textarea
-            {...field('methodologicalContext')}
-            id="project-methodologicalContext"
-            rows={3}
-            placeholder="Ej. Objetivo general: Determinar la relación entre las notas del primer y segundo parcial... Hipótesis: Existe una diferencia significativa..."
-          />
-          {errors.methodologicalContext && (
-            <p id="error-methodologicalContext" className="rp-field-error">
-              {errors.methodologicalContext}
-            </p>
-          )}
         </details>
         <div className="rp-actions">
           <button type="submit">

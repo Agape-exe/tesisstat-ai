@@ -12,28 +12,22 @@ describe('Minimal project form', () => {
   it.each(['', ' ', 'a'.repeat(201)])('rejects invalid name %s', (title) => {
     expect(validateProject({ ...valid, title }).title).toBeTruthy();
   });
-  it('accepts optional methodological context and merges it into description if provided', () => {
+  it('accepts optional assistedResponse and preserves title and description', () => {
     expect(
       validateProject({
         ...valid,
-        methodologicalContext: 'Objetivo general: analizar notas',
+        assistedResponse: '{"format_version": "context-import-1.0"}',
       }),
     ).toEqual({});
     expect(
       toProjectDraft({
         title: 'Tesis',
         description: 'Mi tesis',
-        methodologicalContext: 'Objetivos e hipótesis',
+        assistedResponse: '{"format_version": "context-import-1.0"}',
       }),
     ).toEqual({
       title: 'Tesis',
-      description: 'Mi tesis\n\nContexto metodológico:\nObjetivos e hipótesis',
+      description: 'Mi tesis',
     });
-    expect(
-      validateProject({
-        ...valid,
-        methodologicalContext: 'a'.repeat(2001),
-      }).methodologicalContext,
-    ).toBeTruthy();
   });
 });
