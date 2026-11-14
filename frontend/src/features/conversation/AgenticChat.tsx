@@ -1,13 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  AgenticConversation,
-  AgenticMessage,
   agenticApi,
+  type AgenticConversation,
+  type AgenticMessage,
 } from './agenticApi';
 
 interface AgenticChatProps {
   projectId: string;
   projectTitle?: string;
+  stage?: string;
+  active?: boolean;
+  resultId?: string;
+  boundSelection?: any;
   onOpenDataPanel?: () => void;
 }
 

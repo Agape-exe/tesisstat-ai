@@ -3,7 +3,6 @@ import { ProjectContext } from './ProjectContext';
 import { useCallback, useState } from 'react';
 import { WorkspaceFocus } from './workspaceFocus';
 import { AgenticChat } from '../../conversation/AgenticChat';
-import { TutorChat } from '../../conversation/TutorChat';
 import type { Selection } from '../../conversation/tutorApi';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
 import { ProjectMethodology } from '../methodology/ProjectMethodology';
@@ -177,9 +176,13 @@ function SectionContent({
           >
             <div className="rp-chat-main-column">
               <AgenticChat
-                key={`${projectId}:${view}:${item}`}
+                key={`${projectId}:${view}:${item}:${tutorStage}`}
                 projectId={projectId}
                 projectTitle={projectTitle}
+                stage={view === 'results' ? 'results' : (tutorStage ?? 'home')}
+                active={active}
+                resultId={view === 'results' ? (item ?? undefined) : undefined}
+                boundSelection={boundSelection}
                 onOpenDataPanel={() => setShowDataPanel?.(true)}
               />
             </div>
