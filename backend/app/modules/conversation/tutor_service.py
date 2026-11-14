@@ -242,9 +242,7 @@ class TutorService:
                     self.conversations.provider.limits, "gemini_max_output_tokens", 4096
                 )
                 limit = (
-                    getattr(
-                        self.conversations.provider.limits, "gemini_max_input_tokens", 128000
-                    )
+                    getattr(self.conversations.provider.limits, "gemini_max_input_tokens", 128000)
                     * 4
                 )
             else:
@@ -285,9 +283,7 @@ class TutorService:
             if monotonic() - started > timeout:
                 raise AIError("timeout")
             max_bytes = (
-                64000
-                if isinstance(self.conversations.provider, GeminiLanguageModel)
-                else 16000
+                64000 if isinstance(self.conversations.provider, GeminiLanguageModel) else 16000
             )
             if not isinstance(raw, str) or len(raw.encode()) > max_bytes:
                 raise AIError("invalid_response")

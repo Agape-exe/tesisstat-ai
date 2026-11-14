@@ -1296,12 +1296,32 @@ export function TutorChat({
                         ), podemos aplicar pruebas paramétricas o no
                         paramétricas según la distribución de los datos.
                       </p>
-                      <div className="tutor-guidance-box" style={{ background: '#f5f3ff', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #ddd6fe', margin: '0.75rem 0' }}>
-                        <p style={{ margin: 0, fontWeight: 600, color: '#4338ca' }}>
+                      <div
+                        className="tutor-guidance-box"
+                        style={{
+                          background: '#f5f3ff',
+                          padding: '0.85rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd6fe',
+                          margin: '0.75rem 0',
+                        }}
+                      >
+                        <p
+                          style={{
+                            margin: 0,
+                            fontWeight: 600,
+                            color: '#4338ca',
+                          }}
+                        >
                           💬 Conversemos sobre tu investigación:
                         </p>
                         <p style={{ margin: '0.35rem 0 0', color: '#374151' }}>
-                          Explícame con tus propias palabras qué representa cada columna y cuál es tu objetivo o hipótesis (por ejemplo, comparar notas antes vs. después, evaluar relación/correlación, o caracterizar el grupo). Te sugeriré el camino estadístico ideal. También puedes escribir libremente abajo o seleccionar una modalidad:
+                          Explícame con tus propias palabras qué representa cada
+                          columna y cuál es tu objetivo o hipótesis (por
+                          ejemplo, comparar notas antes vs. después, evaluar
+                          relación/correlación, o caracterizar el grupo). Te
+                          sugeriré el camino estadístico ideal. También puedes
+                          escribir libremente abajo o seleccionar una modalidad:
                         </p>
                       </div>
                     </>
@@ -1977,9 +1997,10 @@ export function TutorChat({
                 }}
               />
               <span>
-                Autorizo el envío acotado de consultas para asistencia con IA (Google Gemini 3.5 Flash),
-                incluidos consulta, contexto metodológico confirmado y
-                resumen de variables. Escribiré sin datos personales ni secretos. Desmarcar revoca el permiso.
+                Autorizo el envío acotado de consultas para asistencia con IA
+                (Google Gemini 3.5 Flash), incluidos consulta, contexto
+                metodológico confirmado y resumen de variables. Escribiré sin
+                datos personales ni secretos. Desmarcar revoca el permiso.
               </span>
             </label>
             {consentPending != null && (

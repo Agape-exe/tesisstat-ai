@@ -46,9 +46,7 @@ class GeminiLanguageModel:
     ) -> str:
         if not self.configured:
             raise AIError("not_configured")
-        output_limit = (
-            self.limits.gemini_max_output_tokens if max_tokens is None else max_tokens
-        )
+        output_limit = self.limits.gemini_max_output_tokens if max_tokens is None else max_tokens
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": content},

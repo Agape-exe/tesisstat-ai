@@ -797,6 +797,3 @@ def test_c06_chat_executions_descriptive(setup):
     assert "metrics" in data
     assert "presentation" in data
     assert len(data["presentation"]["tables"]) >= 1
-
-
-

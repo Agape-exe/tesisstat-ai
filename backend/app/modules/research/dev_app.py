@@ -586,9 +586,7 @@ def create_app(
     conversations = ConversationService(
         projects,
         SQLiteConversationRepository(settings.research_db_path),
-        conversation_provider
-        if conversation_provider is not None
-        else default_ai_provider,
+        conversation_provider if conversation_provider is not None else default_ai_provider,
         settings,
         context,
     )
