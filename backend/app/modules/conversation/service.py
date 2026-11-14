@@ -35,7 +35,7 @@ class ConversationSettings(CloudflareSettings):
     conversation_page_size: int = Field(default=50, ge=2, le=200)
     conversation_history_turns: int = Field(default=8, ge=0, le=50)
     conversation_max_request_bytes: int = Field(default=32768, ge=1024, le=131072)
-    conversation_max_context_bytes: int = Field(default=10000, ge=2000, le=20000)
+    conversation_max_context_bytes: int = Field(default=20000, ge=2000, le=40000)
     conversation_max_output_tokens: int = Field(default=1024, ge=256, le=4096)
     multiagent_max_steps: int = Field(default=4, ge=1, le=16)
     multiagent_max_model_calls: int = Field(default=1, ge=0, le=1)

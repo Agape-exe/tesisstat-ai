@@ -372,13 +372,18 @@ def fit_payload(payload, limit):
             for v in variables
             if not re.search(r"(?<!\w)" + re.escape(normalize(v["name"])) + r"(?!\w)", query)
         ]
-        if len(variables) <= 2 or not removable:
-            break
-        removed = removable[-1]["variable"]
-        remaining = [f for f in payload["evidence"] if f.get("variable") != removed]
-        payload["summary_facts_omitted"] += len(payload["evidence"]) - len(remaining)
-        payload["evidence"] = remaining
-        payload["data"] = [v for v in payload["data"] if v.get("variable") != removed]
+        if len(variables) > 2 and removable:
+            removed = removable[-1]["variable"]
+            remaining = [f for f in payload["evidence"] if f.get("variable") != removed]
+            payload["summary_facts_omitted"] += len(payload["evidence"]) - len(remaining)
+            payload["evidence"] = remaining
+            payload["data"] = [v for v in payload["data"] if v.get("variable") != removed]
+            continue
+        if len(payload["evidence"]) > 2:
+            payload["evidence"].pop()
+            payload["summary_facts_omitted"] += 1
+            continue
+        break
     remaining_keys = {f["key"] for f in payload["evidence"]}
     payload["orientation_brief"]["priority_basis_keys"] = [
         key for key in payload["orientation_brief"]["priority_basis_keys"] if key in remaining_keys

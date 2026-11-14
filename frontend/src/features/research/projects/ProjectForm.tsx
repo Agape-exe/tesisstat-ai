@@ -157,6 +157,14 @@ export function ProjectForm({ initial, onSave, onCancel }: Props) {
             rows={5}
             placeholder="Pega aquí la respuesta obtenida de ChatGPT, Claude o Gemini..."
           />
+          <p
+            className="rp-hint"
+            style={{ marginTop: '6px', fontSize: '0.825rem', color: '#4338ca' }}
+          >
+            ✓ Los objetivos e hipótesis extraídos se confirmarán e integrarán
+            automáticamente para que el Asistente IA los utilice de inmediato
+            sin pasos manuales adicionales.
+          </p>
         </details>
         <div className="rp-actions">
           <button type="submit">

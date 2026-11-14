@@ -135,7 +135,7 @@ export function ResearchProjects({
               suggestion,
               proposal,
               fields,
-              false,
+              true,
             );
           }
         }

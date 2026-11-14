@@ -16,7 +16,7 @@ from app.shared.ai_errors import AIError
 
 class CloudflareSettings(Settings):
     cloudflare_timeout_seconds: float = Field(default=45, ge=1, le=120)
-    cloudflare_max_input_tokens: int = Field(default=12000, ge=4000, le=24000)
+    cloudflare_max_input_tokens: int = Field(default=24000, ge=4000, le=48000)
     cloudflare_max_output_tokens: int = Field(default=4096, ge=256, le=8192)
     cloudflare_max_calls_per_request: int = Field(default=1, ge=1, le=1)
 

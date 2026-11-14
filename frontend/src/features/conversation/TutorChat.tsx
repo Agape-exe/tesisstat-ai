@@ -76,38 +76,83 @@ export function TutorChat({
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
   type ProposalType = 'paired' | 'correlation' | 'descriptive';
+  const guidedStorageKey = `tesisstat:guided-state:v2:${projectId}`;
+  const initialGuided = (() => {
+    try {
+      const raw = sessionStorage.getItem(
+        `tesisstat:guided-state:v2:${projectId}`,
+      );
+      if (raw) return JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
+    return null;
+  })();
+
   const [onboardingChoice, setOnboardingChoice] = useState<
     'initial' | 'instrument' | 'direct_data' | 'explain_diff'
-  >('initial');
+  >(initialGuided?.onboardingChoice ?? 'initial');
   const [instrumentUploaded, setInstrumentUploaded] = useState<{
     name: string;
     itemCount: number;
     documentId?: string;
-  } | null>(null);
+  } | null>(initialGuided?.instrumentUploaded ?? null);
   const [instrumentUploadBusy, setInstrumentUploadBusy] = useState(false);
   const [instrumentUploadError, setInstrumentUploadError] = useState('');
   const instrumentFileInputRef = useRef<HTMLInputElement>(null);
 
   const [directUploadedTable, setDirectUploadedTable] = useState<string | null>(
-    null,
+    initialGuided?.directUploadedTable ?? null,
   );
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadErrorMsg, setUploadErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeProposal, setActiveProposal] = useState<ProposalType | null>(
-    null,
+    initialGuided?.activeProposal ?? null,
   );
   const [proposalExecuted, setProposalExecuted] = useState<ProposalType | null>(
-    null,
+    initialGuided?.proposalExecuted ?? null,
   );
-  const [hypothesisInput, setHypothesisInput] = useState('');
+  const [hypothesisInput, setHypothesisInput] = useState(
+    initialGuided?.hypothesisInput ?? '',
+  );
   const [mentoringFeedback, setMentoringFeedback] = useState<string | null>(
-    null,
+    initialGuided?.mentoringFeedback ?? null,
   );
   const [isComputing, setIsComputing] = useState(false);
-  const [chatResult, setChatResult] = useState<ChatResultData | null>(null);
+  const [chatResult, setChatResult] = useState<ChatResultData | null>(
+    initialGuided?.chatResult ?? null,
+  );
   const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const state = {
+        onboardingChoice,
+        instrumentUploaded,
+        directUploadedTable,
+        activeProposal,
+        proposalExecuted,
+        hypothesisInput,
+        mentoringFeedback,
+        chatResult,
+      };
+      sessionStorage.setItem(guidedStorageKey, JSON.stringify(state));
+    } catch {
+      /* ignore */
+    }
+  }, [
+    guidedStorageKey,
+    onboardingChoice,
+    instrumentUploaded,
+    directUploadedTable,
+    activeProposal,
+    proposalExecuted,
+    hypothesisInput,
+    mentoringFeedback,
+    chatResult,
+  ]);
 
   async function handleInstrumentUpload(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -232,7 +277,9 @@ export function TutorChat({
         } catch {
           /* Server history is authoritative. */
         }
-        const id = list.find((c) => c.id === saved)?.id ?? '';
+        const id =
+          list.find((c) => c.id === saved)?.id ??
+          (list.length > 0 ? list[0].id : '');
         if (id) {
           const detail = await historyApi.get(
             projectId,
@@ -244,6 +291,11 @@ export function TutorChat({
             setCid(id);
             setMessages(detail.messages as TutorMessage[]);
             setHasMore(detail.has_more);
+            try {
+              sessionStorage.setItem(storageKey, id);
+            } catch {
+              /* ignore */
+            }
           }
         }
       })
@@ -389,6 +441,12 @@ export function TutorChat({
     allVariables.filter(
       (v) =>
         v.detected_type === 'numérico' ||
+        v.detected_type === 'entero' ||
+        v.detected_type === 'decimal' ||
+        v.detected_type === 'real' ||
+        v.detected_type === 'continuo' ||
+        !v.detected_type ||
+        v.detected_type === 'desconocido' ||
         v.name.toLowerCase().includes('nota') ||
         v.name.toLowerCase().includes('promedio') ||
         v.name.toLowerCase().includes('parcial') ||
@@ -396,31 +454,37 @@ export function TutorChat({
         v.name.toLowerCase().includes('pre') ||
         v.name.toLowerCase().includes('post'),
     ) ?? [];
-  const numericVariables = noteVariables;
+  const numericVariables =
+    noteVariables.length > 0 ? noteVariables : allVariables;
   const isSmallSample = rowCount < 50;
   const recommendedNormalityTest =
     selectedTable?.recommended_normality_test ||
     (isSmallSample
       ? 'Shapiro-Wilk'
       : 'Kolmogorov-Smirnov con corrección de Lilliefors');
-  const hasNotaVar =
-    noteVariables.length > 0 ||
-    selectedTableName.toLowerCase().includes('nota');
-  const isNotaTable =
-    Boolean(selectedTableName) && (hasNotaVar || Boolean(selectedTable));
-  const numericVariableNames =
-    numericVariables.length > 0
-      ? numericVariables.map((v) => v.name).join(', ')
-      : 'calificaciones continuas';
+  const hasTable =
+    Boolean(selectedTableName) ||
+    Boolean(selectedTable) ||
+    Boolean(directUploadedTable) ||
+    Boolean(status?.choices.datasets && status.choices.datasets.length > 0);
+  const isNotaTable = hasTable;
   const varPre =
     numericVariables.find((v) => /pre/i.test(v.name))?.name ||
     numericVariables.find((v) => /parcial/i.test(v.name))?.name ||
+    numericVariables.find((v) => /antes/i.test(v.name))?.name ||
+    numericVariables.find((v) => /inicio/i.test(v.name))?.name ||
     numericVariables[0]?.name ||
     'Pretest';
   const varPost =
     numericVariables.find((v) => /post/i.test(v.name))?.name ||
     numericVariables.find((v) => /final/i.test(v.name))?.name ||
+    numericVariables.find((v) => /despu/i.test(v.name))?.name ||
+    numericVariables.find((v) => /fin/i.test(v.name))?.name ||
     (numericVariables.length > 1 ? numericVariables[1].name : 'Postest');
+  const numericVariableNames =
+    numericVariables.length > 0
+      ? numericVariables.map((v) => v.name).join(', ')
+      : `${varPre}, ${varPost}`;
 
   function handleEvaluateHypothesis(text: string) {
     if (!text.trim()) return;
@@ -593,6 +657,11 @@ export function TutorChat({
     setProposalExecuted(null);
     setChatResult(null);
     setMentoringFeedback(null);
+    try {
+      sessionStorage.removeItem(guidedStorageKey);
+    } catch {
+      /* ignore */
+    }
     const infoMsg: TutorMessage = {
       id: crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}-info`,
       role: 'assistant',
