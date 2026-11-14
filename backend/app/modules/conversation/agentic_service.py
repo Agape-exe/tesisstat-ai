@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import io
 import json
+import logging
+import re
 import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime
@@ -31,6 +33,8 @@ from app.modules.conversation.execution_service import (
 )
 from app.modules.research.sources.service import SourceService
 from app.shared.adapters.gemini import GeminiLanguageModel
+
+logger = logging.getLogger("tesisstat.agentic")
 
 
 class AgenticMessage(BaseModel):
