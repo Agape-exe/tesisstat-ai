@@ -19,7 +19,7 @@ from app.shared.ai_errors import AIError
 class GeminiSettings(Settings):
     gemini_timeout_seconds: float = Field(default=45, ge=1, le=120)
     gemini_max_input_tokens: int = Field(default=128000, ge=4000, le=1000000)
-    gemini_max_output_tokens: int = Field(default=4096, ge=256, le=8192)
+    gemini_max_output_tokens: int = Field(default=8192, ge=256, le=16384)
 
 
 class NoRedirects(HTTPRedirectHandler):
@@ -56,7 +56,7 @@ class GeminiLanguageModel:
         return self.chat(messages, max_tokens=output_limit, response_schema=schema)
 
     def chat(
-        self, messages: list[dict[str, str]], *, max_tokens: int = 4096, response_schema=None
+        self, messages: list[dict[str, str]], *, max_tokens: int = 8192, response_schema=None
     ) -> str:
         if not self.configured:
             raise AIError("not_configured")
@@ -93,13 +93,13 @@ class GeminiLanguageModel:
                 while True:
                     if monotonic() > deadline:
                         raise AIError("timeout")
-                    chunk = response.read1(min(8192, 131073 - len(body)))
+                    chunk = response.read1(min(8192, 1048577 - len(body)))
                     if monotonic() > deadline:
                         raise AIError("timeout")
                     if not chunk:
                         break
                     body.extend(chunk)
-                    if len(body) > 131072:
+                    if len(body) > 1048576:
                         raise AIError("invalid_response")
             result = json.loads(body)
             choices = result.get("choices", [])

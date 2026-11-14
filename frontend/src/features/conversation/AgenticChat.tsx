@@ -275,7 +275,13 @@ export function AgenticChat({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        minHeight: '600px',
+        maxHeight: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
+        borderRadius: '12px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+        border: '1px solid #e2e8f0',
+        backgroundColor: '#ffffff',
       }}
     >
       <div className="chat-breadcrumb rp-sr-only">
@@ -294,7 +300,8 @@ export function AgenticChat({
           padding: '0.875rem 1.25rem',
           backgroundColor: '#ffffff',
           borderBottom: '1px solid #e2e8f0',
-          borderRadius: '8px 8px 0 0',
+          borderRadius: '12px 12px 0 0',
+          flexShrink: 0,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -474,8 +481,9 @@ export function AgenticChat({
       <div
         className="agentic-chat-messages"
         style={{
-          flex: 1,
+          flex: '1 1 0%',
           overflowY: 'auto',
+          minHeight: 0,
           padding: '1.25rem',
           display: 'flex',
           flexDirection: 'column',
@@ -1298,10 +1306,11 @@ export function AgenticChat({
       {/* Fixed Bottom Input Bar */}
       <footer
         style={{
+          flexShrink: 0,
           padding: '0.875rem 1.25rem',
           backgroundColor: '#ffffff',
           borderTop: '1px solid #e2e8f0',
-          borderRadius: '0 0 8px 8px',
+          borderRadius: '0 0 12px 12px',
         }}
       >
         <form

@@ -484,7 +484,7 @@ class AgenticChatService:
                         "content": "Analiza las hojas de mi archivo y dime qué podemos hacer.",
                     },
                 ],
-                max_tokens=2048,
+                max_tokens=8192,
             )
         except Exception:
             # Fallback robust message if AI is offline
@@ -722,7 +722,7 @@ class AgenticChatService:
         assistant_reply = ""
         for attempt in range(2):
             try:
-                assistant_reply = self.provider.chat(history_for_llm, max_tokens=2500)
+                assistant_reply = self.provider.chat(history_for_llm, max_tokens=8192)
                 break
             except Exception as e:
                 logger.warning(f"Gemini call attempt {attempt + 1} failed: {e}")
@@ -738,7 +738,7 @@ class AgenticChatService:
                     if original_model == "gemini-3.5-flash"
                     else "gemini-3.5-flash"
                 )
-                assistant_reply = self.provider.chat(history_for_llm, max_tokens=2500)
+                assistant_reply = self.provider.chat(history_for_llm, max_tokens=8192)
             except Exception as e:
                 logger.error(f"Both Gemini models failed: {e}")
                 assistant_reply = (

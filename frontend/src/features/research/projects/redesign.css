@@ -1155,22 +1155,73 @@ body:has(.rp-shell) {
   color: #77778e;
 }
 .rp-assistant-shell {
-  min-height: 100dvh;
-  height: auto;
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+}
+.rp-assistant-shell .rp-sidebar {
+  height: 100vh;
+  max-height: 100vh;
   overflow-y: auto;
+  position: sticky;
+  top: 0;
+  align-self: stretch;
 }
 .rp-assistant-shell .rp-main {
   max-width: none;
-  min-height: 100dvh;
-  height: auto;
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
   padding: 0;
   margin: 0;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .rp-assistant-shell .rp-main > section {
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+.rp-assistant-shell .rp-section-header {
+  flex-shrink: 0;
+  padding: 1.25rem 2rem 0.5rem;
+}
+.rp-assistant-shell .rp-chat-first-workspace {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 2rem 1.25rem;
+}
+.rp-assistant-shell .rp-chat-workspace-header {
+  display: none;
+}
+.rp-assistant-shell .rp-chat-split-container {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: grid;
+  overflow: hidden;
+}
+.rp-assistant-shell .rp-chat-main-column {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .rp-shell .rp-workspace-chat {
   padding: 0;
