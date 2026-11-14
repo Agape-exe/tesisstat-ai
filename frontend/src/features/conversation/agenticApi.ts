@@ -36,6 +36,14 @@ export interface AgenticMessage {
       mean_difference?: number | string;
       ci_low?: number | string;
       ci_high?: number | string;
+      var1_name?: string;
+      var1_mean?: number | string;
+      var1_std?: number | string;
+      var1_n?: number | string;
+      var2_name?: string;
+      var2_mean?: number | string;
+      var2_std?: number | string;
+      var2_n?: number | string;
       shapiro_wilk?: {
         statistic?: number;
         p_value?: number;
@@ -46,12 +54,16 @@ export interface AgenticMessage {
       intergroup?: {
         tested?: boolean;
         comparison?: string;
+        gain_experimental?: number;
+        gain_control?: number;
+        gain_difference?: number;
         diff_of_gains?: number;
         welch_t?: number;
         welch_df?: number;
         welch_p?: number;
         welch_p_str?: string;
         ci_95?: number[];
+        conclusion?: string;
       };
       convention?: string;
     };

@@ -123,6 +123,18 @@ def t_paired(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
     degrees_of_freedom = len(differences) - 1
     statistic = _t_statistic(mean_difference, standard_error)
     ci_low, ci_high = _mean_difference_interval(mean_difference, standard_error, degrees_of_freedom)
+
+    shapiro_w = None
+    shapiro_p = None
+    if 3 <= len(differences) <= 5000:
+        try:
+            from scipy import stats
+            sw = stats.shapiro(differences)
+            shapiro_w = float(sw.statistic)
+            shapiro_p = float(sw.pvalue)
+        except Exception:
+            pass
+
     return TechniqueResult(
         "t_paired",
         {
@@ -136,5 +148,7 @@ def t_paired(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
             "cohens_dz": _cohens_d(mean_difference, _sample_variance(differences)),
             "mean_difference_ci_95_low": ci_low,
             "mean_difference_ci_95_high": ci_high,
+            "shapiro_w": shapiro_w,
+            "shapiro_p": shapiro_p,
         },
     )
