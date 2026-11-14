@@ -27,6 +27,8 @@ LABELS = {
     "n_right": "Casos del segundo grupo",
     "cohens_d": "d de Cohen",
     "cohens_dz": "d de Cohen pareada",
+    "standard_error": "Error estándar de la diferencia",
+    "sd_difference": "Desviación estándar de las diferencias",
     "w": "W mínimo",
     "w_positive": "Suma de rangos positivos",
     "w_negative": "Suma de rangos negativos",

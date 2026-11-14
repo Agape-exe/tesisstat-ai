@@ -118,6 +118,7 @@ def t_paired(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
     if len(differences) < 2:
         raise StatisticalCalculationError("La prueba pareada requiere al menos dos pares válidos.")
     mean_difference = sum(differences) / len(differences)
+    sd_diff = math.sqrt(_sample_variance(differences))
     standard_error = math.sqrt(_sample_variance(differences) / len(differences))
     degrees_of_freedom = len(differences) - 1
     statistic = _t_statistic(mean_difference, standard_error)
@@ -127,6 +128,8 @@ def t_paired(left: Sequence[object], right: Sequence[object]) -> TechniqueResult
         {
             "n": float(len(differences)),
             "mean_difference": mean_difference,
+            "sd_difference": sd_diff,
+            "standard_error": standard_error,
             "t_statistic": statistic,
             "degrees_of_freedom": float(degrees_of_freedom),
             "p_value": student_t_two_sided(statistic, float(degrees_of_freedom)),

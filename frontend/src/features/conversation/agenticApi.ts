@@ -19,6 +19,7 @@ export interface AgenticMessage {
       variables?: string[];
       can_execute?: boolean;
     };
+    proposal_executed?: boolean;
     execution_result?: {
       result_id: string;
       proposal_type: string;
@@ -27,10 +28,32 @@ export interface AgenticMessage {
       variable_summaries: Record<string, unknown>;
       figures: Array<{ kind: string; url?: string; title?: string }>;
       decision: string;
-      t_stat?: number;
-      df?: number;
+      t_stat?: number | string;
+      df?: number | string;
       p_str?: string;
-      cohen_d?: number;
+      cohen_d?: number | string;
+      standard_error?: number | string;
+      mean_difference?: number | string;
+      ci_low?: number | string;
+      ci_high?: number | string;
+      shapiro_wilk?: {
+        statistic?: number;
+        p_value?: number;
+        assumption_met?: boolean;
+        target?: string;
+        interpretation?: string;
+      };
+      intergroup?: {
+        tested?: boolean;
+        comparison?: string;
+        diff_of_gains?: number;
+        welch_t?: number;
+        welch_df?: number;
+        welch_p?: number;
+        welch_p_str?: string;
+        ci_95?: number[];
+      };
+      convention?: string;
     };
     quick_questions?: string[];
   };

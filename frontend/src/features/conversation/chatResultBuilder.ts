@@ -74,6 +74,12 @@ export function buildDeterministicResult(
     const realDiff = getMetric('mean_difference');
     const realCiLow = getMetric('mean_difference_ci_95_low');
     const realCiHigh = getMetric('mean_difference_ci_95_high');
+    const realSE =
+      getMetric('standard_error') ??
+      getMetric('se') ??
+      (realDiff !== null && realT !== null && realT !== 0
+        ? Math.abs(realDiff / realT)
+        : null);
 
     const sampleN = preStats?.n ?? n;
     const gl = realGl !== null ? Math.round(realGl) : sampleN - 1;
@@ -95,18 +101,24 @@ export function buildDeterministicResult(
         ? postStats.std.toFixed(2)
         : '2.10';
 
-    const tVal = realT !== null ? realT.toFixed(3) : '8.421';
+    const tVal = realT !== null ? Math.abs(realT).toFixed(3) : '8.421';
     const glVal = String(gl);
     const pValExact = realP !== null ? realP : 0.000012;
     const pValFormatted =
       pValExact < 0.001
         ? '< 0.001'
         : `${pValExact.toFixed(3)}${pValExact < 0.05 ? '*' : ''}`;
-    const dVal = realD !== null ? realD.toFixed(3) : '1.537';
+    const dVal = realD !== null ? Math.abs(realD).toFixed(3) : '1.537';
     const diffVal = realDiff !== null ? Math.abs(realDiff).toFixed(2) : '4.44';
+    const seVal =
+      realSE !== null
+        ? realSE.toFixed(3)
+        : realDiff !== null && realT !== null && realT !== 0
+          ? Math.abs(realDiff / realT).toFixed(3)
+          : '0.528';
     const ciVal =
       realCiLow !== null && realCiHigh !== null
-        ? `[${realCiLow.toFixed(2)}, ${realCiHigh.toFixed(2)}]`
+        ? `[${Math.min(Math.abs(realCiLow), Math.abs(realCiHigh)).toFixed(2)}, ${Math.max(Math.abs(realCiLow), Math.abs(realCiHigh)).toFixed(2)}]`
         : '[3.36, 5.52]';
 
     const keyMetrics: KeyMetricItem[] = [
@@ -165,14 +177,14 @@ export function buildDeterministicResult(
           '—',
           '—',
           diffVal,
-          '0.528',
+          seVal,
           ciVal,
           tVal,
           glVal,
           pValExact < 0.001 ? '< .001*' : pValFormatted,
         ],
       ],
-      note: 'Nota. M = Media; DE = Desviación Estándar; EE = Error Estándar de la diferencia; IC 95% = Intervalo de Confianza al 95% para la diferencia media; * p < .05.',
+      note: 'Nota. M = Media; DE = Desviación Estándar; EE = Error Estándar de las diferencias [SD(dif)/√n]; IC 95% = Intervalo de Confianza al 95% para la diferencia media (Posttest − Pretest); * p < .05.',
     };
 
     const boxplots: BoxplotStats[] = [

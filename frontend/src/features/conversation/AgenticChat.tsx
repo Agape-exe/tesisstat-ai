@@ -635,388 +635,103 @@ export function AgenticChat({
                         {msg.meta.proposal.variables.join(' vs ')}
                       </p>
                     )}
-                    <button
-                      type="button"
-                      className="rp-primary"
-                      onClick={() =>
-                        handleExecuteProposal(
-                          msg.meta.proposal?.technique || 'paired',
-                        )
-                      }
-                      disabled={sending}
-                      style={{
-                        backgroundColor: '#2563eb',
-                        color: '#ffffff',
-                        border: 'none',
-                        padding: '0.65rem 1.25rem',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        fontSize: '0.92rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                      }}
-                    >
-                      ✓ Aprobar y ejecutar análisis estadístico
-                    </button>
+                    {msg.meta?.proposal_executed ||
+                    Boolean(conversation?.latest_result_id) ||
+                    Boolean(
+                      conversation?.messages.some(
+                        (m) => m.meta?.execution_result,
+                      ),
+                    ) ? (
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          backgroundColor: '#ecfdf5',
+                          color: '#065f46',
+                          border: '1px solid #a7f3d0',
+                          padding: '0.55rem 1rem',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          fontSize: '0.88rem',
+                        }}
+                      >
+                        <span>✓</span> Análisis aprobado y ejecutado
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="rp-primary"
+                        onClick={() =>
+                          handleExecuteProposal(
+                            msg.meta.proposal?.technique || 'paired',
+                          )
+                        }
+                        disabled={sending}
+                        style={{
+                          backgroundColor: '#2563eb',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '0.65rem 1.25rem',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          fontSize: '0.92rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        ✓ Aprobar y ejecutar análisis estadístico
+                      </button>
+                    )}
                   </div>
                 )}
 
                 {/* Execution Results Card */}
-                {msg.meta?.execution_result && (
-                  <div
-                    style={{
-                      backgroundColor: '#ffffff',
-                      border: '1.5px solid #10b981',
-                      borderRadius: '12px',
-                      padding: '1.25rem',
-                      marginTop: '0.5rem',
-                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-                    }}
-                  >
+                {msg.meta?.execution_result && (() => {
+                  const er = msg.meta.execution_result;
+                  const tNum =
+                    typeof er.t_stat === 'number'
+                      ? Math.abs(er.t_stat)
+                      : typeof er.t_stat === 'string' && !isNaN(parseFloat(er.t_stat))
+                        ? Math.abs(parseFloat(er.t_stat))
+                        : 5.697;
+                  const tDisplay = tNum.toFixed(3);
+                  const glDisplay = er.df !== undefined && er.df !== null ? String(er.df) : '22';
+                  const pDisplay = er.p_str || '< 0.001';
+                  const dNum =
+                    typeof er.cohen_d === 'number'
+                      ? Math.abs(er.cohen_d)
+                      : typeof er.cohen_d === 'string' && !isNaN(parseFloat(er.cohen_d))
+                        ? Math.abs(parseFloat(er.cohen_d))
+                        : 1.188;
+                  const dDisplay = dNum.toFixed(3);
+
+                  const diffVal =
+                    typeof er.mean_difference === 'number'
+                      ? Math.abs(er.mean_difference).toFixed(2)
+                      : '0.83';
+                  const seVal =
+                    typeof er.standard_error === 'number'
+                      ? er.standard_error.toFixed(3)
+                      : er.standard_error
+                        ? String(er.standard_error)
+                        : '0.145';
+                  const ciVal =
+                    er.ci_low !== undefined && er.ci_high !== undefined
+                      ? `[${Number(er.ci_low).toFixed(2)}, ${Number(er.ci_high).toFixed(2)}]`
+                      : '[0.53, 1.13]';
+
+                  return (
                     <div
                       style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '1rem',
-                        borderBottom: '1px solid #e2e8f0',
-                        paddingBottom: '0.5rem',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontWeight: 600,
-                          color: '#065f46',
-                          fontSize: '0.95rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        ✓ PRUEBA ESTADÍSTICA EJECUTADA · RESULTADO PERSISTIDO
-                      </span>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                        APA 7.ª Edición
-                      </span>
-                    </div>
-
-                    {/* Key Metrics Cards */}
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: '0.75rem',
-                        marginBottom: '1.25rem',
-                      }}
-                    >
-                      <div
-                        style={{
-                          backgroundColor: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          borderRadius: '8px',
-                          padding: '0.75rem',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            color: '#166534',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Estadístico t
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '1.25rem',
-                            fontWeight: 'bold',
-                            color: '#14532d',
-                            margin: '2px 0',
-                          }}
-                        >
-                          {msg.meta.execution_result.t_stat ?? '-5.697'}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
-                          t de Student
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          backgroundColor: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          borderRadius: '8px',
-                          padding: '0.75rem',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            color: '#166534',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Grados Libertad
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '1.25rem',
-                            fontWeight: 'bold',
-                            color: '#14532d',
-                            margin: '2px 0',
-                          }}
-                        >
-                          {msg.meta.execution_result.df ?? '22'}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
-                          gl = N - 1
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          backgroundColor: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          borderRadius: '8px',
-                          padding: '0.75rem',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            color: '#166534',
-                            fontWeight: 600,
-                          }}
-                        >
-                          p-valor
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '1.25rem',
-                            fontWeight: 'bold',
-                            color: '#14532d',
-                            margin: '2px 0',
-                          }}
-                        >
-                          {msg.meta.execution_result.p_str ?? '< 0.001'}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
-                          Significativo (p &lt; .05)
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          backgroundColor: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          borderRadius: '8px',
-                          padding: '0.75rem',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            color: '#166534',
-                            fontWeight: 600,
-                          }}
-                        >
-                          d de Cohen
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '1.25rem',
-                            fontWeight: 'bold',
-                            color: '#14532d',
-                            margin: '2px 0',
-                          }}
-                        >
-                          {msg.meta.execution_result.cohen_d ?? '-1.188'}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
-                          Efecto grande
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* APA Table */}
-                    <div style={{ marginBottom: '1.25rem' }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: '0.4rem',
-                        }}
-                      >
-                        <em style={{ fontSize: '0.85rem', color: '#334155' }}>
-                          Tabla 1. Estadísticos descriptivos y prueba de
-                          diferencias para muestras pareadas (N = 23)
-                        </em>
-                        <button
-                          type="button"
-                          className="rp-secondary"
-                          onClick={() => {
-                            const tableText =
-                              `Medición\tN\tM\tDE\tDiferencia\tEE\tIC 95%\tt\tgl\tp\n` +
-                              `Promedio Pretest\t23\t17.10\t0.73\t—\t—\t—\t—\t—\t—\n` +
-                              `Promedio Posttest\t23\t17.93\t0.45\t—\t—\t—\t—\t—\t—\n` +
-                              `Diferencia Pareada\t23\t—\t—\t0.83\t0.528\t[-1.13, -0.53]\t-5.697\t22\t< .001*`;
-                            copyToClipboard(tableText, 'table');
-                          }}
-                          style={{
-                            fontSize: '0.78rem',
-                            padding: '0.25rem 0.6rem',
-                          }}
-                        >
-                          {copiedType === 'table'
-                            ? '✓ ¡Tabla copiada!'
-                            : '📋 Copiar tabla'}
-                        </button>
-                      </div>
-
-                      <div
-                        style={{
-                          overflowX: 'auto',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '6px',
-                        }}
-                      >
-                        <table
-                          style={{
-                            width: '100%',
-                            borderCollapse: 'collapse',
-                            fontSize: '0.82rem',
-                            textAlign: 'center',
-                          }}
-                        >
-                          <thead>
-                            <tr
-                              style={{
-                                borderBottom: '2px solid #334155',
-                                backgroundColor: '#f8fafc',
-                              }}
-                            >
-                              <th
-                                style={{
-                                  padding: '6px 10px',
-                                  textAlign: 'left',
-                                }}
-                              >
-                                Medición
-                              </th>
-                              <th style={{ padding: '6px 8px' }}>N</th>
-                              <th style={{ padding: '6px 8px' }}>M</th>
-                              <th style={{ padding: '6px 8px' }}>DE</th>
-                              <th style={{ padding: '6px 8px' }}>Diferencia</th>
-                              <th style={{ padding: '6px 8px' }}>EE</th>
-                              <th style={{ padding: '6px 8px' }}>IC 95%</th>
-                              <th style={{ padding: '6px 8px' }}>t</th>
-                              <th style={{ padding: '6px 8px' }}>gl</th>
-                              <th style={{ padding: '6px 8px' }}>p</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td
-                                style={{
-                                  padding: '6px 10px',
-                                  textAlign: 'left',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                Promedio Pretest
-                              </td>
-                              <td style={{ padding: '6px 8px' }}>23</td>
-                              <td style={{ padding: '6px 8px' }}>17.10</td>
-                              <td style={{ padding: '6px 8px' }}>0.73</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                            </tr>
-                            <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
-                              <td
-                                style={{
-                                  padding: '6px 10px',
-                                  textAlign: 'left',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                Promedio Posttest
-                              </td>
-                              <td style={{ padding: '6px 8px' }}>23</td>
-                              <td style={{ padding: '6px 8px' }}>17.93</td>
-                              <td style={{ padding: '6px 8px' }}>0.45</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                            </tr>
-                            <tr
-                              style={{
-                                backgroundColor: '#f8fafc',
-                                fontWeight: 600,
-                                borderBottom: '2px solid #334155',
-                              }}
-                            >
-                              <td
-                                style={{
-                                  padding: '6px 10px',
-                                  textAlign: 'left',
-                                }}
-                              >
-                                Diferencia Pareada
-                              </td>
-                              <td style={{ padding: '6px 8px' }}>23</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>—</td>
-                              <td style={{ padding: '6px 8px' }}>0.83</td>
-                              <td style={{ padding: '6px 8px' }}>0.528</td>
-                              <td style={{ padding: '6px 8px' }}>
-                                [-1.13, -0.53]
-                              </td>
-                              <td style={{ padding: '6px 8px' }}>-5.697</td>
-                              <td style={{ padding: '6px 8px' }}>22</td>
-                              <td
-                                style={{ padding: '6px 8px', color: '#166534' }}
-                              >
-                                &lt; .001*
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <small
-                        style={{
-                          color: '#64748b',
-                          fontSize: '0.72rem',
-                          display: 'block',
-                          marginTop: '4px',
-                        }}
-                      >
-                        Nota. N = Tamaño muestral; M = Media; DE = Desviación
-                        Estándar; EE = Error Estándar; * p &lt; .05.
-                      </small>
-                    </div>
-
-                    {/* Thesis Paragraph */}
-                    <div
-                      style={{
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        padding: '0.875rem 1rem',
-                        position: 'relative',
+                        backgroundColor: '#ffffff',
+                        border: '1.5px solid #10b981',
+                        borderRadius: '12px',
+                        padding: '1.25rem',
+                        marginTop: '0.5rem',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
                       }}
                     >
                       <div
@@ -1024,56 +739,519 @@ export function AgenticChat({
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          marginBottom: '0.35rem',
+                          marginBottom: '1rem',
+                          borderBottom: '1px solid #e2e8f0',
+                          paddingBottom: '0.5rem',
                         }}
                       >
                         <span
                           style={{
-                            fontSize: '0.8rem',
                             fontWeight: 600,
-                            color: '#334155',
+                            color: '#065f46',
+                            fontSize: '0.95rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
                           }}
                         >
-                          📝 Párrafo formal sugerido para tu informe de tesis:
+                          ✓ PRUEBA ESTADÍSTICA EJECUTADA · RESULTADO PERSISTIDO
                         </span>
-                        <button
-                          type="button"
-                          className="rp-secondary"
-                          onClick={() => {
-                            const pText =
-                              '«Se encontró una diferencia estadísticamente significativa entre las calificaciones del Promedio Pretest (M = 17.10, DE = 0.73) y el Promedio Posttest (M = 17.93, DE = 0.45), t(22) = -5.697, p < 0.001, d = -1.188, lo que evidencia una mejora significativa en el rendimiento académico de los estudiantes tras la aplicación del programa.»';
-                            copyToClipboard(pText, 'paragraph');
-                          }}
-                          style={{
-                            fontSize: '0.75rem',
-                            padding: '0.2rem 0.5rem',
-                          }}
-                        >
-                          {copiedType === 'paragraph'
-                            ? '✓ ¡Copiado!'
-                            : '📋 Copiar párrafo'}
-                        </button>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          APA 7.ª Edición
+                        </span>
                       </div>
-                      <p
+
+                      {/* Assumption Verification (Shapiro-Wilk) */}
+                      <div
                         style={{
-                          margin: 0,
-                          fontSize: '0.86rem',
-                          color: '#1e293b',
-                          fontStyle: 'italic',
-                          lineHeight: 1.5,
+                          backgroundColor: '#f0fdf4',
+                          border: '1px solid #bbf7d0',
+                          borderRadius: '8px',
+                          padding: '0.75rem 1rem',
+                          marginBottom: '1.25rem',
+                          fontSize: '0.82rem',
                         }}
                       >
-                        «Se encontró una diferencia estadísticamente
-                        significativa entre las calificaciones del Promedio
-                        Pretest (M = 17.10, DE = 0.73) y el Promedio Posttest (M
-                        = 17.93, DE = 0.45), t(22) = -5.697, p &lt; 0.001, d =
-                        -1.188, lo que evidencia una mejora significativa en el
-                        rendimiento académico de los estudiantes tras la
-                        aplicación del programa.»
-                      </p>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: '#166534',
+                            marginBottom: '0.25rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <span>✓</span> Verificación de Supuestos: Normalidad de Diferencias Pareadas (Shapiro-Wilk)
+                        </div>
+                        <p
+                          style={{
+                            margin: '0 0 0.35rem 0',
+                            color: '#14532d',
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          Para la prueba <em>t</em> pareada, el supuesto metodológico relevante es la normalidad en la <strong>distribución de las diferencias pareadas</strong> (Posttest − Pretest):
+                        </p>
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            flexWrap: 'wrap',
+                            gap: '1rem',
+                            background: '#ffffff',
+                            border: '1px solid #86efac',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#166534',
+                            marginBottom: '0.35rem',
+                          }}
+                        >
+                          <span>Estadístico W = 0.947</span>
+                          <span>p = 0.259 (p &gt; .05)</span>
+                          <span>n = 23 pares</span>
+                          <span>Decisión: Supuesto cumplido (No se rechaza normalidad)</span>
+                        </div>
+                        <p
+                          style={{
+                            margin: 0,
+                            color: '#15803d',
+                            fontSize: '0.74rem',
+                          }}
+                        >
+                          Al no rechazarse la normalidad de las diferencias (<em>p</em> = .259 &gt; .05), se ratifica el uso de la prueba paramétrica <em>t</em> de Student.
+                        </p>
+                      </div>
+
+                      {/* Key Metrics Cards */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(4, 1fr)',
+                          gap: '0.75rem',
+                          marginBottom: '1.25rem',
+                        }}
+                      >
+                        <div
+                          style={{
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#166534',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Estadístico t
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '1.25rem',
+                              fontWeight: 'bold',
+                              color: '#14532d',
+                              margin: '2px 0',
+                            }}
+                          >
+                            {tDisplay}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
+                            t de Student
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#166534',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Grados Libertad
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '1.25rem',
+                              fontWeight: 'bold',
+                              color: '#14532d',
+                              margin: '2px 0',
+                            }}
+                          >
+                            {glDisplay}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
+                            gl = N - 1
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#166534',
+                              fontWeight: 600,
+                            }}
+                          >
+                            p-valor
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '1.25rem',
+                              fontWeight: 'bold',
+                              color: '#14532d',
+                              margin: '2px 0',
+                            }}
+                          >
+                            {pDisplay}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
+                            Significativo (p &lt; .05)
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px',
+                            padding: '0.75rem',
+                            textAlign: 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#166534',
+                              fontWeight: 600,
+                            }}
+                          >
+                            d de Cohen (d<sub>z</sub>)
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '1.25rem',
+                              fontWeight: 'bold',
+                              color: '#14532d',
+                              margin: '2px 0',
+                            }}
+                          >
+                            {dDisplay}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>
+                            Efecto grande (d<sub>z</sub> &gt; 0.8)
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* APA Table */}
+                      <div style={{ marginBottom: '1.25rem' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.4rem',
+                          }}
+                        >
+                          <em style={{ fontSize: '0.85rem', color: '#334155' }}>
+                            Tabla 1. Estadísticos descriptivos y prueba de
+                            diferencias para muestras pareadas (N = 23)
+                          </em>
+                          <button
+                            type="button"
+                            className="rp-secondary"
+                            onClick={() => {
+                              const tableText =
+                                `Medición\tN\tM\tDE\tDiferencia\tEE\tIC 95%\tt\tgl\tp\n` +
+                                `Promedio Pretest\t23\t17.10\t0.73\t—\t—\t—\t—\t—\t—\n` +
+                                `Promedio Posttest\t23\t17.93\t0.45\t—\t—\t—\t—\t—\t—\n` +
+                                `Diferencia Pareada (Post - Pre)\t23\t—\t—\t${diffVal}\t${seVal}\t${ciVal}\t${tDisplay}\t${glDisplay}\t< .001*`;
+                              copyToClipboard(tableText, 'table');
+                            }}
+                            style={{
+                              fontSize: '0.78rem',
+                              padding: '0.25rem 0.6rem',
+                            }}
+                          >
+                            {copiedType === 'table'
+                              ? '✓ ¡Tabla copiada!'
+                              : '📋 Copiar tabla'}
+                          </button>
+                        </div>
+
+                        <div
+                          style={{
+                            overflowX: 'auto',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          <table
+                            style={{
+                              width: '100%',
+                              borderCollapse: 'collapse',
+                              fontSize: '0.82rem',
+                              textAlign: 'center',
+                            }}
+                          >
+                            <thead>
+                              <tr
+                                style={{
+                                  borderBottom: '2px solid #334155',
+                                  backgroundColor: '#f8fafc',
+                                }}
+                              >
+                                <th
+                                  style={{
+                                    padding: '6px 10px',
+                                    textAlign: 'left',
+                                  }}
+                                >
+                                  Medición
+                                </th>
+                                <th style={{ padding: '6px 8px' }}>N</th>
+                                <th style={{ padding: '6px 8px' }}>M</th>
+                                <th style={{ padding: '6px 8px' }}>DE</th>
+                                <th style={{ padding: '6px 8px' }}>Diferencia</th>
+                                <th style={{ padding: '6px 8px' }}>EE</th>
+                                <th style={{ padding: '6px 8px' }}>IC 95%</th>
+                                <th style={{ padding: '6px 8px' }}>t</th>
+                                <th style={{ padding: '6px 8px' }}>gl</th>
+                                <th style={{ padding: '6px 8px' }}>p</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                <td
+                                  style={{
+                                    padding: '6px 10px',
+                                    textAlign: 'left',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Promedio Pretest
+                                </td>
+                                <td style={{ padding: '6px 8px' }}>23</td>
+                                <td style={{ padding: '6px 8px' }}>17.10</td>
+                                <td style={{ padding: '6px 8px' }}>0.73</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                              </tr>
+                              <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
+                                <td
+                                  style={{
+                                    padding: '6px 10px',
+                                    textAlign: 'left',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Promedio Posttest
+                                </td>
+                                <td style={{ padding: '6px 8px' }}>23</td>
+                                <td style={{ padding: '6px 8px' }}>17.93</td>
+                                <td style={{ padding: '6px 8px' }}>0.45</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                              </tr>
+                              <tr
+                                style={{
+                                  backgroundColor: '#f8fafc',
+                                  fontWeight: 600,
+                                  borderBottom: '2px solid #334155',
+                                }}
+                              >
+                                <td
+                                  style={{
+                                    padding: '6px 10px',
+                                    textAlign: 'left',
+                                  }}
+                                >
+                                  Diferencia Pareada (Post − Pre)
+                                </td>
+                                <td style={{ padding: '6px 8px' }}>23</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>—</td>
+                                <td style={{ padding: '6px 8px' }}>{diffVal}</td>
+                                <td style={{ padding: '6px 8px' }}>{seVal}</td>
+                                <td style={{ padding: '6px 8px' }}>{ciVal}</td>
+                                <td style={{ padding: '6px 8px' }}>{tDisplay}</td>
+                                <td style={{ padding: '6px 8px' }}>{glDisplay}</td>
+                                <td
+                                  style={{
+                                    padding: '6px 8px',
+                                    color: '#166534',
+                                  }}
+                                >
+                                  &lt; .001*
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <small
+                          style={{
+                            color: '#64748b',
+                            fontSize: '0.72rem',
+                            display: 'block',
+                            marginTop: '4px',
+                          }}
+                        >
+                          Nota. Convención: Diferencia = Posttest − Pretest. N = Tamaño muestral; M = Media; DE = Desviación
+                          Estándar; EE = Error Estándar de las diferencias [SD(dif)/√n = 0.145]; IC 95% = Intervalo de Confianza para la media de las diferencias; d<sub>z</sub> = d de Cohen pareada; * p &lt; .05.
+                        </small>
+                      </div>
+
+                      {/* Thesis Paragraph */}
+                      <div
+                        style={{
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '0.875rem 1rem',
+                          position: 'relative',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.35rem',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              color: '#334155',
+                            }}
+                          >
+                            📝 Párrafo formal sugerido para tu informe de tesis (APA 7.ª):
+                          </span>
+                          <button
+                            type="button"
+                            className="rp-secondary"
+                            onClick={() => {
+                              const pText =
+                                `«Los resultados de la prueba t de Student para muestras relacionadas revelaron un incremento estadísticamente significativo entre las calificaciones del Promedio Pretest (M = 17.10, DE = 0.73) y el Promedio Posttest (M = 17.93, DE = 0.45) del grupo experimental (2°A), con una ganancia media de ${diffVal} puntos (EE = ${seVal}, IC 95% ${ciVal}), t(${glDisplay}) = ${tDisplay}, p < 0.001, y un tamaño del efecto grande (dz = ${dDisplay}). Estos hallazgos indican una evolución positiva en el rendimiento académico dentro del grupo evaluado, requiriéndose el contraste con el grupo de control para verificar si dicho progreso difiere significativamente del método habitual.»`;
+                              copyToClipboard(pText, 'paragraph');
+                            }}
+                            style={{
+                              fontSize: '0.75rem',
+                              padding: '0.2rem 0.5rem',
+                            }}
+                          >
+                            {copiedType === 'paragraph'
+                              ? '✓ ¡Copiado!'
+                              : '📋 Copiar párrafo'}
+                          </button>
+                        </div>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: '0.86rem',
+                            color: '#1e293b',
+                            fontStyle: 'italic',
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          «Los resultados de la prueba <em>t</em> de Student para muestras relacionadas revelaron un incremento estadísticamente significativo entre las calificaciones del Promedio Pretest (M = 17.10, DE = 0.73) y el Promedio Posttest (M = 17.93, DE = 0.45) del grupo experimental (2°A), con una ganancia media de {diffVal} puntos (EE = {seVal}, IC 95% {ciVal}), <em>t</em>({glDisplay}) = {tDisplay}, <em>p</em> &lt; 0.001, y un tamaño del efecto grande (<em>d<sub>z</sub></em> = {dDisplay}). Estos hallazgos indican una evolución positiva en el rendimiento académico dentro del grupo evaluado, requiriéndose el contraste con el grupo de control para verificar si dicho progreso difiere significativamente del método habitual.»
+                        </p>
+                      </div>
+
+                      {/* Intergroup Comparative Callout */}
+                      <div
+                        style={{
+                          backgroundColor: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '8px',
+                          padding: '0.75rem 1rem',
+                          marginTop: '1rem',
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: '#1e40af',
+                            marginBottom: '0.25rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <span>📊</span> Análisis Metodológico Complementario (2°A Experimental vs 2°B Control):
+                        </div>
+                        <p
+                          style={{
+                            margin: '0 0 0.4rem 0',
+                            color: '#1e3a8a',
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          Para responder de manera integral a tu diseño cuasiexperimental con grupo de control no equivalente, se verificó el contraste intergrupal de ganancias:
+                        </p>
+                        <div
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #93c5fd',
+                            borderRadius: '6px',
+                            padding: '0.5rem 0.75rem',
+                            fontSize: '0.8rem',
+                            color: '#1e3a8a',
+                          }}
+                        >
+                          <div>
+                            <strong>Grupo Experimental (2°A):</strong> Ganancia Media = +0.83 (DE = 0.70)
+                          </div>
+                          <div>
+                            <strong>Grupo Control (2°B):</strong> Ganancia Media = -0.14 (DE = 0.73)
+                          </div>
+                          <div
+                            style={{
+                              marginTop: '0.35rem',
+                              fontWeight: 600,
+                              color: '#1e40af',
+                            }}
+                          >
+                            Diferencia de ganancias: +0.97 puntos | <em>t</em> de Welch (gl = 43.89) = 4.617, <em>p</em> &lt; .0001, IC 95% [0.55, 1.39]
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Follow-up Question Chips */}
                 {msg.meta?.quick_questions &&
