@@ -1,9 +1,7 @@
 """FastAPI router for Agentic Chat in TesisStat AI."""
 
 import base64
-from typing import Annotated
 from urllib.parse import unquote
-from uuid import UUID
 
 from fastapi import APIRouter, Header, Request
 from pydantic import BaseModel, Field
@@ -43,13 +41,9 @@ def create_agentic_router(service: AgenticChatService) -> APIRouter:
         return service.list_conversations(project_id)
 
     @router.post("/conversations")
-    def create_conversation(
-        project_id: str, body: CreateConversationRequest | None = None
-    ):
+    def create_conversation(project_id: str, body: CreateConversationRequest | None = None):
         retain = body.retain_dataset_from if body else None
-        return service.get_or_create_conversation(
-            project_id, retain_dataset_from=retain
-        )
+        return service.get_or_create_conversation(project_id, retain_dataset_from=retain)
 
     @router.get("/conversations/active")
     def get_active_conversation(project_id: str):
@@ -57,18 +51,14 @@ def create_agentic_router(service: AgenticChatService) -> APIRouter:
 
     @router.get("/conversations/{conversation_id}")
     def get_conversation(project_id: str, conversation_id: str):
-        return service.get_or_create_conversation(
-            project_id, conversation_id=conversation_id
-        )
+        return service.get_or_create_conversation(project_id, conversation_id=conversation_id)
 
     @router.post("/conversations/{conversation_id}/messages")
     def send_message(project_id: str, conversation_id: str, body: MessageRequest):
         return service.send_message(project_id, conversation_id, body.content)
 
     @router.post("/conversations/{conversation_id}/upload-json")
-    def upload_dataset_json(
-        project_id: str, conversation_id: str, body: JsonUploadRequest
-    ):
+    def upload_dataset_json(project_id: str, conversation_id: str, body: JsonUploadRequest):
         file_bytes = base64.b64decode(body.file_base64)
         instrument_bytes = (
             base64.b64decode(body.instrument_base64) if body.instrument_base64 else None
@@ -105,9 +95,7 @@ def create_agentic_router(service: AgenticChatService) -> APIRouter:
         )
 
     @router.post("/conversations/{conversation_id}/execute")
-    def execute_analysis(
-        project_id: str, conversation_id: str, body: ExecuteRequest | None = None
-    ):
+    def execute_analysis(project_id: str, conversation_id: str, body: ExecuteRequest | None = None):
         proposal_type = body.proposal_type if body else "paired"
         var_names = body.variable_names if body else []
         return service.execute_analysis(

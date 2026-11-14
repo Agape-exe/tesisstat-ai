@@ -120,8 +120,6 @@ function SectionContent({
   view,
   item,
   active,
-  tutorStage,
-  boundSelection,
   showDataPanel,
   setShowDataPanel,
 }: {
