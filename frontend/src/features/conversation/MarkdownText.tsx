@@ -16,12 +16,49 @@ function renderInline(text: unknown, isUser = false): React.ReactNode[] {
   if (!text) return [];
   if (typeof text !== 'string') return [String(text)];
 
-  // Match ***bold italic***, **bold**, *italic*, `code`, [text](url)
-  const regex = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+  // Match $$math$$, $math$, ***bold italic***, **bold**, *italic*, `code`, [text](url)
+  const regex = /(\$\$[^$]+\$\$|\$[^$\n]+\$|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
   const parts = text.split(regex);
 
   return parts.map((part, index) => {
     if (!part) return null;
+
+    // Display LaTeX math $$...$$
+    if (part.startsWith('$$') && part.endsWith('$$') && part.length > 4) {
+      const inner = part.slice(2, -2).trim();
+      return (
+        <span
+          key={index}
+          style={{
+            display: 'inline-block',
+            fontStyle: 'italic',
+            fontFamily: 'Cambria, "Times New Roman", serif',
+            fontWeight: 500,
+            padding: '0 4px',
+          }}
+        >
+          {inner}
+        </span>
+      );
+    }
+
+    // Inline LaTeX math $...$ (e.g. $N = 23$, $p < 0.05$)
+    if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+      const inner = part.slice(1, -1).trim();
+      return (
+        <span
+          key={index}
+          style={{
+            fontStyle: 'italic',
+            fontFamily: 'Cambria, "Times New Roman", serif',
+            fontWeight: 500,
+            padding: '0 2px',
+          }}
+        >
+          {inner}
+        </span>
+      );
+    }
 
     // Bold + Italic
     if (part.startsWith('***') && part.endsWith('***') && part.length > 6) {

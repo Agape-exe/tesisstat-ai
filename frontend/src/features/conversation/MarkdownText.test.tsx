@@ -53,4 +53,12 @@ Tienes un diseño de investigación muy enriquecedor.
     const { container } = render(<MarkdownText content="" />);
     expect(container.firstChild).toBeNull();
   });
+
+  it('renders LaTeX math formulas without raw dollar signs', () => {
+    const { container } = render(
+      <MarkdownText content="Dado que $N = 23$, el valor es $$p < 0.05$$." />,
+    );
+    expect(container.textContent).toContain('Dado que N = 23, el valor es p < 0.05.');
+    expect(container.textContent).not.toContain('$');
+  });
 });

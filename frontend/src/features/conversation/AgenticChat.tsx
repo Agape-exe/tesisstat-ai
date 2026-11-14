@@ -1318,21 +1318,33 @@ export function AgenticChat({
             e.preventDefault();
             handleSend();
           }}
-          style={{ display: 'flex', gap: '0.5rem' }}
+          style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}
         >
-          <input
-            type="text"
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Escribe tu consulta o responde al asistente… (Presiona Enter para enviar)"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Escribe tu consulta o responde al asistente… (Enter para enviar, Shift + Enter para nueva línea)"
             disabled={sending || uploading}
+            rows={1}
             style={{
               flex: 1,
-              padding: '0.75rem 1rem',
+              padding: '0.7rem 1rem',
               borderRadius: '8px',
               border: '1.5px solid #cbd5e1',
               fontSize: '0.92rem',
               outline: 'none',
+              resize: 'none',
+              fontFamily: 'inherit',
+              lineHeight: 1.45,
+              minHeight: '44px',
+              maxHeight: '160px',
+              overflowY: 'auto',
             }}
           />
           <button
@@ -1340,11 +1352,13 @@ export function AgenticChat({
             className="rp-primary"
             disabled={!input.trim() || sending || uploading}
             style={{
-              padding: '0.75rem 1.25rem',
+              padding: '0.7rem 1.25rem',
               borderRadius: '8px',
               fontWeight: 600,
               fontSize: '0.92rem',
               cursor: 'pointer',
+              height: '44px',
+              flexShrink: 0,
             }}
           >
             Enviar
