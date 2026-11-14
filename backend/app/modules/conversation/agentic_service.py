@@ -705,18 +705,49 @@ class AgenticChatService:
             "- Si el usuario responde 'Sí, adelante', 'Ejecutar', 'De acuerdo' a una propuesta, indícale amablemente que procederás a ejecutar el cálculo matemático determinista."
         )
 
-        history_for_llm = [{"role": "system", "content": system_instruction}]
-        for m in conv.messages[-8:]:
-            history_for_llm.append({"role": m.role, "content": m.content})
+        with closing(self._connect()) as db:
+            msg_rows = db.execute(
+                "SELECT role, content FROM agentic_messages WHERE conversation_id = ? ORDER BY sequence ASC",
+                (conversation_id,),
+            ).fetchall()
 
-        try:
-            assistant_reply = self.provider.chat(history_for_llm, max_tokens=3000)
-        except Exception:
-            assistant_reply = (
-                "Entiendo tu consulta sobre los datos. Para darte la mejor orientación para tu tesis, "
-                "cuéntame si deseas contrastar las calificaciones entre pretest y posttest, o si tienes alguna duda "
-                "específica sobre las hipótesis de tu investigación."
-            )
+        history_for_llm = [{"role": "system", "content": system_instruction}]
+        for m in msg_rows[-8:]:
+            history_for_llm.append({"role": m["role"], "content": m["content"]})
+
+        # Ensure history ends with the user message
+        if not history_for_llm or history_for_llm[-1]["role"] != "user":
+            history_for_llm.append({"role": "user", "content": content})
+
+        assistant_reply = ""
+        for attempt in range(2):
+            try:
+                assistant_reply = self.provider.chat(history_for_llm, max_tokens=2500)
+                break
+            except Exception as e:
+                logger.warning(f"Gemini call attempt {attempt + 1} failed: {e}")
+                if attempt == 0:
+                    import time
+                    time.sleep(0.5)
+
+        if not assistant_reply:
+            original_model = self.provider.model
+            try:
+                self.provider.model = (
+                    "gemini-3.5-flash-lite"
+                    if original_model == "gemini-3.5-flash"
+                    else "gemini-3.5-flash"
+                )
+                assistant_reply = self.provider.chat(history_for_llm, max_tokens=2500)
+            except Exception as e:
+                logger.error(f"Both Gemini models failed: {e}")
+                assistant_reply = (
+                    f"He recibido tu indicación: «{content}». Basándome en las variables y notas de {conv.dataset_filename}, "
+                    "procederé a organizar los contrastes para responder a tu objetivo de investigación. "
+                    "¿Deseas que formule la propuesta formal para que la revises y ejecutemos los cálculos?"
+                )
+            finally:
+                self.provider.model = original_model
 
         # Check if the message contains an explicit proposal to add the execution button
         meta: dict[str, Any] = {}
