@@ -1,25 +1,10 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+"""Main entry point for TesisStat AI production deployment."""
 
 from app.core.config import Settings, get_settings
+from app.production_app import create_production_app
+
+app = create_production_app()
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    settings = settings or get_settings()
-    app = FastAPI(title="TesisStat AI", version="0.1.0")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_methods=["GET"],
-        allow_headers=["Content-Type"],
-        allow_credentials=False,
-    )
-
-    @app.get("/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok", "service": "tesisstat-api", "version": "0.1.0"}
-
-    return app
-
-
-app = create_app()
+def create_app(settings: Settings | None = None):
+    return create_production_app(settings)
