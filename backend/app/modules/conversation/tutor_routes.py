@@ -67,6 +67,16 @@ def create_router(tutor, reports):
     def explanation_revisions(project_id: str, result_id: str, explanation_id: str):
         return tutor.explanation_history(project_id, result_id, explanation_id)
 
+    @router.post("/executions")
+    def execute_chat(project_id: str, body: dict | None = None):
+        from app.modules.conversation.execution_service import (
+            ChatExecutionRequest,
+            execute_chat_analysis,
+        )
+
+        req = ChatExecutionRequest.model_validate(body) if body else None
+        return execute_chat_analysis(tutor, reports, project_id, req)
+
     @router.get("/analysis/results/{result_id}/export")
     def export(project_id: str, result_id: str, format: Literal["txt", "docx", "pdf"] = "txt"):
         payload = reports.export(project_id, result_id, format)

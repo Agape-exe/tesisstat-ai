@@ -176,5 +176,61 @@ export function createTutorApi(
         'POST',
         body,
       ),
+    executeAnalysis: async (
+      p: string,
+      body: {
+        proposal_type: string;
+        technique?: string;
+        variable_names?: string[];
+        dataset_id?: string;
+      },
+    ) => {
+      const response = await fetch(
+        `${base.replace(/\/$/, '')}/api/v2/research/projects/${encodeURIComponent(p)}/executions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(90000),
+        },
+      );
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        throw new TutorApiError(
+          err?.detail ??
+            err?.error?.message ??
+            'No se pudo ejecutar el análisis determinista.',
+          response.status,
+        );
+      }
+      return response.json();
+    },
+    downloadReport: async (
+      p: string,
+      resultId: string,
+      format: 'txt' | 'docx' | 'pdf',
+    ) => {
+      const response = await fetch(
+        `${base.replace(/\/$/, '')}/api/v2/research/projects/${encodeURIComponent(p)}/analysis/results/${encodeURIComponent(resultId)}/export?format=${format}`,
+        { signal: AbortSignal.timeout(90000) },
+      );
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        throw new Error(
+          err?.error?.message ??
+            err?.detail ??
+            'No se pudo generar el informe para descarga.',
+        );
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reporte-academico-${resultId}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    },
   };
 }
