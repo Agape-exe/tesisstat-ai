@@ -158,7 +158,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "X-File-Name"],
+        allow_headers=["Content-Type", "X-File-Name", "X-Is-Instrument", "Authorization"],
         allow_credentials=False,
     )
 
@@ -189,13 +189,23 @@ def create_app(
                     )
             request._body = bytes(body)
         if "/conversations" in request.url.path:
+            is_upload = "/upload" in request.url.path
+            max_bytes = (
+                int(settings.research_dataset_max_bytes * 1.5)
+                if is_upload
+                else settings.conversation_max_request_bytes
+            )
             body = bytearray()
             async for chunk in request.stream():
                 body.extend(chunk)
-                if len(body) > settings.conversation_max_request_bytes:
+                if len(body) > max_bytes:
                     return JSONResponse(
                         status_code=413,
-                        content={"detail": "La solicitud del chat es demasiado grande."},
+                        content={
+                            "detail": "El archivo es demasiado grande (máximo 10 MB)."
+                            if is_upload
+                            else "La solicitud del chat es demasiado grande."
+                        },
                     )
             request._body = bytes(body)
         return await call_next(request)

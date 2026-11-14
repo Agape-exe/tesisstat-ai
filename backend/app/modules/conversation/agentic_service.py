@@ -463,7 +463,7 @@ class AgenticChatService:
 
         # 6. Formulate Gemini response about the uploaded workbook
         sheets_desc = "\n".join(
-            f"- Hoja «{s['name']}»: {s['row_count']} registros, columnas: {', '.join(s['columns'])}"
+            f"- Hoja «{s.get('name', 'Hoja')}»: {s.get('row_count', 0)} registros, columnas: {', '.join(s.get('columns', []))}"
             for s in dataset_summary.get("sheets", [])
         )
         system_prompt = (

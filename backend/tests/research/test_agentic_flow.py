@@ -293,3 +293,53 @@ def test_intergroup_and_ancova_and_shapiro_rigorous_interpretation(agentic_servi
     assert "lineales observadas" in ancova.get("interpretation", "")
 
 
+def test_upload_json_larger_than_32kb_does_not_return_413():
+    import base64
+    from fastapi.testclient import TestClient
+    from app.modules.research.dev_app import ResearchDevSettings, create_app
+
+    with TemporaryDirectory() as tmpdir:
+        settings = ResearchDevSettings(
+            research_db_path=Path(tmpdir) / "projects.sqlite3",
+            research_documents_path=Path(tmpdir) / "documents",
+            research_datasets_path=Path(tmpdir) / "datasets",
+            app_env="development",
+        )
+        app = create_app(settings=settings)
+        client = TestClient(app)
+
+        # Create project
+        proj = client.post("/api/research/projects", json={"title": "Test Upload Size"}).json()
+        pid = proj["id"]
+
+        # Get active conversation
+        conv = client.get(f"/api/v2/research/projects/{pid}/agentic/conversations/active").json()
+        cid = conv["id"]
+
+        # Create a CSV larger than 32KB (e.g. 50 KB of rows)
+        csv_lines = ["Alumno,Nota1,Nota2\n"]
+        for i in range(1500):
+            csv_lines.append(f"Estudiante_{i},15.5,18.0\n")
+        csv_bytes = "".join(csv_lines).encode("utf-8")
+        assert len(csv_bytes) > 32768  # strictly > 32KB
+
+        b64_content = base64.b64encode(csv_bytes).decode("ascii")
+
+        # Post to upload-json
+        resp = client.post(
+            f"/api/v2/research/projects/{pid}/agentic/conversations/{cid}/upload-json",
+            json={
+                "filename": "estudiantes_grandes.csv",
+                "file_base64": b64_content,
+                "is_instrument": False,
+            },
+        )
+        # Must NOT return 413!
+        assert resp.status_code != 413
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["dataset_filename"] == "estudiantes_grandes.csv"
+        assert data["dataset_summary"]["total_rows"] == 1500
+
+
+
