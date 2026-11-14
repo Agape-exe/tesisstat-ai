@@ -16,3 +16,7 @@ coverage/
 *.egg-info/
 *.tsbuildinfo
 graphify-out/
+.data/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
