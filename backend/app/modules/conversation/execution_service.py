@@ -13,6 +13,7 @@ from app.modules.research.intents.models import (
     IntentChanges,
     IntentPatch,
 )
+from app.modules.statistics.descriptive import describe_numeric
 from app.modules.statistics.presentation_v2 import present
 from app.shared.analysis_v2 import PairedColumns
 from app.shared.plans_v2 import ApprovalRequest, ExecutionRequest, PlanRequest
@@ -35,7 +36,48 @@ def execute_chat_analysis(
     workspace = tutor.analysis.workspace
     workspace.sources.require(project_id)
 
-    # 1. If an existing completed result matches the proposal type, return it immediately
+    # 1. Find datasets and read table
+    datasets = workspace.datasets(project_id)
+    dataset_id = request.dataset_id or (datasets[0].id if datasets else None)
+    variable_summaries = {}
+    dataset = None
+    rows = []
+    numeric_vars = []
+    if datasets and dataset_id:
+        dataset, rows = workspace.read_table(project_id, dataset_id)
+        dictionary = workspace.dictionary(project_id, dataset_id, dataset)
+        for var in dictionary.variables:
+            if len(var.column_ids) != 1:
+                continue
+            col = next((c for c in dataset.columns if c.id == var.column_ids[0]), None)
+            if not col or col.formula_error_count:
+                continue
+            policy = ProfilePolicy(
+                missing_markers=frozenset(m.strip().casefold() for m in var.missing_markers)
+            )
+            vals = [r[col.position] for r in rows if not missing(r[col.position], policy)]
+            if vals and all(numeric(v) is not None for v in vals):
+                numeric_vars.append(var)
+                summary = describe_numeric([str(v) for v in vals if v is not None])
+                var_name = var.name.value or col.name
+                variable_summaries[var_name] = {
+                    "n": summary.valid_count,
+                    "mean": round(summary.mean, 2) if summary.mean is not None else None,
+                    "std": round(summary.sample_standard_deviation, 2)
+                    if summary.sample_standard_deviation is not None
+                    else None,
+                    "median": round(summary.median, 2) if summary.median is not None else None,
+                    "min": round(summary.minimum, 2) if summary.minimum is not None else None,
+                    "max": round(summary.maximum, 2) if summary.maximum is not None else None,
+                    "q1": round(summary.quantiles.get("p25", 0), 2)
+                    if summary.quantiles
+                    else None,
+                    "q3": round(summary.quantiles.get("p75", 0), 2)
+                    if summary.quantiles
+                    else None,
+                }
+
+    # 2. If an existing completed result matches the proposal type, return it immediately
     existing_results = tutor.analysis.results(project_id)
     technique_map = {
         "paired": {"t_paired", "wilcoxon"},
@@ -65,43 +107,24 @@ def execute_chat_analysis(
             "assumptions": [a.model_dump(mode="json") for a in matching_result.assumptions],
             "presentation": presentation.model_dump(mode="json"),
             "figures": figures.model_dump(mode="json"),
+            "variable_summaries": variable_summaries,
             "interpretation": matching_result.interpretation.model_dump(mode="json")
             if matching_result.interpretation
             else None,
         }
 
-    # 2. Find datasets
-    datasets = workspace.datasets(project_id)
-    if not datasets:
+    if not datasets or not dataset:
         raise HTTPException(
             status_code=400,
             detail="No hay conjuntos de datos cargados en este proyecto.",
         )
-
-    dataset_id = request.dataset_id or datasets[0].id
-    dataset, rows = workspace.read_table(project_id, dataset_id)
-    dictionary = workspace.dictionary(project_id, dataset_id, dataset)
-
-    # 3. Detect numeric columns
-    numeric_vars = []
-    for var in dictionary.variables:
-        if len(var.column_ids) != 1:
-            continue
-        col = next((c for c in dataset.columns if c.id == var.column_ids[0]), None)
-        if not col or col.formula_error_count:
-            continue
-        policy = ProfilePolicy(
-            missing_markers=frozenset(m.strip().casefold() for m in var.missing_markers)
-        )
-        vals = [r[col.position] for r in rows if not missing(r[col.position], policy)]
-        if vals and all(numeric(v) is not None for v in vals):
-            numeric_vars.append(var)
 
     if not numeric_vars:
         raise HTTPException(
             status_code=400,
             detail="No se encontraron variables numéricas analizables en la tabla.",
         )
+
 
     # 4. Create intent based on proposal_type
     with tutor.store.transaction() as db:
@@ -303,6 +326,7 @@ def execute_chat_analysis(
         "assumptions": [a.model_dump(mode="json") for a in result.assumptions],
         "presentation": presentation.model_dump(mode="json"),
         "figures": figures.model_dump(mode="json"),
+        "variable_summaries": variable_summaries,
         "interpretation": result.interpretation.model_dump(mode="json")
         if result.interpretation
         else None,

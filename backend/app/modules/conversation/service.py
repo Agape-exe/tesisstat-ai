@@ -137,14 +137,18 @@ class ConversationService:
             history = self.repository.messages(
                 conversation_id, self.settings.conversation_history_turns * 2, completed_only=True
             )
-            output_tokens = min(
-                self.settings.conversation_max_output_tokens,
-                self.settings.cloudflare_max_output_tokens,
-            )
-            budget = min(
-                self.settings.conversation_max_context_bytes,
-                self.settings.cloudflare_max_input_tokens - output_tokens - 512,
-            )
+            if isinstance(self.provider, GeminiLanguageModel):
+                output_tokens = getattr(self.provider.limits, "gemini_max_output_tokens", 4096)
+                budget = getattr(self.provider.limits, "gemini_max_input_tokens", 128000) * 4
+            else:
+                output_tokens = min(
+                    self.settings.conversation_max_output_tokens,
+                    self.settings.cloudflare_max_output_tokens,
+                )
+                budget = min(
+                    self.settings.conversation_max_context_bytes,
+                    self.settings.cloudflare_max_input_tokens - output_tokens - 512,
+                )
             state = self.workflow.invoke(
                 {
                     "project_id": project_id,
