@@ -7,7 +7,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
-from jwt import PyJWKClientError
+from jwt import PyJWKClientConnectionError, PyJWKClientError
 
 from app.authenticated_app import create_authenticated_app
 from app.core.config import Settings
@@ -32,7 +32,12 @@ class StaticJwks:
 
 class OfflineJwks:
     def get_signing_key_from_jwt(self, token: str):
-        raise PyJWKClientError("offline")
+        raise PyJWKClientConnectionError("offline")
+
+
+class UnknownKeyJwks:
+    def get_signing_key_from_jwt(self, token: str):
+        raise PyJWKClientError('Unable to find a signing key that matches: "unknown"')
 
 
 def auth_settings() -> Settings:
@@ -45,7 +50,7 @@ def auth_settings() -> Settings:
     )
 
 
-def signed_token(private_key, subject: UUID, **overrides) -> str:
+def signed_token(private_key, subject: UUID, *, kid: str | None = "test-key", **overrides) -> str:
     now = datetime.now(UTC)
     claims = {
         "sub": str(subject),
@@ -56,7 +61,8 @@ def signed_token(private_key, subject: UUID, **overrides) -> str:
         "exp": now + timedelta(minutes=5),
     }
     claims.update(overrides)
-    return jwt.encode(claims, private_key, algorithm="RS256", headers={"kid": "test-key"})
+    headers = {"kid": kid} if kid is not None else None
+    return jwt.encode(claims, private_key, algorithm="RS256", headers=headers)
 
 
 @pytest.fixture
@@ -97,6 +103,17 @@ def test_supabase_provider_fails_closed_when_jwks_is_unavailable(key_pair):
 
     with pytest.raises(IdentityProviderUnavailable):
         asyncio.run(provider.resolve_user(signed_token(private_key, uuid4())))
+
+
+def test_supabase_provider_rejects_missing_or_unknown_signing_key(key_pair):
+    private_key, public_key = key_pair
+    without_kid = SupabaseIdentityProvider(auth_settings(), jwks_client=StaticJwks(public_key))
+    unknown_kid = SupabaseIdentityProvider(auth_settings(), jwks_client=UnknownKeyJwks())
+
+    with pytest.raises(AuthenticationError):
+        asyncio.run(without_kid.resolve_user(signed_token(private_key, uuid4(), kid=None)))
+    with pytest.raises(AuthenticationError):
+        asyncio.run(unknown_kid.resolve_user(signed_token(private_key, uuid4(), kid="unknown")))
 
 
 class FakeIdentityProvider:

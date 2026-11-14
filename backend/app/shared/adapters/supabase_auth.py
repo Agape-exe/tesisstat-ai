@@ -6,7 +6,13 @@ from typing import Any
 from uuid import UUID
 
 import jwt
-from jwt import InvalidTokenError, PyJWKClient, PyJWKClientError
+from jwt import (
+    InvalidTokenError,
+    PyJWKClient,
+    PyJWKClientConnectionError,
+    PyJWKClientError,
+    PyJWKSetError,
+)
 
 from app.core.config import Settings
 from app.shared.auth import AuthenticationError, IdentityProviderUnavailable
@@ -43,7 +49,7 @@ class SupabaseIdentityProvider:
             raise AuthenticationError("invalid bearer token")
         try:
             header = jwt.get_unverified_header(access_token)
-            if header.get("alg") not in self._algorithms:
+            if header.get("alg") not in self._algorithms or not isinstance(header.get("kid"), str):
                 raise AuthenticationError("invalid bearer token")
             signing_key = await asyncio.to_thread(self._jwks.get_signing_key_from_jwt, access_token)
             claims = jwt.decode(
@@ -56,7 +62,11 @@ class SupabaseIdentityProvider:
             )
         except AuthenticationError:
             raise
+        except (PyJWKClientConnectionError, PyJWKSetError) as exc:
+            raise IdentityProviderUnavailable("identity provider unavailable") from exc
         except PyJWKClientError as exc:
+            if str(exc).startswith("Unable to find a signing key that matches"):
+                raise AuthenticationError("invalid bearer token") from exc
             raise IdentityProviderUnavailable("identity provider unavailable") from exc
         except (InvalidTokenError, ValueError, TypeError) as exc:
             raise AuthenticationError("invalid bearer token") from exc
