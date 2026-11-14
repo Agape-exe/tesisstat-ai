@@ -758,3 +758,28 @@ def test_revocation_at_delivery_leaves_no_orphan_interpretation(setup, monkeypat
     assert client.get(root + f"/analysis/results/{result['id']}/interpretations").json() == []
     old = root.replace("/api/v2/", "/api/") + "/conversations/" + cid
     assert not any(m["role"] == "assistant" for m in client.get(old).json()["messages"])
+
+
+def test_c06_chat_executions_endpoint_and_reports_export(setup):
+    client, root, _, _ = tutor(setup)
+    source(client, root)
+    res = client.post(root + "/executions", json={"proposal_type": "paired"})
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["status"] == "completed"
+    assert data["technique"] in {"t_paired", "wilcoxon"}
+    assert data["result_id"]
+    assert "metrics" in data
+    assert any(m["key"] in {"p_value", "statistic", "p", "t", "W"} for m in data["metrics"])
+    assert data["figures"]["figures"]
+
+    # Export docx
+    docx_res = client.get(root + f"/analysis/results/{data['result_id']}/export?format=docx")
+    assert docx_res.status_code == 200
+    doc = Document(BytesIO(docx_res.content))
+    assert len(doc.paragraphs) > 0
+
+    # Export pdf
+    pdf_res = client.get(root + f"/analysis/results/{data['result_id']}/export?format=pdf")
+    assert pdf_res.status_code == 200
+    assert len(pdf_res.content) > 100

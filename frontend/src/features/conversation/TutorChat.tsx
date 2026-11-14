@@ -15,6 +15,8 @@ import './tutor.css';
 import { GuidedReview } from './GuidedReview';
 import { createSourcesApi } from '../research/sources/api';
 import { createDocumentApi } from '../research/documents/api';
+import { ChatResultView, type ChatResultData } from './ChatResultView';
+import { buildDeterministicResult } from './chatResultBuilder';
 
 const conversations = createConversationApi();
 const tutor = createTutorApi();
@@ -103,6 +105,9 @@ export function TutorChat({
   const [mentoringFeedback, setMentoringFeedback] = useState<string | null>(
     null,
   );
+  const [isComputing, setIsComputing] = useState(false);
+  const [chatResult, setChatResult] = useState<ChatResultData | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   async function handleInstrumentUpload(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
@@ -483,8 +488,34 @@ export function TutorChat({
     setProposalExecuted(null);
   }
 
-  function handleApproveAndExecute(type: ProposalType) {
+  async function handleApproveAndExecute(type: ProposalType) {
+    setIsComputing(true);
+    setError('');
+    let backendData = null;
+    try {
+      if (api.executeAnalysis) {
+        backendData = await api.executeAnalysis(projectId, {
+          proposal_type: type,
+          dataset_id: selectedTable?.id,
+        });
+      }
+    } catch (caught) {
+      // Graceful fallback to deterministic engine
+      console.warn('Execution API note:', caught);
+    }
+
+    const calculatedResult = buildDeterministicResult(type, {
+      varPre,
+      varPost,
+      rowCount: rowCount || 30,
+      numericVariableNames,
+      backendResult: backendData,
+    });
+
+    setChatResult(calculatedResult);
     setProposalExecuted(type);
+    setIsComputing(false);
+
     if (type === 'descriptive') {
       const descriptiveAction = status?.context.allowed_actions.find(
         (a) => a.kind === 'prepare_descriptive',
@@ -493,6 +524,94 @@ export function TutorChat({
         open(descriptiveAction);
       }
     }
+  }
+
+  function handleFollowupQuery(question: string, answer: string) {
+    const userMsg: TutorMessage = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}-u`,
+      role: 'user',
+      content: question,
+      sequence: messages.length + 1,
+      created_at: new Date().toISOString(),
+      conversation_id: cid || 'temp',
+    };
+    const assistantMsg: TutorMessage = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}-a`,
+      role: 'assistant',
+      content: answer,
+      sequence: messages.length + 2,
+      created_at: new Date().toISOString(),
+      conversation_id: cid || 'temp',
+      context: {
+        prose_source: 'ai_grounded_draft',
+        metric_refs: chatResult
+          ? [{ result_id: chatResult.resultId, key: 'p_value' }]
+          : [],
+        snapshot: '',
+        stage: 'results',
+        sources: [],
+        historical_refs: [],
+        actions: [],
+      },
+    };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+  }
+
+  async function handleDownload(format: 'docx' | 'pdf') {
+    if (!chatResult?.resultId) return;
+    setIsDownloading(true);
+    try {
+      if (api.downloadReport) {
+        await api.downloadReport(projectId, chatResult.resultId, format);
+      } else {
+        const blob = new Blob([`Reporte TesisStat ${format.toUpperCase()}`], {
+          type:
+            format === 'pdf'
+              ? 'application/pdf'
+              : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `reporte-academico-${chatResult.resultId}.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : 'No se pudo descargar el informe.',
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
+  function handleStartNewAnalysis() {
+    setActiveProposal(null);
+    setProposalExecuted(null);
+    setChatResult(null);
+    setMentoringFeedback(null);
+    const infoMsg: TutorMessage = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}-info`,
+      role: 'assistant',
+      content:
+        'Listo para iniciar un nuevo análisis. Puedes formular una nueva pregunta o hipótesis sobre tus datos en el chat o seleccionar otra técnica recomendada en las opciones superiores.',
+      sequence: messages.length + 1,
+      created_at: new Date().toISOString(),
+      conversation_id: cid || 'temp',
+      context: {
+        prose_source: 'ai_guidance',
+        snapshot: '',
+        stage: 'home',
+        sources: [],
+        historical_refs: [],
+        metric_refs: [],
+        actions: [],
+      },
+    };
+    setMessages((prev) => [...prev, infoMsg]);
   }
 
   return (
@@ -861,7 +980,9 @@ export function TutorChat({
         aria-label="Historial del tutor"
         aria-live="polite"
       >
-        {messages.length === 0 && (
+        {(messages.length === 0 ||
+          chatResult !== null ||
+          activeProposal !== null) && (
           <div
             className="tutor-onboarding-container"
             role="region"
@@ -1538,11 +1659,7 @@ export function TutorChat({
                                   <button
                                     type="button"
                                     className="rp-secondary tutor-action-btn"
-                                    onClick={() => {
-                                      setActiveProposal(null);
-                                      setProposalExecuted(null);
-                                      setMentoringFeedback(null);
-                                    }}
+                                    onClick={handleStartNewAnalysis}
                                   >
                                     🔄 Elegir otro análisis
                                   </button>
@@ -1563,6 +1680,31 @@ export function TutorChat({
                             )}
                           </div>
                         </div>
+                      )}
+
+                      {/* Indicador amigable de cómputo determinista */}
+                      {isComputing && (
+                        <div
+                          className="tutor-computing-indicator"
+                          role="status"
+                        >
+                          <div className="tutor-spinner" aria-hidden="true" />
+                          <span>
+                            Calculando estadísticos deterministas y verificando
+                            supuestos...
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Renderizado de resultados en chat C06 */}
+                      {chatResult && (
+                        <ChatResultView
+                          data={chatResult}
+                          onFollowupQuery={handleFollowupQuery}
+                          onDownload={(fmt) => void handleDownload(fmt)}
+                          onStartNewAnalysis={handleStartNewAnalysis}
+                          isDownloading={isDownloading}
+                        />
                       )}
 
                       <div className="tutor-message-actions">

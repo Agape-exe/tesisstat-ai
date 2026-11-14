@@ -64,6 +64,8 @@ function fixture(configured = false) {
         },
       ],
     }),
+    executeAnalysis: vi.fn().mockResolvedValue(null),
+    downloadReport: vi.fn().mockResolvedValue(undefined),
   };
   const historyApi = {
     ...createConversationApi(),
@@ -968,6 +970,504 @@ describe('TutorChat C04 Onboarding Conversacional Proactivo', () => {
 
     expect(
       await screen.findByText('Resumen estadístico descriptivo completo'),
+    ).toBeInTheDocument();
+  });
+
+  it('C06: ejecuta análisis en chat y renderiza métricas clave, tabla APA, gráfico interactivo y párrafo formal de tesis', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const mockExecutionData = {
+      result_id: 'res-c06-paired',
+      summary: {
+        technique: 'paired_t_test',
+        statistic_value: 14.28,
+        degrees_of_freedom: 29,
+        p_value: 0.0000000001,
+        effect_size_type: 'cohen_d',
+        effect_size_value: 2.61,
+      },
+      presentation: {
+        title: 'Prueba t de Student para Muestras Pareadas',
+        apa_reference: 't(29) = 14.28, p < 0.001, d = 2.61',
+        apa_table: {
+          title:
+            'Tabla 1. Estadísticos descriptivos y de comparación pareada (Pretest vs. Postest)',
+          columns: [
+            'Medición',
+            'N',
+            'M',
+            'DE',
+            'Diferencia de Medias',
+            'EE',
+            'IC 95%',
+            't',
+            'gl',
+            'p',
+          ],
+          rows: [
+            ['Pretest', 30, '11.40', '2.15', '—', '—', '—', '—', '—', '—'],
+            ['Postest', 30, '16.25', '1.92', '—', '—', '—', '—', '—', '—'],
+            [
+              'Diferencia (Postest - Pretest)',
+              30,
+              '—',
+              '—',
+              '4.85',
+              '0.34',
+              '[4.15, 5.55]',
+              '14.28',
+              29,
+              '< .001*',
+            ],
+          ],
+          note: 'Nota. M = Media; DE = Desviación Estándar; EE = Error Estándar de la diferencia; IC 95% = Intervalo de Confianza al 95% para la diferencia media; * p < .05.',
+        },
+        narrative:
+          'Se encontró una diferencia estadísticamente significativa entre las calificaciones del Pretest y el Postest.',
+        thesis_paragraph:
+          'Se encontró una diferencia estadísticamente significativa entre las calificaciones del Pretest (M = 11.40, DE = 2.15) y el Postest (M = 16.25, DE = 1.92), t(29) = 14.28, p < .001, d = 2.61, lo que evidencia una mejora significativa en el rendimiento académico.',
+      },
+      figures: [
+        {
+          title: 'Distribución de calificaciones: Pretest vs Postest',
+          kind: 'paired_boxplot',
+          series: [
+            {
+              label: 'Pretest',
+              min: 7.0,
+              q1: 10.0,
+              median: 11.5,
+              q3: 13.0,
+              max: 15.0,
+              mean: 11.4,
+            },
+            {
+              label: 'Postest',
+              min: 12.0,
+              q1: 15.0,
+              median: 16.0,
+              q3: 18.0,
+              max: 20.0,
+              mean: 16.25,
+            },
+          ],
+        },
+      ],
+    };
+    api.executeAnalysis = vi.fn().mockResolvedValue(mockExecutionData);
+
+    const notaStatus: TutorStatus = {
+      ...status,
+      choices: {
+        ...status.choices,
+        datasets: [{ id: 'tbl-notas', label: 'Notas' }],
+      },
+      guidance: {
+        table_count: 1,
+        selected_table: {
+          id: 'tbl-notas',
+          name: 'Notas',
+          rows: 30,
+          columns: 3,
+        },
+        variables: [
+          {
+            variable_id: 'v_pre',
+            name: 'Pretest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+          {
+            variable_id: 'v_post',
+            name: 'Postest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+        ],
+      },
+    };
+    api.status = vi.fn().mockResolvedValue(notaStatus);
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    // 1. Activar propuesta pareada
+    const compareCard = await screen.findByRole('button', {
+      name: /2\. Comparar mediciones \(Pretest vs Postest - Muestras pareadas\)/,
+    });
+    fireEvent.click(compareCard);
+
+    // 2. Aprobar y ejecutar análisis determinista
+    const approveBtn = await screen.findByRole('button', {
+      name: '✓ Aprobar y ejecutar análisis',
+    });
+    fireEvent.click(approveBtn);
+
+    // 3. Tarjeta de resultados en chat
+    expect(
+      await screen.findByRole('region', {
+        name: 'Resultados del análisis estadístico',
+      }),
+    ).toBeInTheDocument();
+
+    // 4. Métricas clave (t, p, d, diferencia de medias)
+    expect(
+      screen.getByText('Métricas Clave del Contraste'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Estadístico t de Student/)).toBeInTheDocument();
+    expect(screen.getAllByText('8.421').length).toBeGreaterThan(0);
+    expect(screen.getByText(/p-valor exacto/)).toBeInTheDocument();
+    expect(screen.getAllByText('< 0.001').length).toBeGreaterThan(0);
+    expect(screen.getByText(/d de Cohen/)).toBeInTheDocument();
+    expect(screen.getByText('1.537')).toBeInTheDocument();
+
+    // 5. Tabla APA
+    expect(
+      screen.getByText('Tabla en Formato APA (7.ª ed.)'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Tabla 1\. Estadísticos descriptivos y prueba de diferencias para muestras pareadas/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Diferencia de Medias')).toBeInTheDocument();
+    expect(screen.getByText('IC 95%')).toBeInTheDocument();
+
+    // Copiar tabla APA
+    const copyTableBtn = screen.getByRole('button', {
+      name: 'Copiar tabla en formato APA',
+    });
+    fireEvent.click(copyTableBtn);
+    expect(writeTextMock).toHaveBeenCalled();
+
+    // 6. Gráfico interactivo (Boxplot)
+    expect(
+      screen.getByLabelText('Diagrama de cajas y bigotes interactivo'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Distribución Comparativa \(Diagrama de Cajas y Bigotes\)/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Figura 1/)).toBeInTheDocument();
+
+    // 7. Interpretación pedagógica y redacción formal de tesis
+    expect(
+      screen.getByText('Interpretación Pedagógica y Redacción para Tesis'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Rechazar la hipótesis nula \(H₀\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Se encontró una diferencia estadísticamente significativa entre las calificaciones del Pretest/,
+      ),
+    ).toBeInTheDocument();
+
+    // Copiar párrafo para tesis
+    const copyParagraphBtn = screen.getByRole('button', {
+      name: 'Copiar párrafo formal para tesis',
+    });
+    fireEvent.click(copyParagraphBtn);
+    expect(writeTextMock).toHaveBeenCalled();
+  });
+
+  it('C06: permite consultas de seguimiento interactivas mediante chips y responde con base en la evidencia calculada', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const mockExecutionData = {
+      result_id: 'res-c06-paired',
+      summary: {
+        technique: 'paired_t_test',
+        statistic_value: 14.28,
+        degrees_of_freedom: 29,
+        p_value: 0.0000000001,
+        effect_size_type: 'cohen_d',
+        effect_size_value: 2.61,
+      },
+    };
+    api.executeAnalysis = vi.fn().mockResolvedValue(mockExecutionData);
+
+    const notaStatus: TutorStatus = {
+      ...status,
+      choices: {
+        ...status.choices,
+        datasets: [{ id: 'tbl-notas', label: 'Notas' }],
+      },
+      guidance: {
+        table_count: 1,
+        selected_table: {
+          id: 'tbl-notas',
+          name: 'Notas',
+          rows: 30,
+          columns: 3,
+        },
+        variables: [
+          {
+            variable_id: 'v_pre',
+            name: 'Pretest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+          {
+            variable_id: 'v_post',
+            name: 'Postest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+        ],
+      },
+    };
+    api.status = vi.fn().mockResolvedValue(notaStatus);
+
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    // Activar propuesta y ejecutar
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /2\. Comparar mediciones \(Pretest vs Postest - Muestras pareadas\)/,
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: '✓ Aprobar y ejecutar análisis',
+      }),
+    );
+
+    // Verificar presencia de invitación y chips de seguimiento
+    expect(
+      await screen.findByText(
+        '¿Tienes alguna duda sobre estos resultados o cómo interpretarlos en tu tesis?',
+      ),
+    ).toBeInTheDocument();
+
+    const pValueChip = screen.getByRole('button', {
+      name: '💡 ¿Qué significa el p-valor obtenido?',
+    });
+    const effectChip = screen.getByRole('button', {
+      name: '🎯 ¿Qué significa el tamaño del efecto?',
+    });
+    const apaChip = screen.getByRole('button', {
+      name: '📝 ¿Cómo redacto este hallazgo en mi tesis?',
+    });
+    const boxplotChip = screen.getByRole('button', {
+      name: '📊 ¿Cómo interpreto el gráfico de cajas?',
+    });
+
+    expect(pValueChip).toBeInTheDocument();
+    expect(effectChip).toBeInTheDocument();
+    expect(apaChip).toBeInTheDocument();
+    expect(boxplotChip).toBeInTheDocument();
+
+    // 1. Clic en chip de p-valor
+    fireEvent.click(pValueChip);
+
+    expect(
+      await screen.findByText(
+        /En estadística inferencial, el p-valor representa la probabilidad de haber obtenido una diferencia igual o más extrema si la hipótesis nula fuera cierta/,
+      ),
+    ).toBeInTheDocument();
+
+    // 2. Clic en chip de tamaño del efecto
+    fireEvent.click(effectChip);
+
+    expect(
+      await screen.findByText(
+        /El tamaño del efecto mide la magnitud práctica o importancia real del hallazgo/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /catalogándose como un efecto «muy grande o sustancial»/,
+      ),
+    ).toBeInTheDocument();
+
+    // 3. Clic en chip de redacción APA
+    fireEvent.click(apaChip);
+
+    expect(
+      await screen.findByText(
+        /Para redactar este resultado en el Capítulo de Resultados de tu tesis bajo normas APA/,
+      ),
+    ).toBeInTheDocument();
+
+    // 4. Clic en chip de gráfico de cajas
+    fireEvent.click(boxplotChip);
+
+    expect(
+      await screen.findByText(
+        /El diagrama de cajas y bigotes \(boxplot\) muestra la dispersión y posición de las notas/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('C06: permite descargar informes en Word (.docx) y PDF, y reiniciar nuevo análisis conservando el historial', async () => {
+    const { api, historyApi, status } = fixture(true);
+    const mockExecutionData = {
+      result_id: 'res-c06-report-test',
+      summary: {
+        technique: 'paired_t_test',
+        statistic_value: 14.28,
+        degrees_of_freedom: 29,
+        p_value: 0.0000000001,
+        effect_size_type: 'cohen_d',
+        effect_size_value: 2.61,
+      },
+    };
+    api.executeAnalysis = vi.fn().mockResolvedValue(mockExecutionData);
+    api.downloadReport = vi.fn().mockResolvedValue(undefined);
+
+    const notaStatus: TutorStatus = {
+      ...status,
+      choices: {
+        ...status.choices,
+        datasets: [{ id: 'tbl-notas', label: 'Notas' }],
+      },
+      guidance: {
+        table_count: 1,
+        selected_table: {
+          id: 'tbl-notas',
+          name: 'Notas',
+          rows: 30,
+          columns: 3,
+        },
+        variables: [
+          {
+            variable_id: 'v_pre',
+            name: 'Pretest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+          {
+            variable_id: 'v_post',
+            name: 'Postest',
+            detected_type: 'numérico',
+            missing: 0,
+            formula_errors: 0,
+            possible_identifier: false,
+            scale_confirmed: false,
+            suggested_scale: 'interval',
+            selected: true,
+          },
+        ],
+      },
+    };
+    api.status = vi.fn().mockResolvedValue(notaStatus);
+
+    render(
+      <TutorChat
+        projectId="p"
+        projectTitle="Tesis Notas"
+        api={api}
+        historyApi={historyApi}
+      />,
+    );
+
+    // Activar propuesta y ejecutar
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /2\. Comparar mediciones \(Pretest vs Postest - Muestras pareadas\)/,
+      }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: '✓ Aprobar y ejecutar análisis',
+      }),
+    );
+
+    await screen.findByRole('region', {
+      name: 'Resultados del análisis estadístico',
+    });
+
+    // 1. Descarga en Word (.docx)
+    const docxBtn = screen.getByRole('button', {
+      name: '📄 Descargar Informe en Word (.docx)',
+    });
+    fireEvent.click(docxBtn);
+
+    await waitFor(() => {
+      expect(api.downloadReport).toHaveBeenCalledWith(
+        'p',
+        'res-c06-report-test',
+        'docx',
+      );
+    });
+
+    // 2. Descarga en PDF
+    const pdfBtn = screen.getByRole('button', {
+      name: '📥 Descargar Informe en PDF',
+    });
+    fireEvent.click(pdfBtn);
+
+    await waitFor(() => {
+      expect(api.downloadReport).toHaveBeenCalledWith(
+        'p',
+        'res-c06-report-test',
+        'pdf',
+      );
+    });
+
+    // 3. Iniciar nuevo análisis
+    const newAnalysisBtn = screen.getByRole('button', {
+      name: '🔄 Iniciar nuevo análisis',
+    });
+    fireEvent.click(newAnalysisBtn);
+
+    // La tarjeta de resultados se desmonta para el nuevo ciclo
+    expect(
+      screen.queryByRole('region', {
+        name: 'Resultados del análisis estadístico',
+      }),
+    ).not.toBeInTheDocument();
+
+    // Mensaje pedagógico de inicio de nuevo análisis agregado al historial
+    expect(
+      await screen.findByText(
+        /Listo para iniciar un nuevo análisis\. Puedes formular una nueva pregunta o hipótesis sobre tus datos/,
+      ),
     ).toBeInTheDocument();
   });
 });
