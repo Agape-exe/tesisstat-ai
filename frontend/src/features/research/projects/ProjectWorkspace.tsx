@@ -174,13 +174,12 @@ function SectionContent({
           >
             <div className="rp-chat-main-column">
               <AgenticChat
-                key={`${projectId}:${view}:${item}:${tutorStage}`}
+                key={`${projectId}:${view}:${item}`}
                 projectId={projectId}
                 projectTitle={projectTitle}
-                stage={view === 'results' ? 'results' : (tutorStage ?? 'home')}
+                stage={view === 'results' ? 'results' : 'home'}
                 active={active}
                 resultId={view === 'results' ? (item ?? undefined) : undefined}
-                boundSelection={boundSelection}
                 onOpenDataPanel={() => setShowDataPanel?.(true)}
               />
             </div>
