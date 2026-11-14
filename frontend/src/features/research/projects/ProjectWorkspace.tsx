@@ -2,6 +2,7 @@ import { ProjectHome } from './ProjectHome';
 import { ProjectContext } from './ProjectContext';
 import { useCallback, useState } from 'react';
 import { WorkspaceFocus } from './workspaceFocus';
+import { AgenticChat } from '../../conversation/AgenticChat';
 import { TutorChat } from '../../conversation/TutorChat';
 import type { Selection } from '../../conversation/tutorApi';
 import { ProjectDocuments } from '../documents/ProjectDocuments';
@@ -175,14 +176,10 @@ function SectionContent({
             className={`rp-chat-split-container ${showDataPanel ? 'split-active' : ''}`}
           >
             <div className="rp-chat-main-column">
-              <TutorChat
-                key={`${projectId}:${view}:${item}:${tutorStage}`}
+              <AgenticChat
+                key={`${projectId}:${view}:${item}`}
                 projectId={projectId}
                 projectTitle={projectTitle}
-                stage={view === 'results' ? 'results' : (tutorStage ?? 'home')}
-                active={active}
-                resultId={view === 'results' ? (item ?? undefined) : undefined}
-                boundSelection={boundSelection}
                 onOpenDataPanel={() => setShowDataPanel?.(true)}
               />
             </div>
